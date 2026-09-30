@@ -1,0 +1,5 @@
+# pnpm settings for this standalone package (backend/ is not part of a root workspace).
+# esbuild (via tsx and vite) ships its binary as an optional dependency, so its install script is
+# not needed; install scripts stay denied unless reviewed and allowed here.
+allowBuilds:
+  esbuild: false
