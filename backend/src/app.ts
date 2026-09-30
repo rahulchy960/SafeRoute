@@ -1,6 +1,8 @@
-import { Hono } from 'hono';
+import { OpenAPIHono } from '@hono/zod-openapi';
 import { HTTPException } from 'hono/http-exception';
 import type { Config } from './config.js';
+import { registerContractComponents } from './contract/components.js';
+import { validationHook } from './contract/validation.js';
 import type { Logger } from './lib/logger.js';
 import { AppError, problemResponse } from './lib/problem.js';
 import { accessLog } from './middleware/access-log.js';
@@ -23,9 +25,15 @@ export interface AppDeps {
  * Order: request-id → access-log → routes → notFound / onError. The error and not-found handlers
  * run inside the middleware chain, so their responses still get an access-log line and the
  * `X-Request-Id` header.
+ *
+ * Every route is declared with `createRoute` on an `OpenAPIHono` router, so it appears in the
+ * generated contract (contracts/openapi.json, see src/contract/openapi.ts). `validationHook`
+ * applies to all routers mounted below, because OpenAPIHono resolves the default hook through
+ * the parent app.
  */
 export function createApp({ config, logger, readiness }: AppDeps) {
-  const app = new Hono<AppEnv>();
+  const app = new OpenAPIHono<AppEnv>({ defaultHook: validationHook });
+  registerContractComponents(app);
 
   app.use('*', requestId(logger));
   app.use('*', accessLog);

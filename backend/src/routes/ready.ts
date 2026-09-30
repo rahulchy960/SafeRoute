@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Hono } from 'hono';
+import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi';
+import { errorResponses, headerRef } from '../contract/responses.js';
 import { safeDbError } from '../db/client.js';
 import { problemResponse } from '../lib/problem.js';
 import type { AppEnv } from '../types.js';
@@ -35,13 +36,45 @@ async function withTimeout(check: ReadinessCheck, timeoutMs: number): Promise<vo
   }
 }
 
+export const ReadinessSchema = z
+  .object({
+    status: z.literal('ready'),
+    checks: z.object({ database: z.literal('ok') }).openapi({
+      description: 'One entry per dependency this instance needs to serve traffic.',
+    }),
+  })
+  .openapi('Readiness');
+
+export const readinessRoute = createRoute({
+  method: 'get',
+  path: '/health/ready',
+  operationId: 'getReadiness',
+  tags: ['operational'],
+  summary: 'Readiness probe',
+  description:
+    'Answers "can this instance serve traffic that needs the database?". Returns 503 ' +
+    '(`db_unavailable` or `db_not_configured`) when it cannot. Never includes connection details.',
+  security: [],
+  responses: {
+    200: {
+      description: 'The instance and its database are ready.',
+      headers: {
+        'Cache-Control': headerRef('CacheControlNoStore'),
+        'X-Request-Id': headerRef('RequestId'),
+      },
+      content: { 'application/json': { schema: ReadinessSchema } },
+    },
+    ...errorResponses(500, 503),
+  },
+});
+
 /**
  * Readiness: "can this instance serve traffic that needs the database?". Separate from GET
  * /health (liveness, no I/O) so a database outage never makes Cloud Run restart healthy
  * instances. Responses never include connection details.
  */
 export function readyRoutes(check: ReadinessCheck | undefined, timeoutMs = READINESS_TIMEOUT_MS) {
-  return new Hono<AppEnv>().get('/health/ready', async (c) => {
+  return new OpenAPIHono<AppEnv>().openapi(readinessRoute, async (c) => {
     c.header('Cache-Control', 'no-store');
     const id = c.get('requestId');
 
@@ -64,6 +97,6 @@ export function readyRoutes(check: ReadinessCheck | undefined, timeoutMs = READI
       );
       return problemResponse(c, 503, 'db_unavailable', 'The database is not reachable.', id);
     }
-    return c.json({ status: 'ready', checks: { database: 'ok' } });
+    return c.json({ status: 'ready' as const, checks: { database: 'ok' as const } }, 200);
   });
 }

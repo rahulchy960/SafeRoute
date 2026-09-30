@@ -1,0 +1,439 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "SafeRoute API",
+    "version": "0.1.0",
+    "description": "SafeRoute is a personal-safety navigation API. Safety information is context, never a guarantee that a route or area is safe. SafeRoute is not an emergency service; in an emergency call your local emergency number (112 in India).",
+    "license": {
+      "name": "AGPL-3.0-only",
+      "identifier": "AGPL-3.0-only"
+    }
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "tags": [
+    {
+      "name": "operational",
+      "description": "Unversioned probes for the platform (liveness, readiness). Not for app features."
+    }
+  ],
+  "components": {
+    "headers": {
+      "RequestId": {
+        "description": "Correlation ID for this request. Echoes a well-formed incoming `X-Request-Id` (8–64 characters of `A–Z a–z 0–9 . _ -`), otherwise a fresh UUID.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "CacheControlNoStore": {
+        "description": "Always `no-store`: probe results must never be cached.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "no-store"
+          ]
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Invalid input (`validation_error`).",
+        "headers": {
+          "X-Request-Id": {
+            "$ref": "#/components/headers/RequestId"
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Missing or invalid credentials (`unauthorized`).",
+        "headers": {
+          "X-Request-Id": {
+            "$ref": "#/components/headers/RequestId"
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Authenticated but not allowed (`forbidden`).",
+        "headers": {
+          "X-Request-Id": {
+            "$ref": "#/components/headers/RequestId"
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "No such route or resource (`not_found`).",
+        "headers": {
+          "X-Request-Id": {
+            "$ref": "#/components/headers/RequestId"
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
+      },
+      "Conflict": {
+        "description": "Conflicts with the current state (`conflict`).",
+        "headers": {
+          "X-Request-Id": {
+            "$ref": "#/components/headers/RequestId"
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
+      },
+      "Gone": {
+        "description": "The resource existed but has expired or ended (`gone`).",
+        "headers": {
+          "X-Request-Id": {
+            "$ref": "#/components/headers/RequestId"
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
+      },
+      "TooManyRequests": {
+        "description": "Rate limit exceeded (`rate_limited`).",
+        "headers": {
+          "X-Request-Id": {
+            "$ref": "#/components/headers/RequestId"
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
+      },
+      "InternalError": {
+        "description": "Unexpected server error (`internal_error`).",
+        "headers": {
+          "X-Request-Id": {
+            "$ref": "#/components/headers/RequestId"
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
+      },
+      "ServiceUnavailable": {
+        "description": "A dependency is unavailable (e.g. `db_unavailable`, `db_not_configured`).",
+        "headers": {
+          "X-Request-Id": {
+            "$ref": "#/components/headers/RequestId"
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "firebaseBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Firebase ID token, sent as `Authorization: Bearer <token>`."
+      }
+    },
+    "schemas": {
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Problem type URI. `about:blank` means `title` is the HTTP status phrase.",
+            "examples": [
+              "about:blank"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "examples": [
+              "Not Found"
+            ]
+          },
+          "status": {
+            "type": "integer",
+            "minimum": 400,
+            "maximum": 599,
+            "examples": [
+              404
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "description": "Human-readable, generic explanation. Never contains personal data.",
+            "examples": [
+              "No route matches this request."
+            ]
+          },
+          "code": {
+            "type": "string",
+            "description": "Stable, machine-readable error code; clients switch on this, not on `title` or `detail`. Open set: clients must tolerate unknown values. Currently defined: `validation_error`, `unauthorized`, `forbidden`, `not_found`, `conflict`, `gone`, `rate_limited`, `internal_error`, `db_unavailable`, `db_not_configured`, `http_error`.",
+            "examples": [
+              "not_found"
+            ]
+          },
+          "requestId": {
+            "type": "string",
+            "description": "Same value as the `X-Request-Id` response header; quote it in bug reports.",
+            "examples": [
+              "3f2c1b9e-7a44-4c1e-9d2f-0b6a5e8c1d23"
+            ]
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ValidationIssue"
+            },
+            "description": "Present for `validation_error`: one entry per invalid input."
+          }
+        },
+        "required": [
+          "type",
+          "title",
+          "status",
+          "detail",
+          "code",
+          "requestId"
+        ],
+        "description": "Error body for every 4xx/5xx response (media type `application/problem+json`)."
+      },
+      "ValidationIssue": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Location of the invalid input, e.g. `body.contacts.0.name` or `query.limit`.",
+            "examples": [
+              "body.name"
+            ]
+          },
+          "code": {
+            "type": "string",
+            "description": "Why it is invalid (e.g. `invalid_type`, `too_small`). Open set.",
+            "examples": [
+              "invalid_type"
+            ]
+          }
+        },
+        "required": [
+          "path",
+          "code"
+        ],
+        "description": "One invalid input. Never contains the submitted value."
+      },
+      "IdempotencyKey": {
+        "type": "string",
+        "minLength": 16,
+        "maxLength": 64,
+        "pattern": "^[A-Za-z0-9._-]{16,64}$",
+        "description": "Client-generated key (e.g. a UUID) for a retryable state-changing call. The server stores key → response for 24 h and replays the stored response for a repeat (Plan v7 §6.2).",
+        "examples": [
+          "2b1f6c4e-8d3a-4f7b-9c21-5e0a7d4b3c19"
+        ]
+      },
+      "Health": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          },
+          "service": {
+            "type": "string",
+            "examples": [
+              "saferoute-api"
+            ]
+          },
+          "version": {
+            "type": "string",
+            "description": "Deployed build version of the service (not the contract version).",
+            "examples": [
+              "0.1.0"
+            ]
+          },
+          "uptimeSeconds": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Seconds since this instance started.",
+            "examples": [
+              42
+            ]
+          }
+        },
+        "required": [
+          "status",
+          "service",
+          "version",
+          "uptimeSeconds"
+        ]
+      },
+      "Readiness": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ready"
+            ]
+          },
+          "checks": {
+            "type": "object",
+            "properties": {
+              "database": {
+                "type": "string",
+                "enum": [
+                  "ok"
+                ]
+              }
+            },
+            "required": [
+              "database"
+            ],
+            "description": "One entry per dependency this instance needs to serve traffic."
+          }
+        },
+        "required": [
+          "status",
+          "checks"
+        ]
+      }
+    },
+    "parameters": {
+      "IdempotencyKey": {
+        "schema": {
+          "$ref": "#/components/schemas/IdempotencyKey"
+        },
+        "required": true,
+        "description": "Client-generated key (e.g. a UUID) for a retryable state-changing call. The server stores key → response for 24 h and replays the stored response for a repeat (Plan v7 §6.2).",
+        "name": "Idempotency-Key",
+        "in": "header"
+      }
+    }
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "getHealth",
+        "tags": [
+          "operational"
+        ],
+        "summary": "Liveness probe",
+        "description": "Answers \"is this process up and serving HTTP?\". Does no I/O (no database, no provider), so a slow dependency never makes the platform restart a healthy instance.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "The process is up.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/CacheControlNoStore"
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "operationId": "getReadiness",
+        "tags": [
+          "operational"
+        ],
+        "summary": "Readiness probe",
+        "description": "Answers \"can this instance serve traffic that needs the database?\". Returns 503 (`db_unavailable` or `db_not_configured`) when it cannot. Never includes connection details.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "The instance and its database are ready.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/CacheControlNoStore"
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Readiness"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    }
+  },
+  "webhooks": {}
+}

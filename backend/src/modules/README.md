@@ -20,11 +20,16 @@ own service later only if measurements justify it (Plan v7 §14.6).
 | `share` | live-location share sessions and the public viewer | P016 |
 | `admin` | moderation decisions, audit log, export | P018 |
 
+**Rule: every route is declared through `createRoute` (`@hono/zod-openapi`) on an `OpenAPIHono`
+router**, so it appears in `contracts/openapi.json` and its input is validated by the shared
+hook. A test fails if a registered route is missing from the spec (ADR 0004). Name paths,
+operationIds and schemas without city names (ADR 0005).
+
 Expected layout once a module exists:
 
 ```text
 modules/<name>/
-  routes.ts     Hono routes + Zod request/response schemas (OpenAPI from P004)
+  routes.ts     createRoute definitions + Zod request/response schemas (OpenAPI, P004)
   service.ts    business logic; the only entry point other modules may call
   schema.ts     Drizzle tables owned by this module (from P003)
   *.test.ts

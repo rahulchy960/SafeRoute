@@ -25,8 +25,8 @@ gradlew text eol=lf
 *.kt text eol=lf
 *.kts text eol=lf
 
-# Generated contract (collapsed in GitHub diffs)
-contracts/openapi.json linguist-generated=true
+# Generated contract (collapsed in GitHub diffs). Always LF: `pnpm openapi:check` compares bytes.
+contracts/openapi.json text eol=lf linguist-generated=true
 
 # Binary
 *.png binary

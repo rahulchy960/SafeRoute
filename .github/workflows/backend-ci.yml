@@ -4,11 +4,13 @@ on:
   pull_request:
     paths:
       - "backend/**"
+      - "contracts/**"
       - ".github/workflows/backend-ci.yml"
   push:
     branches: [main]
     paths:
       - "backend/**"
+      - "contracts/**"
       - ".github/workflows/backend-ci.yml"
 
 permissions:
@@ -81,6 +83,15 @@ jobs:
             echo "::error::src/db/schema changed without a committed migration. Run pnpm db:generate and commit drizzle/."
             exit 1
           fi
+
+      # The committed contracts/openapi.json must match a fresh generation (also a unit test).
+      - name: OpenAPI contract up to date and linted
+        env:
+          REDOCLY_TELEMETRY: "off"
+          REDOCLY_SUPPRESS_UPDATE_NOTICE: "true"
+        run: |
+          pnpm openapi:check
+          pnpm openapi:lint
 
       # Unit tests plus the db project (Testcontainers starts its own PostGIS via the runner's Docker).
       - name: Test (unit + db)

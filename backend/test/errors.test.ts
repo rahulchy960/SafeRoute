@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { AppError } from '../src/lib/problem.js';
 import { accessLines, buildTestApp } from './helpers.js';
 
-const PROBLEM_KEYS = ['code', 'detail', 'request_id', 'status', 'title', 'type'];
+// HTTP bodies use camelCase `requestId` (ADR 0004); log lines keep snake_case `request_id`.
+const PROBLEM_KEYS = ['code', 'detail', 'requestId', 'status', 'title', 'type'];
 
 async function problemOf(res: Response) {
   expect(res.headers.get('content-type')).toBe('application/problem+json');
@@ -24,7 +25,7 @@ describe('problem+json errors', () => {
       status: 404,
       detail: 'No route matches this request.',
       code: 'not_found',
-      request_id: 'req-404-abcdef',
+      requestId: 'req-404-abcdef',
     });
   });
 
@@ -50,7 +51,7 @@ describe('problem+json errors', () => {
       status: 500,
       detail: 'An unexpected error occurred.',
       code: 'internal_error',
-      request_id: 'req-500-abcdef',
+      requestId: 'req-500-abcdef',
     });
 
     // The full error is logged server-side, tied to the request.
@@ -79,7 +80,7 @@ describe('problem+json errors', () => {
       status: 409,
       detail: 'This resource already exists.',
       code: 'conflict',
-      request_id: 'req-409-abcdef',
+      requestId: 'req-409-abcdef',
     });
   });
 

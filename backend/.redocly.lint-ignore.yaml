@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Targeted exceptions for Redocly lint (pnpm openapi:lint). Keep this list short and explain each
+# entry; never add a whole rule here.
+#
+# operation-4xx-response: the operational probes take no input (no params, query or body), so no
+# 4xx can come from them. Unknown paths and methods get the app-wide 404 (`not_found`). Declaring
+# a 4xx the probe never returns would make the contract lie. Every /v1 operation must still
+# declare its 4xx responses.
+../contracts/openapi.json:
+  operation-4xx-response:
+    - '#/paths/~1health/get/responses'
+    - '#/paths/~1health~1ready/get/responses'

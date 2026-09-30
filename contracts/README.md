@@ -1,18 +1,89 @@
 # contracts/
 
-The HTTP API contract between the backend and the Android app (Plan v7 §6, ADR 0001).
+The HTTP API contract between the backend and the Android app (Plan v7 §6, ADR 0001,
+[ADR 0004](../docs/adr/0004-api-contract-and-conventions.md)).
 
-- `openapi.json`: the OpenAPI 3.1 document, **generated** from the backend's Zod schemas and
-  committed. Never edit it by hand.
-- The Kotlin client (openapi-generator: Kotlin, Retrofit2, kotlinx.serialization) is generated
-  from this file in CI. The app never hand-writes request/response models.
-- All paths are under `/v1`. CI runs a breaking-change diff (e.g. oasdiff). A breaking change needs
-  an ADR plus either a new version path or a coordinated app release, because old app versions stay
-  installed for months.
+- **`openapi.json`**: the OpenAPI **3.1** document, **generated** from the backend's Zod route
+  definitions (`backend/src/routes`, `backend/src/modules/*/routes.ts`) and committed. **Never
+  edit it by hand.** Being generated JSON, it can't carry an SPDX comment; it is covered by
+  `AGPL-3.0-only` through `COPYRIGHT.md` and `info.license`.
+- The Kotlin client is generated from this file (P008). The app never hand-writes request or
+  response models.
 
-**Status:** empty. `openapi.json` and the generation/diff pipeline arrive in **P004**
-(`feat/004-openapi-contract-pipeline`).
+## Regenerate and check
 
-## Quality gate (from P004 onwards)
+Run inside `backend/` (no database or network needed):
 
-Regenerate `openapi.json`, commit the diff, and run the breaking-change check.
+```sh
+pnpm openapi:generate   # rewrite contracts/openapi.json; commit the diff with your route change
+pnpm openapi:check      # fails with "contracts/openapi.json is stale" if you forgot
+pnpm openapi:lint       # Redocly lint (backend/redocly.yaml)
+```
+
+CI: `backend-ci` fails when the committed file is stale (a unit test compares it with a fresh
+generation) or fails lint. From P004b, `.github/workflows/contracts-ci.yml` also compares the
+PR's spec with the base branch using **oasdiff** and writes the changelog to the job summary.
+
+## How to read the spec
+
+- `paths`: every endpoint with its `operationId` (the method name in the generated client),
+  `tags`, `summary`, request schema and responses.
+- `components.schemas`: shared data shapes (`ProblemDetails`, `Health`, ...).
+- `components.responses`: shared error responses (`BadRequest`, `NotFound`, `InternalError`, ...).
+- `components.parameters.IdempotencyKey` and `components.securitySchemes.firebaseBearer` are
+  declared ahead of use (P015 and P005).
+- Paste the file into any OpenAPI viewer (e.g. editor.swagger.io) to browse it. It is public data.
+
+## API contract rules (summary of ADR 0004)
+
+- Product endpoints live under **`/v1`**. `/health` and `/health/ready` are unversioned
+  operational probes.
+- JSON property names are **camelCase**. IDs are UUID strings. Timestamps are RFC 3339 UTC with
+  `Z`. Coordinates are explicit `latitude` / `longitude` numbers in WGS84 decimal degrees, never a
+  bare pair; note that PostGIS stores (longitude, latitude).
+- Enums are strings. **Clients must tolerate unknown values.**
+- Retryable state-changing calls take an `Idempotency-Key` header. Protected routes use
+  `firebaseBearer`.
+- **City-neutral** (ADR 0005): no city or place names in paths, operationIds, schema names, tags,
+  descriptions or examples. Future city scoping is an optional `cityCode` field (additive, not
+  added yet).
+- **Versioning:** `info.version` is the contract version. Additive change → minor bump in the same
+  PR. Breaking change → new ADR + new path version or coordinated app release. CI then needs
+  the PR label `breaking-api-change` **and** a new file under `docs/adr/`. Old app versions stay
+  installed for months (Plan v7 §6.2).
+
+## Errors
+
+Every 4xx/5xx body is `application/problem+json` (RFC 9457):
+
+```json
+{
+  "type": "about:blank",
+  "title": "Not Found",
+  "status": 404,
+  "detail": "No route matches this request.",
+  "code": "not_found",
+  "requestId": "3f2c1b9e-7a44-4c1e-9d2f-0b6a5e8c1d23"
+}
+```
+
+`requestId` equals the `X-Request-Id` response header. `validation_error` adds
+`errors: [{ "path": "body.latitude", "code": "too_big" }]` and never echoes submitted values.
+Clients switch on `code`, which is an **open set** (unknown codes must be handled generically).
+Currently defined codes:
+
+| `code` | Typical status | Meaning |
+| --- | --- | --- |
+| `validation_error` | 400 | Request failed schema validation; see `errors` |
+| `unauthorized` | 401 | Missing or invalid credentials (from P005) |
+| `forbidden` | 403 | Authenticated but not allowed |
+| `not_found` | 404 | No such route or resource |
+| `conflict` | 409 | Conflicts with the current state |
+| `gone` | 410 | Existed but expired or ended (e.g. a finished share) |
+| `rate_limited` | 429 | Too many requests |
+| `http_error` | 4xx | Framework-level rejection (e.g. malformed JSON, unsupported media type) |
+| `internal_error` | 500 | Unexpected server error (details only in server logs) |
+| `db_unavailable` | 503 | Readiness: the database is not reachable |
+| `db_not_configured` | 503 | Readiness: no database configured for this instance |
+
+Keep this table in sync with `PROBLEM_CODES` in `backend/src/contract/problem.ts`.

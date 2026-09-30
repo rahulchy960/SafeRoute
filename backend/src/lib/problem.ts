@@ -1,15 +1,13 @@
 import type { Context } from 'hono';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
+import type { ProblemDetails, ValidationIssue } from '../contract/problem.js';
 
-/** RFC 9457 problem details plus the stable `code` the app switches on (Plan v7 §6.2). */
-export interface Problem {
-  type: string;
-  title: string;
-  status: ContentfulStatusCode;
-  detail: string;
-  code: string;
-  request_id: string;
-}
+/**
+ * RFC 9457 problem details plus the stable `code` the app switches on (Plan v7 §6.2). The
+ * contract schema is `ProblemDetailsSchema` in src/contract/problem.ts. HTTP bodies use camelCase
+ * (`requestId`); log lines keep snake_case (`request_id`).
+ */
+export type Problem = ProblemDetails & { status: ContentfulStatusCode };
 
 const STATUS_TITLES: Partial<Record<number, string>> = {
   400: 'Bad Request',
@@ -60,6 +58,7 @@ export function problemResponse(
   code: string,
   detail: string,
   requestId: string,
+  errors?: ValidationIssue[],
 ): Response {
   const body: Problem = {
     type: 'about:blank',
@@ -67,7 +66,8 @@ export function problemResponse(
     status,
     detail,
     code,
-    request_id: requestId,
+    requestId,
+    ...(errors ? { errors } : {}),
   };
   return c.body(JSON.stringify(body), status, { 'Content-Type': 'application/problem+json' });
 }
