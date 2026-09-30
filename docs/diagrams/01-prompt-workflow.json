@@ -1,0 +1,26 @@
+{
+  "$schema": "../../tools/diagrams/diagram.schema.json",
+  "title": "SafeRoute prompt workflow",
+  "subtitle": "One prompt = one branch = one pull request (Plan v7 §17)",
+  "direction": "TB",
+  "layout": { "nodeWidth": 360 },
+  "nodes": [
+    { "id": "opus", "label": "Opus chat: reads Plan PDF, writes prompt NNN", "role": "external" },
+    { "id": "start", "label": "Claude Code (Android Studio): /start-prompt preflight, previous PR merged?", "role": "service" },
+    { "id": "branch", "label": "New branch feat/NNN-core-work", "role": "infra" },
+    { "id": "implement", "label": "Implement + quality gate (tests, lint, types, build)", "role": "security" },
+    { "id": "ship", "label": "Detailed commit → push branch → open PR", "role": "infra" },
+    { "id": "docs", "label": "Excalidraw diagram + Notion Prompt Log page", "role": "data" },
+    { "id": "review", "label": "Rahul reviews & merges on GitHub", "role": "app" },
+    { "id": "ci", "label": "GitHub Actions CI → staging", "role": "external" }
+  ],
+  "edges": [
+    { "from": "opus", "to": "start" },
+    { "from": "start", "to": "branch" },
+    { "from": "branch", "to": "implement" },
+    { "from": "implement", "to": "ship" },
+    { "from": "ship", "to": "docs" },
+    { "from": "docs", "to": "review" },
+    { "from": "review", "to": "ci" }
+  ]
+}

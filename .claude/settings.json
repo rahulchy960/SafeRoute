@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "deny": [
+      "Bash(git push --force*)",
+      "Bash(git push * --force*)",
+      "Bash(git push -f*)",
+      "Bash(git push * -f*)",
+      "Bash(git push *+*)",
+      "Bash(git push --mirror*)",
+      "Bash(git push * --mirror*)",
+      "Bash(gh pr merge*)",
+      "Bash(gh pr review --approve*)",
+      "Bash(gh pr review * --approve*)",
+      "Bash(gh pr review -a*)",
+      "Bash(gh pr review * -a*)",
+      "Bash(gh pr close*)",
+      "Bash(gh api *pulls/*/merge*)",
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Read(**/*.jks)",
+      "Read(**/*.keystore)",
+      "Read(**/google-services.json)",
+      "Read(**/*service-account*.json)",
+      "Read(**/*-sa-key*.json)",
+      "Edit(**/.env)",
+      "Edit(**/*.jks)",
+      "Edit(**/*.keystore)",
+      "Edit(**/google-services.json)"
+    ]
+  }
+}

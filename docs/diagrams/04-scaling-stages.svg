@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1260" height="328" viewBox="0 0 1260 328" font-family="Helvetica, Arial, sans-serif">
+<title>SafeRoute scaling stages</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#495057"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="40" y="62" font-size="24" font-weight="700" fill="#1e1e1e">SafeRoute scaling stages</text>
+<text x="40" y="86" font-size="14" fill="#495057">Each step is added only when measurements cross a trigger (Plan v7 §14.2)</text>
+<line x1="290" y1="178" x2="350" y2="178" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="600" y1="178" x2="660" y2="178" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="910" y1="178" x2="970" y2="178" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="40" y="134.5" width="250" height="87" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="165" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="165" y="162.8">Stage 0 · MVP ≤10k users: 1</tspan>
+<tspan x="165" y="183.6">API, 1 worker, OSRM,</tspan>
+<tspan x="165" y="204.4">smallest Cloud SQL</tspan>
+</text>
+<rect x="350" y="114" width="250" height="128" rx="10" fill="#ffd8a8" stroke="#e8590c" stroke-width="2"/>
+<text x="475" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="475" y="142">Stage 1 · ~100k users:</tspan>
+<tspan x="475" y="162.8">segment-level safety</tspan>
+<tspan x="475" y="183.6">precompute, CDN-cached</tspan>
+<tspan x="475" y="204.4">safety cells, connection</tspan>
+<tspan x="475" y="225.2">pooling, bigger Cloud SQL</tspan>
+</text>
+<rect x="660" y="114" width="250" height="128" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="785" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="785" y="142">Stage 2 · ~1M users: Redis</tspan>
+<tspan x="785" y="162.8">live snapshots,</tspan>
+<tspan x="785" y="183.6">SSE/WebSocket gateway,</tspan>
+<tspan x="785" y="204.4">self-hosted tiles + geocoder,</tspan>
+<tspan x="785" y="225.2">read replica, split workers</tspan>
+</text>
+<rect x="970" y="134.5" width="250" height="87" rx="10" fill="#eebefa" stroke="#9c36b5" stroke-width="2"/>
+<text x="1095" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1095" y="162.8">Stage 3 · multi-city: per-city</tspan>
+<tspan x="1095" y="183.6">OSRM graphs, city partition</tspan>
+<tspan x="1095" y="204.4">key, SOS-path second region</tspan>
+</text>
+<rect x="40" y="263" width="16" height="16" rx="3" fill="#b2f2bb" stroke="#2f9e44" stroke-width="1.5"/>
+<text x="62" y="276" font-size="13" fill="#495057">Service</text>
+<rect x="133.5" y="263" width="16" height="16" rx="3" fill="#ffd8a8" stroke="#e8590c" stroke-width="1.5"/>
+<text x="155.5" y="276" font-size="13" fill="#495057">Data</text>
+<rect x="208.3" y="263" width="16" height="16" rx="3" fill="#ffc9c9" stroke="#e03131" stroke-width="1.5"/>
+<text x="230.3" y="276" font-size="13" fill="#495057">Security / emergency</text>
+<rect x="381.9" y="263" width="16" height="16" rx="3" fill="#eebefa" stroke="#9c36b5" stroke-width="1.5"/>
+<text x="403.9" y="276" font-size="13" fill="#495057">Infra / workflow</text>
+</svg>

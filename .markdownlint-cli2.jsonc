@@ -1,0 +1,17 @@
+// markdownlint-cli2 configuration (used by .github/workflows/repo-checks.yml)
+{
+  "config": {
+    "default": true,
+    // Long lines are fine in prose and tables.
+    "MD013": false,
+    // PR template and slash-command files do not start with an H1.
+    "MD041": false,
+    // Repeated headings are allowed in different sections (e.g. prompt-log revisions).
+    "MD024": { "siblings_only": true },
+    // Allow <br>, <details> etc. when useful.
+    "MD033": false,
+    // Slash commands use '1.' numbered lists with code blocks in between.
+    "MD029": false
+  },
+  "ignores": ["**/node_modules/**", "android/**/build/**"]
+}

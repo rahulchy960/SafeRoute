@@ -1,0 +1,22 @@
+<type>(<scope>): <summary> [P<NNN>]
+
+Why:
+- <Plan v7 section(s) and the problem this solves>
+
+What changed:
+- <change 1>
+- <change 2>
+
+How tested:
+- <quality-gate commands and pass/fail counts>
+- <failure-matrix rows verified, if SOS/live location>
+
+Risks / follow-ups:
+- <known risks, Notion follow-ups>
+
+Refs: Plan v7 §<N> · docs/prompt-logs/<NNN>-<core-work>.md · Notion: <url>
+
+# Title: Conventional Commit + prompt tag, e.g.
+#   feat(sos): device-first SOS trigger with offline SMS [P014]
+# type ∈ feat, fix, chore, ci, docs, test. PR title = this title.
+# Lines starting with '#' are ignored.

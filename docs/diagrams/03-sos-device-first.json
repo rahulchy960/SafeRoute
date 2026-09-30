@@ -1,0 +1,32 @@
+{
+  "$schema": "../../tools/diagrams/diagram.schema.json",
+  "title": "Device-first SOS",
+  "subtitle": "Contacts and 112 are reached without the server; sync is layered on top (Plan v7 §7.1)",
+  "direction": "TB",
+  "layout": { "nodeWidth": 210 },
+  "nodes": [
+    { "id": "hold", "label": "Hold 2 s (arm)", "role": "app" },
+    { "id": "countdown", "label": "5 s countdown (cancel = local only)", "role": "data" },
+    { "id": "room", "label": "Room record clientSosId", "role": "data" },
+    { "id": "sync", "label": "WorkManager sync POST /v1/sos (idempotent)", "role": "infra" },
+    { "id": "sms", "label": "SMS to contacts SmsManager or intent", "role": "security" },
+    { "id": "call", "label": "Call 112 (system dialer)", "role": "security" },
+    { "id": "fgs", "label": "Foreground service location every 5 s", "role": "service" },
+    { "id": "server", "label": "Server session + live share", "role": "service" },
+    { "id": "safe", "label": "I'm safe → resolve + notify", "role": "app" },
+    { "id": "push", "label": "FCM push to contacts with app", "role": "external" },
+    { "id": "followup", "label": "Follow-up SMS with live link", "role": "security" }
+  ],
+  "edges": [
+    { "from": "hold", "to": "countdown" },
+    { "from": "countdown", "to": "room" },
+    { "from": "room", "to": "sync" },
+    { "from": "room", "to": "sms" },
+    { "from": "room", "to": "call" },
+    { "from": "room", "to": "fgs" },
+    { "from": "sync", "to": "server" },
+    { "from": "server", "to": "push" },
+    { "from": "server", "to": "followup" },
+    { "from": "fgs", "to": "safe" }
+  ]
+}

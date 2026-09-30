@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1866" height="1057" viewBox="0 0 1866 1057" font-family="Helvetica, Arial, sans-serif">
+<title>SafeRoute MVP architecture</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#495057"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="40" y="62" font-size="24" font-weight="700" fill="#1e1e1e">SafeRoute MVP architecture</text>
+<text x="40" y="86" font-size="14" fill="#495057">Modular monolith on Google Cloud (asia-south1); device-first SOS (Plan v7 §4, §7, §13)</text>
+<rect x="40" y="114" width="1786" height="224" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="54" y="135" font-size="14" font-weight="700" fill="#495057">Users, apps &amp; contacts</text>
+<rect x="40" y="374" width="1786" height="224" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="54" y="395" font-size="14" font-weight="700" fill="#495057">Third-party providers</text>
+<rect x="40" y="634" width="1786" height="337" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="54" y="655" font-size="14" font-weight="700" fill="#495057">SafeRoute on Google Cloud</text>
+<line x1="288" y1="241" x2="438" y2="195" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="668" y1="195" x2="818" y2="874" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="668" y1="195" x2="818" y2="455" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="668" y1="195" x2="818" y2="547" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="668" y1="195" x2="1578" y2="195" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="668" y1="287" x2="818" y2="874" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1048" y1="874" x2="1198" y2="725.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1048" y1="874" x2="1198" y2="920" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1048" y1="874" x2="1198" y2="828" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1048" y1="761" x2="1198" y2="725.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="933" y1="717.5" x2="933" y2="580" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1428" y1="828" x2="1578" y2="195" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1428" y1="725.5" x2="1578" y2="725.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="58" y="213" width="230" height="56" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="173" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="173" y="246.6">User</tspan>
+</text>
+<rect x="438" y="162" width="230" height="66" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="553" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="553" y="190.2">Android app</tspan>
+<tspan x="553" y="211">Kotlin + Compose</tspan>
+</text>
+<rect x="438" y="254" width="230" height="66" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="553" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="553" y="282.2">Moderation web</tspan>
+<tspan x="553" y="303">Next.js, moderators</tspan>
+</text>
+<rect x="1578" y="162" width="230" height="66" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="1693" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1693" y="190.2">Emergency contacts</tspan>
+<tspan x="1693" y="211">SMS / push / web viewer</tspan>
+</text>
+<rect x="818" y="422" width="230" height="66" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="933" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="933" y="450.2">MapTiler</tspan>
+<tspan x="933" y="471">tiles + geocoding</tspan>
+</text>
+<rect x="818" y="514" width="230" height="66" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="933" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="933" y="542.2">Firebase</tspan>
+<tspan x="933" y="563">Auth (OTP) + FCM</tspan>
+</text>
+<rect x="818" y="717.5" width="230" height="87" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="933" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="933" y="745.8">saferoute-worker</tspan>
+<tspan x="933" y="766.6">Cloud Run · pg-boss ·</tspan>
+<tspan x="933" y="787.4">SOS / purge / H3 jobs</tspan>
+</text>
+<rect x="818" y="830.5" width="230" height="87" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="933" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="933" y="858.8">saferoute-api</tspan>
+<tspan x="933" y="879.6">Cloud Run · Hono + Zod ·</tspan>
+<tspan x="933" y="900.4">OpenAPI /v1</tspan>
+</text>
+<rect x="1198" y="795" width="230" height="66" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="1313" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1313" y="823.2">Live viewer page</tspan>
+<tspan x="1313" y="844">/v/{token}</tspan>
+</text>
+<rect x="1198" y="887" width="230" height="66" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="1313" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1313" y="915.2">OSRM</tspan>
+<tspan x="1313" y="936">Kolkata extract</tspan>
+</text>
+<rect x="1198" y="682" width="230" height="87" rx="10" fill="#ffd8a8" stroke="#e8590c" stroke-width="2"/>
+<text x="1313" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1313" y="710.3">Cloud SQL</tspan>
+<tspan x="1313" y="731.1">PostgreSQL + PostGIS ·</tspan>
+<tspan x="1313" y="751.9">state · outbox · jobs</tspan>
+</text>
+<rect x="1578" y="692.5" width="230" height="66" rx="10" fill="#ffd8a8" stroke="#e8590c" stroke-width="2"/>
+<text x="1693" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1693" y="720.7">Cloud Storage</tspan>
+<tspan x="1693" y="741.5">backups + CSV exports</tspan>
+</text>
+<rect x="704" y="523.5" width="78" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="743" y="539" font-size="13" fill="#1e1e1e" text-anchor="middle">HTTPS /v1</text>
+<rect x="1046.2" y="184" width="153.7" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="1123" y="199.5" font-size="13" fill="#1e1e1e" text-anchor="middle">device SMS / 112 dialer</text>
+<rect x="913" y="637.8" width="40.1" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="933" y="653.3" font-size="13" fill="#1e1e1e" text-anchor="middle">push</text>
+<rect x="40" y="992" width="16" height="16" rx="3" fill="#a5d8ff" stroke="#1971c2" stroke-width="1.5"/>
+<text x="62" y="1005" font-size="13" fill="#495057">App / UI</text>
+<rect x="134.8" y="992" width="16" height="16" rx="3" fill="#b2f2bb" stroke="#2f9e44" stroke-width="1.5"/>
+<text x="156.8" y="1005" font-size="13" fill="#495057">Service</text>
+<rect x="228.3" y="992" width="16" height="16" rx="3" fill="#ffd8a8" stroke="#e8590c" stroke-width="1.5"/>
+<text x="250.3" y="1005" font-size="13" fill="#495057">Data</text>
+<rect x="303.1" y="992" width="16" height="16" rx="3" fill="#ffc9c9" stroke="#e03131" stroke-width="1.5"/>
+<text x="325.1" y="1005" font-size="13" fill="#495057">Security / emergency</text>
+<rect x="476.7" y="992" width="16" height="16" rx="3" fill="#e9ecef" stroke="#495057" stroke-width="1.5"/>
+<text x="498.7" y="1005" font-size="13" fill="#495057">External</text>
+</svg>

@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "saferoute-diagram-spec",
+  "title": "SafeRoute diagram spec",
+  "description": "Input for tools/diagrams/src/generate.mjs. Keep diagrams under ~20 nodes (Plan v7 §17.7).",
+  "type": "object",
+  "required": ["title", "nodes"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "title": { "type": "string", "description": "Diagram title shown at the top." },
+    "subtitle": { "type": "string", "description": "Optional one-line subtitle (e.g. plan section)." },
+    "direction": { "enum": ["TB", "LR"], "default": "TB", "description": "TB = top to bottom, LR = left to right." },
+    "layout": {
+      "type": "object",
+      "description": "Optional layout tuning.",
+      "properties": {
+        "nodeWidth": { "type": "number", "default": 240 },
+        "fontSize": { "type": "number", "default": 16 },
+        "nodeGap": { "type": "number", "default": 26 },
+        "rankGap": { "type": "number", "description": "Gap between ranks (default 60 for TB, 110 for LR)." },
+        "laneGap": { "type": "number", "default": 36 }
+      },
+      "additionalProperties": false
+    },
+    "groups": {
+      "type": "array",
+      "description": "Swim lanes drawn as dashed frames (columns in TB, rows in LR), in this order.",
+      "items": {
+        "type": "object",
+        "required": ["id", "label"],
+        "properties": { "id": { "type": "string" }, "label": { "type": "string" } },
+        "additionalProperties": false
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "label", "role"],
+        "properties": {
+          "id": { "type": "string" },
+          "label": { "type": "string", "description": "Wrapped automatically; use \\n to force a break." },
+          "role": {
+            "enum": ["app", "service", "data", "security", "infra", "external"],
+            "description": "Colour: app=blue, service=green, data=orange, security=red, infra=purple, external=grey."
+          },
+          "group": { "type": "string", "description": "Group (lane) id." },
+          "rank": { "type": "integer", "minimum": 0, "description": "Optional layer override; default is the longest path from a source." }
+        },
+        "additionalProperties": false
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["from", "to"],
+        "properties": {
+          "from": { "type": "string" },
+          "to": { "type": "string" },
+          "label": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

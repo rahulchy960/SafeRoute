@@ -1,0 +1,18 @@
+{
+  "$schema": "../../tools/diagrams/diagram.schema.json",
+  "title": "SafeRoute scaling stages",
+  "subtitle": "Each step is added only when measurements cross a trigger (Plan v7 §14.2)",
+  "direction": "LR",
+  "layout": { "nodeWidth": 250, "rankGap": 60 },
+  "nodes": [
+    { "id": "s0", "label": "Stage 0 · MVP ≤10k users: 1 API, 1 worker, OSRM, smallest Cloud SQL", "role": "service" },
+    { "id": "s1", "label": "Stage 1 · ~100k users: segment-level safety precompute, CDN-cached safety cells, connection pooling, bigger Cloud SQL", "role": "data" },
+    { "id": "s2", "label": "Stage 2 · ~1M users: Redis live snapshots, SSE/WebSocket gateway, self-hosted tiles + geocoder, read replica, split workers", "role": "security" },
+    { "id": "s3", "label": "Stage 3 · multi-city: per-city OSRM graphs, city partition key, SOS-path second region", "role": "infra" }
+  ],
+  "edges": [
+    { "from": "s0", "to": "s1" },
+    { "from": "s1", "to": "s2" },
+    { "from": "s2", "to": "s3" }
+  ]
+}

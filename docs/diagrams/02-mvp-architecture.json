@@ -1,0 +1,41 @@
+{
+  "$schema": "../../tools/diagrams/diagram.schema.json",
+  "title": "SafeRoute MVP architecture",
+  "subtitle": "Modular monolith on Google Cloud (asia-south1); device-first SOS (Plan v7 §4, §7, §13)",
+  "direction": "LR",
+  "layout": { "nodeWidth": 230, "rankGap": 150 },
+  "groups": [
+    { "id": "people", "label": "Users, apps & contacts" },
+    { "id": "providers", "label": "Third-party providers" },
+    { "id": "gcp", "label": "SafeRoute on Google Cloud" }
+  ],
+  "nodes": [
+    { "id": "user", "label": "User", "role": "app", "group": "people" },
+    { "id": "android", "label": "Android app\nKotlin + Compose", "role": "app", "group": "people" },
+    { "id": "moderation", "label": "Moderation web\nNext.js, moderators", "role": "app", "group": "people", "rank": 1 },
+    { "id": "contacts", "label": "Emergency contacts\nSMS / push / web viewer", "role": "app", "group": "people" },
+    { "id": "maptiler", "label": "MapTiler\ntiles + geocoding", "role": "external", "group": "providers" },
+    { "id": "firebase", "label": "Firebase\nAuth (OTP) + FCM", "role": "security", "group": "providers", "rank": 2 },
+    { "id": "worker", "label": "saferoute-worker\nCloud Run · pg-boss · SOS / purge / H3 jobs", "role": "service", "group": "gcp", "rank": 2 },
+    { "id": "api", "label": "saferoute-api\nCloud Run · Hono + Zod · OpenAPI /v1", "role": "service", "group": "gcp" },
+    { "id": "viewer", "label": "Live viewer page\n/v/{token}", "role": "app", "group": "gcp" },
+    { "id": "osrm", "label": "OSRM\nKolkata extract", "role": "service", "group": "gcp" },
+    { "id": "sql", "label": "Cloud SQL\nPostgreSQL + PostGIS · state · outbox · jobs", "role": "data", "group": "gcp" },
+    { "id": "storage", "label": "Cloud Storage\nbackups + CSV exports", "role": "data", "group": "gcp" }
+  ],
+  "edges": [
+    { "from": "user", "to": "android" },
+    { "from": "android", "to": "api", "label": "HTTPS /v1" },
+    { "from": "android", "to": "maptiler" },
+    { "from": "android", "to": "firebase" },
+    { "from": "android", "to": "contacts", "label": "device SMS / 112 dialer" },
+    { "from": "moderation", "to": "api" },
+    { "from": "api", "to": "sql" },
+    { "from": "api", "to": "osrm" },
+    { "from": "api", "to": "viewer" },
+    { "from": "worker", "to": "sql" },
+    { "from": "worker", "to": "firebase", "label": "push" },
+    { "from": "viewer", "to": "contacts" },
+    { "from": "sql", "to": "storage" }
+  ]
+}

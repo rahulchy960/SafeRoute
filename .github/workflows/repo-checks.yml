@@ -1,0 +1,71 @@
+name: repo-checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: repo-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GITLEAKS_VERSION: 8.30.1
+  # sha256 of gitleaks_8.30.1_linux_x64.tar.gz from the release's checksums file
+  GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+
+jobs:
+  repo-checks:
+    name: repo-checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout (full history for the secret scan)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+
+      - name: Markdown lint
+        uses: DavidAnson/markdownlint-cli2-action@21c1be1b93ad9ed58fa840aacc3f279cde2a72ff # v24.2.0
+        with:
+          globs: "**/*.md"
+
+      - name: JSON validity
+        run: |
+          git ls-files -z -- '*.json' '*.excalidraw' | node -e '
+            const fs = require("fs");
+            const files = fs.readFileSync(0, "utf8").split("\0").filter(Boolean);
+            let bad = 0;
+            for (const f of files) {
+              try { JSON.parse(fs.readFileSync(f, "utf8")); }
+              catch (e) { console.error(`::error file=${f}::invalid JSON: ${e.message}`); bad++; }
+            }
+            console.log(`${files.length - bad}/${files.length} JSON files valid`);
+            process.exit(bad ? 1 : 0);
+          '
+
+      - name: Secret scan (gitleaks)
+        run: |
+          curl -sSLf -o gitleaks.tar.gz \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  gitleaks.tar.gz" | sha256sum --check --strict
+          tar -xzf gitleaks.tar.gz gitleaks
+          ./gitleaks version
+          ./gitleaks git --redact --verbose --exit-code 1 .
+
+      - name: Forbidden files are not tracked
+        run: |
+          if git ls-files | grep -Ei '(^|/)(\.env(\..*)?|google-services\.json|.*\.jks|.*\.keystore|.*service-account.*\.json)$' | grep -v '\.env\.example$'; then
+            echo "::error::Secret-bearing files are tracked (see list above)."
+            exit 1
+          fi
+          echo "No .env, keystore, google-services.json or service-account files tracked."

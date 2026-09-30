@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="442" height="1160" viewBox="0 0 442 1160" font-family="Helvetica, Arial, sans-serif">
+<title>SafeRoute prompt workflow</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#495057"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="40" y="62" font-size="24" font-weight="700" fill="#1e1e1e">SafeRoute prompt workflow</text>
+<text x="40" y="86" font-size="14" fill="#495057">One prompt = one branch = one pull request (Plan v7 §17)</text>
+<line x1="220" y1="180" x2="220" y2="240" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="220" y1="306" x2="220" y2="366" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="220" y1="422" x2="220" y2="482" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="220" y1="548" x2="220" y2="608" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="220" y1="664" x2="220" y2="724" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="220" y1="790" x2="220" y2="850" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="220" y1="906" x2="220" y2="966" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="40" y="114" width="360" height="66" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="220" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="220" y="142.2">Opus chat: reads Plan PDF, writes prompt</tspan>
+<tspan x="220" y="163">NNN</tspan>
+</text>
+<rect x="40" y="240" width="360" height="66" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="220" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="220" y="268.2">Claude Code (Android Studio): /start-prompt</tspan>
+<tspan x="220" y="289">preflight, previous PR merged?</tspan>
+</text>
+<rect x="40" y="366" width="360" height="56" rx="10" fill="#eebefa" stroke="#9c36b5" stroke-width="2"/>
+<text x="220" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="220" y="399.6">New branch feat/NNN-core-work</tspan>
+</text>
+<rect x="40" y="482" width="360" height="66" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="220" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="220" y="510.2">Implement + quality gate (tests, lint, types,</tspan>
+<tspan x="220" y="531">build)</tspan>
+</text>
+<rect x="40" y="608" width="360" height="56" rx="10" fill="#eebefa" stroke="#9c36b5" stroke-width="2"/>
+<text x="220" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="220" y="641.6">Detailed commit → push branch → open PR</tspan>
+</text>
+<rect x="40" y="724" width="360" height="66" rx="10" fill="#ffd8a8" stroke="#e8590c" stroke-width="2"/>
+<text x="220" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="220" y="752.2">Excalidraw diagram + Notion Prompt Log</tspan>
+<tspan x="220" y="773">page</tspan>
+</text>
+<rect x="40" y="850" width="360" height="56" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="220" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="220" y="883.6">Rahul reviews &amp; merges on GitHub</tspan>
+</text>
+<rect x="40" y="966" width="360" height="56" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="220" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="220" y="999.6">GitHub Actions CI → staging</tspan>
+</text>
+<rect x="40" y="1043" width="16" height="16" rx="3" fill="#a5d8ff" stroke="#1971c2" stroke-width="1.5"/>
+<text x="62" y="1056" font-size="13" fill="#495057">App / UI</text>
+<rect x="134.8" y="1043" width="16" height="16" rx="3" fill="#b2f2bb" stroke="#2f9e44" stroke-width="1.5"/>
+<text x="156.8" y="1056" font-size="13" fill="#495057">Service</text>
+<rect x="228.3" y="1043" width="16" height="16" rx="3" fill="#ffd8a8" stroke="#e8590c" stroke-width="1.5"/>
+<text x="250.3" y="1056" font-size="13" fill="#495057">Data</text>
+<rect x="40" y="1069" width="16" height="16" rx="3" fill="#ffc9c9" stroke="#e03131" stroke-width="1.5"/>
+<text x="62" y="1082" font-size="13" fill="#495057">Security / emergency</text>
+<rect x="213.6" y="1069" width="16" height="16" rx="3" fill="#eebefa" stroke="#9c36b5" stroke-width="1.5"/>
+<text x="235.6" y="1082" font-size="13" fill="#495057">Infra / workflow</text>
+<rect x="40" y="1095" width="16" height="16" rx="3" fill="#e9ecef" stroke="#495057" stroke-width="1.5"/>
+<text x="62" y="1108" font-size="13" fill="#495057">External</text>
+</svg>

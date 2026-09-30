@@ -1,0 +1,39 @@
+# Normalise text files to LF in the repository and working tree (matches .editorconfig),
+# regardless of the machine's core.autocrlf setting.
+* text=auto eol=lf
+
+# Shell scripts and git hooks must keep LF even on Windows checkouts.
+.githooks/* text eol=lf
+*.sh text eol=lf
+gradlew text eol=lf
+
+# Windows scripts keep CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Source / config
+*.md text eol=lf
+*.json text eol=lf
+*.excalidraw text eol=lf linguist-generated=true
+*.svg text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.ts text eol=lf
+*.mjs text eol=lf
+*.js text eol=lf
+*.kt text eol=lf
+*.kts text eol=lf
+
+# Generated contract (collapsed in GitHub diffs)
+contracts/openapi.json linguist-generated=true
+
+# Binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.pdf binary
+*.jar binary
+*.ttf binary
+*.woff2 binary
