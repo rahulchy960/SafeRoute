@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1990" height="782" viewBox="0 0 1990 782" font-family="Helvetica, Arial, sans-serif">
+<title>SafeRoute MVP data model</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#495057"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="40" y="62" font-size="24" font-weight="700" fill="#1e1e1e">SafeRoute MVP data model</text>
+<text x="40" y="86" font-size="14" fill="#495057">Plan v7 §11 · orange = built in P003 · grey = planned (prompt that adds it) · arrows = foreign keys, parent → child</text>
+<rect x="40" y="114" width="688" height="582" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="54" y="135" font-size="14" font-weight="700" fill="#495057">SOS &amp; live sharing</text>
+<rect x="764" y="114" width="688" height="582" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="778" y="135" font-size="14" font-weight="700" fill="#495057">Identity &amp; operations</text>
+<rect x="1488" y="114" width="462" height="582" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="1502" y="135" font-size="14" font-weight="700" fill="#495057">Reports &amp; safety data</text>
+<line x1="1108" y1="228" x2="882" y2="319" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1108" y1="228" x2="1108" y2="319" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1108" y1="228" x2="1334" y2="308.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1108" y1="228" x2="158" y2="476" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1108" y1="228" x2="384" y2="319" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="384" y1="385" x2="384" y2="476" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="384" y1="542" x2="214.5" y2="612" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="158" y1="542" x2="214.5" y2="612" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="384" y1="385" x2="610" y2="476" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="384" y1="542" x2="440.5" y2="612" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1108" y1="228" x2="1606" y2="319" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1606" y1="385" x2="1606" y2="476" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="1008" y="162" width="200" height="66" rx="10" fill="#ffd8a8" stroke="#e8590c" stroke-width="2"/>
+<text x="1108" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1108" y="190.2">users</tspan>
+<tspan x="1108" y="211">P003</tspan>
+</text>
+<rect x="782" y="319" width="200" height="66" rx="10" fill="#ffd8a8" stroke="#e8590c" stroke-width="2"/>
+<text x="882" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="882" y="347.2">devices</tspan>
+<tspan x="882" y="368">P003</tspan>
+</text>
+<rect x="1008" y="319" width="200" height="66" rx="10" fill="#ffd8a8" stroke="#e8590c" stroke-width="2"/>
+<text x="1108" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1108" y="347.2">idempotency_keys</tspan>
+<tspan x="1108" y="368">P003</tspan>
+</text>
+<rect x="1234" y="308.5" width="200" height="87" rx="10" fill="#ffd8a8" stroke="#e8590c" stroke-width="2"/>
+<text x="1334" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1334" y="336.8">audit_log</tspan>
+<tspan x="1334" y="357.6">P003 · actor has no</tspan>
+<tspan x="1334" y="378.4">FK</tspan>
+</text>
+<rect x="58" y="476" width="200" height="66" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="158" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="158" y="504.2">emergency_contacts</tspan>
+<tspan x="158" y="525">P013</tspan>
+</text>
+<rect x="284" y="319" width="200" height="66" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="384" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="384" y="347.2">share_sessions</tspan>
+<tspan x="384" y="368">P016</tspan>
+</text>
+<rect x="284" y="476" width="200" height="66" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="384" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="384" y="504.2">sos_sessions</tspan>
+<tspan x="384" y="525">P015</tspan>
+</text>
+<rect x="114.5" y="612" width="200" height="66" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="214.5" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="214.5" y="640.2">sos_actions</tspan>
+<tspan x="214.5" y="661">P015</tspan>
+</text>
+<rect x="510" y="476" width="200" height="66" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="610" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="610" y="504.2">share_points</tspan>
+<tspan x="610" y="525">P016</tspan>
+</text>
+<rect x="340.5" y="612" width="200" height="66" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="440.5" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="440.5" y="640.2">outbox (pg-boss jobs)</tspan>
+<tspan x="440.5" y="661">P015</tspan>
+</text>
+<rect x="1506" y="319" width="200" height="66" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="1606" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1606" y="347.2">reports</tspan>
+<tspan x="1606" y="368">P017</tspan>
+</text>
+<rect x="1506" y="476" width="200" height="66" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="1606" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1606" y="504.2">report_decisions</tspan>
+<tspan x="1606" y="525">P018</tspan>
+</text>
+<rect x="1732" y="298" width="200" height="108" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="1832" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1832" y="326.4">official_aggregates +</tspan>
+<tspan x="1832" y="347.2">data_sources / areas /</tspan>
+<tspan x="1832" y="368">police_stations</tspan>
+<tspan x="1832" y="388.8">P019</tspan>
+</text>
+<rect x="1732" y="476" width="200" height="66" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="1832" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1832" y="504.2">route_metrics_cache</tspan>
+<tspan x="1832" y="525">P019</tspan>
+</text>
+<rect x="1197.3" y="257.3" width="47.4" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="1221" y="272.8" font-size="13" fill="#1e1e1e" text-anchor="middle">no FK</text>
+<rect x="163.5" y="566" width="45.5" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="186.3" y="581.5" font-size="13" fill="#1e1e1e" text-anchor="middle">target</text>
+<rect x="386.8" y="566" width="51" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="412.3" y="581.5" font-size="13" fill="#1e1e1e" text-anchor="middle">events</text>
+<rect x="40" y="717" width="16" height="16" rx="3" fill="#ffd8a8" stroke="#e8590c" stroke-width="1.5"/>
+<text x="62" y="730" font-size="13" fill="#495057">Data</text>
+<rect x="114.8" y="717" width="16" height="16" rx="3" fill="#e9ecef" stroke="#495057" stroke-width="1.5"/>
+<text x="136.8" y="730" font-size="13" fill="#495057">External</text>
+</svg>

@@ -107,6 +107,13 @@ copied by others. Treat every commit as **permanent**; deleting a file later doe
   incompatible or proprietary license in the prompt log.
 - Never write or reconstruct license texts from memory; fetch official texts.
 
+## Database rules (since P003)
+
+Follow [ADR 0003](docs/adr/0003-database-conventions-and-migrations.md) for every table and
+migration (keys, `timestamptz`/UTC, expand → contract, never edit a merged migration, no precise
+locations in `audit_log` or logs). How-to and the lng/lat convention:
+[`backend/src/db/README.md`](backend/src/db/README.md).
+
 ## Conventions (Plan v7 §17.3)
 
 | Item | Convention | Example |
