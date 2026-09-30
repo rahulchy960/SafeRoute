@@ -11,6 +11,17 @@ unavailable.
 The design, product and technical plan is in
 [`docs/plan/SafeRoute_Plan_v7_MVP.pdf`](docs/plan/SafeRoute_Plan_v7_MVP.pdf) (Plan v7).
 
+## Public repository status
+
+- **Public:** all source code, the plan, architecture decisions, diagrams and the per-prompt
+  engineering logs in [`docs/prompt-logs/`](docs/prompt-logs/). The Notion workspace linked from
+  those logs is private.
+- **Security issues:** please report them privately through GitHub private vulnerability reporting
+  (Security tab → *Report a vulnerability*). See [`SECURITY.md`](SECURITY.md). Don't open a public
+  issue.
+- **License:** none yet. Until a license file is added, the project is **all rights reserved**.
+  GitHub's terms let others view and fork the repository on GitHub; no other rights are granted.
+
 ![MVP architecture](docs/diagrams/02-mvp-architecture.svg)
 
 ## Stack
@@ -54,8 +65,9 @@ The design, product and technical plan is in
    merges.
 
 Only P001 (this bootstrap) committed directly to `main`. After it, `main` is protected by
-`CLAUDE.md` rules, Claude Code deny rules, a local pre-push hook, and a GitHub ruleset where
-available.
+`CLAUDE.md` rules, Claude Code deny rules, a local pre-push hook, and the GitHub ruleset
+`protect-main` (since P002): changes arrive only through a pull request, `repo-checks` must pass,
+merges are squash-only, and force pushes and branch deletion are blocked.
 
 ### One-time local setup after cloning
 

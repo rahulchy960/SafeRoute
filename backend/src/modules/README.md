@@ -1,0 +1,31 @@
+# src/modules/
+
+Domain modules of the modular monolith (Plan v7 §4). Each module arrives with the prompt that
+needs it; there is no placeholder code here.
+
+**Rule: each module owns its routes, services and schema.** Other modules call its exported
+service functions, never its tables or internal files directly. A module can be extracted into its
+own service later only if measurements justify it (Plan v7 §14.6).
+
+| Module | Owns | Planned in |
+| --- | --- | --- |
+| `auth` | Firebase ID-token verification, roles from custom claims | P005 |
+| `users` | profile and consent (`/v1/me`); deletion and export | P005, P020 |
+| `contacts` | emergency contacts, contact opt-out | P013 |
+| `search` | geocoding / place search behind a provider adapter | P011 |
+| `routing` | route alternatives behind the OSRM adapter | P012 |
+| `safety` | H3 safety cells, areas and the route exposure metric | P019 |
+| `reports` | community reports and their lifecycle | P017 |
+| `sos` | server-side SOS sessions, actions and the SOS job queue | P015 |
+| `share` | live-location share sessions and the public viewer | P016 |
+| `admin` | moderation decisions, audit log, export | P018 |
+
+Expected layout once a module exists:
+
+```text
+modules/<name>/
+  routes.ts     Hono routes + Zod request/response schemas (OpenAPI from P004)
+  service.ts    business logic; the only entry point other modules may call
+  schema.ts     Drizzle tables owned by this module (from P003)
+  *.test.ts
+```

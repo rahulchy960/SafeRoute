@@ -36,6 +36,8 @@
 
 <!-- New personal data, new permissions, secrets check (no .env / keystores / google-services.json). -->
 
+- [ ] Public repo check: no personal data, local paths or non-public IDs added (CLAUDE.md "Public repository rules")
+
 ## How Rahul can verify
 
 <!-- Step-by-step manual checks (device steps for Android). -->

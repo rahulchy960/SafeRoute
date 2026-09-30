@@ -1,0 +1,7 @@
+{
+  "messageKey": "message",
+  "timestampKey": "timestamp",
+  "levelKey": "severity",
+  "customLevels": "DEBUG:20,INFO:30,WARNING:40,ERROR:50,CRITICAL:60",
+  "ignore": "service,version"
+}
