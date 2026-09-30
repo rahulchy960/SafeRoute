@@ -1,0 +1,127 @@
+name: contracts-ci
+
+# Keeps contracts/openapi.json honest (ADR 0004, Plan v7 §6.2):
+#   1. the committed spec equals a fresh generation from the backend's Zod routes;
+#   2. it passes Redocly lint;
+#   3. on PRs, oasdiff compares it with the base branch. A breaking change passes only with the
+#      `breaking-api-change` label AND a new ADR under docs/adr/.
+# Not a required check in the ruleset: path-filtered checks would block unrelated PRs.
+
+on:
+  pull_request:
+    # labeled/unlabeled: re-evaluate when Rahul adds or removes `breaking-api-change`.
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+    paths:
+      - "backend/**"
+      - "contracts/**"
+      - ".github/workflows/contracts-ci.yml"
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - "contracts/**"
+      - ".github/workflows/contracts-ci.yml"
+
+# Labels are read from the event payload, so no pull-requests permission is needed.
+permissions:
+  contents: read
+
+concurrency:
+  group: contracts-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  OASDIFF_VERSION: 1.32.1
+  # sha256 of oasdiff_1.32.1_linux_amd64.tar.gz from the release's checksums.txt
+  OASDIFF_SHA256: 7c8939fc49b75ee11fec66a5b83b37a2fca6aee109fed85013b1ba2ac2a1ee7f
+  REDOCLY_TELEMETRY: "off"
+  REDOCLY_SUPPRESS_UPDATE_NOTICE: "true"
+
+jobs:
+  contracts:
+    name: contracts-ci
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout (full history, so the base branch's spec can be read)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up pnpm (version from backend/package.json "packageManager")
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          package_json_file: backend/package.json
+
+      - name: Set up Node (version from backend/.nvmrc)
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: backend/.nvmrc
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Committed spec is up to date (pnpm openapi:check)
+        run: pnpm openapi:check
+
+      - name: Spec lint (pnpm openapi:lint)
+        run: pnpm openapi:lint
+
+      - name: Install oasdiff (pinned, checksum verified)
+        working-directory: ${{ runner.temp }}
+        run: |
+          curl -sSLf -o oasdiff.tar.gz \
+            "https://github.com/oasdiff/oasdiff/releases/download/v${OASDIFF_VERSION}/oasdiff_${OASDIFF_VERSION}_linux_amd64.tar.gz"
+          echo "${OASDIFF_SHA256}  oasdiff.tar.gz" | sha256sum --check --strict
+          tar -xzf oasdiff.tar.gz oasdiff
+          echo "${RUNNER_TEMP}" >> "$GITHUB_PATH"
+          ./oasdiff --version
+
+      - name: Self-test (additive passes, breaking is detected)
+        run: |
+          F=test/contract-fixtures
+          oasdiff breaking "$F/base.json" "$F/additive.json" --fail-on ERR
+          if oasdiff breaking "$F/base.json" "$F/breaking.json" --fail-on ERR > breaking.txt; then
+            cat breaking.txt
+            echo "::error::oasdiff did not flag the breaking fixture."
+            exit 1
+          fi
+          cat breaking.txt
+          for id in new-required-request-property response-required-property-removed api-path-removed-without-deprecation; do
+            grep -q "$id" breaking.txt || { echo "::error::expected '$id' in the oasdiff output"; exit 1; }
+          done
+
+      - name: Breaking-change check against the base branch
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          HAS_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'breaking-api-change') }}
+        run: |
+          if ! git show "origin/${BASE_REF}:contracts/openapi.json" > "$RUNNER_TEMP/base-openapi.json" 2>/dev/null; then
+            echo "::notice::origin/${BASE_REF} has no contracts/openapi.json yet (first contract PR); skipping the diff."
+            exit 0
+          fi
+
+          {
+            echo "## API contract changelog (vs ${BASE_REF})"
+            oasdiff changelog "$RUNNER_TEMP/base-openapi.json" ../contracts/openapi.json -f markdown
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if oasdiff breaking "$RUNNER_TEMP/base-openapi.json" ../contracts/openapi.json --fail-on ERR; then
+            echo "No breaking changes."
+            exit 0
+          fi
+
+          new_adrs=$(git diff --name-only --diff-filter=A "origin/${BASE_REF}...HEAD" -- docs/adr/ | grep -v '^docs/adr/README.md$' || true)
+          if [ "$HAS_LABEL" = "true" ] && [ -n "$new_adrs" ]; then
+            echo "::warning::Breaking API change approved: label breaking-api-change + new ADR(s): ${new_adrs}"
+            exit 0
+          fi
+          echo "::error::Breaking API change (see above). Plan v7 §6.2: old app versions stay installed for months, so a breaking change needs a new path version (e.g. /v2) or a coordinated app release, documented in a new ADR under docs/adr/, and the PR label 'breaking-api-change'. Label present: ${HAS_LABEL}. New ADR files: ${new_adrs:-none}."
+          exit 1

@@ -1,0 +1,34 @@
+{
+  "$schema": "../../tools/diagrams/diagram.schema.json",
+  "title": "OpenAPI contract pipeline",
+  "subtitle": "Zod routes → committed OpenAPI 3.1 → CI gates → generated client (P004, ADR 0004)",
+  "direction": "TB",
+  "layout": { "nodeWidth": 230 },
+  "nodes": [
+    { "id": "zod", "label": "Zod route schemas (backend/src)", "role": "service" },
+    { "id": "gen", "label": "pnpm openapi:generate", "role": "service" },
+    { "id": "spec", "label": "contracts/openapi.json (committed)", "role": "data" },
+    { "id": "ci", "label": "PR: contracts-ci", "role": "infra" },
+    { "id": "kotlin", "label": "P008: generate Kotlin client (planned)", "role": "external" },
+    { "id": "check", "label": "openapi:check (stale?)", "role": "security" },
+    { "id": "lint", "label": "Redocly lint", "role": "security" },
+    { "id": "diff", "label": "oasdiff breaking vs main", "role": "security" },
+    { "id": "android", "label": "Android app", "role": "app" },
+    { "id": "gate", "label": "Breaking? needs label + ADR", "role": "security" },
+    { "id": "review", "label": "Rahul reviews & merges", "role": "app" }
+  ],
+  "edges": [
+    { "from": "zod", "to": "gen" },
+    { "from": "gen", "to": "spec" },
+    { "from": "spec", "to": "ci" },
+    { "from": "spec", "to": "kotlin" },
+    { "from": "ci", "to": "check" },
+    { "from": "ci", "to": "lint" },
+    { "from": "ci", "to": "diff" },
+    { "from": "kotlin", "to": "android" },
+    { "from": "diff", "to": "gate" },
+    { "from": "gate", "to": "review" },
+    { "from": "check", "to": "review" },
+    { "from": "lint", "to": "review" }
+  ]
+}

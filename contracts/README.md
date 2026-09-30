@@ -21,8 +21,10 @@ pnpm openapi:lint       # Redocly lint (backend/redocly.yaml)
 ```
 
 CI: `backend-ci` fails when the committed file is stale (a unit test compares it with a fresh
-generation) or fails lint. From P004b, `.github/workflows/contracts-ci.yml` also compares the
-PR's spec with the base branch using **oasdiff** and writes the changelog to the job summary.
+generation) or fails lint. `.github/workflows/contracts-ci.yml` runs the same checks, then compares
+the PR's spec with the base branch using **oasdiff** and writes the changelog to the job summary.
+A breaking change fails the job unless the PR has the label `breaking-api-change` **and** adds a
+new ADR file under `docs/adr/`.
 
 ## How to read the spec
 

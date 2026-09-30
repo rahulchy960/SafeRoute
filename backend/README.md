@@ -109,4 +109,5 @@ pnpm openapi:check && pnpm openapi:lint   # after route changes: pnpm openapi:ge
 
 CI runs the same steps in [`.github/workflows/backend-ci.yml`](../.github/workflows/backend-ci.yml)
 on every pull request that touches `backend/`, including `pnpm openapi:lint`; the stale-spec check
-runs as a unit test. The oasdiff breaking-change gate (`contracts-ci`) arrives in P004b.
+runs as a unit test. The oasdiff breaking-change gate runs in
+[`.github/workflows/contracts-ci.yml`](../.github/workflows/contracts-ci.yml).

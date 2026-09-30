@@ -160,7 +160,7 @@ to go green.
 | Repo-wide | markdown lint, JSON validity, gitleaks secret scan (`.github/workflows/repo-checks.yml`) | Active |
 | Diagrams | `cd tools/diagrams && pnpm install && pnpm generate` (no errors) | Active |
 | Backend | `pnpm typecheck` · `pnpm lint` · `pnpm format:check` · `pnpm test` · `pnpm build` (run inside `backend/`; CI: `.github/workflows/backend-ci.yml`) | Active (since P002) |
-| Contracts | in `backend/`: `pnpm openapi:generate` then commit the diff · `pnpm openapi:check` · `pnpm openapi:lint`; breaking changes need the PR label `breaking-api-change` + a new ADR (CI: `backend-ci` runs check + lint; the oasdiff gate `contracts-ci.yml` arrives in P004b) | Active (since P004a) |
+| Contracts | in `backend/`: `pnpm openapi:generate` then commit the diff · `pnpm openapi:check` · `pnpm openapi:lint`; breaking changes need the PR label `breaking-api-change` + a new ADR (CI: `backend-ci` runs check + lint; `.github/workflows/contracts-ci.yml` runs them plus the oasdiff breaking-change gate) | Active (since P004a; oasdiff gate since P004b) |
 | Android | `./gradlew lint testDebugUnitTest assembleDebug` (run inside `android/`) | Not yet applicable (from P007) |
 | Moderation | typecheck · lint · test · build | Not yet applicable (from P018) |
 
