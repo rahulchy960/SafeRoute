@@ -13,7 +13,7 @@ CC BY-NC-ND 4.0 (see [`docs/LICENSE.md`](docs/LICENSE.md)).
 | Everything outside `docs/`: `backend/`, `android/`, `moderation/`, `contracts/`, `infra/`, `tools/`, workflows and configuration | GNU AGPL v3.0 only, full text in [`LICENSE`](LICENSE) | `AGPL-3.0-only` |
 | Everything under `docs/`: the plan, ADRs, diagrams, prompt logs, runbooks | Creative Commons Attribution-NonCommercial-NoDerivatives 4.0, see [`docs/LICENSE.md`](docs/LICENSE.md) | `CC-BY-NC-ND-4.0` |
 | `docs/adr/template.md` | Free to reuse without conditions (exception, see [`docs/LICENSE.md`](docs/LICENSE.md)) | none |
-| The names "SafeRoute" and "SafeRoute Kolkata", the app icon and any logo | Not licensed, see [`TRADEMARKS.md`](TRADEMARKS.md) | none |
+| The name "SafeRoute" (and its former name), the app icon and any logo | Not licensed, see [`TRADEMARKS.md`](TRADEMARKS.md) | none |
 | Incident reports, user data, location data, moderation data and exports | Not part of this repository and not licensed, see the README section "Data" | none |
 
 New source files carry an `SPDX-License-Identifier: AGPL-3.0-only` header (from P003 onward). A

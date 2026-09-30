@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for your interest in SafeRoute Kolkata!
+Thanks for your interest in SafeRoute!
 
 ## Code contributions: not accepted yet
 

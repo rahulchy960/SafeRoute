@@ -1,6 +1,6 @@
 # android/
 
-Native Android app for SafeRoute Kolkata: Kotlin, Jetpack Compose, Material 3, Hilt,
+Native Android app for SafeRoute: Kotlin, Jetpack Compose, Material 3, Hilt,
 MapLibre, Room, WorkManager and a location-type foreground service for device-first SOS
 (Plan v7 §5, §7).
 
