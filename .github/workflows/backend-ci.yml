@@ -22,10 +22,24 @@ jobs:
   backend:
     name: backend-ci
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: backend
+    services:
+      # Fresh PostGIS for the migration-validation step (same pinned image as docker-compose.yml).
+      # CI-only throwaway credentials; the service lives only in this job.
+      postgis:
+        image: postgis/postgis:16-3.4@sha256:44126d872ac91993766c341e369c539e8196614321765d36a6f1bab0419a5fa5
+        env:
+          POSTGRES_DB: saferoute_ci
+          POSTGRES_USER: saferoute_ci
+          POSTGRES_PASSWORD: ci-only-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -h 127.0.0.1 -U saferoute_ci -d saferoute_ci"
+          --health-interval 2s --health-timeout 3s --health-retries 30
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -56,8 +70,29 @@ jobs:
       - name: Format check
         run: pnpm format:check
 
+      - name: Migrations consistent (drizzle-kit check)
+        run: pnpm db:check
+
+      - name: Schema and committed migrations agree (no drift)
+        run: |
+          pnpm db:generate
+          if [ -n "$(git status --porcelain -- drizzle src/db/schema)" ]; then
+            git status --porcelain -- drizzle src/db/schema
+            echo "::error::src/db/schema changed without a committed migration. Run pnpm db:generate and commit drizzle/."
+            exit 1
+          fi
+
       - name: Test
         run: pnpm test
 
       - name: Build
         run: pnpm build
+
+      - name: Migration validation (fresh database, then idempotent re-run)
+        env:
+          DATABASE_URL: postgres://saferoute_ci:ci-only-password@127.0.0.1:5432/saferoute_ci
+        run: |
+          node dist/db/migrate.js | tee first.log
+          grep -Eq '"count":[1-9]' first.log
+          node dist/db/migrate.js | tee second.log
+          grep -q '"count":0' second.log

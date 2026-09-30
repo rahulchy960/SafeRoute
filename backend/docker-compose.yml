@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# LOCAL DEVELOPMENT DATABASE ONLY (pnpm db:up / db:down). Not used in CI or on Google Cloud.
+# The credentials below are throwaway LOCAL ONLY values for a database reachable only from this
+# computer (127.0.0.1). Real credentials live in Secret Manager (P006) and never in this repo.
+name: saferoute
+services:
+  db:
+    # PostgreSQL 16 + PostGIS 3.4, pinned by digest. Keep in sync with .github/workflows/backend-ci.yml.
+    image: postgis/postgis:16-3.4@sha256:44126d872ac91993766c341e369c539e8196614321765d36a6f1bab0419a5fa5
+    environment:
+      POSTGRES_DB: saferoute_dev
+      POSTGRES_USER: saferoute_local
+      POSTGRES_PASSWORD: local-only-password
+    ports:
+      - '127.0.0.1:5433:5432'
+    volumes:
+      - saferoute-dev-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      # TCP check: during first-start initialisation the server listens only on a Unix socket.
+      test: ['CMD-SHELL', 'pg_isready -h 127.0.0.1 -U saferoute_local -d saferoute_dev']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+volumes:
+  saferoute-dev-pgdata:

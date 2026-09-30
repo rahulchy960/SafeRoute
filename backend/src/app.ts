@@ -6,11 +6,14 @@ import { AppError, problemResponse } from './lib/problem.js';
 import { accessLog } from './middleware/access-log.js';
 import { requestId } from './middleware/request-id.js';
 import { healthRoutes } from './routes/health.js';
+import { readyRoutes, type ReadinessCheck } from './routes/ready.js';
 import type { AppEnv } from './types.js';
 
 export interface AppDeps {
   config: Config;
   logger: Logger;
+  /** Database probe for GET /health/ready; omitted when no DATABASE_URL is configured. */
+  readiness?: ReadinessCheck;
 }
 
 /**
@@ -21,13 +24,14 @@ export interface AppDeps {
  * run inside the middleware chain, so their responses still get an access-log line and the
  * `X-Request-Id` header.
  */
-export function createApp({ config, logger }: AppDeps) {
+export function createApp({ config, logger, readiness }: AppDeps) {
   const app = new Hono<AppEnv>();
 
   app.use('*', requestId(logger));
   app.use('*', accessLog);
 
   app.route('/', healthRoutes(config));
+  app.route('/', readyRoutes(readiness));
 
   app.notFound((c) => {
     c.set('unmatchedRoute', true);
