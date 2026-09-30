@@ -1,6 +1,6 @@
 # Security policy
 
-SafeRoute Kolkata is a navigation and personal-safety app. It handles **safety-critical and
+SafeRoute is a navigation and personal-safety app. It handles **safety-critical and
 personal data**: emergency SOS alerts, live location, emergency contacts' phone numbers and
 community incident reports. A vulnerability here can put a person at risk, so please report it
 privately.

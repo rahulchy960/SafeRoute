@@ -1,4 +1,4 @@
-# CLAUDE.md: SafeRoute Kolkata
+# CLAUDE.md: SafeRoute
 
 Claude Code loads this file at the start of every session. Read it fully before doing anything.
 The full design lives in [`docs/plan/SafeRoute_Plan_v7_MVP.pdf`](docs/plan/SafeRoute_Plan_v7_MVP.pdf)
@@ -6,11 +6,12 @@ The full design lives in [`docs/plan/SafeRoute_Plan_v7_MVP.pdf`](docs/plan/SafeR
 
 ## Project summary
 
-SafeRoute Kolkata is a navigation-first Android app for Kolkata. It offers a map, search,
-walking/driving routes, transparent safety context along routes, temporary live-location sharing
-and a **device-first SOS** that reaches emergency contacts even when the server or mobile data is
-down. The app is not an emergency service: every SOS surface offers a one-tap call to **112**.
-Safety information is context, never a guarantee (Plan v7 §1).
+SafeRoute is a navigation-first personal-safety Android app that launches first in Kolkata (see
+"Naming rules" below). It offers a map, search, walking/driving routes, transparent
+safety context along routes, temporary live-location sharing and a **device-first SOS** that
+reaches emergency contacts even when the server or mobile data is down. The app is not an
+emergency service: every SOS surface offers a one-tap call to **112**. Safety information is
+context, never a guarantee (Plan v7 §1).
 
 Work arrives as numbered prompts (P001–P022, Plan v7 §18). Rahul pastes each prompt into Claude
 Code in Android Studio's terminal at the repository root. Rahul is new to Android, so explain
@@ -114,6 +115,19 @@ migration (keys, `timestamptz`/UTC, expand → contract, never edit a merged mig
 locations in `audit_log` or logs). How-to and the lng/lat convention:
 [`backend/src/db/README.md`](backend/src/db/README.md).
 
+## Naming rules (since P003c, ADR 0005)
+
+- The product name is **"SafeRoute"**. The former, city-suffixed name remains only in historical
+  records (Plan v7 PDF, past prompt logs, ADR bodies) and in `TRADEMARKS.md`, which reserves it.
+- Don't put city names in code identifiers, API paths, operationIds, schema/table/column names,
+  package names, or Gradle/module names (e.g. no `kolkataRoutes`, `/kolkata/...`,
+  `in.saferoute.kolkata`).
+- City-specific facts (launch area, map/routing extract, time zone, police-station data, festival
+  load planning, local-language copy) live in configuration, data or docs.
+- "Kolkata" appears only where it is a fact: the launch city, pilot areas, the OSRM/tiles extract,
+  Durga Puja load planning, `Asia/Kolkata` conversions, Bengali UI, test landmarks.
+- Multi-city support is deferred to Plan v7 §14.2 Stage 3. Don't build it early.
+
 ## Conventions (Plan v7 §17.3)
 
 | Item | Convention | Example |
@@ -145,9 +159,9 @@ to go green.
 
 - **Prompt log**: `docs/prompt-logs/NNN-core-work.md` with the 12-section template (see
   `docs/prompt-logs/README.md`).
-- **Notion Prompt Log page**: a row in the *Prompt Log* database of "SafeRoute Kolkata —
-  Engineering", with the same 12 sections and properties (Status, Branch, PR URL, Commit SHA,
-  Quality gate, Diagram URL, dates). If the Notion MCP fails, still write the repo log, report the
+- **Notion Prompt Log page**: a row in the *Prompt Log* database of "SafeRoute — Engineering",
+  with the same 12 sections and properties (Status, Branch, PR URL, Commit SHA, Quality gate,
+  Diagram URL, dates). If the Notion MCP fails, still write the repo log, report the
   failure, and sync it in the next `/start-prompt`.
 - **Diagrams (Plan v7 §17.7)**: required when a prompt adds or changes a user flow, state machine,
   data model/schema, API interaction sequence, infrastructure/deployment or the CI pipeline. Write

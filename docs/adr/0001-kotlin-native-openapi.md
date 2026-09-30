@@ -1,5 +1,7 @@
 # ADR 0001: Native Kotlin client with an OpenAPI 3.1 contract
 
+> Note (P003c): product renamed to SafeRoute (see [ADR 0005](0005-product-name-and-multi-city-readiness.md)).
+
 - **Status:** Accepted
 - **Date:** 2026-09-30
 - **Prompt:** P001

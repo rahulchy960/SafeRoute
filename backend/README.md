@@ -1,6 +1,6 @@
 # backend/
 
-TypeScript modular monolith for SafeRoute Kolkata (Plan v7 §4, §6): the **saferoute-api** Hono
+TypeScript modular monolith for SafeRoute (Plan v7 §4, §6): the **saferoute-api** Hono
 service on PostgreSQL + PostGIS via Drizzle ORM (P003). Later prompts add the OpenAPI contract (P004), Firebase auth (P005),
 Cloud Run deployment (P006), the pg-boss worker and the domain modules listed in
 [`src/modules/README.md`](src/modules/README.md).

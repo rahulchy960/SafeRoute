@@ -1,5 +1,7 @@
 # ADR 0002: Licensing: AGPL-3.0-only for code, CC BY-NC-ND 4.0 for docs
 
+> Note (P003c): product renamed to SafeRoute (see [ADR 0005](0005-product-name-and-multi-city-readiness.md)).
+
 - **Status:** Accepted
 - **Date:** 2026-10-01
 - **Prompt:** P002a

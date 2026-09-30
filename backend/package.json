@@ -2,7 +2,7 @@
   "name": "saferoute-backend",
   "version": "0.1.0",
   "private": true,
-  "description": "SafeRoute Kolkata API: Hono modular monolith (Plan v7 §4, §6).",
+  "description": "SafeRoute API: Hono modular monolith (Plan v7 §4, §6).",
   "type": "module",
   "license": "AGPL-3.0-only",
   "engines": {

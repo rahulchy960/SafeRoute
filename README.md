@@ -1,12 +1,17 @@
-# SafeRoute Kolkata
+# SafeRoute
 
-A navigation-first Android app for Kolkata. It offers a map, search, walking/driving routes,
+A navigation-first Android app for personal safety. It offers a map, search, walking/driving routes,
 transparent safety context along routes, temporary live-location sharing with trusted contacts,
 and a **device-first SOS** that reaches emergency contacts even when the server or mobile data is
 unavailable.
 
 > SafeRoute is not an emergency service. Every SOS surface offers a one-tap call to **112**.
 > Safety information is context, never a guarantee that a route or area is safe.
+
+## Coverage
+
+SafeRoute launches first in Kolkata, India. More cities are planned; nothing beyond Kolkata is
+built or promised yet.
 
 The design, product and technical plan is in
 [`docs/plan/SafeRoute_Plan_v7_MVP.pdf`](docs/plan/SafeRoute_Plan_v7_MVP.pdf) (Plan v7).
@@ -32,8 +37,8 @@ Copyright (C) 2026 Rahul Chowdhury. Details in [`COPYRIGHT.md`](COPYRIGHT.md).
   license.
 - **Documentation** (everything under `docs/`, including the plan and diagrams): CC BY-NC-ND 4.0
   (`CC-BY-NC-ND-4.0`), see [`docs/LICENSE.md`](docs/LICENSE.md).
-- **Name and logo:** "SafeRoute" / "SafeRoute Kolkata", the app icon and logos are not licensed;
-  forks must use a different name. See [`TRADEMARKS.md`](TRADEMARKS.md).
+- **Name and logo:** the name "SafeRoute" (and its former name), the app icon and logos are not
+  licensed; forks must use a different name. See [`TRADEMARKS.md`](TRADEMARKS.md).
 - **Data:** not included and not licensed (see below).
 
 ## Data
@@ -105,6 +110,6 @@ confirms it.
 
 ## Documentation
 
-- Notion: **SafeRoute Kolkata — Engineering** (Prompt Log, Architecture Decisions, Follow-ups,
+- Notion: **SafeRoute — Engineering** (Prompt Log, Architecture Decisions, Follow-ups,
   Runbooks)
 - Repo: `docs/prompt-logs/` mirrors every Notion prompt page

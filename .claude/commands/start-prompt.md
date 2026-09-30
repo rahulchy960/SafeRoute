@@ -42,7 +42,7 @@ gh pr list --state open --json number,title,headRefName,url
 
 ## 3. Update the previous prompt's Notion page
 
-Use the Notion MCP. In the **Prompt Log** database of "SafeRoute Kolkata — Engineering", set the
+Use the Notion MCP. In the **Prompt Log** database of "SafeRoute — Engineering", set the
 previous prompt's row to: `Status = Merged`, `Merge SHA = <sha>`, `Date merged = <date>`.
 
 - Also sync anything a previous session left unsynced (a prompt log in `docs/prompt-logs/` with no
