@@ -1,6 +1,7 @@
 import { serve } from '@hono/node-server';
 import { createApp } from './app.js';
 import { ConfigError, parseConfig, type Config } from './config.js';
+import { createDb, databaseReadiness, safeDbError } from './db/client.js';
 import { createLogger } from './lib/logger.js';
 
 /** Cloud Run sends SIGTERM and waits 10 s before SIGKILL; finish in-flight requests within that. */
@@ -20,7 +21,16 @@ function loadConfig(): Config {
 
 const config = loadConfig();
 const logger = createLogger(config);
-const app = createApp({ config, logger });
+// Without DATABASE_URL (local dev, unit tests) the API still runs; /health/ready reports 503.
+const database =
+  config.DATABASE_URL === undefined
+    ? undefined
+    : createDb({ ...config, DATABASE_URL: config.DATABASE_URL }, logger);
+const app = createApp({
+  config,
+  logger,
+  ...(database ? { readiness: databaseReadiness(database.db) } : {}),
+});
 
 const server = serve({ fetch: app.fetch, port: config.PORT }, (info) => {
   logger.info(
@@ -32,8 +42,9 @@ const server = serve({ fetch: app.fetch, port: config.PORT }, (info) => {
 let shuttingDown = false;
 
 /**
- * Stops accepting new connections, lets in-flight requests finish, then exits 0. If that takes
- * longer than SHUTDOWN_TIMEOUT_MS, exits 1 so the platform does not hang.
+ * Stops accepting new connections, lets in-flight requests finish, closes the database pool
+ * (after HTTP, because draining requests may still query), then exits 0. If that takes longer
+ * than SHUTDOWN_TIMEOUT_MS, exits 1 so the platform does not hang.
  * On Windows, Ctrl+C delivers SIGINT; SIGTERM is what Cloud Run and Docker send.
  */
 function shutdown(signal: NodeJS.Signals): void {
@@ -52,8 +63,14 @@ function shutdown(signal: NodeJS.Signals): void {
       logger.error({ err }, 'error while closing server');
       process.exit(1);
     }
-    logger.info('shutdown complete');
-    process.exit(0);
+    void (database?.close() ?? Promise.resolve())
+      .catch((closeErr: unknown) => {
+        logger.error({ db_error: safeDbError(closeErr) }, 'error while closing database pool');
+      })
+      .finally(() => {
+        logger.info('shutdown complete');
+        process.exit(0);
+      });
   });
 }
 

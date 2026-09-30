@@ -1,13 +1,41 @@
 import { z } from 'zod';
 
-const ConfigSchema = z.object({
-  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-  PORT: z.coerce.number().int().min(1).max(65535).default(8080),
-  LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
-  SERVICE_NAME: z.string().min(1).max(100).default('saferoute-api'),
-  APP_VERSION: z.string().min(1).max(100).default('dev'),
-  GIT_SHA: z.string().min(1).max(100).default('unknown'),
-});
+/** Accepts postgres:// or postgresql:// URLs. The message never includes the value (it holds a password). */
+const postgresUrl = z.string().refine(
+  (value) => {
+    try {
+      return ['postgres:', 'postgresql:'].includes(new URL(value).protocol);
+    } catch {
+      return false;
+    }
+  },
+  { message: 'must be a postgres:// or postgresql:// URL' },
+);
+
+const ConfigSchema = z
+  .object({
+    NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+    PORT: z.coerce.number().int().min(1).max(65535).default(8080),
+    LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
+    SERVICE_NAME: z.string().min(1).max(100).default('saferoute-api'),
+    APP_VERSION: z.string().min(1).max(100).default('dev'),
+    GIT_SHA: z.string().min(1).max(100).default('unknown'),
+    // Optional outside production so `pnpm dev` and the unit tests run without a database.
+    DATABASE_URL: postgresUrl.optional(),
+    // Small per-instance pool: many Cloud Run instances share one Cloud SQL (Plan v7 §14.2).
+    DB_POOL_MAX: z.coerce.number().int().min(1).max(20).default(5),
+    DB_STATEMENT_TIMEOUT_MS: z.coerce.number().int().min(100).max(300_000).default(10_000),
+    DB_CONNECT_TIMEOUT_MS: z.coerce.number().int().min(100).max(60_000).default(5_000),
+  })
+  .superRefine((config, ctx) => {
+    if (config.NODE_ENV === 'production' && config.DATABASE_URL === undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['DATABASE_URL'],
+        message: 'required when NODE_ENV=production',
+      });
+    }
+  });
 
 export type Config = z.infer<typeof ConfigSchema>;
 
