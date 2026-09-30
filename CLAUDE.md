@@ -89,6 +89,24 @@ copied by others. Treat every commit as **permanent**; deleting a file later doe
 - Commits use the GitHub noreply address set in the repo-local git config. Don't change it.
 - Report vulnerabilities privately (see [`SECURITY.md`](SECURITY.md)), never in a public issue.
 
+## Licensing (since P002a, ADR 0002)
+
+- **Code** (everything outside `docs/`): `AGPL-3.0-only`, full text in [`LICENSE`](LICENSE).
+  **Docs** (`docs/`, including the plan and diagrams): `CC-BY-NC-ND-4.0`, see
+  [`docs/LICENSE.md`](docs/LICENSE.md). Name and logo: not licensed ([`TRADEMARKS.md`](TRADEMARKS.md)).
+  Summary in [`COPYRIGHT.md`](COPYRIGHT.md). Copyright holder: Rahul Chowdhury.
+- **SPDX headers (from P003 onward):** every new source file in `backend/src`, `moderation/`,
+  `contracts/` and `android/` starts with an SPDX line in that language's comment syntax, e.g.
+  `// SPDX-License-Identifier: AGPL-3.0-only` (TypeScript, Kotlin, Gradle Kotlin DSL) or
+  `<!-- SPDX-License-Identifier: AGPL-3.0-only -->` (XML). Don't mass-edit existing files.
+  Generated files (e.g. `contracts/openapi.json`) are exempt.
+- New packages (`package.json`, Gradle modules) declare `AGPL-3.0-only` and stay private /
+  unpublished unless a prompt says otherwise.
+- **No outside code contributions** ([`CONTRIBUTING.md`](CONTRIBUTING.md)). Never copy code from
+  sources whose license is incompatible with AGPL-3.0; flag any new dependency with a copyleft-
+  incompatible or proprietary license in the prompt log.
+- Never write or reconstruct license texts from memory; fetch official texts.
+
 ## Conventions (Plan v7 §17.3)
 
 | Item | Convention | Example |

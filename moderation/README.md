@@ -6,3 +6,10 @@ Approved queries can be exported as CSV/XLSX. It runs on Cloud Run behind IAP or
 moderator-role auth.
 
 **Status:** empty. It is filled in **P018** (`feat/018-moderation-web-export`).
+
+## License
+
+Code in this folder is licensed under `AGPL-3.0-only` (see [`../COPYRIGHT.md`](../COPYRIGHT.md)).
+When the app is created in P018, its `package.json` must set `"license": "AGPL-3.0-only"` and
+`"private": true`, and every new source file starts with
+`// SPDX-License-Identifier: AGPL-3.0-only`.

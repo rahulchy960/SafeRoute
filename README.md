@@ -19,8 +19,29 @@ The design, product and technical plan is in
 - **Security issues:** please report them privately through GitHub private vulnerability reporting
   (Security tab → *Report a vulnerability*). See [`SECURITY.md`](SECURITY.md). Don't open a public
   issue.
-- **License:** none yet. Until a license file is added, the project is **all rights reserved**.
-  GitHub's terms let others view and fork the repository on GitHub; no other rights are granted.
+- **Contributions:** code contributions are not accepted yet; issues are welcome. See
+  [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+## License
+
+Copyright (C) 2026 Rahul Chowdhury. Details in [`COPYRIGHT.md`](COPYRIGHT.md).
+
+- **Code:** GNU Affero General Public License v3.0 only (`AGPL-3.0-only`), full text in
+  [`LICENSE`](LICENSE). You may use, study, change and share the code. If you distribute it, or
+  run a modified version as a network service, you must publish your source under the same
+  license.
+- **Documentation** (everything under `docs/`, including the plan and diagrams): CC BY-NC-ND 4.0
+  (`CC-BY-NC-ND-4.0`), see [`docs/LICENSE.md`](docs/LICENSE.md).
+- **Name and logo:** "SafeRoute" / "SafeRoute Kolkata", the app icon and logos are not licensed;
+  forks must use a different name. See [`TRADEMARKS.md`](TRADEMARKS.md).
+- **Data:** not included and not licensed (see below).
+
+## Data
+
+Incident reports, user data, location data, moderation data and data exports are **not part of
+this repository** and are **not licensed for reuse**. No data of any kind is committed here; the
+repository holds only code, configuration and documentation. How the app handles personal data
+will be described in its privacy policy when it is published.
 
 ![MVP architecture](docs/diagrams/02-mvp-architecture.svg)
 

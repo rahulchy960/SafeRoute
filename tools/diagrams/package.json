@@ -4,7 +4,7 @@
   "private": true,
   "description": "Generates Excalidraw + SVG + PNG diagrams from JSON specs in docs/diagrams (Plan v7 §17.7).",
   "type": "module",
-  "license": "UNLICENSED",
+  "license": "AGPL-3.0-only",
   "engines": {
     "node": ">=20"
   },
