@@ -100,7 +100,8 @@ copied by others. Treat every commit as **permanent**; deleting a file later doe
   `contracts/` and `android/` starts with an SPDX line in that language's comment syntax, e.g.
   `// SPDX-License-Identifier: AGPL-3.0-only` (TypeScript, Kotlin, Gradle Kotlin DSL) or
   `<!-- SPDX-License-Identifier: AGPL-3.0-only -->` (XML). Don't mass-edit existing files.
-  Generated files (e.g. `contracts/openapi.json`) are exempt.
+  Generated files are exempt: `contracts/openapi.json` is JSON and can't carry a comment; it is
+  covered by `COPYRIGHT.md` and its `info.license` field.
 - New packages (`package.json`, Gradle modules) declare `AGPL-3.0-only` and stay private /
   unpublished unless a prompt says otherwise.
 - **No outside code contributions** ([`CONTRIBUTING.md`](CONTRIBUTING.md)). Never copy code from
@@ -114,6 +115,14 @@ Follow [ADR 0003](docs/adr/0003-database-conventions-and-migrations.md) for ever
 migration (keys, `timestamptz`/UTC, expand → contract, never edit a merged migration, no precise
 locations in `audit_log` or logs). How-to and the lng/lat convention:
 [`backend/src/db/README.md`](backend/src/db/README.md).
+
+## API contract rules (since P004, ADR 0004)
+
+Follow [ADR 0004](docs/adr/0004-api-contract-and-conventions.md) and
+[`contracts/README.md`](contracts/README.md): every route is declared with `createRoute` (so it
+appears in `contracts/openapi.json`); product endpoints under `/v1`; camelCase JSON; RFC 9457
+problem+json errors with an open-string `code`; `Idempotency-Key` for retryable writes;
+`firebaseBearer` on protected routes; bump `info.version` in the PR that changes the spec.
 
 ## Naming rules (since P003c, ADR 0005)
 
@@ -151,7 +160,7 @@ to go green.
 | Repo-wide | markdown lint, JSON validity, gitleaks secret scan (`.github/workflows/repo-checks.yml`) | Active |
 | Diagrams | `cd tools/diagrams && pnpm install && pnpm generate` (no errors) | Active |
 | Backend | `pnpm typecheck` · `pnpm lint` · `pnpm format:check` · `pnpm test` · `pnpm build` (run inside `backend/`; CI: `.github/workflows/backend-ci.yml`) | Active (since P002) |
-| Contracts | regenerate `contracts/openapi.json` (diff committed) + breaking-change diff (oasdiff) | Not yet applicable (from P004) |
+| Contracts | in `backend/`: `pnpm openapi:generate` then commit the diff · `pnpm openapi:check` · `pnpm openapi:lint`; breaking changes need the PR label `breaking-api-change` + a new ADR (CI: `backend-ci` runs check + lint; the oasdiff gate `contracts-ci.yml` arrives in P004b) | Active (since P004a) |
 | Android | `./gradlew lint testDebugUnitTest assembleDebug` (run inside `android/`) | Not yet applicable (from P007) |
 | Moderation | typecheck · lint · test · build | Not yet applicable (from P018) |
 

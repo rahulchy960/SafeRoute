@@ -1,7 +1,8 @@
 # backend/
 
 TypeScript modular monolith for SafeRoute (Plan v7 §4, §6): the **saferoute-api** Hono
-service on PostgreSQL + PostGIS via Drizzle ORM (P003). Later prompts add the OpenAPI contract (P004), Firebase auth (P005),
+service on PostgreSQL + PostGIS via Drizzle ORM (P003), with a generated OpenAPI 3.1 contract
+(P004, [`../contracts/`](../contracts/)). Later prompts add Firebase auth (P005),
 Cloud Run deployment (P006), the pg-boss worker and the domain modules listed in
 [`src/modules/README.md`](src/modules/README.md).
 
@@ -81,13 +82,17 @@ test/db/               Vitest "db" project (Testcontainers PostGIS)
 
 - **`X-Request-Id`**: echoed if the caller sends a valid one (`^[A-Za-z0-9._-]{8,64}$`),
   otherwise generated (UUID). It is on every response and every log line (`request_id`).
+- **Routes** are declared with `createRoute` (`@hono/zod-openapi`), so they appear in
+  `contracts/openapi.json` and their input is validated by a shared hook (ADR 0004). JSON bodies
+  are camelCase; log fields stay snake_case.
 - **Errors** are `application/problem+json`:
-  `{ type, title, status, detail, code, request_id }`. Clients switch on `code`
-  (`not_found`, `internal_error`, `validation_error`, …). Throw `AppError(status, code, detail)`
-  for expected failures; anything else becomes a generic 500 and is logged server-side.
+  `{ type, title, status, detail, code, requestId }` (+ `errors: [{path, code}]` for
+  `validation_error`, never echoing submitted values). Clients switch on `code`, an open set
+  listed in [`contracts/README.md`](../contracts/README.md). Throw `AppError(status, code,
+  detail)` for expected failures; anything else becomes a generic 500 and is logged server-side.
 - **Access log**: one line per request with `method`, route `path` pattern, `status`,
   `duration_ms`. Query strings, headers, bodies and client IPs are never logged (Plan v7 §12.2).
-- **`GET /health`** (liveness): `200 {"status":"ok","service","version","uptime_s"}`,
+- **`GET /health`** (liveness): `200 {"status":"ok","service","version","uptimeSeconds"}`,
   `Cache-Control: no-store`. No I/O, so a database outage never restarts healthy instances.
 - **`GET /health/ready`** (readiness): `200 {"status":"ready","checks":{"database":"ok"}}` or 503
   problem+json `db_unavailable` / `db_not_configured`. Both are outside `/v1` because they are
@@ -97,9 +102,11 @@ test/db/               Vitest "db" project (Testcontainers PostGIS)
 
 ```sh
 pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm build && pnpm db:check
+pnpm openapi:check && pnpm openapi:lint   # after route changes: pnpm openapi:generate, commit
 ```
 
 `pnpm test` = `pnpm test:unit` (no Docker) + `pnpm test:db` (needs Docker).
 
 CI runs the same steps in [`.github/workflows/backend-ci.yml`](../.github/workflows/backend-ci.yml)
-on every pull request that touches `backend/`.
+on every pull request that touches `backend/`, including `pnpm openapi:lint`; the stale-spec check
+runs as a unit test. The oasdiff breaking-change gate (`contracts-ci`) arrives in P004b.

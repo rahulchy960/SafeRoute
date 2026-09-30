@@ -32,7 +32,7 @@ describe('GET /health/ready (injected check, no database)', () => {
     expect(JSON.parse(body)).toMatchObject({
       code: 'db_unavailable',
       status: 503,
-      request_id: 'req-ready-abcdef',
+      requestId: 'req-ready-abcdef',
     });
 
     const failure = logs().find((line) => line.message === 'readiness check failed');

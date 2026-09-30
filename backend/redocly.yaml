@@ -1,0 +1,47 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Redocly lint rules for contracts/openapi.json (pnpm openapi:lint, ADR 0004).
+# Fix findings at the source (route/schema definitions), never by muting a rule.
+extends:
+  - recommended
+
+rules:
+  # Every operation is addressable in the generated client and in dashboards (Plan v7 §14.5).
+  operation-operationId: error
+  operation-operationId-unique: error
+  operation-summary: error
+  operation-tag-defined: error
+  tag-description: error
+
+  # Every 4xx response uses application/problem+json (RFC 9457); 5xx: see rule/5xx-problem-json.
+  operation-4xx-problem-details-rfc7807: error
+
+  # Shared components (error responses, IdempotencyKey, firebaseBearer) are declared ahead of the
+  # routes that will use them (P005, P015-P017), so "unused" is expected, not a mistake.
+  no-unused-components: off
+
+  # Every operation has at least one tag.
+  rule/operation-has-tag:
+    subject:
+      type: Operation
+      property: tags
+    assertions:
+      defined: true
+      nonEmpty: true
+    message: Every operation needs a tag.
+    severity: error
+
+  # 5xx responses use application/problem+json too.
+  rule/5xx-problem-json:
+    subject:
+      type: MediaTypesMap
+    where:
+      - subject:
+          type: Response
+          filterInParentKeys: ['500', '501', '502', '503', '504']
+        assertions:
+          defined: true
+    assertions:
+      disallowed: ['application/json']
+      required: ['application/problem+json']
+    message: 5xx responses must use application/problem+json.
+    severity: error

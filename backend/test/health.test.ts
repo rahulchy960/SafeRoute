@@ -12,9 +12,9 @@ describe('GET /health', () => {
     expect(res.headers.get('x-request-id')).toBeTruthy();
 
     const body = (await res.json()) as Record<string, unknown>;
-    expect(Object.keys(body).sort()).toEqual(['service', 'status', 'uptime_s', 'version']);
+    expect(Object.keys(body).sort()).toEqual(['service', 'status', 'uptimeSeconds', 'version']);
     expect(body).toMatchObject({ status: 'ok', service: 'saferoute-api', version: '9.9.9' });
-    expect(Number.isInteger(body.uptime_s)).toBe(true);
-    expect(body.uptime_s).toBeGreaterThanOrEqual(0);
+    expect(Number.isInteger(body.uptimeSeconds)).toBe(true);
+    expect(body.uptimeSeconds).toBeGreaterThanOrEqual(0);
   });
 });

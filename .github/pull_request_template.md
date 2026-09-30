@@ -18,7 +18,7 @@
 
 ## API contract
 
-<!-- openapi.json diff summary. Breaking? yes/no. If yes, link the ADR. -->
+<!-- openapi.json diff summary; breaking? yes/no; ADR link if yes -->
 
 ## Database
 
