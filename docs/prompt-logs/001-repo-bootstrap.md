@@ -27,11 +27,12 @@ workspace. From P002 on, every prompt runs on its own branch and PR under the ru
 - Tools checked at preflight: git 2.43.0, gh 2.102.0 (logged in as `rahulchy960`, scopes `repo`,
   `workflow`), Node v22.17.0, npm 11.5.2, Notion MCP (read of the parent page OK).
 - **pnpm was missing.** With Rahul's approval it was installed user-level with `npm install -g pnpm`
-  (pnpm 12.8.1, in `%APPDATA%\npm`, which is on the user PATH; new terminals pick it up).
+  (pnpm 12.8.1, in npm's user-level global folder, which is on the user PATH; new terminals pick
+  it up).
 - **The GitHub repo `rahulchy960/SafeRoute` already existed** (private, empty, created
   2026-09-30 11:39 UTC). `gh repo create` would have failed, so it was added as `origin` and pushed
   to. The result is the same, and nothing was overwritten.
-- **`C:\Users\rahul` is itself a git repository** (no commits). SafeRoute is now its own nested
+- **Rahul's home directory (`<home>`) is itself a git repository** (no commits). SafeRoute is now its own nested
   repo, and git commands inside SafeRoute use the SafeRoute repo. Recorded as a follow-up; not
   touched.
 - Inputs: owner `rahulchy960`, repo `SafeRoute`, plan PDF path, Notion parent page "SafeRoute".
@@ -162,7 +163,7 @@ no headless browser), so there is no PNG gap.
 
 - **P002 first commit:** add the post-lock hook-test outputs and the ruleset result (from the
   Notion P001 page) to this log as a follow-up item.
-- Home-directory git repo at `C:\Users\rahul\.git`: Rahul decides whether to remove it (outside
+- Home-directory git repo at `<home>/.git`: Rahul decides whether to remove it (outside
   this repo).
 - Optional: add `pnpm check` (diagrams up to date) to repo-checks CI.
 - P002 prerequisites: Node LTS + pnpm (done), `core.hooksPath .githooks` (set after commit #2).
@@ -200,3 +201,36 @@ no headless browser), so there is no PNG gap.
   conventions, which checks to run, and documentation duties. `.claude/settings.json` adds hard
   permission deny rules (e.g. no force-push, no merging PRs), and `.claude/commands/*.md` defines
   the `/start-prompt` and `/ship-prompt` slash commands.
+
+## Post-lock verification (added in P002)
+
+Recorded on 2026-09-30 during P002 (branch `feat/002-backend-skeleton`). This closes the P001
+follow-up "add the post-lock hook-test outputs and the ruleset result".
+
+**Local lock.** `git config core.hooksPath` prints `.githooks`. The git-ignored
+`.claude/settings.local.json` holds 22 deny rules (bare `git push`, pushes whose refspec names
+`main`, `--all`, `--no-verify`, for both the Bash and PowerShell tools).
+
+**Hook test (re-run in P002):**
+
+```text
+$ echo "refs/heads/main 0 refs/heads/main 0" | .githooks/pre-push origin x
+pre-push: REJECTED push to refs/heads/main on 'origin' (local ref: refs/heads/main).
+pre-push: main is protected. Push your branch and open a pull request:
+pre-push:   git push -u origin <type>/<NNN>-<core-work>
+exit=1
+
+$ echo "refs/heads/test 0 refs/heads/test 0" | .githooks/pre-push origin x
+exit=0
+```
+
+**GitHub ruleset.** GitHub refused a ruleset while the repo was private on the free plan. Rahul made
+the repo **public** after P001, and P002 created the ruleset `protect-main` (active) on the default
+branch: pull request required (0 approvals, stale reviews dismissed, squash merge only), required
+status check `repo-checks`, force pushes and branch deletion blocked, repository admins may bypass
+only through a pull request. Details and read-back:
+[`002-backend-skeleton.md`](002-backend-skeleton.md) §6.
+
+**Public-repo note.** Local paths in this log (home directory, npm folder) were replaced with
+placeholders in P002. The original text stays in the history of commit `9d3f06e`; see "History
+exposure" in the P002 log.

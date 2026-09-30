@@ -45,7 +45,7 @@ docs/prompt-logs/ One log per prompt (NNN-core-work.md)
 docs/runbooks/  Operational runbooks
 .claude/        settings.json (deny rules) + slash commands /start-prompt, /ship-prompt
 .githooks/      pre-push hook that rejects pushes to main
-.github/        PR template + repo-checks workflow
+.github/        PR template, CODEOWNERS, workflows (repo-checks, backend-ci)
 ```
 
 ## TEN GOLDEN RULES
@@ -62,9 +62,32 @@ docs/runbooks/  Operational runbooks
 10. Explain Android concepts you use in the 'Learning notes' section for Rahul.
 
 Main is protected in layers: these rules, deny rules in `.claude/settings.json` and
-`.claude/settings.local.json`, the `.githooks/pre-push` hook (`core.hooksPath .githooks`), and a
-GitHub ruleset where the plan allows it. Never try to get around any layer. Don't use
-`--no-verify`, change `core.hooksPath` or edit deny rules.
+`.claude/settings.local.json`, the `.githooks/pre-push` hook (`core.hooksPath .githooks`), and the
+GitHub ruleset `protect-main` (active since P002: PR required, `repo-checks` must pass, squash
+merge only, no force push or deletion, admins bypass only through a PR). Never try to get around
+any layer. Don't use `--no-verify`, change `core.hooksPath`, edit deny rules or change repository
+rulesets or settings unless a prompt explicitly asks for it.
+
+## Public repository rules
+
+The repository `rahulchy960/SafeRoute` is **public**. Everything committed, including prompt logs,
+docs, commit messages, PR text and the full git history, is world-readable and may be cached or
+copied by others. Treat every commit as **permanent**; deleting a file later does not un-publish it.
+
+- Never commit personal data: names of people other than the maintainer, personal emails,
+  phone numbers, home addresses, or real locations of people.
+- Never commit local machine details: user-profile paths, OS usernames, hostnames, local IPs.
+  Write `<home>`, `<repo>` or a repo-relative path instead.
+- Never commit test data derived from real users. Use obviously fake values, e.g.
+  `+91 00000 00000` or the coordinates of a public landmark.
+- Never commit IDs that are not meant to be public: Notion integration tokens or share links,
+  Google Cloud / Firebase project numbers, API keys, service-account emails, or production/staging
+  URLs with embedded tokens. Use placeholders such as `<GCP_PROJECT_ID>`. Links to private Notion
+  pages (`app.notion.com/p/<id>`) are allowed: they grant no access without workspace membership.
+- Prompt logs, PR bodies and Notion pages are public-facing: write them accordingly and mask
+  personal details in any tool output you paste (e.g. `r***@gmail.com`).
+- Commits use the GitHub noreply address set in the repo-local git config. Don't change it.
+- Report vulnerabilities privately (see [`SECURITY.md`](SECURITY.md)), never in a public issue.
 
 ## Conventions (Plan v7 §17.3)
 
@@ -88,7 +111,7 @@ to go green.
 | --- | --- | --- |
 | Repo-wide | markdown lint, JSON validity, gitleaks secret scan (`.github/workflows/repo-checks.yml`) | Active |
 | Diagrams | `cd tools/diagrams && pnpm install && pnpm generate` (no errors) | Active |
-| Backend | `pnpm typecheck` · `pnpm lint` · `pnpm test` · `pnpm build` | Not yet applicable (from P002) |
+| Backend | `pnpm typecheck` · `pnpm lint` · `pnpm format:check` · `pnpm test` · `pnpm build` (run inside `backend/`; CI: `.github/workflows/backend-ci.yml`) | Active (since P002) |
 | Contracts | regenerate `contracts/openapi.json` (diff committed) + breaking-change diff (oasdiff) | Not yet applicable (from P004) |
 | Android | `./gradlew lint testDebugUnitTest assembleDebug` (run inside `android/`) | Not yet applicable (from P007) |
 | Moderation | typecheck · lint · test · build | Not yet applicable (from P018) |
