@@ -19,3 +19,10 @@ confirms the final value in P007, and it gets recorded in an ADR.
 ```sh
 ./gradlew lint testDebugUnitTest assembleDebug
 ```
+
+## License
+
+Code in this folder is licensed under `AGPL-3.0-only` (see [`../COPYRIGHT.md`](../COPYRIGHT.md)).
+From P003 onward, every new Kotlin/Gradle source file starts with
+`// SPDX-License-Identifier: AGPL-3.0-only`, and every new module uses the same license id. The
+app will need a third-party licenses / notices screen before release (follow-up for P022).

@@ -4,7 +4,7 @@
   "private": true,
   "description": "SafeRoute Kolkata API: Hono modular monolith (Plan v7 §4, §6).",
   "type": "module",
-  "license": "UNLICENSED",
+  "license": "AGPL-3.0-only",
   "engines": {
     "node": ">=24"
   },
