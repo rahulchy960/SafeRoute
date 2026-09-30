@@ -9,7 +9,7 @@ Cloud Run deployment (P006), the pg-boss worker and the domain modules listed in
 
 - **Node.js 24** (Active LTS; the exact major is in [`.nvmrc`](.nvmrc)). Check with `node --version`.
 - **pnpm 12.8.1** (pinned in `package.json` → `packageManager`).
-- **Docker Desktop** (running) for the local database.
+- **Docker Desktop** (running) for the local database and the `db` tests.
 
 `backend/` is a standalone pnpm package, not part of a root workspace. Run every command from
 inside `backend/`.
@@ -24,9 +24,8 @@ pnpm db:migrate          # apply the committed migrations
 pnpm dev                 # http://localhost:8080/health and /health/ready, logs pretty-printed
 ```
 
-`pnpm dev` also runs without a database: `/health/ready` then answers 503. `pnpm db:down` stops
-the database (data is kept); `docker compose down -v` resets it. Tables, schema changes and the
-database test suite arrive in P003b.
+`pnpm dev` also runs without a database: `/health/ready` then answers 503. Database workflow,
+schema changes and the lng/lat convention: [`src/db/README.md`](src/db/README.md).
 
 Production-style:
 
@@ -66,7 +65,7 @@ src/
   app.ts               createApp({ config, logger }): middleware order and error handlers
   config.ts            parseConfig(env) with Zod
   types.ts             Hono context variables (requestId, logger)
-  db/                  Drizzle client (client.ts), migration runner (migrate.ts), schema/ (tables from P003b)
+  db/                  Drizzle client, schema, migration runner, PostGIS point type (see db/README.md)
   lib/logger.ts        pino JSON logs for Cloud Logging (severity, message, timestamp)
   lib/problem.ts       RFC 9457 problem+json responses and AppError
   middleware/          request-id, access-log
@@ -74,7 +73,8 @@ src/
   routes/ready.ts      GET /health/ready (readiness: SELECT 1 with a 2 s timeout)
   modules/             domain modules (added by later prompts)
 drizzle/               generated SQL migrations (committed, never edited after merge)
-test/                  Vitest tests (app.request(), no network)
+test/                  Vitest "unit" project (no network)
+test/db/               Vitest "db" project (Testcontainers PostGIS)
 ```
 
 ## HTTP conventions
@@ -98,6 +98,8 @@ test/                  Vitest tests (app.request(), no network)
 ```sh
 pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm build && pnpm db:check
 ```
+
+`pnpm test` = `pnpm test:unit` (no Docker) + `pnpm test:db` (needs Docker).
 
 CI runs the same steps in [`.github/workflows/backend-ci.yml`](../.github/workflows/backend-ci.yml)
 on every pull request that touches `backend/`.

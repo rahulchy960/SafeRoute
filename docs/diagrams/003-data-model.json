@@ -1,0 +1,42 @@
+{
+  "$schema": "../../tools/diagrams/diagram.schema.json",
+  "title": "SafeRoute MVP data model",
+  "subtitle": "Plan v7 §11 · orange = built in P003 · grey = planned (prompt that adds it) · arrows = foreign keys, parent → child",
+  "direction": "TB",
+  "layout": { "nodeWidth": 200, "rankGap": 70 },
+  "groups": [
+    { "id": "sos", "label": "SOS & live sharing" },
+    { "id": "identity", "label": "Identity & operations" },
+    { "id": "safety", "label": "Reports & safety data" }
+  ],
+  "nodes": [
+    { "id": "users", "label": "users\nP003", "role": "data", "group": "identity" },
+    { "id": "devices", "label": "devices\nP003", "role": "data", "group": "identity" },
+    { "id": "idempotency", "label": "idempotency_keys\nP003", "role": "data", "group": "identity" },
+    { "id": "audit", "label": "audit_log\nP003 · actor has no FK", "role": "data", "group": "identity" },
+    { "id": "contacts", "label": "emergency_contacts\nP013", "role": "external", "group": "sos", "rank": 2 },
+    { "id": "share_sessions", "label": "share_sessions\nP016", "role": "external", "group": "sos" },
+    { "id": "sos_sessions", "label": "sos_sessions\nP015", "role": "external", "group": "sos" },
+    { "id": "sos_actions", "label": "sos_actions\nP015", "role": "external", "group": "sos" },
+    { "id": "share_points", "label": "share_points\nP016", "role": "external", "group": "sos" },
+    { "id": "outbox", "label": "outbox (pg-boss jobs)\nP015", "role": "external", "group": "sos" },
+    { "id": "reports", "label": "reports\nP017", "role": "external", "group": "safety" },
+    { "id": "decisions", "label": "report_decisions\nP018", "role": "external", "group": "safety" },
+    { "id": "official", "label": "official_aggregates +\ndata_sources / areas / police_stations\nP019", "role": "external", "group": "safety", "rank": 1 },
+    { "id": "route_cache", "label": "route_metrics_cache\nP019", "role": "external", "group": "safety", "rank": 2 }
+  ],
+  "edges": [
+    { "from": "users", "to": "devices" },
+    { "from": "users", "to": "idempotency" },
+    { "from": "users", "to": "audit", "label": "no FK" },
+    { "from": "users", "to": "contacts" },
+    { "from": "users", "to": "share_sessions" },
+    { "from": "share_sessions", "to": "sos_sessions" },
+    { "from": "sos_sessions", "to": "sos_actions" },
+    { "from": "contacts", "to": "sos_actions", "label": "target" },
+    { "from": "share_sessions", "to": "share_points" },
+    { "from": "sos_sessions", "to": "outbox", "label": "events" },
+    { "from": "users", "to": "reports" },
+    { "from": "reports", "to": "decisions" }
+  ]
+}

@@ -27,8 +27,8 @@ jobs:
       run:
         working-directory: backend
     services:
-      # Fresh PostGIS for the migration-validation step (same pinned image as docker-compose.yml).
-      # CI-only throwaway credentials; the service lives only in this job.
+      # Fresh PostGIS for the migration-validation step (same pinned image as docker-compose.yml and
+      # the Testcontainers tests). CI-only throwaway credentials; the service lives only in this job.
       postgis:
         image: postgis/postgis:16-3.4@sha256:44126d872ac91993766c341e369c539e8196614321765d36a6f1bab0419a5fa5
         env:
@@ -82,7 +82,8 @@ jobs:
             exit 1
           fi
 
-      - name: Test
+      # Unit tests plus the db project (Testcontainers starts its own PostGIS via the runner's Docker).
+      - name: Test (unit + db)
         run: pnpm test
 
       - name: Build

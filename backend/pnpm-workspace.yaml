@@ -1,5 +1,9 @@
 # pnpm settings for this standalone package (backend/ is not part of a root workspace).
-# esbuild (via tsx, vite and drizzle-kit) ships its binary as an optional dependency, so its install script is
-# not needed; install scripts stay denied unless reviewed and allowed here.
+# Install scripts stay denied unless reviewed and allowed here. None of these need theirs:
+# esbuild (tsx, vite, drizzle-kit) ships its binary as an optional dependency; ssh2 and cpu-features
+# (Testcontainers' Docker client) only build optional native speed-ups; protobufjs runs a version check.
 allowBuilds:
+  cpu-features: false
   esbuild: false
+  protobufjs: false
+  ssh2: false
