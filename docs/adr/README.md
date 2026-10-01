@@ -12,6 +12,7 @@ Copy [`template.md`](template.md) to `NNNN-short-title.md`, and add a row to the
 | [0004](0004-api-contract-and-conventions.md) | API contract (Zod → OpenAPI 3.1) and API conventions | Accepted |
 | [0005](0005-product-name-and-multi-city-readiness.md) | Product name "SafeRoute" and multi-city readiness | Accepted |
 | [0006](0006-authentication-and-roles.md) | Authentication with Firebase ID tokens (jose) and database-authoritative roles | Accepted |
+| [0007](0007-gcp-staging-topology.md) | Google Cloud staging topology and deployment strategy | Accepted |
 
 A breaking API change, new infrastructure, a new data store or the Android package name each need
 an ADR.
