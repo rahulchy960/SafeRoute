@@ -14,6 +14,7 @@ import { parseArgs } from 'node:util';
 import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import pg from 'pg';
+import { parsePostgresUrl } from '../config.js';
 import { safeDbError } from '../db/client.js';
 import * as schema from '../db/schema/index.js';
 import { isRole, ROLES } from '../modules/auth/roles.js';
@@ -32,9 +33,11 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
 
 /** First three characters of the host only, e.g. `127***:5433`, so logs show which database. */
 export function maskDatabaseHost(databaseUrl: string): string {
-  const url = new URL(databaseUrl);
-  const host = url.hostname === '' ? '(socket)' : `${url.hostname.slice(0, 3)}***`;
-  return url.port === '' ? host : `${host}:${url.port}`;
+  // Also understands the Cloud SQL socket form, which `new URL` rejects (see parsePostgresUrl).
+  const target = parsePostgresUrl(databaseUrl);
+  if (target === undefined) throw new Error('not a postgres URL');
+  const host = target.hostname === '' ? '(socket)' : `${target.hostname.slice(0, 3)}***`;
+  return target.port === '' ? host : `${host}:${target.port}`;
 }
 
 export interface Output {

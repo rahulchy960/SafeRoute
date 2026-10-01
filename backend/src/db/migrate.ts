@@ -5,7 +5,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import pg from 'pg';
-import { ConfigError, parseConfig } from '../config.js';
+import { ConfigError, parseJobConfig } from '../config.js';
 import { createLogger, type Logger } from '../lib/logger.js';
 import { safeDbError } from './client.js';
 
@@ -85,7 +85,8 @@ export async function runMigrations({
 async function main(): Promise<void> {
   let logger: Logger | undefined;
   try {
-    const config = parseConfig(process.env);
+    // Job config: the migration job gets DATABASE_URL only, not the API's FIREBASE_PROJECT_ID.
+    const config = parseJobConfig(process.env);
     logger = createLogger(config);
     if (config.DATABASE_URL === undefined) {
       logger.error('DATABASE_URL is not set; nothing to migrate');

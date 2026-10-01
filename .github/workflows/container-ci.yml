@@ -1,0 +1,93 @@
+name: container-ci
+
+# Two jobs (P006, ADR 0007):
+#   container-ci  builds the API image from backend/Dockerfile and runs
+#                 backend/scripts/container-smoke.mjs against it: migrations twice, the production
+#                 guards, the HTTP smoke checks, non-root, JSON logs and a clean SIGTERM shutdown,
+#                 with a throwaway PostGIS container.
+#   actionlint    lints every workflow file (expressions, action inputs and, through the runner's
+#                 shellcheck, the shell in `run:` steps).
+#
+# No push, no cloud login, no secrets: it behaves the same for pull requests from forks. The image
+# is thrown away with the runner. Publishing to Artifact Registry happens only in deploy-staging.
+# Not a required check in the ruleset: path-filtered checks would block unrelated PRs.
+
+on:
+  pull_request:
+    paths:
+      - "backend/**"
+      - ".github/workflows/**"
+      - ".github/actionlint.yaml"
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/**"
+      - ".github/actionlint.yaml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: container-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  ACTIONLINT_VERSION: 1.7.12
+  # sha256 of actionlint_1.7.12_linux_amd64.tar.gz from the release's checksums file
+  ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+
+jobs:
+  container:
+    name: container-ci
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Only runs the smoke script (plain Node, no install). The image brings its own Node.
+      - name: Set up Node (version from backend/.nvmrc)
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: backend/.nvmrc
+
+      - name: Docker and buildx versions
+        run: |
+          docker version --format 'client {{.Client.Version}} / server {{.Server.Version}}'
+          docker buildx version
+
+      # On pull requests github.sha is the temporary merge commit, so use the PR's head commit.
+      - name: Build the image and run the container smoke test
+        env:
+          GIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: node scripts/container-smoke.mjs --git-sha "$GIT_SHA"
+
+  actionlint:
+    name: actionlint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install actionlint (pinned, checksum verified)
+        working-directory: ${{ runner.temp }}
+        run: |
+          curl -sSLf -o actionlint.tar.gz \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          echo "${ACTIONLINT_SHA256}  actionlint.tar.gz" | sha256sum --check --strict
+          tar -xzf actionlint.tar.gz actionlint
+          echo "${RUNNER_TEMP}" >> "$GITHUB_PATH"
+          ./actionlint -version
+
+      # Reads .github/actionlint.yaml. shellcheck is preinstalled on the runner.
+      - name: Lint workflows
+        run: actionlint -color

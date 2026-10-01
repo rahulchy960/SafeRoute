@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { ConfigError, parseConfig } from '../src/config.js';
+import { ConfigError, parseConfig, parseJobConfig } from '../src/config.js';
 
 function configError(env: Record<string, string>): ConfigError {
   try {
@@ -118,6 +118,37 @@ describe('parseConfig', () => {
       expect(err.message).toContain('DATABASE_URL');
       expect(err.message).not.toContain('fake-secret-pw');
       expect(err.message).not.toContain('db.internal.example');
+    });
+  });
+
+  describe('parseJobConfig (migration job, P006)', () => {
+    const JOB = { NODE_ENV: 'production', DATABASE_URL: 'postgres://u:p@127.0.0.1:5433/db' };
+
+    it('accepts production without FIREBASE_PROJECT_ID, which the API config rejects', () => {
+      expect(parseJobConfig(JOB)).toMatchObject({ NODE_ENV: 'production', LOG_LEVEL: 'info' });
+      expect(parseJobConfig(JOB).FIREBASE_PROJECT_ID).toBeUndefined();
+      expect(configError(JOB).issues).toEqual([
+        'FIREBASE_PROJECT_ID: required when NODE_ENV=production',
+      ]);
+    });
+
+    it('leaves the DATABASE_URL presence check to the job', () => {
+      expect(parseJobConfig({ NODE_ENV: 'production' }).DATABASE_URL).toBeUndefined();
+    });
+
+    it('still validates every value without echoing it', () => {
+      const leaky = 'mysql://fake-user:fake-secret-pw@db.internal.example/fake_db';
+      expect(() => parseJobConfig({ ...JOB, DATABASE_URL: leaky, LOG_LEVEL: 'verbose' })).toThrow(
+        ConfigError,
+      );
+      try {
+        parseJobConfig({ ...JOB, DATABASE_URL: leaky });
+      } catch (err) {
+        expect((err as ConfigError).issues).toEqual([
+          'DATABASE_URL: must be a postgres:// or postgresql:// URL',
+        ]);
+        expect((err as ConfigError).message).not.toContain('fake-secret-pw');
+      }
     });
   });
 

@@ -1,0 +1,8 @@
+# actionlint configuration (used by the actionlint job in .github/workflows/container-ci.yml).
+paths:
+  .github/workflows/repo-checks.yml:
+    ignore:
+      # The "JSON validity" step passes JavaScript to `node -e` in single quotes; its template
+      # literals look like unexpanded shell variables to shellcheck. Ignored here so that the
+      # required check's workflow file does not have to change.
+      - "shellcheck reported issue in this script: SC2016:.+"

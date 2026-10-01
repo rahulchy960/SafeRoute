@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Allowlist: nothing enters the build context unless it is named below. So .env files, .git,
+# node_modules, dist, tests, docs, scripts and local tooling can never reach an image layer,
+# including files added later.
+*
+
+!package.json
+!pnpm-lock.yaml
+!pnpm-workspace.yaml
+!tsconfig.json
+!tsconfig.build.json
+!src
+!drizzle
+
+# Docs that live beside the source.
+src/**/*.md
