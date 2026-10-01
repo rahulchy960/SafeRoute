@@ -12,7 +12,10 @@ import { buildTestApp } from './helpers.js';
  * Every path in the contract. A prompt that adds routes extends this list in the same PR, so a
  * route can't appear (or vanish) without a reviewer seeing it here.
  */
-const DOCUMENTED_PATHS = ['/health', '/health/ready'];
+const DOCUMENTED_PATHS = ['/health', '/health/ready', '/v1/me', '/v1/me/bootstrap'];
+
+/** Operations that are public by design; every other operation must require firebaseBearer. */
+const PUBLIC_OPERATIONS = ['getHealth', 'getReadiness'];
 
 const HTTP_METHODS = ['get', 'put', 'post', 'delete', 'options', 'head', 'patch', 'trace'];
 
@@ -95,6 +98,47 @@ describe('generated OpenAPI document', () => {
     expect(serialized).not.toMatch(/https?:\/\//i);
     expect(serialized).not.toMatch(/[\w.+-]+@[\w-]+\.[\w.]+/);
     expect(serialized).not.toMatch(/[A-Za-z]:\\\\|\/Users\/|\/home\//);
+  });
+
+  it('protects every non-public operation with firebaseBearer (ADR 0006)', () => {
+    for (const { method, path, op } of operations()) {
+      const where = `${method.toUpperCase()} ${path}`;
+      if (PUBLIC_OPERATIONS.includes(op.operationId as string)) {
+        expect(op.security, where).toEqual([]);
+      } else {
+        expect(op.security, where).toEqual([{ firebaseBearer: [] }]);
+        const responses = op.responses as Record<string, Json>;
+        expect(responses['401'], where).toEqual({ $ref: '#/components/responses/Unauthorized' });
+      }
+    }
+  });
+
+  it('documents the /v1/me operations (P005)', () => {
+    const paths = doc.paths as Record<string, Record<string, Json>>;
+    expect(paths['/v1/me']?.get?.operationId).toBe('getMe');
+    expect(paths['/v1/me/bootstrap']?.post?.operationId).toBe('bootstrapMe');
+    expect(Object.keys(paths['/v1/me/bootstrap']?.post?.responses as Json).sort()).toEqual([
+      '200',
+      '201',
+      '400',
+      '401',
+      '403',
+      '409',
+      '500',
+      '503',
+    ]);
+    const me = components.schemas?.Me as { properties: Json; required: string[] };
+    expect(Object.keys(me.properties).sort()).toEqual([
+      'createdAt',
+      'displayName',
+      'id',
+      'locale',
+      'phoneE164',
+      'role',
+    ]);
+    expect(serialized).not.toMatch(/firebaseUid|firebase_uid|deletedAt/);
+    const unauthorized = components.responses?.Unauthorized as { headers: Json };
+    expect(unauthorized.headers).toHaveProperty('WWW-Authenticate');
   });
 
   it('is city-neutral (ADR 0005)', () => {

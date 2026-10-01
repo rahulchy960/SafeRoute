@@ -2,7 +2,12 @@
 import { z, type OpenAPIHono } from '@hono/zod-openapi';
 import type { AppEnv } from '../types.js';
 import { ProblemDetailsSchema } from './problem.js';
-import { ERROR_RESPONSES, HEADER_COMPONENTS, problemResponseComponent } from './responses.js';
+import {
+  ERROR_RESPONSES,
+  HEADER_COMPONENTS,
+  problemResponseComponent,
+  type ErrorStatus,
+} from './responses.js';
 
 /** Same rule as Plan v7 §6.2: 16–64 URL-safe characters, e.g. a UUID. */
 export const IDEMPOTENCY_KEY_PATTERN = /^[A-Za-z0-9._-]{16,64}$/;
@@ -40,16 +45,22 @@ export function registerContractComponents(app: OpenAPIHono<AppEnv>): void {
   for (const [name, { description, schema }] of Object.entries(HEADER_COMPONENTS)) {
     registry.registerComponent('headers', name, { description, schema: { ...schema } });
   }
-  for (const { name, description } of Object.values(ERROR_RESPONSES)) {
-    registry.registerComponent('responses', name, problemResponseComponent(description));
+  for (const [status, { name, description }] of Object.entries(ERROR_RESPONSES)) {
+    registry.registerComponent(
+      'responses',
+      name,
+      problemResponseComponent(description, Number(status) as ErrorStatus),
+    );
   }
 
-  // Declared ahead of use: P005 adds token verification and references this scheme on every
-  // protected /v1 route. Authorization is always enforced by server middleware, not by the spec.
+  // Referenced by every protected /v1 route (P005, ADR 0006). Authorization is always enforced
+  // by server middleware (src/modules/auth/middleware.ts), not by the spec.
   registry.registerComponent('securitySchemes', 'firebaseBearer', {
     type: 'http',
     scheme: 'bearer',
     bearerFormat: 'JWT',
-    description: 'Firebase ID token, sent as `Authorization: Bearer <token>`.',
+    description:
+      'Firebase ID token from phone sign-in, sent as `Authorization: Bearer <token>`. ' +
+      '401 → refresh the token and retry once; 503 `auth_unavailable` → retry with backoff.',
   });
 }

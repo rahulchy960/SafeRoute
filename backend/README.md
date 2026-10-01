@@ -2,10 +2,10 @@
 
 TypeScript modular monolith for SafeRoute (Plan v7 §4, §6): the **saferoute-api** Hono
 service on PostgreSQL + PostGIS via Drizzle ORM (P003), with a generated OpenAPI 3.1 contract
-(P004, [`../contracts/`](../contracts/)) and Firebase ID-token verification with auth middleware
-(P005a, [ADR 0006](../docs/adr/0006-authentication-and-roles.md)). Later prompts add the `/v1/me`
-endpoints (P005b), Cloud Run deployment (P006), the pg-boss worker and the domain modules listed
-in [`src/modules/README.md`](src/modules/README.md).
+(P004, [`../contracts/`](../contracts/)) and Firebase ID-token authentication with `/v1/me`
+(P005a/b, [ADR 0006](../docs/adr/0006-authentication-and-roles.md)). Later prompts add Cloud Run
+deployment (P006), the pg-boss worker and the domain modules listed in
+[`src/modules/README.md`](src/modules/README.md).
 
 ## Requirements
 
@@ -38,6 +38,34 @@ pnpm start               # node dist/server.js, JSON logs on stdout
 
 Ctrl+C stops the server gracefully (in-flight requests finish, exit code 0).
 
+### Sign-in locally (no emulator)
+
+Protected routes need `FIREBASE_PROJECT_ID`. Put the **staging** project ID in `backend/.env`
+(git-ignored; `pnpm dev` loads it). Without it, `/v1/*` answers 503 `auth_not_configured`.
+
+There is **no dev login route, no Firebase emulator and no auth bypass** of any kind: the API only
+accepts RS256 tokens signed by Google for that project (ADR 0006). Real tokens come from the
+Android app (from P009). Until then, check the negative paths by hand:
+
+```sh
+curl -i http://localhost:8080/v1/me                                   # 401, WWW-Authenticate: Bearer
+curl -i -H "Authorization: Bearer garbage" http://localhost:8080/v1/me # 401, same body
+curl -i http://localhost:8080/health                                  # 200
+```
+
+The positive paths are covered by the automated tests: they sign tokens with an RSA key generated
+per test run and give the **real** `FirebaseIdTokenVerifier` a local key resolver
+([`test/auth/tokens.ts`](test/auth/tokens.ts)), with the fake project `demo-saferoute`.
+
+Production-style:
+
+```sh
+pnpm build               # compiles src/ → dist/
+pnpm start               # node dist/server.js, JSON logs on stdout
+```
+
+Ctrl+C stops the server gracefully (in-flight requests finish, exit code 0).
+
 ## Environment variables
 
 All settings come from environment variables, validated once at startup by
@@ -56,22 +84,23 @@ variable (never its value). Empty values count as unset. See [`.env.example`](.e
 | `DB_POOL_MAX` | no / no / no | no | `5` (1–20 per instance) | Cloud Run env var |
 | `DB_STATEMENT_TIMEOUT_MS` | no / no / no | no | `10000` (100–300000) | Cloud Run env var |
 | `DB_CONNECT_TIMEOUT_MS` | no / no / no | no | `5000` (100–60000) | Cloud Run env var |
-| `FIREBASE_PROJECT_ID` | no / no / **yes** (`demo-` IDs rejected) | no, but kept out of tracked files | none (protected routes then answer 503) | GitHub environment variable → Cloud Run env var |
+| `FIREBASE_PROJECT_ID` | no / no / **yes** (`demo-` IDs rejected) | no, but kept out of tracked files | none (`/v1` then answers 503) | GitHub environment variable → Cloud Run env var |
 
 Other allowed values: `NODE_ENV` ∈ `development`, `test`, `production`; `LOG_LEVEL` ∈ `debug`,
 `info`, `warn`, `error`; `DATABASE_URL` is a `postgres://` or `postgresql://` URL;
 `FIREBASE_PROJECT_ID` matches `^[a-z][a-z0-9-]{4,28}[a-z0-9]$`.
 
 No variable changes the token issuer, audience, algorithm or key URL, and none enables an emulator
-or bypass (a test enforces this). `pnpm dev` and `pnpm db:migrate` load `.env.example`, then `.env` (git-ignored) if
-present.
+or bypass (a test enforces this). `pnpm dev`, `pnpm db:migrate` and `pnpm admin:set-role` load
+`.env.example`, then `.env` (git-ignored) if present.
 
 ## Layout
 
 ```text
 src/
-  server.ts            entry point: config → logger → app → HTTP server, graceful shutdown
-  app.ts               createApp({ config, logger }): middleware order and error handlers
+  server.ts            entry point: config → logger → runtime → HTTP server, graceful shutdown
+  runtime.ts           createRuntime(config, logger): database pool + token verifier + app (no I/O)
+  app.ts               createApp({ config, logger, readiness, verifier, db }): middleware and routes
   config.ts            parseConfig(env) with Zod
   types.ts             Hono context variables (requestId, logger)
   db/                  Drizzle client, schema, migration runner, PostGIS point type (see db/README.md)
@@ -81,7 +110,8 @@ src/
   routes/health.ts     GET /health (liveness, no dependencies)
   routes/ready.ts      GET /health/ready (readiness: SELECT 1 with a 2 s timeout)
   modules/auth/        Firebase ID-token verifier (jose), authenticate / requireUser / requireRole
-  modules/users/       user lookup for requireUser (endpoints follow in P005b)
+  modules/users/       POST /v1/me/bootstrap, GET /v1/me
+  scripts/set-role.ts  admin CLI: change a user's role (audited)
   modules/             more domain modules arrive with later prompts
 drizzle/               generated SQL migrations (committed, never edited after merge)
 test/                  Vitest "unit" project (no network)
@@ -107,13 +137,46 @@ test/db/               Vitest "db" project (Testcontainers PostGIS)
 - **Authentication** (ADR 0006): protected `/v1` routes need `Authorization: Bearer <Firebase ID
   token>` from phone sign-in. `401 unauthorized` (+ `WWW-Authenticate: Bearer`, same body for
   every reason) → refresh the token and retry once. `503 auth_unavailable` (Google's keys
-  unreachable) → retry with backoff. `403 bootstrap_required` → call `POST /v1/me/bootstrap` (P005b).
+  unreachable) → retry with backoff. `403 bootstrap_required` → call `POST /v1/me/bootstrap`.
   `403 account_deleted` / `forbidden` are final. Roles come from `users.role`, read on every
   request. Tokens, phone numbers and Firebase uids are never logged; the request logger gets
   `user_id` (internal UUID) once the user is known.
 - **`GET /health/ready`** (readiness): `200 {"status":"ready","checks":{"database":"ok"}}` or 503
   problem+json `db_unavailable` / `db_not_configured`. Both are outside `/v1` because they are
   operational, not part of the app contract.
+
+## Change a user's role (admin)
+
+Roles (`user`, `moderator`, `admin`) are stored in `users.role` and checked on every request, so a
+change applies to the user's next request. Use the audited script; never edit the row by hand:
+
+```sh
+pnpm admin:set-role --user-id <uuid> --role moderator --confirm          # local, via tsx
+node dist/scripts/set-role.js --user-id <uuid> --role moderator --confirm   # compiled
+```
+
+- `--user-id` is the internal account id: the `id` field of `GET /v1/me` (sign in on the app, then
+  read it from the response). It is not the Firebase uid.
+- Without `--confirm` nothing changes. An unknown user exits 1. `--help` works without a database.
+- It prints only the user id, `old → new` role and a masked database host, and writes an
+  `audit_log` row (`actor_type 'system'`, action `user.role_changed`, metadata `{from, to}`).
+- It uses only `DATABASE_URL` and production dependencies. Against **staging**, run it as the Cloud
+  Run Job that P006 provides; never point a laptop at the staging database.
+
+## Deployment smoke checks (used by P006)
+
+After each deploy, without any token:
+
+1. `GET /health` → 200, and its `version` equals the deployed `APP_VERSION` (set from the git SHA).
+2. `GET /health/ready` → 200 `{"status":"ready","checks":{"database":"ok"}}`.
+3. `GET /v1/me` without a token → 401 with `WWW-Authenticate: Bearer` and an `X-Request-Id`
+   header. This proves auth is wired and `FIREBASE_PROJECT_ID` is set (otherwise: 503
+   `auth_not_configured`) without needing a real token.
+
+Startup makes no network call (the pool connects lazily; Google's keys are fetched on the first
+token), so a cold start never depends on Google being reachable
+([`test/deploy-readiness.test.ts`](test/deploy-readiness.test.ts)). The API does need outbound
+HTTPS to `www.googleapis.com` to verify tokens.
 
 ## Quality gate
 
@@ -128,8 +191,3 @@ CI runs the same steps in [`.github/workflows/backend-ci.yml`](../.github/workfl
 on every pull request that touches `backend/`, including `pnpm openapi:lint`; the stale-spec check
 runs as a unit test. The oasdiff breaking-change gate runs in
 [`.github/workflows/contracts-ci.yml`](../.github/workflows/contracts-ci.yml).
-
-Auth tests need no network and no Firebase project: they sign tokens with an RSA key generated per
-test run and give the **real** `FirebaseIdTokenVerifier` a local key resolver
-([`test/auth/tokens.ts`](test/auth/tokens.ts)), with the fake project `demo-saferoute`. There is no
-emulator, dev login or bypass (ADR 0006).

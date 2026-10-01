@@ -1,8 +1,8 @@
 import { serve } from '@hono/node-server';
-import { createApp } from './app.js';
 import { ConfigError, parseConfig, type Config } from './config.js';
-import { createDb, databaseReadiness, safeDbError } from './db/client.js';
+import { safeDbError } from './db/client.js';
 import { createLogger } from './lib/logger.js';
+import { createRuntime } from './runtime.js';
 
 /** Cloud Run sends SIGTERM and waits 10 s before SIGKILL; finish in-flight requests within that. */
 const SHUTDOWN_TIMEOUT_MS = 10_000;
@@ -21,16 +21,7 @@ function loadConfig(): Config {
 
 const config = loadConfig();
 const logger = createLogger(config);
-// Without DATABASE_URL (local dev, unit tests) the API still runs; /health/ready reports 503.
-const database =
-  config.DATABASE_URL === undefined
-    ? undefined
-    : createDb({ ...config, DATABASE_URL: config.DATABASE_URL }, logger);
-const app = createApp({
-  config,
-  logger,
-  ...(database ? { readiness: databaseReadiness(database.db) } : {}),
-});
+const { app, database } = createRuntime(config, logger);
 
 const server = serve({ fetch: app.fetch, port: config.PORT }, (info) => {
   logger.info(

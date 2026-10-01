@@ -10,13 +10,18 @@ export const PROBLEM_CODES = [
   'validation_error',
   'unauthorized',
   'forbidden',
+  'bootstrap_required',
+  'account_deleted',
   'not_found',
   'conflict',
+  'phone_already_registered',
   'gone',
   'rate_limited',
   'internal_error',
   'db_unavailable',
   'db_not_configured',
+  'auth_unavailable',
+  'auth_not_configured',
   'http_error',
 ] as const;
 
