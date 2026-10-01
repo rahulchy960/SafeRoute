@@ -100,6 +100,10 @@ jobs:
       - name: Build
         run: pnpm build
 
+      # P006 runs this as a Cloud Run Job with plain node; --help needs no database.
+      - name: Admin script runs from the build output
+        run: node dist/scripts/set-role.js --help
+
       - name: Migration validation (fresh database, then idempotent re-run)
         env:
           DATABASE_URL: postgres://saferoute_ci:ci-only-password@127.0.0.1:5432/saferoute_ci

@@ -3,10 +3,13 @@ import { HTTPException } from 'hono/http-exception';
 import type { Config } from './config.js';
 import { registerContractComponents } from './contract/components.js';
 import { validationHook } from './contract/validation.js';
+import type { Db } from './db/client.js';
 import type { Logger } from './lib/logger.js';
 import { AppError, problemResponse } from './lib/problem.js';
 import { accessLog } from './middleware/access-log.js';
 import { requestId } from './middleware/request-id.js';
+import type { TokenVerifier } from './modules/auth/verifier.js';
+import { userRoutes } from './modules/users/routes.js';
 import { healthRoutes } from './routes/health.js';
 import { readyRoutes, type ReadinessCheck } from './routes/ready.js';
 import type { AppEnv } from './types.js';
@@ -16,6 +19,13 @@ export interface AppDeps {
   logger: Logger;
   /** Database probe for GET /health/ready; omitted when no DATABASE_URL is configured. */
   readiness?: ReadinessCheck;
+  /**
+   * Firebase ID-token verifier, one shared instance (its key cache is per instance). Omitted when
+   * FIREBASE_PROJECT_ID is not set (dev/test only): protected routes then answer 503.
+   */
+  verifier?: TokenVerifier;
+  /** Database for the /v1 modules; omitted when no DATABASE_URL is configured. */
+  db?: Db;
 }
 
 /**
@@ -31,7 +41,7 @@ export interface AppDeps {
  * applies to all routers mounted below, because OpenAPIHono resolves the default hook through
  * the parent app.
  */
-export function createApp({ config, logger, readiness }: AppDeps) {
+export function createApp({ config, logger, readiness, verifier, db }: AppDeps) {
   const app = new OpenAPIHono<AppEnv>({ defaultHook: validationHook });
   registerContractComponents(app);
 
@@ -40,6 +50,7 @@ export function createApp({ config, logger, readiness }: AppDeps) {
 
   app.route('/', healthRoutes(config));
   app.route('/', readyRoutes(readiness));
+  app.route('/', userRoutes({ verifier, db }));
 
   app.notFound((c) => {
     c.set('unmatchedRoute', true);

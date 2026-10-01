@@ -9,7 +9,10 @@ interface HeaderComponent {
 }
 
 /** Header components; responses reference them instead of repeating the definitions. */
-export const HEADER_COMPONENTS: Record<'RequestId' | 'CacheControlNoStore', HeaderComponent> = {
+export const HEADER_COMPONENTS: Record<
+  'RequestId' | 'CacheControlNoStore' | 'WwwAuthenticate',
+  HeaderComponent
+> = {
   RequestId: {
     description:
       'Correlation ID for this request. Echoes a well-formed incoming `X-Request-Id` ' +
@@ -17,8 +20,12 @@ export const HEADER_COMPONENTS: Record<'RequestId' | 'CacheControlNoStore', Head
     schema: { type: 'string' },
   },
   CacheControlNoStore: {
-    description: 'Always `no-store`: probe results must never be cached.',
+    description: 'Always `no-store`: the response must never be cached.',
     schema: { type: 'string', enum: ['no-store'] },
+  },
+  WwwAuthenticate: {
+    description: 'Always `Bearer`: send a Firebase ID token as `Authorization: Bearer <token>`.',
+    schema: { type: 'string', enum: ['Bearer'] },
   },
 };
 
@@ -29,26 +36,46 @@ export const headerRef = (name: keyof typeof HEADER_COMPONENTS) => ({
 /** Shared error responses, keyed by status code. Routes pick the ones that can really happen. */
 export const ERROR_RESPONSES = {
   400: { name: 'BadRequest', description: 'Invalid input (`validation_error`).' },
-  401: { name: 'Unauthorized', description: 'Missing or invalid credentials (`unauthorized`).' },
-  403: { name: 'Forbidden', description: 'Authenticated but not allowed (`forbidden`).' },
+  401: {
+    name: 'Unauthorized',
+    description:
+      'Missing or invalid credentials (`unauthorized`). Refresh the ID token and retry once.',
+  },
+  403: {
+    name: 'Forbidden',
+    description:
+      'Authenticated but not allowed: `forbidden`, `bootstrap_required` or `account_deleted`. ' +
+      'Final: retrying the same request does not help.',
+  },
   404: { name: 'NotFound', description: 'No such route or resource (`not_found`).' },
-  409: { name: 'Conflict', description: 'Conflicts with the current state (`conflict`).' },
+  409: {
+    name: 'Conflict',
+    description: 'Conflicts with the current state (`conflict`, `phone_already_registered`).',
+  },
   410: { name: 'Gone', description: 'The resource existed but has expired or ended (`gone`).' },
   429: { name: 'TooManyRequests', description: 'Rate limit exceeded (`rate_limited`).' },
   500: { name: 'InternalError', description: 'Unexpected server error (`internal_error`).' },
   503: {
     name: 'ServiceUnavailable',
-    description: 'A dependency is unavailable (e.g. `db_unavailable`, `db_not_configured`).',
+    description:
+      'A dependency is unavailable (e.g. `db_unavailable`, `db_not_configured`, ' +
+      '`auth_unavailable`, `auth_not_configured`). Retry with backoff.',
   },
 } as const;
 
 export type ErrorStatus = keyof typeof ERROR_RESPONSES;
 
-/** A response component that returns ProblemDetails and documents `X-Request-Id`. */
-export function problemResponseComponent(description: string) {
+/**
+ * A response component that returns ProblemDetails and documents `X-Request-Id` (and, for 401,
+ * `WWW-Authenticate`).
+ */
+export function problemResponseComponent(description: string, status?: ErrorStatus) {
   return {
     description,
-    headers: { 'X-Request-Id': headerRef('RequestId') },
+    headers: {
+      'X-Request-Id': headerRef('RequestId'),
+      ...(status === 401 ? { 'WWW-Authenticate': headerRef('WwwAuthenticate') } : {}),
+    },
     content: {
       [PROBLEM_MEDIA_TYPE]: { schema: { $ref: '#/components/schemas/ProblemDetails' } },
     },

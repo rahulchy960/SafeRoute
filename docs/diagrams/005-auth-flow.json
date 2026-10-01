@@ -1,0 +1,38 @@
+{
+  "$schema": "../../tools/diagrams/diagram.schema.json",
+  "title": "Authentication flow",
+  "subtitle": "Firebase phone sign-in → ID token → API verification and DB-authoritative roles (P005, ADR 0006)",
+  "direction": "TB",
+  "layout": { "nodeWidth": 230 },
+  "nodes": [
+    { "id": "app", "label": "Android app (P009)", "role": "app" },
+    { "id": "firebase", "label": "Firebase Auth: phone + OTP", "role": "security" },
+    { "id": "token", "label": "ID token (JWT, RS256)", "role": "external" },
+    { "id": "authn", "label": "SafeRoute API: authenticate middleware", "role": "service" },
+    { "id": "jose", "label": "jose: signature, issuer, audience, expiry, phone provider", "role": "service" },
+    { "id": "jwks", "label": "Google public keys (JWKS, cached, refetch on unknown kid)", "role": "external" },
+    { "id": "note", "label": "No emulator or bypass: unsigned tokens are rejected; tests sign with a throwaway key", "role": "external", "rank": 0 },
+    { "id": "e401", "label": "401 invalid token", "role": "security" },
+    { "id": "e503", "label": "503 auth_unavailable (keys unreachable)", "role": "security" },
+    { "id": "requser", "label": "requireUser: lookup users by firebase_uid", "role": "service" },
+    { "id": "bootstrap", "label": "POST /v1/me/bootstrap: idempotent upsert", "role": "service" },
+    { "id": "e403", "label": "403 bootstrap_required / account_deleted", "role": "security" },
+    { "id": "role", "label": "requireRole: DB role check", "role": "security" },
+    { "id": "db", "label": "PostgreSQL users + audit_log", "role": "data" }
+  ],
+  "edges": [
+    { "from": "app", "to": "firebase", "label": "sign in" },
+    { "from": "firebase", "to": "token" },
+    { "from": "token", "to": "authn", "label": "Authorization: Bearer" },
+    { "from": "authn", "to": "jose" },
+    { "from": "jwks", "to": "jose", "label": "keys" },
+    { "from": "jose", "to": "e401", "label": "invalid" },
+    { "from": "jose", "to": "e503", "label": "keys unreachable" },
+    { "from": "jose", "to": "bootstrap", "label": "valid" },
+    { "from": "jose", "to": "requser", "label": "valid" },
+    { "from": "bootstrap", "to": "db", "label": "users table" },
+    { "from": "requser", "to": "db" },
+    { "from": "requser", "to": "e403" },
+    { "from": "requser", "to": "role" }
+  ]
+}

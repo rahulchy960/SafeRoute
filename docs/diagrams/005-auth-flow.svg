@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1078" height="1075" viewBox="0 0 1078 1075" font-family="Helvetica, Arial, sans-serif">
+<title>Authentication flow</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#495057"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="40" y="62" font-size="24" font-weight="700" fill="#1e1e1e">Authentication flow</text>
+<text x="40" y="86" font-size="14" fill="#495057">Firebase phone sign-in → ID token → API verification and DB-authoritative roles (P005, ADR 0006)</text>
+<line x1="283" y1="196" x2="283" y2="282" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="283" y1="348" x2="283" y2="408" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="283" y1="464" x2="283" y2="524" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="283" y1="590" x2="411" y2="650" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="539" y1="211.5" x2="411" y2="650" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="411" y1="737" x2="155" y2="802" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="411" y1="737" x2="411" y2="797" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="411" y1="737" x2="923" y2="797" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="411" y1="737" x2="667" y2="797" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="923" y1="863" x2="923" y2="923" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="667" y1="863" x2="923" y2="923" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="667" y1="863" x2="411" y2="923" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="667" y1="863" x2="667" y2="928" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="168" y="140" width="230" height="56" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="283" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="283" y="173.6">Android app (P009)</tspan>
+</text>
+<rect x="168" y="282" width="230" height="66" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="283" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="283" y="310.2">Firebase Auth: phone +</tspan>
+<tspan x="283" y="331">OTP</tspan>
+</text>
+<rect x="168" y="408" width="230" height="56" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="283" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="283" y="441.6">ID token (JWT, RS256)</tspan>
+</text>
+<rect x="168" y="524" width="230" height="66" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="283" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="283" y="552.2">SafeRoute API:</tspan>
+<tspan x="283" y="573">authenticate middleware</tspan>
+</text>
+<rect x="296" y="650" width="230" height="87" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="411" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="411" y="678.3">jose: signature, issuer,</tspan>
+<tspan x="411" y="699.1">audience, expiry, phone</tspan>
+<tspan x="411" y="719.9">provider</tspan>
+</text>
+<rect x="424" y="124.5" width="230" height="87" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="539" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="539" y="152.8">Google public keys (JWKS,</tspan>
+<tspan x="539" y="173.6">cached, refetch on</tspan>
+<tspan x="539" y="194.4">unknown kid)</tspan>
+</text>
+<rect x="680" y="114" width="230" height="108" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="795" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="795" y="142.4">No emulator or bypass:</tspan>
+<tspan x="795" y="163.2">unsigned tokens are</tspan>
+<tspan x="795" y="184">rejected; tests sign with a</tspan>
+<tspan x="795" y="204.8">throwaway key</tspan>
+</text>
+<rect x="40" y="802" width="230" height="56" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="155" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="155" y="835.6">401 invalid token</tspan>
+</text>
+<rect x="296" y="797" width="230" height="66" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="411" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="411" y="825.2">503 auth_unavailable (keys</tspan>
+<tspan x="411" y="846">unreachable)</tspan>
+</text>
+<rect x="552" y="797" width="230" height="66" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="667" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="667" y="825.2">requireUser: lookup users</tspan>
+<tspan x="667" y="846">by firebase_uid</tspan>
+</text>
+<rect x="808" y="797" width="230" height="66" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="923" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="923" y="825.2">POST /v1/me/bootstrap:</tspan>
+<tspan x="923" y="846">idempotent upsert</tspan>
+</text>
+<rect x="296" y="923" width="230" height="66" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="411" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="411" y="951.2">403 bootstrap_required /</tspan>
+<tspan x="411" y="972">account_deleted</tspan>
+</text>
+<rect x="552" y="928" width="230" height="56" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="667" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="667" y="961.6">requireRole: DB role check</tspan>
+</text>
+<rect x="808" y="923" width="230" height="66" rx="10" fill="#ffd8a8" stroke="#e8590c" stroke-width="2"/>
+<text x="923" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="923" y="951.2">PostgreSQL users +</tspan>
+<tspan x="923" y="972">audit_log</tspan>
+</text>
+<rect x="257.2" y="228" width="51.5" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="283" y="243.5" font-size="13" fill="#1e1e1e" text-anchor="middle">sign in</text>
+<rect x="214.5" y="483" width="137.1" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="283" y="498.5" font-size="13" fill="#1e1e1e" text-anchor="middle">Authorization: Bearer</text>
+<rect x="455" y="419.8" width="40.1" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="475" y="435.3" font-size="13" fill="#1e1e1e" text-anchor="middle">keys</text>
+<rect x="257.1" y="758.5" width="51.8" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="283" y="774" font-size="13" fill="#1e1e1e" text-anchor="middle">invalid</text>
+<rect x="353.3" y="756" width="115.5" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="411" y="771.5" font-size="13" fill="#1e1e1e" text-anchor="middle">keys unreachable</text>
+<rect x="646.6" y="756" width="40.9" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="667" y="771.5" font-size="13" fill="#1e1e1e" text-anchor="middle">valid</text>
+<rect x="518.6" y="756" width="40.9" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="539" y="771.5" font-size="13" fill="#1e1e1e" text-anchor="middle">valid</text>
+<rect x="884.4" y="882" width="77.3" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="923" y="897.5" font-size="13" fill="#1e1e1e" text-anchor="middle">users table</text>
+<rect x="40" y="1010" width="16" height="16" rx="3" fill="#a5d8ff" stroke="#1971c2" stroke-width="1.5"/>
+<text x="62" y="1023" font-size="13" fill="#495057">App / UI</text>
+<rect x="134.8" y="1010" width="16" height="16" rx="3" fill="#b2f2bb" stroke="#2f9e44" stroke-width="1.5"/>
+<text x="156.8" y="1023" font-size="13" fill="#495057">Service</text>
+<rect x="228.3" y="1010" width="16" height="16" rx="3" fill="#ffd8a8" stroke="#e8590c" stroke-width="1.5"/>
+<text x="250.3" y="1023" font-size="13" fill="#495057">Data</text>
+<rect x="303.1" y="1010" width="16" height="16" rx="3" fill="#ffc9c9" stroke="#e03131" stroke-width="1.5"/>
+<text x="325.1" y="1023" font-size="13" fill="#495057">Security / emergency</text>
+<rect x="476.7" y="1010" width="16" height="16" rx="3" fill="#e9ecef" stroke="#495057" stroke-width="1.5"/>
+<text x="498.7" y="1023" font-size="13" fill="#495057">External</text>
+</svg>

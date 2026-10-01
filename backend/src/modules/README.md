@@ -10,7 +10,7 @@ own service later only if measurements justify it (Plan v7 §14.6).
 | Module | Owns | Planned in |
 | --- | --- | --- |
 | `auth` | Firebase ID-token verification (jose), `authenticate` / `requireUser` / `requireRole`; roles from `users.role` (ADR 0006) | P005a |
-| `users` | `/v1/me` bootstrap and profile, consent; deletion and export | P005a/b, P009, P020 |
+| `users` | `/v1/me` bootstrap and profile, consent; deletion and export | P005b, P009, P020 |
 | `contacts` | emergency contacts, contact opt-out | P013 |
 | `search` | geocoding / place search behind a provider adapter | P011 |
 | `routing` | route alternatives behind the OSRM adapter | P012 |
@@ -31,6 +31,6 @@ Expected layout once a module exists:
 modules/<name>/
   routes.ts     createRoute definitions + Zod request/response schemas (OpenAPI, P004)
   service.ts    business logic; the only entry point other modules may call
-  schema.ts     Drizzle tables owned by this module (from P003)
+  schema.ts     Zod API schemas of the module (the Drizzle tables live in src/db/schema/)
   *.test.ts
 ```

@@ -32,8 +32,11 @@ new ADR file under `docs/adr/`.
   `tags`, `summary`, request schema and responses.
 - `components.schemas`: shared data shapes (`ProblemDetails`, `Health`, ...).
 - `components.responses`: shared error responses (`BadRequest`, `NotFound`, `InternalError`, ...).
-- `components.parameters.IdempotencyKey` and `components.securitySchemes.firebaseBearer` are
-  declared ahead of use (P015 and P005).
+- `components.securitySchemes.firebaseBearer`: every protected `/v1` operation lists it under
+  `security` (since P005, [ADR 0006](../docs/adr/0006-authentication-and-roles.md)); `/health`
+  and `/health/ready` are public by design (`security: []`).
+- `components.parameters.IdempotencyKey` is declared ahead of use (first used in P015).
+  `POST /v1/me/bootstrap` doesn't need it: it is naturally idempotent (keyed by the token's user).
 - Paste the file into any OpenAPI viewer (e.g. editor.swagger.io) to browse it. It is public data.
 
 ## API contract rules (summary of ADR 0004)
@@ -77,15 +80,20 @@ Currently defined codes:
 | `code` | Typical status | Meaning |
 | --- | --- | --- |
 | `validation_error` | 400 | Request failed schema validation; see `errors` |
-| `unauthorized` | 401 | Missing or invalid credentials (from P005) |
-| `forbidden` | 403 | Authenticated but not allowed |
+| `unauthorized` | 401 | Missing or invalid credentials; same body for every reason, plus `WWW-Authenticate: Bearer`. Refresh the ID token and retry once |
+| `forbidden` | 403 | Authenticated but the role is not allowed. Final |
+| `bootstrap_required` | 403 | Signed in, but no account yet: call `POST /v1/me/bootstrap`, then retry |
+| `account_deleted` | 403 | The account was deleted. Final |
 | `not_found` | 404 | No such route or resource |
 | `conflict` | 409 | Conflicts with the current state |
+| `phone_already_registered` | 409 | Bootstrap: another account already holds this phone number |
 | `gone` | 410 | Existed but expired or ended (e.g. a finished share) |
 | `rate_limited` | 429 | Too many requests |
 | `http_error` | 4xx | Framework-level rejection (e.g. malformed JSON, unsupported media type) |
 | `internal_error` | 500 | Unexpected server error (details only in server logs) |
 | `db_unavailable` | 503 | Readiness: the database is not reachable |
-| `db_not_configured` | 503 | Readiness: no database configured for this instance |
+| `db_not_configured` | 503 | No database configured for this instance (readiness, `/v1` routes) |
+| `auth_unavailable` | 503 | Google's token-signing keys can't be fetched right now; retry with backoff (not a sign-out) |
+| `auth_not_configured` | 503 | This instance has no `FIREBASE_PROJECT_ID` (dev/test only) |
 
 Keep this table in sync with `PROBLEM_CODES` in `backend/src/contract/problem.ts`.
