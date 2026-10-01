@@ -46,7 +46,7 @@ docs/prompt-logs/ One log per prompt (NNN-core-work.md)
 docs/runbooks/  Operational runbooks
 .claude/        settings.json (deny rules) + slash commands /start-prompt, /ship-prompt
 .githooks/      pre-push hook that rejects pushes to main
-.github/        PR template, CODEOWNERS, workflows (repo-checks, backend-ci, contracts-ci, container-ci)
+.github/        PR template, CODEOWNERS, workflows (repo-checks, backend-ci, contracts-ci, container-ci, deploy-staging)
 ```
 
 ## TEN GOLDEN RULES
@@ -154,6 +154,20 @@ Follow [ADR 0007](docs/adr/0007-gcp-staging-topology.md):
   ([`backend/Dockerfile`](backend/Dockerfile)). Migrations never run at API startup.
 - Workflows that deploy never use `pull_request_target`, never print secrets, environment dumps
   or `gcloud config`, and pin every action by commit SHA.
+- Staging deploys (since P006b) run in
+  [`.github/workflows/deploy-staging.yml`](.github/workflows/deploy-staging.yml): on a merge to
+  `main` that touches `backend/**` or that workflow, or by hand (Actions → deploy-staging → Run
+  workflow), and only while the repository variable `STAGING_DEPLOY_ENABLED` is `true`. Order:
+  migration job → candidate revision with no traffic → smoke test → promote → smoke test →
+  automatic traffic rollback on failure. Don't reorder or skip a step.
+- Claude Code can't see a deploy. A staging deploy is **unverified** until Rahul reports the
+  Actions run result; say so in the prompt log and the final report.
+- Every PR fills the "Deployment impact" line of the PR template (in "Changes"): does it change
+  the image, the deploy workflow, cloud configuration or a secret?
+- Rollback, manual migration and the `saferoute-admin` job:
+  [`docs/runbooks/rollback-staging.md`](docs/runbooks/rollback-staging.md). Log queries and
+  metrics: [`docs/runbooks/observability-staging.md`](docs/runbooks/observability-staging.md).
+  The database is never rolled back; migrations are fixed forward (ADR 0003).
 
 ## Naming rules (since P003c, ADR 0005)
 
@@ -192,7 +206,8 @@ to go green.
 | Diagrams | `cd tools/diagrams && pnpm install && pnpm generate` (no errors) | Active |
 | Backend | `pnpm typecheck` · `pnpm lint` · `pnpm format:check` · `pnpm test` · `pnpm build` (run inside `backend/`; CI: `.github/workflows/backend-ci.yml`) | Active (since P002) |
 | Contracts | in `backend/`: `pnpm openapi:generate` then commit the diff · `pnpm openapi:check` · `pnpm openapi:lint`; breaking changes need the PR label `breaking-api-change` + a new ADR (CI: `backend-ci` runs check + lint; `.github/workflows/contracts-ci.yml` runs them plus the oasdiff breaking-change gate) | Active (since P004a; oasdiff gate since P004b) |
-| Container | in `backend/`: `node scripts/container-smoke.mjs` (needs Docker; builds the image and runs the smoke checks) · actionlint for workflow changes (CI: `.github/workflows/container-ci.yml`) | Active (since P006a) |
+| Container | in `backend/`: `node scripts/container-smoke.mjs` (needs Docker; builds the image and runs the smoke checks, including `scripts/smoke.mjs` pass and fail paths) · actionlint for workflow changes (CI: `.github/workflows/container-ci.yml`) | Active (since P006a) |
+| Deploy workflow | actionlint + shellcheck clean · no `pull_request_target` · every action pinned by commit SHA · deploy job gated on `STAGING_DEPLOY_ENABLED` · no step prints secrets, the environment or `gcloud config` (CI: the `actionlint` job in `container-ci`; the deploy itself runs only on `main`) | Active (since P006b) |
 | Android | `./gradlew lint testDebugUnitTest assembleDebug` (run inside `android/`) | Not yet applicable (from P007) |
 | Moderation | typecheck · lint · test · build | Not yet applicable (from P018) |
 

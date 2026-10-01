@@ -16,6 +16,8 @@
 - **infra:**
 - **docs:**
 
+**Deployment impact:** <!-- Image, deploy workflow, cloud configuration or secret changes? yes/no. If yes: what the next staging deploy does differently and what Rahul must do first. A merge that touches backend/** deploys to staging while STAGING_DEPLOY_ENABLED is true. -->
+
 ## API contract
 
 <!-- openapi.json diff summary; breaking? yes/no; ADR link if yes -->

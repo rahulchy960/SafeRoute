@@ -353,6 +353,36 @@ async function checkApi() {
   check('401 carries WWW-Authenticate: Bearer', me.headers.get('www-authenticate') === 'Bearer');
   check('401 carries an X-Request-Id header', Boolean(requestId), `request id ${requestId}`);
 
+  // The deploy workflow's smoke script, run as a CLI against this container: it must pass here,
+  // and must exit 1 when the deployed version is not the expected one.
+  const smokeScript = join(BACKEND_DIR, 'scripts', 'smoke.mjs');
+  const smoke = (expectVersion, timeoutSeconds) =>
+    run(process.execPath, [
+      smokeScript,
+      '--url',
+      base,
+      '--expect-version',
+      expectVersion,
+      '--timeout-seconds',
+      String(timeoutSeconds),
+    ]);
+  const smokePass = smoke(gitSha, 20);
+  check(
+    'smoke.mjs passes against the container',
+    smokePass.status === 0 && smokePass.stdout.includes('smoke test passed'),
+    `exit=${smokePass.status}`,
+  );
+  const smokeFail = smoke('not-the-deployed-version', 3);
+  check(
+    'smoke.mjs exits 1 when the expected version is wrong',
+    smokeFail.status === 1 && smokeFail.stdout.includes('smoke test FAILED'),
+    `exit=${smokeFail.status}`,
+  );
+  check(
+    'smoke.mjs never prints the URL',
+    ![smokePass, smokeFail].some((r) => `${r.stdout}${r.stderr}`.includes(address)),
+  );
+
   check('API process runs as a non-root uid', dockerOk(['exec', apiContainer, 'id', '-u']) !== '0');
 
   const startedAt = Date.now();

@@ -1,0 +1,308 @@
+name: deploy-staging
+
+# Deploys the API to Google Cloud STAGING (P006b, ADR 0007):
+#
+#   build image (tag = commit SHA) → container smoke test → push → migration job
+#   → new revision with NO traffic (tag "candidate") → smoke test → promote
+#   → smoke test on the live URL → on failure, traffic goes back to the previous revision
+#
+# Security model:
+#   - No keys. GitHub's OIDC token is exchanged through Workload Identity Federation, which only
+#     accepts this repository + refs/heads/main + the `staging` environment.
+#   - Never `pull_request_target`; pull requests and forks cannot reach this workflow's identity.
+#   - Project identifiers are environment SECRETS only so that GitHub masks them in public logs.
+#     Nothing here echoes secrets, dumps the environment or prints `gcloud config`.
+#   - The deploy identity cannot read the database secret or the database (runbook step 6).
+#
+# The job is skipped unless the repository variable STAGING_DEPLOY_ENABLED is 'true'.
+# Setup: docs/runbooks/gcp-staging-setup.md. Rollback: docs/runbooks/rollback-staging.md.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/deploy-staging.yml"
+  workflow_dispatch:
+
+permissions: {}
+
+# One deploy at a time; a newer run waits instead of cancelling a half-finished rollout.
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+env:
+  DATABASE_URL_SECRET: saferoute-staging-database-url
+  # Connections per API instance. API_MAX_INSTANCES × DB_POOL_MAX must stay within the budget
+  # below: the staging database tier allows 25 connections, some reserved, plus one per job.
+  DB_POOL_MAX: "5"
+  DB_CONNECTION_BUDGET: "20"
+  # The gcloud version the commands below were checked against.
+  GCLOUD_VERSION: "587.0.0"
+  # The deploy identity may not query which APIs are enabled; skip gcloud's offer to enable them.
+  CLOUDSDK_CORE_SHOULD_PROMPT_TO_ENABLE_API: "false"
+  CLOUDSDK_CORE_DISABLE_PROMPTS: "1"
+
+jobs:
+  deploy:
+    name: deploy-staging
+    if: >-
+      github.repository == 'rahulchy960/SafeRoute'
+      && github.ref == 'refs/heads/main'
+      && vars.STAGING_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment: staging
+    permissions:
+      id-token: write # request the OIDC token for Workload Identity Federation
+      contents: read
+    env:
+      GIT_SHA: ${{ github.sha }}
+      REGION: ${{ vars.GCP_REGION }}
+      AR_REPOSITORY: ${{ vars.AR_REPOSITORY }}
+      API_SERVICE: ${{ vars.API_SERVICE }}
+      MIGRATION_JOB: ${{ vars.MIGRATION_JOB }}
+      API_MIN_INSTANCES: ${{ vars.API_MIN_INSTANCES }}
+      API_MAX_INSTANCES: ${{ vars.API_MAX_INSTANCES }}
+      PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      # Not used by a command. Referenced so the number is masked: service URLs contain it.
+      PROJECT_NUMBER: ${{ secrets.GCP_PROJECT_NUMBER }}
+      RUNTIME_SA: ${{ secrets.GCP_RUNTIME_SA }}
+      MIGRATION_SA: ${{ secrets.GCP_MIGRATION_SA }}
+      CLOUD_SQL_CONNECTION_NAME: ${{ secrets.CLOUD_SQL_CONNECTION_NAME }}
+      FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check configuration and the connection budget
+        run: |
+          set -u
+          missing=0
+          for name in REGION AR_REPOSITORY API_SERVICE MIGRATION_JOB API_MIN_INSTANCES API_MAX_INSTANCES \
+            PROJECT_ID RUNTIME_SA MIGRATION_SA CLOUD_SQL_CONNECTION_NAME FIREBASE_PROJECT_ID; do
+            if [ -z "${!name}" ]; then
+              echo "::error::The staging environment has no value for ${name} (runbook step 9)."
+              missing=1
+            fi
+          done
+          [ "$missing" -eq 0 ] || exit 1
+          connections=$((API_MAX_INSTANCES * DB_POOL_MAX))
+          echo "API connections at full scale: ${API_MAX_INSTANCES} instances x ${DB_POOL_MAX} = ${connections} (budget ${DB_CONNECTION_BUDGET})"
+          if [ "$connections" -gt "$DB_CONNECTION_BUDGET" ]; then
+            echo "::error::API_MAX_INSTANCES x DB_POOL_MAX exceeds the database connection budget."
+            exit 1
+          fi
+
+      - name: Set up Node (version from backend/.nvmrc)
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: backend/.nvmrc
+
+      # ── a) Google authentication, without keys ────────────────────────────────────────────
+      - name: Authenticate to Google Cloud (Workload Identity Federation)
+        id: auth
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SA }}
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          token_format: access_token
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+        with:
+          version: ${{ env.GCLOUD_VERSION }}
+
+      - name: Log in to Artifact Registry
+        env:
+          ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+        run: |
+          printf '%s' "$ACCESS_TOKEN" \
+            | docker login --username oauth2accesstoken --password-stdin "https://${REGION}-docker.pkg.dev"
+
+      # ── b) Build, test and push the image ─────────────────────────────────────────────────
+      - name: Build the image
+        run: docker buildx build --load --build-arg "GIT_SHA=${GIT_SHA}" --tag "saferoute-api:${GIT_SHA}" backend
+
+      # The exact image that is about to be pushed must pass the same checks as in container-ci.
+      - name: Container smoke test
+        working-directory: backend
+        run: node scripts/container-smoke.mjs --skip-build --image "saferoute-api:${GIT_SHA}" --git-sha "${GIT_SHA}"
+
+      - name: Push the image and record its digest
+        id: image
+        run: |
+          set -u
+          remote="${REGION}-docker.pkg.dev/${PROJECT_ID}/${AR_REPOSITORY}/saferoute-api"
+          docker tag "saferoute-api:${GIT_SHA}" "${remote}:${GIT_SHA}"
+          docker push --quiet "${remote}:${GIT_SHA}"
+          ref="$(docker image inspect --format '{{range .RepoDigests}}{{println .}}{{end}}' "${remote}:${GIT_SHA}" | grep -F "${remote}@" | head -n 1)"
+          digest="${ref##*@}"
+          if ! printf '%s' "$digest" | grep -Eq '^sha256:[0-9a-f]{64}$'; then
+            echo "::error::Could not determine the pushed image digest."
+            exit 1
+          fi
+          echo "Pushed image digest: ${digest}"
+          echo "ref=${ref}" >> "$GITHUB_OUTPUT"
+          echo "digest=${digest}" >> "$GITHUB_OUTPUT"
+
+      - name: Record the revision that serves traffic now
+        id: previous
+        run: |
+          set -u
+          gcloud run services describe "$API_SERVICE" --region "$REGION" --format=json > "$RUNNER_TEMP/service-before.json"
+          revision="$(jq -r '[.status.traffic[]? | select((.percent // 0) > 0)] | max_by(.percent) | .revisionName // empty' "$RUNNER_TEMP/service-before.json")"
+          if [ -z "$revision" ]; then
+            echo "::error::No revision is serving traffic. Was the placeholder service created (runbook step 8)?"
+            exit 1
+          fi
+          echo "Previous revision: ${revision}"
+          echo "revision=${revision}" >> "$GITHUB_OUTPUT"
+
+      # ── c) Migrations, before any new API revision exists ─────────────────────────────────
+      - name: Deploy the migration job
+        env:
+          IMAGE_REF: ${{ steps.image.outputs.ref }}
+        run: |
+          gcloud run jobs deploy "$MIGRATION_JOB" \
+            --region "$REGION" \
+            --image "$IMAGE_REF" \
+            --service-account "$MIGRATION_SA" \
+            --set-cloudsql-instances "$CLOUD_SQL_CONNECTION_NAME" \
+            --set-secrets "DATABASE_URL=${DATABASE_URL_SECRET}:latest" \
+            --set-env-vars "NODE_ENV=production,SERVICE_NAME=saferoute-migrate,LOG_LEVEL=info,GIT_SHA=${GIT_SHA},APP_VERSION=${GIT_SHA}" \
+            --command node \
+            --args dist/db/migrate.js \
+            --tasks 1 \
+            --max-retries 0 \
+            --task-timeout 10m \
+            --quiet
+
+      - name: Run the migration job
+        id: migrate
+        run: |
+          set -u
+          execution="$(gcloud run jobs execute "$MIGRATION_JOB" --region "$REGION" --wait --format='value(metadata.name)')"
+          echo "Migration execution: ${execution}"
+          echo "Its log: Cloud console → Cloud Run → Jobs → ${MIGRATION_JOB} → Executions → ${execution} → Logs."
+          echo "execution=${execution}" >> "$GITHUB_OUTPUT"
+
+      # ── d) New revision, no traffic ───────────────────────────────────────────────────────
+      # PORT is set by Cloud Run. Public access was granted once in the runbook; this identity
+      # cannot change it, so --allow-unauthenticated is deliberately absent.
+      - name: Deploy the candidate revision (no traffic)
+        id: candidate
+        env:
+          IMAGE_REF: ${{ steps.image.outputs.ref }}
+        run: |
+          set -u
+          gcloud run deploy "$API_SERVICE" \
+            --region "$REGION" \
+            --image "$IMAGE_REF" \
+            --service-account "$RUNTIME_SA" \
+            --no-traffic \
+            --tag candidate \
+            --set-cloudsql-instances "$CLOUD_SQL_CONNECTION_NAME" \
+            --set-secrets "DATABASE_URL=${DATABASE_URL_SECRET}:latest" \
+            --set-env-vars "NODE_ENV=production,SERVICE_NAME=saferoute-api,LOG_LEVEL=info,GIT_SHA=${GIT_SHA},APP_VERSION=${GIT_SHA},FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID},DB_POOL_MAX=${DB_POOL_MAX}" \
+            --cpu 1 \
+            --memory 512Mi \
+            --concurrency 80 \
+            --timeout 60 \
+            --min-instances "$API_MIN_INSTANCES" \
+            --max-instances "$API_MAX_INSTANCES" \
+            --cpu-boost \
+            --quiet
+
+          gcloud run services describe "$API_SERVICE" --region "$REGION" --format=json > "$RUNNER_TEMP/service-after.json"
+          revision="$(jq -r '.status.latestCreatedRevisionName // empty' "$RUNNER_TEMP/service-after.json")"
+          candidate_url="$(jq -r '[.status.traffic[]? | select(.tag == "candidate")][0].url // empty' "$RUNNER_TEMP/service-after.json")"
+          service_url="$(jq -r '.status.url // empty' "$RUNNER_TEMP/service-after.json")"
+          if [ -z "$revision" ] || [ -z "$candidate_url" ] || [ -z "$service_url" ]; then
+            echo "::error::Could not read the candidate revision or its URL from the service."
+            exit 1
+          fi
+          # The URLs contain the project number: mask them before they reach any later log line.
+          echo "::add-mask::${candidate_url}"
+          echo "::add-mask::${service_url}"
+          echo "Candidate revision: ${revision}"
+          {
+            echo "revision=${revision}"
+            echo "candidate_url=${candidate_url}"
+            echo "service_url=${service_url}"
+          } >> "$GITHUB_OUTPUT"
+
+      # ── e) Smoke test the candidate ───────────────────────────────────────────────────────
+      - name: Smoke test the candidate revision
+        id: smoke_candidate
+        env:
+          SMOKE_URL: ${{ steps.candidate.outputs.candidate_url }}
+        run: node backend/scripts/smoke.mjs --expect-version "$GIT_SHA" --timeout-seconds 120
+
+      - name: Candidate failed, traffic not shifted
+        if: failure() && steps.smoke_candidate.outcome == 'failure'
+        env:
+          PREVIOUS_REVISION: ${{ steps.previous.outputs.revision }}
+          CANDIDATE_REVISION: ${{ steps.candidate.outputs.revision }}
+        run: |
+          echo "::error::The candidate revision ${CANDIDATE_REVISION} failed its smoke test. Traffic was NOT shifted."
+          echo "All traffic is still on ${PREVIOUS_REVISION}. Nothing needs to be rolled back."
+          echo "Look at the candidate's logs (docs/runbooks/observability-staging.md), fix forward and merge again."
+
+      # ── f) Promote, verify, roll back if needed ───────────────────────────────────────────
+      - name: Promote the candidate to 100% of traffic
+        id: promote
+        run: gcloud run services update-traffic "$API_SERVICE" --region "$REGION" --to-latest --quiet
+
+      - name: Smoke test the live service
+        id: smoke_live
+        env:
+          SMOKE_URL: ${{ steps.candidate.outputs.service_url }}
+        run: node backend/scripts/smoke.mjs --expect-version "$GIT_SHA" --timeout-seconds 120
+
+      - name: Roll back to the previous revision
+        id: rollback
+        if: failure() && (steps.promote.outcome == 'success' || steps.promote.outcome == 'failure')
+        env:
+          PREVIOUS_REVISION: ${{ steps.previous.outputs.revision }}
+        run: |
+          echo "::error::The deploy failed after promotion started. Sending all traffic back to ${PREVIOUS_REVISION}."
+          gcloud run services update-traffic "$API_SERVICE" --region "$REGION" \
+            --to-revisions "${PREVIOUS_REVISION}=100" --quiet
+          echo "Traffic is back on ${PREVIOUS_REVISION}. The database is unchanged by a rollback (ADR 0003: fix forward)."
+
+      # ── g) Summary (no project identifiers, no URLs) ──────────────────────────────────────
+      - name: Summary
+        if: always()
+        env:
+          IMAGE_DIGEST: ${{ steps.image.outputs.digest }}
+          PREVIOUS_REVISION: ${{ steps.previous.outputs.revision }}
+          CANDIDATE_REVISION: ${{ steps.candidate.outputs.revision }}
+          MIGRATION_EXECUTION: ${{ steps.migrate.outputs.execution }}
+          MIGRATE_OUTCOME: ${{ steps.migrate.outcome }}
+          SMOKE_CANDIDATE_OUTCOME: ${{ steps.smoke_candidate.outcome }}
+          PROMOTE_OUTCOME: ${{ steps.promote.outcome }}
+          SMOKE_LIVE_OUTCOME: ${{ steps.smoke_live.outcome }}
+          ROLLBACK_OUTCOME: ${{ steps.rollback.outcome }}
+        run: |
+          {
+            echo "## Staging deploy"
+            echo
+            echo "| Item | Value |"
+            echo "| --- | --- |"
+            echo "| Commit | \`${GIT_SHA}\` |"
+            echo "| Image digest | \`${IMAGE_DIGEST:-not pushed}\` |"
+            echo "| Migration job execution | \`${MIGRATION_EXECUTION:-none}\` (${MIGRATE_OUTCOME:-skipped}) |"
+            echo "| Previous revision (rollback target) | \`${PREVIOUS_REVISION:-unknown}\` |"
+            echo "| Candidate revision | \`${CANDIDATE_REVISION:-not created}\` |"
+            echo "| Smoke test on the candidate | ${SMOKE_CANDIDATE_OUTCOME:-skipped} |"
+            echo "| Promotion to 100% | ${PROMOTE_OUTCOME:-skipped} |"
+            echo "| Smoke test on the live service | ${SMOKE_LIVE_OUTCOME:-skipped} |"
+            echo "| Automatic rollback | ${ROLLBACK_OUTCOME:-skipped} |"
+            echo
+            echo "Rollback and manual jobs: \`docs/runbooks/rollback-staging.md\`."
+          } >> "$GITHUB_STEP_SUMMARY"

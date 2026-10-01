@@ -95,6 +95,30 @@ Only P001 (this bootstrap) committed directly to `main`. After it, `main` is pro
 `protect-main` (since P002): changes arrive only through a pull request, `repo-checks` must pass,
 merges are squash-only, and force pushes and branch deletion are blocked.
 
+### How deploys happen
+
+![Staging deploy pipeline](docs/diagrams/006-deploy-pipeline.svg)
+
+There is one environment so far: **staging** on Google Cloud (Cloud Run + Cloud SQL,
+`asia-south1`). Nobody deploys from a laptop, and no credential is stored anywhere.
+
+- **Merge to `main` → staging.** A merge that touches `backend/**` starts
+  [`deploy-staging`](.github/workflows/deploy-staging.yml). It can also be started by hand
+  (Actions → deploy-staging → Run workflow).
+- **Only when enabled.** The workflow is skipped unless the repository variable
+  `STAGING_DEPLOY_ENABLED` is `true`. Rahul switches it off while staging is stopped.
+- **What a run does:** build the image and test it, run the migration job, deploy a candidate
+  revision with no traffic, smoke-test it, promote it, smoke-test again, and send traffic back to
+  the previous revision if that fails.
+- **Keyless:** GitHub Actions signs in through Workload Identity Federation, limited to this
+  repository, `main` and the `staging` environment. Pull requests and forks can't reach it.
+- **Runbooks:** [one-time setup](docs/runbooks/gcp-staging-setup.md),
+  [rollback](docs/runbooks/rollback-staging.md),
+  [observability](docs/runbooks/observability-staging.md). Design:
+  [ADR 0007](docs/adr/0007-gcp-staging-topology.md).
+
+Production does not exist yet.
+
 ### One-time local setup after cloning
 
 ```sh
