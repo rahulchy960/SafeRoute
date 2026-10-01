@@ -9,8 +9,8 @@ own service later only if measurements justify it (Plan v7 §14.6).
 
 | Module | Owns | Planned in |
 | --- | --- | --- |
-| `auth` | Firebase ID-token verification, roles from custom claims | P005 |
-| `users` | profile and consent (`/v1/me`); deletion and export | P005, P020 |
+| `auth` | Firebase ID-token verification (jose), `authenticate` / `requireUser` / `requireRole`; roles from `users.role` (ADR 0006) | P005a |
+| `users` | `/v1/me` bootstrap and profile, consent; deletion and export | P005a/b, P009, P020 |
 | `contacts` | emergency contacts, contact opt-out | P013 |
 | `search` | geocoding / place search behind a provider adapter | P011 |
 | `routing` | route alternatives behind the OSRM adapter | P012 |

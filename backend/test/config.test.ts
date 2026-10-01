@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ConfigError, parseConfig } from '../src/config.js';
 
@@ -34,6 +36,7 @@ describe('parseConfig', () => {
       APP_VERSION: '1.2.3',
       GIT_SHA: 'abc1234',
       DATABASE_URL: 'postgres://fake-user:fake-pw@127.0.0.1:5433/fake_db',
+      FIREBASE_PROJECT_ID: 'example-staging-1',
       PATH: '/usr/bin',
     });
     expect(config).toMatchObject({ NODE_ENV: 'production', PORT: 3000, LOG_LEVEL: 'warn' });
@@ -84,10 +87,14 @@ describe('parseConfig', () => {
     });
 
     it('requires DATABASE_URL in production', () => {
-      const err = configError({ NODE_ENV: 'production' });
+      const err = configError({ NODE_ENV: 'production', FIREBASE_PROJECT_ID: 'example-staging-1' });
       expect(err.issues).toEqual(['DATABASE_URL: required when NODE_ENV=production']);
       expect(
-        parseConfig({ NODE_ENV: 'production', DATABASE_URL: URL_WITH_SECRET }).DATABASE_URL,
+        parseConfig({
+          NODE_ENV: 'production',
+          DATABASE_URL: URL_WITH_SECRET,
+          FIREBASE_PROJECT_ID: 'example-staging-1',
+        }).DATABASE_URL,
       ).toBe(URL_WITH_SECRET);
     });
 
@@ -111,6 +118,74 @@ describe('parseConfig', () => {
       expect(err.message).toContain('DATABASE_URL');
       expect(err.message).not.toContain('fake-secret-pw');
       expect(err.message).not.toContain('db.internal.example');
+    });
+  });
+
+  describe('FIREBASE_PROJECT_ID (ADR 0006)', () => {
+    const PROD = { NODE_ENV: 'production', DATABASE_URL: 'postgres://u:p@127.0.0.1:5433/db' };
+
+    it('is optional in development and test, and demo- IDs are allowed there', () => {
+      expect(parseConfig({ NODE_ENV: 'development' }).FIREBASE_PROJECT_ID).toBeUndefined();
+      expect(parseConfig({ NODE_ENV: 'test' }).FIREBASE_PROJECT_ID).toBeUndefined();
+      expect(parseConfig({ FIREBASE_PROJECT_ID: 'demo-saferoute' }).FIREBASE_PROJECT_ID).toBe(
+        'demo-saferoute',
+      );
+    });
+
+    it('is required in production', () => {
+      expect(configError(PROD).issues).toEqual([
+        'FIREBASE_PROJECT_ID: required when NODE_ENV=production',
+      ]);
+    });
+
+    it('rejects a demo- project in production without echoing it', () => {
+      const err = configError({ ...PROD, FIREBASE_PROJECT_ID: 'demo-saferoute' });
+      expect(err.issues).toEqual([
+        'FIREBASE_PROJECT_ID: a demo- project ID is not allowed when NODE_ENV=production',
+      ]);
+      expect(err.message).not.toContain('demo-saferoute');
+    });
+
+    it('accepts a real-looking project ID in production', () => {
+      expect(
+        parseConfig({ ...PROD, FIREBASE_PROJECT_ID: 'example-staging-1' }).FIREBASE_PROJECT_ID,
+      ).toBe('example-staging-1');
+    });
+
+    it.each([
+      'Upper-Case-Id',
+      'ab',
+      '1starts-with-digit',
+      'ends-with-hyphen-',
+      'has_underscore',
+      'way-too-long-project-id-over-30-chars',
+      'https://securetoken.google.com/x',
+    ])('rejects the invalid ID %s without echoing it', (value) => {
+      const err = configError({ FIREBASE_PROJECT_ID: value });
+      expect(err.issues).toEqual(['FIREBASE_PROJECT_ID: must be a Firebase project ID']);
+      expect(err.message).not.toContain(value);
+    });
+
+    it('has no variable that changes keys, issuer, audience or algorithm, and no emulator switch', () => {
+      const config = parseConfig({
+        FIREBASE_PROJECT_ID: 'demo-saferoute',
+        FIREBASE_AUTH_EMULATOR_HOST: '127.0.0.1:9099',
+        FIREBASE_JWKS_URL: 'http://127.0.0.1/keys',
+        AUTH_BYPASS: 'true',
+      });
+      expect(Object.keys(config).filter((key) => /FIREBASE|AUTH|JWK/.test(key))).toEqual([
+        'FIREBASE_PROJECT_ID',
+      ]);
+    });
+
+    it('no source file reads an emulator or bypass variable', () => {
+      const files = (dir: string): string[] =>
+        readdirSync(dir, { withFileTypes: true }).flatMap((entry) =>
+          entry.isDirectory() ? files(join(dir, entry.name)) : [join(dir, entry.name)],
+        );
+      for (const file of files(join(import.meta.dirname, '../src'))) {
+        expect(readFileSync(file, 'utf8'), file).not.toMatch(/EMULATOR_HOST|AUTH_BYPASS/);
+      }
     });
   });
 });
