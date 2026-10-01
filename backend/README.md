@@ -2,9 +2,10 @@
 
 TypeScript modular monolith for SafeRoute (Plan v7 §4, §6): the **saferoute-api** Hono
 service on PostgreSQL + PostGIS via Drizzle ORM (P003), with a generated OpenAPI 3.1 contract
-(P004, [`../contracts/`](../contracts/)). Later prompts add Firebase auth (P005),
-Cloud Run deployment (P006), the pg-boss worker and the domain modules listed in
-[`src/modules/README.md`](src/modules/README.md).
+(P004, [`../contracts/`](../contracts/)) and Firebase ID-token verification with auth middleware
+(P005a, [ADR 0006](../docs/adr/0006-authentication-and-roles.md)). Later prompts add the `/v1/me`
+endpoints (P005b), Cloud Run deployment (P006), the pg-boss worker and the domain modules listed
+in [`src/modules/README.md`](src/modules/README.md).
 
 ## Requirements
 
@@ -37,26 +38,33 @@ pnpm start               # node dist/server.js, JSON logs on stdout
 
 Ctrl+C stops the server gracefully (in-flight requests finish, exit code 0).
 
-## Configuration
+## Environment variables
 
 All settings come from environment variables, validated once at startup by
 [`src/config.ts`](src/config.ts). Invalid values stop the process with a message that names the
-variable (never its value). See [`.env.example`](.env.example).
+variable (never its value). Empty values count as unset. See [`.env.example`](.env.example).
 
-| Variable | Default | Allowed |
-| --- | --- | --- |
-| `NODE_ENV` | `development` | `development`, `test`, `production` |
-| `PORT` | `8080` | 1–65535 (Cloud Run sets it) |
-| `LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error` |
-| `SERVICE_NAME` | `saferoute-api` | any short string |
-| `APP_VERSION` | `dev` | set by CI/CD |
-| `GIT_SHA` | `unknown` | set by CI/CD |
-| `DATABASE_URL` | none (required in production) | `postgres://` or `postgresql://` URL; contains a password, never logged |
-| `DB_POOL_MAX` | `5` | 1–20 connections per instance |
-| `DB_STATEMENT_TIMEOUT_MS` | `10000` | 100–300000 |
-| `DB_CONNECT_TIMEOUT_MS` | `5000` | 100–60000 |
+| Name | Required (dev / test / production) | Secret? | Default | Where the value comes from when deployed |
+| --- | --- | --- | --- | --- |
+| `NODE_ENV` | no / no / yes (`production`) | no | `development` | Cloud Run env var (P006) |
+| `PORT` | no / no / no | no | `8080` | set by Cloud Run |
+| `LOG_LEVEL` | no / no / no | no | `info` | Cloud Run env var |
+| `SERVICE_NAME` | no / no / no | no | `saferoute-api` | Cloud Run env var |
+| `APP_VERSION` | no / no / no | no | `dev` | set by the deploy pipeline |
+| `GIT_SHA` | no / no / no | no | `unknown` | set by the deploy pipeline |
+| `DATABASE_URL` | no / no / **yes** | **yes** (contains the password; never logged) | none | Secret Manager → Cloud Run (wired in P006) |
+| `DB_POOL_MAX` | no / no / no | no | `5` (1–20 per instance) | Cloud Run env var |
+| `DB_STATEMENT_TIMEOUT_MS` | no / no / no | no | `10000` (100–300000) | Cloud Run env var |
+| `DB_CONNECT_TIMEOUT_MS` | no / no / no | no | `5000` (100–60000) | Cloud Run env var |
+| `FIREBASE_PROJECT_ID` | no / no / **yes** (`demo-` IDs rejected) | no, but kept out of tracked files | none (protected routes then answer 503) | GitHub environment variable → Cloud Run env var |
 
-`pnpm dev` and `pnpm db:migrate` load `.env.example`, then `.env` (git-ignored) if present.
+Other allowed values: `NODE_ENV` ∈ `development`, `test`, `production`; `LOG_LEVEL` ∈ `debug`,
+`info`, `warn`, `error`; `DATABASE_URL` is a `postgres://` or `postgresql://` URL;
+`FIREBASE_PROJECT_ID` matches `^[a-z][a-z0-9-]{4,28}[a-z0-9]$`.
+
+No variable changes the token issuer, audience, algorithm or key URL, and none enables an emulator
+or bypass (a test enforces this). `pnpm dev` and `pnpm db:migrate` load `.env.example`, then `.env` (git-ignored) if
+present.
 
 ## Layout
 
@@ -72,7 +80,9 @@ src/
   middleware/          request-id, access-log
   routes/health.ts     GET /health (liveness, no dependencies)
   routes/ready.ts      GET /health/ready (readiness: SELECT 1 with a 2 s timeout)
-  modules/             domain modules (added by later prompts)
+  modules/auth/        Firebase ID-token verifier (jose), authenticate / requireUser / requireRole
+  modules/users/       user lookup for requireUser (endpoints follow in P005b)
+  modules/             more domain modules arrive with later prompts
 drizzle/               generated SQL migrations (committed, never edited after merge)
 test/                  Vitest "unit" project (no network)
 test/db/               Vitest "db" project (Testcontainers PostGIS)
@@ -94,6 +104,13 @@ test/db/               Vitest "db" project (Testcontainers PostGIS)
   `duration_ms`. Query strings, headers, bodies and client IPs are never logged (Plan v7 §12.2).
 - **`GET /health`** (liveness): `200 {"status":"ok","service","version","uptimeSeconds"}`,
   `Cache-Control: no-store`. No I/O, so a database outage never restarts healthy instances.
+- **Authentication** (ADR 0006): protected `/v1` routes need `Authorization: Bearer <Firebase ID
+  token>` from phone sign-in. `401 unauthorized` (+ `WWW-Authenticate: Bearer`, same body for
+  every reason) → refresh the token and retry once. `503 auth_unavailable` (Google's keys
+  unreachable) → retry with backoff. `403 bootstrap_required` → call `POST /v1/me/bootstrap` (P005b).
+  `403 account_deleted` / `forbidden` are final. Roles come from `users.role`, read on every
+  request. Tokens, phone numbers and Firebase uids are never logged; the request logger gets
+  `user_id` (internal UUID) once the user is known.
 - **`GET /health/ready`** (readiness): `200 {"status":"ready","checks":{"database":"ok"}}` or 503
   problem+json `db_unavailable` / `db_not_configured`. Both are outside `/v1` because they are
   operational, not part of the app contract.
@@ -111,3 +128,8 @@ CI runs the same steps in [`.github/workflows/backend-ci.yml`](../.github/workfl
 on every pull request that touches `backend/`, including `pnpm openapi:lint`; the stale-spec check
 runs as a unit test. The oasdiff breaking-change gate runs in
 [`.github/workflows/contracts-ci.yml`](../.github/workflows/contracts-ci.yml).
+
+Auth tests need no network and no Firebase project: they sign tokens with an RSA key generated per
+test run and give the **real** `FirebaseIdTokenVerifier` a local key resolver
+([`test/auth/tokens.ts`](test/auth/tokens.ts)), with the fake project `demo-saferoute`. There is no
+emulator, dev login or bypass (ADR 0006).

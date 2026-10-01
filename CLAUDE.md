@@ -124,6 +124,20 @@ appears in `contracts/openapi.json`); product endpoints under `/v1`; camelCase J
 problem+json errors with an open-string `code`; `Idempotency-Key` for retryable writes;
 `firebaseBearer` on protected routes; bump `info.version` in the PR that changes the spec.
 
+## Auth rules (since P005, ADR 0006)
+
+Follow [ADR 0006](docs/adr/0006-authentication-and-roles.md):
+
+- Every `/v1` route declares `security: [{ firebaseBearer: [] }]` and uses `authenticate` or
+  `requireUser` (`backend/src/modules/auth/middleware.ts`). The only exceptions are routes that
+  are public by design (e.g. the share viewer), and they say so in the spec.
+- Never trust client-supplied user ids, roles or phone numbers. Take identity from the verified
+  token and roles from `users.role` (`requireRole`).
+- Never log tokens, the Authorization header, phone numbers or Firebase uids. Log `user_id`
+  (internal UUID) only.
+- Never add an auth bypass, dev login route, emulator switch, or a variable that changes the
+  token issuer, audience, algorithm or key URL.
+
 ## Naming rules (since P003c, ADR 0005)
 
 - The product name is **"SafeRoute"**. The former, city-suffixed name remains only in historical

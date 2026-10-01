@@ -20,7 +20,7 @@ export const users = pgTable(
     displayName: text('display_name'),
     /** UI language: 'en' (English) or 'bn' (Bengali). */
     locale: text('locale').notNull().default('en'),
-    /** Authorisation role, mirrored from Firebase custom claims (P005). */
+    /** Authorisation role; the source of truth, read on every request (ADR 0006). */
     role: text('role').notNull().default('user'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true })

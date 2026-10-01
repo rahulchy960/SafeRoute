@@ -12,6 +12,9 @@ const postgresUrl = z.string().refine(
   { message: 'must be a postgres:// or postgresql:// URL' },
 );
 
+/** Firebase/GCP project ID rules: 6–30 characters, lowercase letters, digits and hyphens. */
+export const FIREBASE_PROJECT_ID_PATTERN = /^[a-z][a-z0-9-]{4,28}[a-z0-9]$/;
+
 const ConfigSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -26,13 +29,35 @@ const ConfigSchema = z
     DB_POOL_MAX: z.coerce.number().int().min(1).max(20).default(5),
     DB_STATEMENT_TIMEOUT_MS: z.coerce.number().int().min(100).max(300_000).default(10_000),
     DB_CONNECT_TIMEOUT_MS: z.coerce.number().int().min(100).max(60_000).default(5_000),
+    // Firebase project whose ID tokens the API accepts (ADR 0006). Not a secret, but kept out of
+    // tracked files. Issuer, audience, key URL and algorithm are derived in code: no variable can
+    // change them, and there is deliberately no emulator or bypass switch.
+    FIREBASE_PROJECT_ID: z
+      .string()
+      .regex(FIREBASE_PROJECT_ID_PATTERN, { message: 'must be a Firebase project ID' })
+      .optional(),
   })
   .superRefine((config, ctx) => {
-    if (config.NODE_ENV === 'production' && config.DATABASE_URL === undefined) {
+    if (config.NODE_ENV !== 'production') return;
+    if (config.DATABASE_URL === undefined) {
       ctx.addIssue({
         code: 'custom',
         path: ['DATABASE_URL'],
         message: 'required when NODE_ENV=production',
+      });
+    }
+    if (config.FIREBASE_PROJECT_ID === undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['FIREBASE_PROJECT_ID'],
+        message: 'required when NODE_ENV=production',
+      });
+    } else if (config.FIREBASE_PROJECT_ID.startsWith('demo-')) {
+      // `demo-` IDs are Firebase's offline/emulator-only projects; production must use a real one.
+      ctx.addIssue({
+        code: 'custom',
+        path: ['FIREBASE_PROJECT_ID'],
+        message: 'a demo- project ID is not allowed when NODE_ENV=production',
       });
     }
   });
