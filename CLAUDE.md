@@ -46,7 +46,7 @@ docs/prompt-logs/ One log per prompt (NNN-core-work.md)
 docs/runbooks/  Operational runbooks
 .claude/        settings.json (deny rules) + slash commands /start-prompt, /ship-prompt
 .githooks/      pre-push hook that rejects pushes to main
-.github/        PR template, CODEOWNERS, workflows (repo-checks, backend-ci)
+.github/        PR template, CODEOWNERS, workflows (repo-checks, backend-ci, contracts-ci, container-ci)
 ```
 
 ## TEN GOLDEN RULES
@@ -138,6 +138,23 @@ Follow [ADR 0006](docs/adr/0006-authentication-and-roles.md):
 - Never add an auth bypass, dev login route, emulator switch, or a variable that changes the
   token issuer, audience, algorithm or key URL.
 
+## Deployment rules (since P006a, ADR 0007)
+
+Follow [ADR 0007](docs/adr/0007-gcp-staging-topology.md):
+
+- Claude Code never runs a command that creates, changes or reads cloud resources (`gcloud`,
+  `gsutil`, `bq`, cloud APIs) and never runs `gcloud auth`. Read-only local `gcloud <group> --help`
+  and local `docker` are fine. Deploys happen only through CI after Rahul merges to `main`.
+- Claude Code never handles credentials and never asks Rahul to paste secrets, project IDs,
+  project numbers, service-account emails or service URLs. No service-account JSON keys, ever.
+- One-time cloud setup is a runbook that Rahul runs:
+  [`docs/runbooks/gcp-staging-setup.md`](docs/runbooks/gcp-staging-setup.md). The table of GitHub
+  environment secrets and variables lives there (step 9), not in this file.
+- The API, the migration job and the admin job run from one image
+  ([`backend/Dockerfile`](backend/Dockerfile)). Migrations never run at API startup.
+- Workflows that deploy never use `pull_request_target`, never print secrets, environment dumps
+  or `gcloud config`, and pin every action by commit SHA.
+
 ## Naming rules (since P003c, ADR 0005)
 
 - The product name is **"SafeRoute"**. The former, city-suffixed name remains only in historical
@@ -175,6 +192,7 @@ to go green.
 | Diagrams | `cd tools/diagrams && pnpm install && pnpm generate` (no errors) | Active |
 | Backend | `pnpm typecheck` · `pnpm lint` · `pnpm format:check` · `pnpm test` · `pnpm build` (run inside `backend/`; CI: `.github/workflows/backend-ci.yml`) | Active (since P002) |
 | Contracts | in `backend/`: `pnpm openapi:generate` then commit the diff · `pnpm openapi:check` · `pnpm openapi:lint`; breaking changes need the PR label `breaking-api-change` + a new ADR (CI: `backend-ci` runs check + lint; `.github/workflows/contracts-ci.yml` runs them plus the oasdiff breaking-change gate) | Active (since P004a; oasdiff gate since P004b) |
+| Container | in `backend/`: `node scripts/container-smoke.mjs` (needs Docker; builds the image and runs the smoke checks) · actionlint for workflow changes (CI: `.github/workflows/container-ci.yml`) | Active (since P006a) |
 | Android | `./gradlew lint testDebugUnitTest assembleDebug` (run inside `android/`) | Not yet applicable (from P007) |
 | Moderation | typecheck · lint · test · build | Not yet applicable (from P018) |
 

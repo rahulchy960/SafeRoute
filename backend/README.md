@@ -3,8 +3,9 @@
 TypeScript modular monolith for SafeRoute (Plan v7 §4, §6): the **saferoute-api** Hono
 service on PostgreSQL + PostGIS via Drizzle ORM (P003), with a generated OpenAPI 3.1 contract
 (P004, [`../contracts/`](../contracts/)) and Firebase ID-token authentication with `/v1/me`
-(P005a/b, [ADR 0006](../docs/adr/0006-authentication-and-roles.md)). Later prompts add Cloud Run
-deployment (P006), the pg-boss worker and the domain modules listed in
+(P005a/b, [ADR 0006](../docs/adr/0006-authentication-and-roles.md)). It ships as one container
+image (P006a, [ADR 0007](../docs/adr/0007-gcp-staging-topology.md)). Later prompts add the Cloud
+Run deploy workflow (P006b), the pg-boss worker and the domain modules listed in
 [`src/modules/README.md`](src/modules/README.md).
 
 ## Requirements
@@ -84,11 +85,17 @@ variable (never its value). Empty values count as unset. See [`.env.example`](.e
 | `DB_POOL_MAX` | no / no / no | no | `5` (1–20 per instance) | Cloud Run env var |
 | `DB_STATEMENT_TIMEOUT_MS` | no / no / no | no | `10000` (100–300000) | Cloud Run env var |
 | `DB_CONNECT_TIMEOUT_MS` | no / no / no | no | `5000` (100–60000) | Cloud Run env var |
-| `FIREBASE_PROJECT_ID` | no / no / **yes** (`demo-` IDs rejected) | no, but kept out of tracked files | none (`/v1` then answers 503) | GitHub environment variable → Cloud Run env var |
+| `FIREBASE_PROJECT_ID` | no / no / **yes** (`demo-` IDs rejected) | no, but kept out of tracked files | none (`/v1` then answers 503) | GitHub environment secret (so public logs mask it) → Cloud Run env var |
 
 Other allowed values: `NODE_ENV` ∈ `development`, `test`, `production`; `LOG_LEVEL` ∈ `debug`,
-`info`, `warn`, `error`; `DATABASE_URL` is a `postgres://` or `postgresql://` URL;
-`FIREBASE_PROJECT_ID` matches `^[a-z][a-z0-9-]{4,28}[a-z0-9]$`.
+`info`, `warn`, `error`; `DATABASE_URL` is a `postgres://` or `postgresql://` URL, either with a
+host or in the Cloud SQL unix-socket form `postgresql://<user>:<password>@/<db>?host=/cloudsql/<connection name>`
+(URL-encode the password); `FIREBASE_PROJECT_ID` matches `^[a-z][a-z0-9-]{4,28}[a-z0-9]$`.
+
+The container image sets `NODE_ENV=production` and bakes `GIT_SHA` and `APP_VERSION` from the
+`GIT_SHA` build argument; runtime values override them. The migration runner
+(`node dist/db/migrate.js`) needs only `DATABASE_URL`: it does not apply the API's production
+requirement for `FIREBASE_PROJECT_ID`.
 
 No variable changes the token issuer, audience, algorithm or key URL, and none enables an emulator
 or bypass (a test enforces this). `pnpm dev`, `pnpm db:migrate` and `pnpm admin:set-role` load
@@ -113,6 +120,8 @@ src/
   modules/users/       POST /v1/me/bootstrap, GET /v1/me
   scripts/set-role.ts  admin CLI: change a user's role (audited)
   modules/             more domain modules arrive with later prompts
+scripts/container-smoke.mjs  builds the image and smoke-tests it with local Docker (plain Node)
+Dockerfile             one image for the API, the migration job and the admin job
 drizzle/               generated SQL migrations (committed, never edited after merge)
 test/                  Vitest "unit" project (no network)
 test/db/               Vitest "db" project (Testcontainers PostGIS)
@@ -163,11 +172,40 @@ node dist/scripts/set-role.js --user-id <uuid> --role moderator --confirm   # co
 - It uses only `DATABASE_URL` and production dependencies. Against **staging**, run it as the Cloud
   Run Job that P006 provides; never point a laptop at the staging database.
 
+## Running in a container
+
+The API, the migration job and the admin job run from one image built from
+[`Dockerfile`](Dockerfile) (multi-stage, Node 24 slim pinned by digest, production dependencies
+only, non-root). Docker Desktop must be running.
+
+```sh
+docker buildx build --load --build-arg GIT_SHA=$(git rev-parse HEAD) -t saferoute-api:local .
+node scripts/container-smoke.mjs      # builds the image and checks it end to end
+```
+
+[`scripts/container-smoke.mjs`](scripts/container-smoke.mjs) needs only Node and Docker. It
+starts a throwaway PostGIS container, runs the migration command twice (the second run applies
+nothing), checks that production refuses a `demo-` Firebase project, runs the smoke checks below,
+and verifies non-root, JSON logs and a SIGTERM shutdown within 10 s. CI runs it on every pull
+request that touches `backend/` ([`container-ci`](../.github/workflows/container-ci.yml)).
+
+| Command in the image | Purpose | Needs |
+| --- | --- | --- |
+| `node dist/server.js` (default) | The API | `DATABASE_URL`, `FIREBASE_PROJECT_ID` |
+| `node dist/db/migrate.js` | Apply migrations (Cloud Run Job) | `DATABASE_URL` |
+| `node dist/scripts/set-role.js …` | Change a user's role (Cloud Run Job) | `DATABASE_URL` |
+
+Nothing sensitive is in the image: no `.env`, no sources, no tests, no dev dependencies. Secrets
+arrive as environment variables at runtime. Staging runs on Google Cloud; the one-time setup is
+[`docs/runbooks/gcp-staging-setup.md`](../docs/runbooks/gcp-staging-setup.md). Never point a
+laptop or a local container at the staging database.
+
 ## Deployment smoke checks (used by P006)
 
 After each deploy, without any token:
 
-1. `GET /health` → 200, and its `version` equals the deployed `APP_VERSION` (set from the git SHA).
+1. `GET /health` → 200, and its `version` equals the deployed `APP_VERSION` (the git SHA: baked
+   into the image from the `GIT_SHA` build argument, and set again by the deploy).
 2. `GET /health/ready` → 200 `{"status":"ready","checks":{"database":"ok"}}`.
 3. `GET /v1/me` without a token → 401 with `WWW-Authenticate: Bearer` and an `X-Request-Id`
    header. This proves auth is wired and `FIREBASE_PROJECT_ID` is set (otherwise: 503
@@ -185,7 +223,8 @@ pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm build && p
 pnpm openapi:check && pnpm openapi:lint   # after route changes: pnpm openapi:generate, commit
 ```
 
-`pnpm test` = `pnpm test:unit` (no Docker) + `pnpm test:db` (needs Docker).
+`pnpm test` = `pnpm test:unit` (no Docker) + `pnpm test:db` (needs Docker). After a change to the
+Dockerfile, dependencies, startup or shutdown, also run `node scripts/container-smoke.mjs`.
 
 CI runs the same steps in [`.github/workflows/backend-ci.yml`](../.github/workflows/backend-ci.yml)
 on every pull request that touches `backend/`, including `pnpm openapi:lint`; the stale-spec check
