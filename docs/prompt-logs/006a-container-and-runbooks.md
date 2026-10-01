@@ -78,10 +78,12 @@ R4 `4f25a34`, R5 `c50bd64`, R6 `80d2656`, R7 `5109c6d`, then this log.
 | Tests | `backend/test/cloud-sql-url.test.ts`, `backend/test/config.test.ts` | §6 |
 
 **Image facts.** Base `node:24.21.0-trixie-slim@sha256:8ec5d7557396cfe32d21c3f9c13072355ceab22b584578ca4bb28af31120cffe`
-(multi-arch index; linux/amd64 manifest `sha256:b64fccfb…1697`). Final image: **86.0 MB** as
-reported by `docker image inspect` (compressed layers; this is what a registry stores and a pull
-downloads). The layers added on top of the base total 35.9 MB, of which 35.5 MB is
-`node_modules` (8 direct production dependencies).
+(multi-arch index; linux/amd64 manifest `sha256:b64fccfb…1697`). Final image: **86.0 MB
+compressed** (what a registry stores and a pull downloads; reported by `docker image inspect`
+on Docker Desktop, which uses the containerd image store) and **255.4 MB unpacked** (reported
+by the same command on the CI runner, which uses the classic image store). The smoke test
+prints whichever number the local Docker reports. The layers added on top of the base total
+35.9 MB unpacked, of which 35.5 MB is `node_modules` (8 direct production dependencies).
 
 **API contract diff:** none (`contracts/` unchanged, version stays 0.2.0). **Migrations:** none.
 
@@ -112,7 +114,9 @@ Run on `ci/006a-container-and-runbooks` at `5109c6d` (Windows 11, Docker 28.3.3)
 | `git grep -E 'saferoute-(stg\|prd)-'` on tracked files | no hits |
 | Diff scan for local paths, personal e-mail, 12-digit numbers | no hits |
 
-`container-ci` itself runs for the first time on this PR; its result is in the PR checks.
+`container-ci` ran for the first time on this PR (#10): both jobs passed, and the job log shows
+the same 31 checks on the runner (Docker 28.0.4). `backend-ci`, `contracts-ci` and `repo-checks`
+passed too.
 
 New tests:
 
