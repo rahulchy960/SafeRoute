@@ -121,6 +121,7 @@ src/
   scripts/set-role.ts  admin CLI: change a user's role (audited)
   modules/             more domain modules arrive with later prompts
 scripts/container-smoke.mjs  builds the image and smoke-tests it with local Docker (plain Node)
+scripts/smoke.mjs      the three deployment smoke checks against any running API (plain Node)
 Dockerfile             one image for the API, the migration job and the admin job
 drizzle/               generated SQL migrations (committed, never edited after merge)
 test/                  Vitest "unit" project (no network)
@@ -210,6 +211,20 @@ After each deploy, without any token:
 3. `GET /v1/me` without a token → 401 with `WWW-Authenticate: Bearer` and an `X-Request-Id`
    header. This proves auth is wired and `FIREBASE_PROJECT_ID` is set (otherwise: 503
    `auth_not_configured`) without needing a real token.
+
+[`scripts/smoke.mjs`](scripts/smoke.mjs) runs these three checks and retries for up to two
+minutes while a new revision warms up. It prints status codes, the version and a request id,
+never the URL or a response body:
+
+```sh
+SMOKE_URL=<base url> node scripts/smoke.mjs --expect-version <git sha>   # exit 0 = passed
+```
+
+The [`deploy-staging`](../.github/workflows/deploy-staging.yml) workflow runs it against the
+candidate revision before any traffic moves and again after promotion; a failure there sends
+traffic back to the previous revision. How deploys, rollbacks and log queries work:
+[`docs/runbooks/rollback-staging.md`](../docs/runbooks/rollback-staging.md) and
+[`docs/runbooks/observability-staging.md`](../docs/runbooks/observability-staging.md).
 
 Startup makes no network call (the pool connects lazily; Google's keys are fetched on the first
 token), so a cold start never depends on Google being reachable
