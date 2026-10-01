@@ -1,0 +1,50 @@
+{
+  "$schema": "../../tools/diagrams/diagram.schema.json",
+  "title": "Staging deploy pipeline",
+  "subtitle": "Merge to main → keyless auth → migrate → candidate → smoke test → promote or keep the previous revision (P006, ADR 0007)",
+  "direction": "TB",
+  "layout": { "nodeWidth": 240, "rankGap": 50 },
+  "groups": [
+    { "id": "github", "label": "GitHub" },
+    { "id": "deploy", "label": "Google Cloud staging: deploy path" },
+    { "id": "runtime", "label": "What the job and the API use" }
+  ],
+  "nodes": [
+    { "id": "pr", "label": "GitHub PR: container-ci (build + smoke, no secrets)", "role": "infra", "group": "github", "rank": 0 },
+    { "id": "merge", "label": "Merge to main", "role": "app", "group": "github", "rank": 1 },
+    { "id": "actions", "label": "GitHub Actions deploy-staging (environment: staging)", "role": "infra", "group": "github", "rank": 2 },
+    { "id": "oidc", "label": "GitHub OIDC token", "role": "security", "group": "github", "rank": 3 },
+    { "id": "wif", "label": "Workload Identity Federation (this repo + main + staging only)", "role": "security", "group": "deploy", "rank": 3 },
+    { "id": "sa", "label": "gcp-deploy-staging SA (no keys)", "role": "security", "group": "deploy", "rank": 4 },
+    { "id": "ar", "label": "Artifact Registry: image tag = commit SHA", "role": "data", "group": "deploy", "rank": 5 },
+    { "id": "migrate", "label": "Cloud Run Job: saferoute-migrate (sa-migration)", "role": "service", "group": "deploy", "rank": 6 },
+    { "id": "api", "label": "Cloud Run service saferoute-api (sa-api-runtime)", "role": "service", "group": "deploy", "rank": 7 },
+    { "id": "candidate", "label": "Candidate revision (no traffic)", "role": "service", "group": "deploy", "rank": 8 },
+    { "id": "smoke", "label": "Smoke tests", "role": "security", "group": "deploy", "rank": 9 },
+    { "id": "promote", "label": "Promote traffic", "role": "service", "group": "deploy", "rank": 10 },
+    { "id": "keep", "label": "Keep previous revision (rollback)", "role": "service", "group": "deploy", "rank": 10 },
+    { "id": "secret", "label": "Secret Manager: database URL", "role": "security", "group": "runtime", "rank": 5 },
+    { "id": "sql", "label": "Cloud SQL PostgreSQL + PostGIS", "role": "data", "group": "runtime", "rank": 6 },
+    { "id": "android", "label": "Android app (later)", "role": "app", "group": "runtime", "rank": 7 },
+    { "id": "jwks", "label": "Firebase public keys (JWKS)", "role": "external", "group": "runtime", "rank": 8 }
+  ],
+  "edges": [
+    { "from": "pr", "to": "merge", "label": "Rahul merges" },
+    { "from": "merge", "to": "actions" },
+    { "from": "actions", "to": "oidc" },
+    { "from": "oidc", "to": "wif" },
+    { "from": "wif", "to": "sa", "label": "1-hour token" },
+    { "from": "sa", "to": "ar", "label": "push image" },
+    { "from": "ar", "to": "migrate", "label": "by digest" },
+    { "from": "migrate", "to": "api", "label": "migrations first" },
+    { "from": "api", "to": "candidate", "label": "new revision" },
+    { "from": "candidate", "to": "smoke" },
+    { "from": "smoke", "to": "promote", "label": "pass" },
+    { "from": "smoke", "to": "keep", "label": "fail" },
+    { "from": "secret", "to": "sql", "label": "DATABASE_URL" },
+    { "from": "migrate", "to": "sql", "label": "expand-only" },
+    { "from": "api", "to": "sql" },
+    { "from": "android", "to": "api", "label": "HTTPS + ID token" },
+    { "from": "api", "to": "jwks", "label": "verify tokens" }
+  ]
+}
