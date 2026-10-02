@@ -104,6 +104,11 @@ so it is described in the README and ADR 0009 rather than drawn.
 | `DeveloperToolsLayoutTest` | 3 | the screen, ViewModel and strings are in `src/debug`; nothing in `src/main` or `src/release` refers to them; the release hooks add no destination and no row |
 | `StringResourceParityTest` | 7 (was 5) | + the debug strings have the same keys, placeholders and no blanks in both languages; no debug key replaces an app key |
 
+**CI on PR #17 (run 37077164332):** `android-ci` passed in 3 min 43 s with all three new steps
+(release build with the dummy URL; "a release build without saferoute.apiBaseUrl fails" as
+expected; scan: developer classes debug 5, release 0). `repo-checks`, `actionlint` and
+`container-ci` passed.
+
 **Why the release check is a layout test plus an APK scan.** AGP 9 creates unit-test tasks for
 the debug build type only (`testReleaseUnitTest` does not exist), so no unit test can run against
 the release variant. The layout test guards the sources; the CI step looks into the release APK
