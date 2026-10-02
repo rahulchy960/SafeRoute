@@ -1,7 +1,7 @@
 {
   "$schema": "../../tools/diagrams/diagram.schema.json",
   "title": "Android network layer",
-  "subtitle": "One API call after P008a, from a screen to the SafeRoute API and back. Only core/network knows OkHttp and Retrofit. ADR 0009",
+  "subtitle": "One API call after P008, from a screen to the SafeRoute API and back. Only core/network knows OkHttp and Retrofit. ADR 0009",
   "direction": "TB",
   "layout": { "nodeWidth": 210 },
   "groups": [
@@ -14,7 +14,7 @@
     { "id": "contract", "label": "contracts/openapi.json", "role": "external", "group": "build", "rank": 1 },
     { "id": "generator", "label": "generateApiClient (OpenAPI Generator, every build)", "role": "service", "group": "build", "rank": 2 },
 
-    { "id": "screen", "label": "Compose screen / ViewModel", "role": "app", "group": "app" },
+    { "id": "screen", "label": "Screen / ViewModel (first user: debug server check)", "role": "app", "group": "app" },
     { "id": "apicall", "label": "apiCall { } wrapper", "role": "app", "group": "app" },
     { "id": "generated", "label": "Generated API interfaces + models (never committed)", "role": "service", "group": "app" },
     { "id": "retrofit", "label": "Retrofit + kotlinx.serialization", "role": "service", "group": "app" },
