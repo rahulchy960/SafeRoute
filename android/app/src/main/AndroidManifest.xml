@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- SPDX-License-Identifier: AGPL-3.0-only -->
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!--
         No <uses-permission> on purpose. A permission is added only by the prompt whose feature
@@ -14,6 +15,8 @@
         localeConfig: the languages offered under Settings > Apps > SafeRoute > Language
         (Android 13+). Older versions follow the system language.
         enableOnBackInvokedCallback: opts in to the predictive back gesture.
+        tools:targetApi: tells lint that the two attributes above are meant for Android 13+
+        and are simply ignored on older versions.
     -->
     <application
         android:name=".SafeRouteApplication"
@@ -26,7 +29,8 @@
         android:localeConfig="@xml/locales_config"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.SafeRoute">
+        android:theme="@style/Theme.SafeRoute"
+        tools:targetApi="33">
 
         <!--
             The only activity (single-activity app): every screen is a Compose destination
