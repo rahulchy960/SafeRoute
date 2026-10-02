@@ -39,11 +39,13 @@ private const val DisabledAlpha = 0.38f
 /**
  * Settings: a language row that does nothing yet, an About section and the standing safety
  * notice. Nothing here reads or stores data, and the repository address is plain text, not a
- * link (the app has no network access).
+ * link (no browser intent yet).
  *
  * @param versionName The app's version as shown to people, from `BuildConfig.VERSION_NAME`.
  * @param versionCode The internal build number, from `BuildConfig.VERSION_CODE`.
  * @param onBack Called by the back arrow.
+ * @param developerEntry A slot under the language row. Debug builds put the "Developer" row
+ * here; release builds leave it empty (see navigation/DeveloperNavigation.kt).
  */
 @Composable
 fun SettingsScreen(
@@ -51,6 +53,7 @@ fun SettingsScreen(
     versionCode: Int,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    developerEntry: @Composable () -> Unit = {},
 ) {
     Scaffold(
         modifier = modifier,
@@ -99,6 +102,7 @@ fun SettingsScreen(
                 },
             )
             HorizontalDivider()
+            developerEntry()
 
             SectionTitle(text = stringResource(R.string.settings_about_title))
             ListItem(

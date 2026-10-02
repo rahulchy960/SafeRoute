@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<!--
+    Debug builds only: the developer server check (P008b). Release builds don't contain these.
+    Every string here must also be in debug/res/values-bn/strings.xml (StringResourceParityTest).
+-->
+<resources>
+    <string name="developer_settings_title">Developer</string>
+    <string name="developer_settings_supporting">Server check · debug builds only</string>
+
+    <string name="developer_check_title">Server check</string>
+    <string name="developer_check_server">Server</string>
+    <string name="developer_check_configured">Configured</string>
+    <string name="developer_check_not_configured">No server configured. Set saferoute.apiBaseUrl in your user-level gradle.properties and rebuild.</string>
+    <string name="developer_check_health">Health</string>
+    <string name="developer_check_readiness">Readiness</string>
+    <string name="developer_check_request_id">Last request id</string>
+    <string name="developer_check_request_id_none">None yet</string>
+    <string name="developer_check_not_checked">Not checked</string>
+    <string name="developer_check_checking">Checking…</string>
+    <!-- %1$s is the backend's build version -->
+    <string name="developer_check_health_ok">OK · server version %1$s</string>
+    <string name="developer_check_ready">Ready</string>
+    <string name="developer_check_no_connection">Cannot reach the server. Check the internet connection.</string>
+    <string name="developer_check_unavailable">Server unavailable, try again.</string>
+    <string name="developer_check_sign_in">The server asked for sign-in.</string>
+    <!-- %1$d is the HTTP status, %2$s the error code from the server -->
+    <string name="developer_check_server_error">Server error %1$d (%2$s).</string>
+    <!-- %1$d is the HTTP status -->
+    <string name="developer_check_unexpected">Unexpected answer from the server (status %1$d).</string>
+    <string name="developer_check_unexpected_no_status">Unexpected answer from the server.</string>
+    <string name="developer_check_again">Check again</string>
+    <string name="developer_check_footer">Debug builds only. This screen never shows the server address or a token.</string>
+</resources>

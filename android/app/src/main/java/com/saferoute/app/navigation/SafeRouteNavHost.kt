@@ -52,7 +52,11 @@ fun SafeRouteNavHost(
                 versionName = BuildConfig.VERSION_NAME,
                 versionCode = BuildConfig.VERSION_CODE,
                 onBack = { navController.popBackStack() },
+                // A row in debug builds, nothing in release builds.
+                developerEntry = { DeveloperSettingsEntry(navController) },
             )
         }
+        // Debug builds only: the server check screen. Release builds add nothing.
+        developerDestinations(navController)
     }
 }
