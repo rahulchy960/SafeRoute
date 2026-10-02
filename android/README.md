@@ -11,8 +11,10 @@ reachable from it. The only real behaviour is the emergency button: a dialog tha
 phone dialer with 112. The map arrives with P010, sign-in with P009, SOS with P014.
 
 **Status (P008a):** the app can talk to the backend: a generated API client and the network
-layer around it (see [Talking to the backend](#talking-to-the-backend)). No screen uses it yet;
-a debug-only check screen follows in P008b.
+layer around it (see [Talking to the backend](#talking-to-the-backend)).
+
+**Status (P008b):** debug builds have *Settings → Developer*, a server check that uses that
+client. Release builds don't contain it.
 
 ![App structure](../docs/diagrams/007-android-app-shell.svg)
 
@@ -61,6 +63,9 @@ $env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"
 ```
 
 CI runs the same command: [`.github/workflows/android-ci.yml`](../.github/workflows/android-ci.yml).
+It also runs when `contracts/` changes, builds the release variant with the dummy address
+`https://example.invalid/`, checks that a release without `saferoute.apiBaseUrl` fails, and
+checks that the release APK has none of the debug-only code.
 
 ## Project structure
 
@@ -91,7 +96,10 @@ android/
     res/xml/locales_config.xml     languages offered by the system per-app language picker
     res/xml/network_security_config.xml   HTTPS only, system certificates only
   app/build/generated/openapi/     the generated API client (not in git, never edited)
+  app/src/debug/                   debug builds only: the developer server check and its strings
+  app/src/release/                 release builds only: no-op stand-ins for the debug hooks
   app/src/test/                    tests that run on the JVM (JUnit, Robolectric)
+  app/src/testDebug/               tests for the debug-only code
 ```
 
 Packages for later features (`data/`, `service/`, `work/`, more `feature/…`) are created by the
@@ -180,10 +188,22 @@ when (val result = apiCall { operationalApi.getHealth() }) {
 }
 ```
 
+**Checking the connection on a phone (debug builds only).** *Settings → Developer* opens the
+server check. It calls `GET /health` and `GET /health/ready` through the real client and shows:
+whether a server is configured, the health status with the backend's version, the readiness
+status, and the last request id. Each failure has its own message ("Cannot reach the server",
+"Server unavailable, try again", ...). It never shows the address or a token.
+
+How it stays out of release builds: the screen, its ViewModel, `ServerCheck` and their strings
+are in `app/src/debug`. `navigation/SafeRouteNavHost.kt` calls two hooks,
+`developerDestinations()` and `DeveloperSettingsEntry()`; `src/debug` defines them with the
+screen, `src/release` defines them as empty. `DeveloperToolsLayoutTest` checks that nothing in
+`src/main` or `src/release` refers to the debug code, and CI scans the release APK for it.
+
 **Finding a request in the backend's logs.** Every request carries an `X-Request-Id`. A debug
 build writes one line per request to Logcat under the tag `SafeRouteHttp` (method, path, status,
-duration, request id; never a header, a body or a query string). Search Cloud Logging for that
-id as described in
+duration, request id; never a header, a body or a query string); the server check screen shows
+the last one. Search Cloud Logging for that id as described in
 [`docs/runbooks/observability-staging.md`](../docs/runbooks/observability-staging.md).
 
 **What not to do:**

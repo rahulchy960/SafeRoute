@@ -29,6 +29,7 @@
 11. **HTTPS only.** The network security config refuses cleartext traffic for every host and trusts only the system certificate authorities, in debug builds too. `INTERNET` is the only permission added.
 12. **The base URL comes from the Gradle property `saferoute.apiBaseUrl`**, kept in each developer's user-level `gradle.properties` or passed by CI with `-P`. The repository default is `https://api.invalid/`, which resolves nowhere. The build fails on a value that is not `https://…/`. **A release build fails when the property is missing.** The URL is never logged or shown; the app may only say whether one is configured.
 13. **No certificate pinning for now.**
+14. **Developer tools are debug-only** (added in P008b). The server check screen, its ViewModel, `ServerCheck` and their strings live in `app/src/debug`; `app/src/release` has empty versions of the two hooks the navigation host calls, so a release build contains none of it. A layout test checks the source sets and `android-ci` scans the release APK. CI also builds when `contracts/` changes and builds the release variant with a dummy base URL.
 
 ## Alternatives considered
 

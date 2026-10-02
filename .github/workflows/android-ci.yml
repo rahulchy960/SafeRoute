@@ -4,6 +4,13 @@ name: android-ci
 # The same command Rahul runs locally in android/:
 #   ./gradlew lint testDebugUnitTest assembleDebug
 #
+# Since P008b (ADR 0009) it also:
+# - runs when contracts/ changes: the build regenerates the API client from
+#   contracts/openapi.json, so a contract change that breaks the app fails here;
+# - builds the release variant with a dummy base URL (https://example.invalid/, unsigned), and
+#   proves that a release build without saferoute.apiBaseUrl fails;
+# - checks that the release APK contains none of the debug-only developer tools.
+#
 # No secrets, no signing, no cloud login: it behaves the same for pull requests from forks. The
 # APK is thrown away with the runner.
 # Not a required check in the ruleset yet: a path-filtered check would block unrelated PRs.
@@ -12,11 +19,13 @@ on:
   pull_request:
     paths:
       - "android/**"
+      - "contracts/**"
       - ".github/workflows/android-ci.yml"
   push:
     branches: [main]
     paths:
       - "android/**"
+      - "contracts/**"
       - ".github/workflows/android-ci.yml"
 
 permissions:
@@ -62,6 +71,45 @@ jobs:
           ./gradlew lint testDebugUnitTest assembleDebug
           --console=plain
           -Porg.gradle.java.installations.fromEnv=JAVA_HOME_17_X64
+
+      # The placeholder address resolves nowhere; nothing is signed or uploaded.
+      - name: Release build with a dummy base URL
+        run: >-
+          ./gradlew assembleRelease
+          --console=plain
+          -Porg.gradle.java.installations.fromEnv=JAVA_HOME_17_X64
+          -Psaferoute.apiBaseUrl=https://example.invalid/
+
+      - name: A release build without the base URL fails
+        run: |
+          if ./gradlew :app:checkReleaseApiBaseUrl --console=plain             -Porg.gradle.java.installations.fromEnv=JAVA_HOME_17_X64; then
+            echo "::error::A release build without saferoute.apiBaseUrl must fail (checkReleaseApiBaseUrl)."
+            exit 1
+          fi
+          echo "As expected: a release build without saferoute.apiBaseUrl fails."
+
+      # The developer server check lives in src/debug. Class names stay readable because R8 is
+      # off (ADR 0008). The debug APK is the control: if it shows no hits, the check is broken.
+      - name: The release APK has no debug-only developer tools
+        run: |
+          hits() { unzip -p "$1" "$2" | grep -a -c "$3" || true; }
+          debug_apk=app/build/outputs/apk/debug/app-debug.apk
+          release_apk=app/build/outputs/apk/release/app-release-unsigned.apk
+          classes='Lcom/saferoute/app/feature/developer/'
+          debug_classes=$(hits "$debug_apk" 'classes*.dex' "$classes")
+          release_classes=$(hits "$release_apk" 'classes*.dex' "$classes")
+          debug_strings=$(hits "$debug_apk" resources.arsc developer_check)
+          release_strings=$(hits "$release_apk" resources.arsc developer_check)
+          echo "developer classes: debug $debug_classes, release $release_classes"
+          echo "developer strings: debug $debug_strings, release $release_strings"
+          if [ "$debug_classes" -eq 0 ] || [ "$debug_strings" -eq 0 ]; then
+            echo "::error::No developer tools found in the debug APK: this check is not looking in the right place."
+            exit 1
+          fi
+          if [ "$release_classes" -ne 0 ] || [ "$release_strings" -ne 0 ]; then
+            echo "::error::The release APK contains the debug-only developer tools."
+            exit 1
+          fi
 
       - name: Upload the lint report (only when the job failed)
         if: failure()

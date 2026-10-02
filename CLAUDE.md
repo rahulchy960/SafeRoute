@@ -225,6 +225,9 @@ and [`android/README.md`](android/README.md):
   `core/network` uses OkHttp or Retrofit; the rest of the app calls `apiCall { }`. The API base
   URL comes from the Gradle property `saferoute.apiBaseUrl` and is never written in a tracked
   file, printed or read from the user-level `gradle.properties` by Claude Code.
+- Debug-only tools (since P008b) live in `app/src/debug` with empty stand-ins in
+  `app/src/release`; nothing in `src/main` refers to them (`DeveloperToolsLayoutTest`, and
+  `android-ci` scans the release APK). Their tests go in `src/testDebug`.
 - Never commit `local.properties`, keystores (`*.jks`, `*.keystore`) or `google-services.json`.
   Before shipping run `git ls-files android | grep -iE "local.properties|\.jks|google-services"`:
   it must print nothing.
@@ -261,7 +264,7 @@ to go green.
 | Container | in `backend/`: `node scripts/container-smoke.mjs` (needs Docker; builds the image and runs the smoke checks, including `scripts/smoke.mjs` pass and fail paths) · actionlint for workflow changes (CI: `.github/workflows/container-ci.yml`) | Active (since P006a) |
 | Deploy workflow | actionlint + shellcheck clean · no `pull_request_target` · every action pinned by commit SHA · deploy job gated on `STAGING_DEPLOY_ENABLED` · no step prints secrets, the environment or `gcloud config` (CI: the `actionlint` job in `container-ci`; the deploy itself runs only on `main`) | Active (since P006b) |
 | Infra scripts | `infra/staging/tests/Invoke-InfraCheck.ps1` with Windows PowerShell 5.1 **and** PowerShell 7 where installed: PSScriptAnalyzer (0 findings) and Pester (mocked `gcloud`/`gh`; needs `node`, no cloud access). Scripts stay pure ASCII (CI: `.github/workflows/infra-ci.yml`, Linux and Windows) | Active (since P006c) |
-| Android | `./gradlew lint testDebugUnitTest assembleDebug` (run inside `android/`; lint errors fail, warnings don't; tests are JVM + Robolectric, no device) · actionlint for workflow changes (CI: `.github/workflows/android-ci.yml`) | Active (since P007a) |
+| Android | `./gradlew lint testDebugUnitTest assembleDebug` (run inside `android/`; lint errors fail, warnings don't; tests are JVM + Robolectric, no device) · `./gradlew assembleRelease -Psaferoute.apiBaseUrl=https://example.invalid/` when build files, `src/release` or `src/debug` change · actionlint for workflow changes (CI: `.github/workflows/android-ci.yml`, which also runs on `contracts/**` and scans the release APK) | Active (since P007a; release checks since P008b) |
 | Moderation | typecheck · lint · test · build | Not yet applicable (from P018) |
 
 ## Documentation duties (every prompt)

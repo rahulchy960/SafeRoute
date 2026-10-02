@@ -21,6 +21,27 @@ class StringResourceParityTest {
     private val english = parse("src/main/res/values/strings.xml")
     private val bengali = parse("src/main/res/values-bn/strings.xml")
 
+    // Debug builds only: the developer server check (P008b).
+    private val debugEnglish = parse("src/debug/res/values/strings.xml")
+    private val debugBengali = parse("src/debug/res/values-bn/strings.xml")
+
+    @Test
+    fun `debug-only strings have the same keys and placeholders in both languages`() {
+        assertEquals(emptySet<String>(), debugEnglish.keys - debugBengali.keys)
+        assertEquals(emptySet<String>(), debugBengali.keys - debugEnglish.keys)
+        val mismatches = debugEnglish.keys.filter { key ->
+            placeholders(debugEnglish.getValue(key)) != placeholders(debugBengali.getValue(key))
+        }
+        assertEquals(emptyList<String>(), mismatches)
+        assertEquals(emptySet<String>(), debugBengali.filterValues { it.isBlank() }.keys)
+    }
+
+    @Test
+    fun `debug-only strings don't replace app strings`() {
+        // A debug key with the same name as a main key would silently change the app's text.
+        assertEquals(emptySet<String>(), debugEnglish.keys.intersect(english.keys))
+    }
+
     @Test
     fun `both files have strings`() {
         assertTrue("English strings.xml is empty", english.isNotEmpty())

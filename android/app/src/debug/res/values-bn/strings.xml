@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<!--
+    Bengali, debug builds only. Drafts written by Claude Code: need human review before release.
+    Same keys as debug/res/values/strings.xml (StringResourceParityTest).
+-->
+<resources>
+    <string name="developer_settings_title">ডেভেলপার</string>
+    <string name="developer_settings_supporting">সার্ভার পরীক্ষা · শুধু ডিবাগ বিল্ডে</string>
+
+    <string name="developer_check_title">সার্ভার পরীক্ষা</string>
+    <string name="developer_check_server">সার্ভার</string>
+    <string name="developer_check_configured">কনফিগার করা আছে</string>
+    <string name="developer_check_not_configured">কোনো সার্ভার কনফিগার করা নেই। ইউজার-লেভেলের gradle.properties-এ saferoute.apiBaseUrl দিন এবং আবার বিল্ড করুন।</string>
+    <string name="developer_check_health">হেলথ</string>
+    <string name="developer_check_readiness">রেডিনেস</string>
+    <string name="developer_check_request_id">শেষ রিকোয়েস্ট আইডি</string>
+    <string name="developer_check_request_id_none">এখনও নেই</string>
+    <string name="developer_check_not_checked">পরীক্ষা করা হয়নি</string>
+    <string name="developer_check_checking">পরীক্ষা চলছে…</string>
+    <!-- %1$s is the backend's build version -->
+    <string name="developer_check_health_ok">ঠিক আছে · সার্ভারের সংস্করণ %1$s</string>
+    <string name="developer_check_ready">প্রস্তুত</string>
+    <string name="developer_check_no_connection">সার্ভারের সঙ্গে যোগাযোগ করা যাচ্ছে না। ইন্টারনেট সংযোগ দেখুন।</string>
+    <string name="developer_check_unavailable">সার্ভার এখন পাওয়া যাচ্ছে না, আবার চেষ্টা করুন।</string>
+    <string name="developer_check_sign_in">সার্ভার সাইন-ইন চাইছে।</string>
+    <!-- %1$d is the HTTP status, %2$s the error code from the server -->
+    <string name="developer_check_server_error">সার্ভারে ত্রুটি %1$d (%2$s)।</string>
+    <!-- %1$d is the HTTP status -->
+    <string name="developer_check_unexpected">সার্ভার থেকে অপ্রত্যাশিত উত্তর (স্ট্যাটাস %1$d)।</string>
+    <string name="developer_check_unexpected_no_status">সার্ভার থেকে অপ্রত্যাশিত উত্তর।</string>
+    <string name="developer_check_again">আবার পরীক্ষা করুন</string>
+    <string name="developer_check_footer">শুধু ডিবাগ বিল্ডে। এই স্ক্রিন কখনও সার্ভারের ঠিকানা বা টোকেন দেখায় না।</string>
+</resources>
