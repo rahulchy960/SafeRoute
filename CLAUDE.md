@@ -195,7 +195,8 @@ Follow [ADR 0007](docs/adr/0007-gcp-staging-topology.md):
 
 ## Android rules (since P007a, ADR 0008)
 
-Follow [ADR 0008](docs/adr/0008-android-foundation.md) and [`android/README.md`](android/README.md):
+Follow [ADR 0008](docs/adr/0008-android-foundation.md), [ADR 0009](docs/adr/0009-android-api-client.md)
+and [`android/README.md`](android/README.md):
 
 - The application ID and namespace are `com.saferoute.app`. Never change the application ID.
   No city names in packages, classes, resource names or Gradle modules (Naming rules above).
@@ -218,6 +219,12 @@ Follow [ADR 0008](docs/adr/0008-android-foundation.md) and [`android/README.md`]
   and never wording that suggests the app calls for help by itself.
 - Add a permission to the manifest only in a prompt whose feature needs it, and explain it in
   the prompt log. `allowBackup` stays `false`.
+- Network code follows [ADR 0009](docs/adr/0009-android-api-client.md) (since P008a): never
+  hand-write API models (they are generated from `contracts/openapi.json` at build time; never
+  edit or commit generated code); never send tokens to non-API hosts; never log bodies. Only
+  `core/network` uses OkHttp or Retrofit; the rest of the app calls `apiCall { }`. The API base
+  URL comes from the Gradle property `saferoute.apiBaseUrl` and is never written in a tracked
+  file, printed or read from the user-level `gradle.properties` by Claude Code.
 - Never commit `local.properties`, keystores (`*.jks`, `*.keystore`) or `google-services.json`.
   Before shipping run `git ls-files android | grep -iE "local.properties|\.jks|google-services"`:
   it must print nothing.

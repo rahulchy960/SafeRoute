@@ -1,0 +1,52 @@
+{
+  "$schema": "../../tools/diagrams/diagram.schema.json",
+  "title": "Android network layer",
+  "subtitle": "One API call after P008a, from a screen to the SafeRoute API and back. Only core/network knows OkHttp and Retrofit. ADR 0009",
+  "direction": "TB",
+  "layout": { "nodeWidth": 210 },
+  "groups": [
+    { "id": "build", "label": "Build time" },
+    { "id": "app", "label": "App" },
+    { "id": "okhttp", "label": "OkHttp chain (core/network)" },
+    { "id": "auth", "label": "Sign-in seam" }
+  ],
+  "nodes": [
+    { "id": "contract", "label": "contracts/openapi.json", "role": "external", "group": "build", "rank": 1 },
+    { "id": "generator", "label": "generateApiClient (OpenAPI Generator, every build)", "role": "service", "group": "build", "rank": 2 },
+
+    { "id": "screen", "label": "Compose screen / ViewModel", "role": "app", "group": "app" },
+    { "id": "apicall", "label": "apiCall { } wrapper", "role": "app", "group": "app" },
+    { "id": "generated", "label": "Generated API interfaces + models (never committed)", "role": "service", "group": "app" },
+    { "id": "retrofit", "label": "Retrofit + kotlinx.serialization", "role": "service", "group": "app" },
+    { "id": "mapper", "label": "Error mapper: problem+json to ApiFailure", "role": "service", "group": "app", "rank": 5 },
+    { "id": "failure", "label": "ApiResult: Success or ApiFailure", "role": "app", "group": "app", "rank": 6 },
+
+    { "id": "requestid", "label": "RequestId: X-Request-Id", "role": "service", "group": "okhttp", "rank": 4 },
+    { "id": "useragent", "label": "UserAgent", "role": "service", "group": "okhttp", "rank": 5 },
+    { "id": "authint", "label": "Auth: Bearer token, API host only", "role": "security", "group": "okhttp", "rank": 6 },
+    { "id": "retry", "label": "Retry: GET/HEAD on 503 or I/O error", "role": "service", "group": "okhttp", "rank": 7 },
+    { "id": "api", "label": "SafeRoute API (Cloud Run staging), HTTPS only", "role": "external", "group": "okhttp", "rank": 8 },
+
+    { "id": "firebase", "label": "Firebase token source (P009, not built yet)", "role": "external", "group": "auth", "rank": 4 },
+    { "id": "tokens", "label": "IdTokenProvider", "role": "security", "group": "auth", "rank": 5 },
+    { "id": "authenticator", "label": "TokenAuthenticator: on 401 refresh once, retry once", "role": "security", "group": "auth", "rank": 7 }
+  ],
+  "edges": [
+    { "from": "contract", "to": "generator" },
+    { "from": "generator", "to": "generated", "label": "writes" },
+    { "from": "screen", "to": "apicall" },
+    { "from": "apicall", "to": "generated" },
+    { "from": "generated", "to": "retrofit" },
+    { "from": "retrofit", "to": "requestid" },
+    { "from": "requestid", "to": "useragent" },
+    { "from": "useragent", "to": "authint" },
+    { "from": "authint", "to": "retry" },
+    { "from": "retry", "to": "api" },
+    { "from": "firebase", "to": "tokens", "label": "later" },
+    { "from": "tokens", "to": "authint", "label": "token" },
+    { "from": "tokens", "to": "authenticator", "label": "fresh token" },
+    { "from": "authenticator", "to": "api", "label": "retry" },
+    { "from": "retrofit", "to": "mapper", "label": "error response" },
+    { "from": "mapper", "to": "failure" }
+  ]
+}

@@ -2,12 +2,17 @@
 
 The native Android app for SafeRoute: Kotlin, Jetpack Compose, Material 3 and Hilt
 (Plan v7 §5). Decisions and their reasons are in
-[ADR 0008](../docs/adr/0008-android-foundation.md).
+[ADR 0008](../docs/adr/0008-android-foundation.md) and
+[ADR 0009](../docs/adr/0009-android-api-client.md).
 
 **Status (P007):** the app shell. Home shows a placeholder where the map will be, a search pill,
 two map buttons (disabled), a bottom sheet and the emergency button; Search and Settings are
 reachable from it. The only real behaviour is the emergency button: a dialog that can open the
 phone dialer with 112. The map arrives with P010, sign-in with P009, SOS with P014.
+
+**Status (P008a):** the app can talk to the backend: a generated API client and the network
+layer around it (see [Talking to the backend](#talking-to-the-backend)). No screen uses it yet;
+a debug-only check screen follows in P008b.
 
 ![App structure](../docs/diagrams/007-android-app-shell.svg)
 
@@ -67,7 +72,7 @@ android/
   gradle/gradle-daemon-jvm.properties   which JDK runs Gradle itself (25)
   app/build.gradle.kts             the app module's build
   app/src/main/
-    AndroidManifest.xml            app entry points; no permissions yet
+    AndroidManifest.xml            app entry points; one permission (INTERNET)
     java/com/saferoute/app/
       SafeRouteApplication.kt      process entry point (@HiltAndroidApp)
       MainActivity.kt              the single activity
@@ -80,9 +85,12 @@ android/
       core/designsystem/component/ SearchPill, MapControlButton, EmergencyButton, sheet
       core/designsystem/preview/   @SafeRoutePreviews (light, dark, Bengali, 200% font)
       core/di/                     Hilt module: Clock and coroutine dispatchers
+      core/network/                HTTP client, token seam, retries, error mapping (ADR 0009)
     res/values/strings.xml         English text
     res/values-bn/strings.xml      Bengali text
     res/xml/locales_config.xml     languages offered by the system per-app language picker
+    res/xml/network_security_config.xml   HTTPS only, system certificates only
+  app/build/generated/openapi/     the generated API client (not in git, never edited)
   app/src/test/                    tests that run on the JVM (JUnit, Robolectric)
 ```
 
@@ -116,11 +124,75 @@ Chosen on 2026-10-02 from Google Maven and Maven Central metadata; all are stabl
 | kotlinx.serialization (core) | 1.11.0 | makes routes `@Serializable`; plugin version = Kotlin |
 | Core SplashScreen | 1.2.0 | |
 | kotlinx.coroutines | 1.11.0 | |
+| OkHttp | 5.5.0 | HTTP client (chosen 2026-10-03) |
+| Retrofit and its kotlinx.serialization converter | 3.0.0 | turns the generated interfaces into calls |
+| kotlinx.serialization (JSON) | 1.11.0 | |
+| OpenAPI Generator (Gradle plugin `org.openapi.generator`) | 7.25.0 | build time only; writes the API client |
+| OkHttp MockWebServer | 5.5.0 | tests only |
 | JUnit 4 · Robolectric · AndroidX Test · Turbine | 4.13.2 · 4.17 · core 1.7.0, ext-junit 1.3.0 · 1.2.1 | tests only |
 | compileSdk · targetSdk · minSdk | 37 · 36 · 26 | see ADR 0008 for why compileSdk is not 36 |
 | JDK | 17 to compile and test; 25 to run Gradle | Gradle downloads 17 if it is missing |
 
 To change a version, edit `gradle/libs.versions.toml` only.
+
+## Talking to the backend
+
+The app never contains hand-written request or response classes. They are generated from the
+contract, [`contracts/openapi.json`](../contracts/openapi.json), every time the app is built
+([ADR 0009](../docs/adr/0009-android-api-client.md)).
+
+![Network layer](../docs/diagrams/008-android-network-layer.svg)
+
+**Generation.** The Gradle task `generateApiClient` runs before the Kotlin compiler. It writes
+Retrofit interfaces (`OperationalApi`, `MeApi`) and data classes (`Health`, `Me`,
+`ProblemDetails`, ...) to `app/build/generated/openapi`, package
+`com.saferoute.app.core.network.generated`. When the contract changes, the next build
+regenerates them; if the change breaks the app's code, the build fails. To regenerate by hand:
+
+```sh
+./gradlew generateApiClient
+```
+
+**Where the server address comes from.** From the Gradle property `saferoute.apiBaseUrl`. It
+is not in the repository. Put it in your **user-level** Gradle properties file, which lives in
+your home folder, outside every project (`<home>/.gradle/gradle.properties`; create the file if
+it does not exist):
+
+```properties
+saferoute.apiBaseUrl=https://<your staging host>/
+```
+
+It must start with `https://` and end with `/`; anything else stops the build with a message.
+Then run *File → Sync Project with Gradle Files* in Android Studio.
+
+- Without the property a debug build uses the placeholder `https://api.invalid/`, an address
+  that exists nowhere. The app then knows that no server is configured.
+- A **release** build without the property fails (`checkReleaseApiBaseUrl`), so a release can
+  never point at the placeholder. To build one locally:
+  `./gradlew assembleRelease -Psaferoute.apiBaseUrl=https://<host>/`.
+
+**Using the client** (from a repository class, not from a screen):
+
+```kotlin
+when (val result = apiCall { operationalApi.getHealth() }) {
+    is ApiResult.Success -> result.value.version
+    is ApiResult.Failure -> result.failure   // Problem, Unauthorized, NoConnection, Unexpected
+}
+```
+
+**Finding a request in the backend's logs.** Every request carries an `X-Request-Id`. A debug
+build writes one line per request to Logcat under the tag `SafeRouteHttp` (method, path, status,
+duration, request id; never a header, a body or a query string). Search Cloud Logging for that
+id as described in
+[`docs/runbooks/observability-staging.md`](../docs/runbooks/observability-staging.md).
+
+**What not to do:**
+
+- Never edit or commit anything under `app/build/generated`. Change the backend's contract.
+- Never write a request or response class by hand.
+- Never put the server address in a tracked file, a test, a log, a screenshot or a pull request.
+- Never send the ID token to any server but the API, and never log a request or response body.
+- Never add an exception to `network_security_config.xml` (no cleartext, no user certificates).
 
 ## Design tokens
 

@@ -55,7 +55,7 @@ val generateApiClient = tasks.register<GenerateTask>("generateApiClient") {
 // `saferoute.apiBaseUrl`, which each developer keeps in their user-level gradle.properties (or
 // CI passes with -P). Without it the build uses a placeholder that resolves nowhere, and the app
 // reports "no server configured". The same rule is checked again at runtime by
-// core/network/ApiBaseUrl.kt, which is where it is unit-tested.
+// core/network/ApiConfig.kt, which is where it is unit-tested.
 val apiBaseUrlPlaceholder = "https://api.invalid/"
 val apiBaseUrlProperty = providers.gradleProperty("saferoute.apiBaseUrl").orNull?.trim().orEmpty()
 val apiBaseUrlConfigured = apiBaseUrlProperty.isNotEmpty()
