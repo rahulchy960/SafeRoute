@@ -116,6 +116,34 @@
   Terraform; a rehearsal of the password rotation; Cloud SQL connector enforcement.
 - Revisit this ADR when production is created, or if staging ever holds real user data.
 
+## Notes added after acceptance
+
+The decisions above are unchanged. These notes record facts found later.
+
+### 2026-10-02 (P006c): the names in the project, and the setup path
+
+- **Deploy identity:** the service account that exists is `sa-deploy`. Wherever this ADR and
+  Plan v7 §13.1 say `gcp-deploy-staging`, read `sa-deploy`. Its roles (decision 3) are the same.
+- **Cloud SQL instance:** it is named `saferoute-db`; the first runbook assumed
+  `saferoute-staging-db`. The database and user names are whatever the instance has;
+  `saferoute_app` in decision 2 is an example, and the "one user for staging" decision stands.
+- **Secrets:** the project already has a secret with only the database password
+  (`db-app-password`). The URL secret of decision 1 (`saferoute-staging-database-url`) is built
+  from it; the workflow mounts only the URL secret.
+- **Setup path:** [`infra/staging/bootstrap-staging.ps1`](../../infra/staging/bootstrap-staging.ps1)
+  is now the primary way to do and to check the one-time setup: audit → apply → set the GitHub
+  secrets and variables → verify. The runbook's manual steps are the reference. Names are
+  parameters of the script, so a different name is no longer a reason for a failed deploy.
+  Decision 10 (no Terraform yet) stands: the script creates only APIs, the provider, the URL
+  secret, IAM bindings and the placeholder service, and never Cloud SQL, service accounts, the
+  pool or the registry.
+- **Lesson for decision 4:** the deploy switch `STAGING_DEPLOY_ENABLED` has to be a
+  **repository** variable. A job-level `if:` is evaluated before the job enters its environment,
+  so an environment variable is invisible to it and the job is skipped without an error.
+- Why: the first `deploy-staging` run stopped at its guard step, before any cloud call, because
+  the setup had been done only partly and under these other names
+  ([`docs/prompt-logs/006c-staging-setup-script.md`](../prompt-logs/006c-staging-setup-script.md)).
+
 ## References
 
 - Plan v7 §3.4, §4, §13.1, §13.2, §14.2, §14.3, §14.5, §15.3.
