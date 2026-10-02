@@ -10,9 +10,12 @@
 | Date | 2026-10-02 |
 | Plan refs | Plan v7 §3.4, §4, §13.1, §13.2, §14.2, §14.3, §14.5, §17, §20 |
 
-> **The staging deploy is UNVERIFIED.** Claude Code cannot run or see a deploy. Nothing in this
-> prompt was executed against Google Cloud. The workflow counts as working only after Rahul
-> reports the result of the first `deploy-staging` run (section 11).
+> **Update 2026-10-02: the staging deploy is VERIFIED and the rollback was rehearsed.** See the
+> [Revision](#revision-2026-10-02-p006d-deploy-verified-rollback-rehearsed) at the end.
+>
+> As written at the time: **the staging deploy is UNVERIFIED.** Claude Code cannot run or see a
+> deploy. Nothing in this prompt was executed against Google Cloud. The workflow counts as
+> working only after Rahul reports the result of the first `deploy-staging` run (section 11).
 
 ## 1. Objective
 
@@ -346,3 +349,67 @@ No Android code in this prompt. Deploy concepts used:
   <https://cloud.google.com/logging/docs/structured-logging>
 - **p95 and p99 latency.** The time within which 95% or 99% of requests finish. Averages hide
   slow requests; these numbers show what the unluckiest users experience.
+
+## Revision 2026-10-02 (P006d): deploy verified, rollback rehearsed
+
+Added after the merge, from the public Actions logs and from the rehearsal Rahul ran. Sections
+1–12 above are unchanged and describe what was known when the pull request was opened.
+
+**The deploy path works.** Seven `deploy-staging` runs, in order:
+
+| Run | Trigger | Result | What happened |
+| --- | --- | --- | --- |
+| 36938352924 | push (merge of PR #11) | skipped | The job condition was false: the switch was not `true` as a repository variable at that moment |
+| 36938899601 | manual | skipped | Same condition. A job-level `if:` only sees repository variables, not environment ones |
+| 36939495196 | manual | failed | Guard step: ten environment values were empty. No cloud call was made |
+| 36948179956 | manual | failed | "Deploy the migration job": `gcloud` rejected the migration account value (`Unsupported service account`) |
+| 36948774279 | manual | failed | "Deploy the migration job": `gcloud` rejected the Cloud SQL connection name (it must have the form `project:region:instance`) |
+| 36949131456 | manual | **success**, 2 min 31 s | Migration execution `saferoute-migrate-8bqd7`; candidate `saferoute-api-00002-lin` replaced the placeholder `saferoute-api-00001-zfv` |
+| 36950613989 | manual | **success**, 2 min 34 s | Migration execution `saferoute-migrate-8fhmj`; candidate `saferoute-api-00004-ced`; previous `saferoute-api-00002-lin` |
+
+- Every failure stopped before a new API revision existed and before traffic moved, as designed.
+  No rollback was ever needed.
+- All three failures were setup values, not workflow defects. The workflow file is unchanged
+  since PR #11. The setup script and the corrected runbook came with P006c (PR #12).
+- In both green runs the smoke test passed on the candidate before any traffic moved and on the
+  live service after promotion: `/health` 200 with version
+  `fef283b342efeb0a86a5fce2b70530b175de39e6`, `/health/ready` 200, `/v1/me` without a token 401.
+
+**What this settles from "Not verifiable here" (section 6):**
+
+- the whole run, including the federation sign-in and every `gcloud` call: works;
+- the database user can create the `drizzle` schema and the PostGIS extension on Cloud SQL: the
+  first migration execution succeeded;
+- the `jq` paths in the workflow (`status.traffic`, `status.url`,
+  `status.latestCreatedRevisionName`): the previous revision, the candidate and both URLs were
+  resolved;
+- a second run for the same commit creates a new revision: it did.
+
+Still open: the log label key for one job execution, how Cloud Logging treats the `timestamp`
+field, and the `--format` paths of the job commands in the rollback runbook (steps 5 and 6).
+
+**Known issue confirmed (section 9).** `gcloud run deploy` prints "The revision can be reached
+directly at …" with the candidate URL before the workflow's masking lines run, so the staging
+hostname is readable in the public log of both green runs. The project ID is masked. It is not
+a credential. Hiding it needs a workflow change and stays a follow-up; the logs of those two
+runs can be deleted in the Actions UI if the hostname should not stay public.
+
+**Rollback rehearsed (Plan v7 §3.4): PASS** for the traffic rollback. Run by Rahul on
+2026-10-02; the full record is in
+[`docs/runbooks/rollback-staging.md`](../runbooks/rollback-staging.md), step 7.
+
+| Step | Result |
+| --- | --- |
+| Deploy switch off | done |
+| Traffic to `saferoute-api-00002-lin` | 9 s; table showed it at 100% |
+| Smoke test on the rolled-back service | passed |
+| `--to-latest` back to `saferoute-api-00004-ced` | 6 s; table showed it at 100% |
+| Smoke test after rolling forward | passed |
+| Deploy switch on | done |
+
+Not part of this rehearsal, and still open: one manual migration execution (step 5) and the
+`saferoute-admin` job (step 6). Both revisions were built from the same commit, so the rehearsal
+proves the traffic mechanics and the checks, not a return to older code or across a migration.
+
+Post-merge checklist (section 11): items 1–6 are done and item 7's rollback part is done. The
+one-time severity check (item 7), the budget check (item 8) and the two job steps remain.

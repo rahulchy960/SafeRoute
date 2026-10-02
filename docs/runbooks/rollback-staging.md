@@ -59,12 +59,22 @@ gcloud config get-value project
 
 ```powershell
 gcloud run revisions list --service=$API_SERVICE --region=$REGION --limit=10
-gcloud run services describe $API_SERVICE --region=$REGION --format="yaml(status.traffic)"
+function Show-Traffic {
+  gcloud run services describe $API_SERVICE --region=$REGION --flatten="status.traffic" `
+    --format="table(status.traffic.revisionName, status.traffic.percent, status.traffic.tag)"
+}
+Show-Traffic
 ```
 
-- The first command lists the service's revisions with their creation time.
-- The second shows the traffic table: one entry with `percent: 100` is the serving revision; the
-  entry with `tag: candidate` and no percent is the last deployed candidate.
+- The first command lists the service's revisions, newest first.
+- `Show-Traffic` prints one line per traffic entry and no URL, so its output is safe to keep.
+  After a normal deploy there is one line: the newest revision serves 100% and also carries the
+  `candidate` tag.
+
+  ```text
+  REVISION_NAME            PERCENT  TAG
+  saferoute-api-00004-ced  100      candidate
+  ```
 
 To find which commit a revision runs, open the `deploy-staging` run that created it (Actions →
 deploy-staging → the run → Summary): the table lists the commit next to the candidate revision.
@@ -83,17 +93,24 @@ $REVISION = "<REVISION_NAME>"
    gh variable set STAGING_DEPLOY_ENABLED --repo $GITHUB_REPO --body "false"
    ```
 
-2. Shift the traffic. This takes effect within seconds and needs no new build.
+2. Shift the traffic. This needs no new build and took 9 seconds in the rehearsal.
 
    ```powershell
    gcloud run services update-traffic $API_SERVICE --region=$REGION --to-revisions="${REVISION}=100"
    ```
 
 **Verify:** the traffic table shows `$REVISION` at 100%, and the smoke checks pass against the
-version that is now served.
+version that is now served. The newer revision stays in the table with its `candidate` tag and
+no percentage:
+
+```text
+REVISION_NAME            PERCENT  TAG
+saferoute-api-00002-lin  100
+saferoute-api-00004-ced           candidate
+```
 
 ```powershell
-gcloud run services describe $API_SERVICE --region=$REGION --format="yaml(status.traffic)"
+Show-Traffic
 $env:SMOKE_URL = gcloud run services describe $API_SERVICE --region=$REGION --format="value(status.url)"
 $ServedSha = (Invoke-RestMethod "$env:SMOKE_URL/health").version
 git log -1 --oneline $ServedSha
@@ -109,6 +126,8 @@ node backend/scripts/smoke.mjs --expect-version $ServedSha --timeout-seconds 60
 - If the target is the **placeholder** revision from the setup runbook (Google's sample page),
   `/health` doesn't exist there and the script fails by design. Check that the service URL
   answers `200` instead.
+- If both revisions were built from the **same commit** (as in a rehearsal), the smoke test
+  passes on either and can't tell them apart. The traffic table is the proof of which one serves.
 
 Notes:
 
@@ -260,6 +279,32 @@ mechanics can be rehearsed but the smoke script can't pass.
 - [ ] Result recorded on the Notion P006b page: date, the two revision names, minutes taken,
       pass or fail, deviations. No project IDs, e-mails or URLs.
 
+### Rehearsal record
+
+| Date | Run by | Revisions | Traffic rollback | Roll forward | Result |
+| --- | --- | --- | --- | --- | --- |
+| 2026-10-02 | Rahul | `saferoute-api-00004-ced` → `saferoute-api-00002-lin` → `saferoute-api-00004-ced`, both built from commit `fef283b` | 9 s | 6 s | **PASS** for steps 1, 2 and 4. Steps 5 and 6 not rehearsed |
+
+Details of the 2026-10-02 rehearsal:
+
+- **Setup:** two green `deploy-staging` runs (36949131456 and 36950613989) had produced the two
+  revisions. Before the rehearsal `saferoute-api-00004-ced` served 100%.
+- **Step 2:** the deploy switch was set to `false`, then all traffic was sent to
+  `saferoute-api-00002-lin`. The traffic table showed it at 100% and the newer revision with
+  only its `candidate` tag. The smoke script passed: `/health` 200 with version
+  `fef283b342efeb0a86a5fce2b70530b175de39e6`, `/health/ready` 200, `/v1/me` without a token 401
+  with `WWW-Authenticate: Bearer` and a request id.
+- **Step 4:** `--to-latest` returned 100% to `saferoute-api-00004-ced`; the smoke script passed.
+  A second `--to-latest` changed nothing (3 s) and the smoke script passed again. The switch was
+  set back to `true`.
+- **Deviations from this runbook, now corrected above:** the traffic table was read with the
+  `--flatten` … `table(…)` command instead of `yaml(status.traffic)`. It prints no URL, so the
+  runbook now uses it. Clock times were not noted; the two shifts were timed instead.
+- **Limits of this rehearsal:** both revisions run the same commit, so it proves the traffic
+  mechanics and the checks, not a return to older code. No migration lay between the two
+  revisions. Step 5 (manual migration execution), step 6.1 (the `saferoute-admin` job) and
+  step 6.2 were not run and stay open.
+
 ## Troubleshooting
 
 | Symptom | Likely cause | What to do |
@@ -274,18 +319,22 @@ mechanics can be rehearsed but the smoke script can't pass.
 
 ## How this runbook was checked
 
-Claude Code wrote it without access to Google Cloud, so no command here was executed against a
-project. Commands and flags were checked against `--help` output of Google Cloud SDK 587.0.0
+Claude Code wrote it without access to Google Cloud, so when it was written no command here
+had been executed against a project. Commands and flags were checked against `--help` output of Google Cloud SDK 587.0.0
 (`run jobs deploy`, `run jobs execute`, `run services describe`) or against Google's online
 `gcloud` reference (`run revisions list`, `run services update-traffic`, `run jobs describe`,
 `run jobs executions list`), and `gh workflow run` against `gh` 2.102.0. The quoting of
 `--args`, `--to-revisions` and `--set-secrets` was run in PowerShell 5.1 with fake values.
 
-**Not verified** until the rehearsal in step 7:
+**Verified on staging by the rehearsal of 2026-10-02** (record in step 7): `update-traffic`
+with `--to-revisions` and with `--to-latest`; the traffic table command; `value(status.url)`;
+the smoke script against the service URL; that a second workflow run for the same commit creates
+a new revision; that revisions are listed newest first.
 
-- the `--format` field paths (`status.traffic`, `status.url`, and the image path in 6.1), and
-  the order and columns of `revisions list`;
-- that a second workflow run for the same commit creates a new revision;
+**Still not verified:**
+
+- steps 5 and 6: `jobs execute`, `jobs deploy` for the admin job, `jobs executions list`, and
+  the image path used in 6.1;
 - how a revision whose image was deleted behaves;
 - the exact wording of the error messages in the troubleshooting table.
 
