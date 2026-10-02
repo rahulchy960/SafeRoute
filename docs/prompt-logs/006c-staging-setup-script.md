@@ -122,7 +122,7 @@ Run on `ci/006c-staging-setup-script` at `3c5d6c7`:
 | --- | --- |
 | `Invoke-InfraCheck.ps1`, Windows PowerShell 5.1.26100 | PSScriptAnalyzer **0 findings**; Pester **87 passed**, 0 failed, 0 skipped |
 | `Invoke-InfraCheck.ps1`, PowerShell 7.6.6 (Linux container) | PSScriptAnalyzer **0 findings**; Pester **85 passed**, 0 failed, 2 skipped (Windows-only) |
-| PowerShell 7 **on Windows** | **not tested locally** (not installed); covered by the `infra-ci-windows` job on the PR |
+| PowerShell 7 **on Windows** | **not tested locally** (not installed); covered by the `infra-ci-windows` job on the PR (results below) |
 | actionlint 1.7.12 + shellcheck, all six workflows | clean |
 | `tools/diagrams`: `pnpm generate` · `pnpm check` | no warnings · 9 diagrams up to date |
 | markdownlint-cli2 (47 files) · JSON validity (32 files) | 0 issues · all valid |
@@ -131,6 +131,17 @@ Run on `ci/006c-staging-setup-script` at `3c5d6c7`:
 
 Backend, contracts and container gates: not applicable, no file under `backend/` or `contracts/`
 changed. **SOS failure matrix (Plan v7 §7.5):** not applicable.
+
+**CI on PR #12** (first run of `infra-ci`, at `1c64336`), all with 0 analyzer findings:
+
+| Job and step | Host | Pester |
+| --- | --- | --- |
+| `infra-ci` | PowerShell 7.6.6, Ubuntu | 85 passed, 2 skipped (Windows-only) |
+| `infra-ci-windows`, first step | Windows PowerShell 5.1.26100 | 87 passed |
+| `infra-ci-windows`, second step | PowerShell 7.6.6, Windows | 87 passed |
+
+`actionlint`, `container-ci` and `repo-checks` passed too. So the `.cmd` path and the exact-bytes
+standard input are proven on both PowerShell versions on Windows.
 
 **What the tests cover (§6 of the prompt):**
 
@@ -260,7 +271,6 @@ No new ADR; a dated note was added to [ADR 0007](../adr/0007-gcp-staging-topolog
   skipped job would not have reached the guard). If it still is, a merge that touches
   `backend/**` starts a deploy that fails at the guard while the setup is incomplete. Harmless,
   but `-Verify` reports it as `WRONG`.
-- The `infra-ci-windows` job had not run when this log was written.
 - PR size (section 4).
 
 ## 10. Follow-ups & prerequisites for next prompt
