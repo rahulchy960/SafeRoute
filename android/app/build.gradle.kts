@@ -3,6 +3,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
 }
@@ -46,6 +47,8 @@ android {
 
     buildFeatures {
         compose = true
+        // Generates BuildConfig (DEBUG, VERSION_NAME, VERSION_CODE), read by Home and Settings.
+        buildConfig = true
     }
 
     androidResources {
@@ -87,7 +90,14 @@ dependencies {
     // Adds an empty activity to the debug manifest so that Compose tests have a host.
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.navigation.compose)
+    // Navigation routes are @Serializable objects (type-safe navigation).
+    implementation(libs.kotlinx.serialization.core)
+
     implementation(libs.hilt.android)
+    implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
     ksp(libs.hilt.compiler)
 
     implementation(libs.kotlinx.coroutines.android)
@@ -100,5 +110,6 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.robolectric)
+    testImplementation(libs.turbine)
     kspTest(libs.hilt.compiler)
 }
