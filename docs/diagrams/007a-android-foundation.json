@@ -1,0 +1,47 @@
+{
+  "$schema": "../../tools/diagrams/diagram.schema.json",
+  "title": "Android foundation",
+  "subtitle": "What P007a puts in place, and what later prompts plug into it (ADR 0008)",
+  "direction": "TB",
+  "layout": { "nodeWidth": 230 },
+  "groups": [
+    { "id": "build", "label": "Build and CI" },
+    { "id": "app", "label": "App (P007a)" },
+    { "id": "later", "label": "Later prompts" }
+  ],
+  "nodes": [
+    { "id": "catalog", "label": "gradle/libs.versions.toml: every version", "role": "infra", "group": "build" },
+    { "id": "build", "label": ":app build: AGP 9.4, Kotlin 2.4, Compose, KSP, Hilt", "role": "infra", "group": "build" },
+    { "id": "tests", "label": "JVM tests (Robolectric): contrast, string parity, semantics, Hilt, manifest", "role": "infra", "group": "build" },
+    { "id": "ci", "label": "android-ci: lint, testDebugUnitTest, assembleDebug", "role": "infra", "group": "build" },
+
+    { "id": "application", "label": "SafeRouteApplication (@HiltAndroidApp)", "role": "service", "group": "app" },
+    { "id": "core", "label": "CoreModule: Clock, dispatchers (injected into ViewModels from P007b)", "role": "service", "group": "app" },
+    { "id": "activity", "label": "MainActivity: single activity, splash, edge to edge; hosts SafeRouteApp (temporary root)", "role": "app", "group": "app" },
+    { "id": "tokens", "label": "Design tokens: colour schemes, SafeRouteColors, type, shapes, spacing", "role": "infra", "group": "app", "rank": 1 },
+    { "id": "strings", "label": "strings.xml: English + Bengali (draft)", "role": "data", "group": "app", "rank": 2 },
+    { "id": "theme", "label": "SafeRouteTheme (light / dark)", "role": "app", "group": "app" },
+    { "id": "components", "label": "SearchPill, MapControlButton, SheetHandle, SafeRouteBottomSheet (3 detents)", "role": "app", "group": "app" },
+    { "id": "emergency", "label": "EmergencyButton: sos red, label with 112", "role": "security", "group": "app" },
+
+    { "id": "p007b", "label": "P007b: NavHost, Home / Search / Settings, HomeViewModel, 112 dialog", "role": "external", "group": "later" },
+    { "id": "p010", "label": "P010: MapLibre map", "role": "external", "group": "later" },
+    { "id": "p014", "label": "P014: SOS flow", "role": "external", "group": "later" }
+  ],
+  "edges": [
+    { "from": "catalog", "to": "build" },
+    { "from": "build", "to": "tests" },
+    { "from": "tests", "to": "ci" },
+    { "from": "application", "to": "core", "label": "Hilt" },
+    { "from": "application", "to": "activity" },
+    { "from": "activity", "to": "theme" },
+    { "from": "tokens", "to": "theme" },
+    { "from": "theme", "to": "components" },
+    { "from": "theme", "to": "emergency" },
+    { "from": "strings", "to": "components" },
+    { "from": "components", "to": "p007b", "label": "used by" },
+    { "from": "emergency", "to": "p007b" },
+    { "from": "p007b", "to": "p010" },
+    { "from": "p007b", "to": "p014" }
+  ]
+}

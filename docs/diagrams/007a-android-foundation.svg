@@ -1,0 +1,127 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1718" height="1119" viewBox="0 0 1718 1119" font-family="Helvetica, Arial, sans-serif">
+<title>Android foundation</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#495057"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="40" y="62" font-size="24" font-weight="700" fill="#1e1e1e">Android foundation</text>
+<text x="40" y="86" font-size="14" fill="#495057">What P007a puts in place, and what later prompts plug into it (ADR 0008)</text>
+<rect x="40" y="114" width="266" height="919" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="54" y="135" font-size="14" font-weight="700" fill="#495057">Build and CI</text>
+<rect x="342" y="114" width="778" height="919" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="356" y="135" font-size="14" font-weight="700" fill="#495057">App (P007a)</text>
+<rect x="1156" y="114" width="522" height="919" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="1170" y="135" font-size="14" font-weight="700" fill="#495057">Later prompts</text>
+<line x1="173" y1="228" x2="173" y2="309" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="173" y1="375" x2="173" y2="456" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="173" y1="543" x2="173" y2="623.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="731" y1="228" x2="475" y2="298.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="731" y1="228" x2="731" y2="288" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="731" y1="396" x2="859" y2="466.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="987" y1="385.5" x2="859" y2="466.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="859" y1="532.5" x2="667" y2="603" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="859" y1="532.5" x2="923" y2="634" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="603" y1="532.5" x2="667" y2="603" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="667" y1="731" x2="1417" y2="791" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="923" y1="700" x2="1417" y2="791" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1417" y1="899" x2="1289" y2="959" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1417" y1="899" x2="1545" y2="959" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="58" y="162" width="230" height="66" rx="10" fill="#eebefa" stroke="#9c36b5" stroke-width="2"/>
+<text x="173" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="173" y="190.2">gradle/libs.versions.toml:</tspan>
+<tspan x="173" y="211">every version</tspan>
+</text>
+<rect x="58" y="309" width="230" height="66" rx="10" fill="#eebefa" stroke="#9c36b5" stroke-width="2"/>
+<text x="173" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="173" y="337.2">:app build: AGP 9.4, Kotlin</tspan>
+<tspan x="173" y="358">2.4, Compose, KSP, Hilt</tspan>
+</text>
+<rect x="58" y="456" width="230" height="87" rx="10" fill="#eebefa" stroke="#9c36b5" stroke-width="2"/>
+<text x="173" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="173" y="484.3">JVM tests (Robolectric):</tspan>
+<tspan x="173" y="505.1">contrast, string parity,</tspan>
+<tspan x="173" y="525.9">semantics, Hilt, manifest</tspan>
+</text>
+<rect x="58" y="623.5" width="230" height="87" rx="10" fill="#eebefa" stroke="#9c36b5" stroke-width="2"/>
+<text x="173" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="173" y="651.8">android-ci: lint,</tspan>
+<tspan x="173" y="672.6">testDebugUnitTest,</tspan>
+<tspan x="173" y="693.4">assembleDebug</tspan>
+</text>
+<rect x="616" y="162" width="230" height="66" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="731" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="731" y="190.2">SafeRouteApplication</tspan>
+<tspan x="731" y="211">(@HiltAndroidApp)</tspan>
+</text>
+<rect x="360" y="298.5" width="230" height="87" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="475" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="475" y="326.8">CoreModule: Clock,</tspan>
+<tspan x="475" y="347.6">dispatchers (injected into</tspan>
+<tspan x="475" y="368.4">ViewModels from P007b)</tspan>
+</text>
+<rect x="616" y="288" width="230" height="108" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="731" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="731" y="316.4">MainActivity: single</tspan>
+<tspan x="731" y="337.2">activity, splash, edge to</tspan>
+<tspan x="731" y="358">edge; hosts SafeRouteApp</tspan>
+<tspan x="731" y="378.8">(temporary root)</tspan>
+</text>
+<rect x="872" y="298.5" width="230" height="87" rx="10" fill="#eebefa" stroke="#9c36b5" stroke-width="2"/>
+<text x="987" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="987" y="326.8">Design tokens: colour</tspan>
+<tspan x="987" y="347.6">schemes, SafeRouteColors,</tspan>
+<tspan x="987" y="368.4">type, shapes, spacing</tspan>
+</text>
+<rect x="488" y="466.5" width="230" height="66" rx="10" fill="#ffd8a8" stroke="#e8590c" stroke-width="2"/>
+<text x="603" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="603" y="494.7">strings.xml: English +</tspan>
+<tspan x="603" y="515.5">Bengali (draft)</tspan>
+</text>
+<rect x="744" y="466.5" width="230" height="66" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="859" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="859" y="494.7">SafeRouteTheme (light /</tspan>
+<tspan x="859" y="515.5">dark)</tspan>
+</text>
+<rect x="552" y="603" width="230" height="128" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="667" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="667" y="631">SearchPill,</tspan>
+<tspan x="667" y="651.8">MapControlButton,</tspan>
+<tspan x="667" y="672.6">SheetHandle,</tspan>
+<tspan x="667" y="693.4">SafeRouteBottomSheet (3</tspan>
+<tspan x="667" y="714.2">detents)</tspan>
+</text>
+<rect x="808" y="634" width="230" height="66" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="923" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="923" y="662.2">EmergencyButton: sos red,</tspan>
+<tspan x="923" y="683">label with 112</tspan>
+</text>
+<rect x="1302" y="791" width="230" height="108" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="1417" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1417" y="819.4">P007b: NavHost, Home /</tspan>
+<tspan x="1417" y="840.2">Search / Settings,</tspan>
+<tspan x="1417" y="861">HomeViewModel, 112</tspan>
+<tspan x="1417" y="881.8">dialog</tspan>
+</text>
+<rect x="1174" y="959" width="230" height="56" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="1289" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1289" y="992.6">P010: MapLibre map</tspan>
+</text>
+<rect x="1430" y="959" width="230" height="56" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="1545" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1545" y="992.6">P014: SOS flow</tspan>
+</text>
+<rect x="586.7" y="252.3" width="32.5" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="603" y="267.8" font-size="13" fill="#1e1e1e" text-anchor="middle">Hilt</text>
+<rect x="1013.1" y="750" width="57.8" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="1042" y="765.5" font-size="13" fill="#1e1e1e" text-anchor="middle">used by</text>
+<rect x="40" y="1054" width="16" height="16" rx="3" fill="#a5d8ff" stroke="#1971c2" stroke-width="1.5"/>
+<text x="62" y="1067" font-size="13" fill="#495057">App / UI</text>
+<rect x="134.8" y="1054" width="16" height="16" rx="3" fill="#b2f2bb" stroke="#2f9e44" stroke-width="1.5"/>
+<text x="156.8" y="1067" font-size="13" fill="#495057">Service</text>
+<rect x="228.3" y="1054" width="16" height="16" rx="3" fill="#ffd8a8" stroke="#e8590c" stroke-width="1.5"/>
+<text x="250.3" y="1067" font-size="13" fill="#495057">Data</text>
+<rect x="303.1" y="1054" width="16" height="16" rx="3" fill="#ffc9c9" stroke="#e03131" stroke-width="1.5"/>
+<text x="325.1" y="1067" font-size="13" fill="#495057">Security / emergency</text>
+<rect x="476.7" y="1054" width="16" height="16" rx="3" fill="#eebefa" stroke="#9c36b5" stroke-width="1.5"/>
+<text x="498.7" y="1067" font-size="13" fill="#495057">Infra / workflow</text>
+<rect x="618.3" y="1054" width="16" height="16" rx="3" fill="#e9ecef" stroke="#495057" stroke-width="1.5"/>
+<text x="640.3" y="1067" font-size="13" fill="#495057">External</text>
+</svg>

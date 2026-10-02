@@ -128,9 +128,9 @@ git config commit.template .gitmessage  # optional: commit message template
 
 ## Package name
 
-The Android package name / application ID is **chosen once and never changed after publishing**
-(Plan v7 §15.1). It is decided in P007. `in.saferoute.app` is only a suggestion until Rahul
-confirms it.
+The Android application ID is **`com.saferoute.app`**
+([ADR 0008](docs/adr/0008-android-foundation.md)). It is chosen once and never changed after
+publishing (Plan v7 §15.1).
 
 ## Documentation
 
