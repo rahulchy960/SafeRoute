@@ -30,6 +30,8 @@
 
 <!-- Commands + results (pass/fail counts). SOS/live location: failure-matrix rows (Plan v7 §7.5). -->
 
+**Android screenshots:** <!-- UI changes only, otherwise "n/a". Rahul adds screenshots from the phone: light, dark and Bengali. Claude Code has no device and can't take them. -->
+
 ## Diagrams
 
 <!-- docs/diagrams/... links, or "No diagram needed". -->

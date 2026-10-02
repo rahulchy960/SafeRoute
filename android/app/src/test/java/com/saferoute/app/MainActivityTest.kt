@@ -1,0 +1,71 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+package com.saferoute.app
+
+import android.content.pm.ApplicationInfo
+import android.content.pm.PackageManager
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithText
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import dagger.hilt.android.testing.HiltAndroidRule
+import dagger.hilt.android.testing.HiltAndroidTest
+import dagger.hilt.android.testing.HiltTestApplication
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
+
+/**
+ * Starts the real [MainActivity] (splash theme, edge-to-edge, Hilt, Compose) and checks the
+ * promises the manifest makes.
+ */
+@HiltAndroidTest
+@RunWith(AndroidJUnit4::class)
+@Config(application = HiltTestApplication::class)
+class MainActivityTest {
+
+    // Hilt's container must exist before the activity is created, hence the order.
+    @get:Rule(order = 0)
+    val hilt = HiltAndroidRule(this)
+
+    @get:Rule(order = 1)
+    val compose = createAndroidComposeRule<MainActivity>()
+
+    @Test
+    fun `launches and shows the app name and the standing notice`() {
+        val activity = compose.activity
+
+        compose.onNodeWithText(activity.getString(R.string.app_name)).assertIsDisplayed()
+        compose.onNodeWithText(activity.getString(R.string.not_emergency_service)).assertIsDisplayed()
+    }
+
+    @Test
+    fun `application id is the permanent one`() {
+        assertEquals("com.saferoute.app", compose.activity.packageName)
+    }
+
+    @Test
+    fun `the app requests no Android permission`() {
+        val activity = compose.activity
+        val info = activity.packageManager.getPackageInfo(
+            activity.packageName,
+            PackageManager.GET_PERMISSIONS,
+        )
+        // AndroidX adds one private permission named after the app itself (used to keep its own
+        // broadcast receivers unexported). Anything in the android.permission namespace would
+        // be a real permission and needs a prompt that asks for it.
+        val requested = info.requestedPermissions.orEmpty().toList()
+        assertTrue(
+            "Unexpected permissions: $requested",
+            requested.all { it.startsWith(activity.packageName) },
+        )
+    }
+
+    @Test
+    fun `backup is switched off`() {
+        val flags = compose.activity.applicationInfo.flags
+        assertEquals(0, flags and ApplicationInfo.FLAG_ALLOW_BACKUP)
+    }
+}

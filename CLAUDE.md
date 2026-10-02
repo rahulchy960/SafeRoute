@@ -28,12 +28,12 @@ Android concepts as you use them.
 | **Device-first SOS**: countdown, SMS, 112 dialer and location tracking work with no server; server orchestration is layered on top | Plan v7 §7 |
 | **Provider adapters** for tiles, geocoding, routing and push | Plan v7 §4 |
 | **Claude Code never receives production credentials**; it works only through branches, PRs and CI | Plan v7 §13.2 |
-| **Android package name is chosen once (P007) and never changed after publishing** | Plan v7 §15.1 |
+| **Android application ID is `com.saferoute.app`** (chosen in P007); it never changes after publishing | Plan v7 §15.1, ADR 0008 |
 
 ## Repo map
 
 ```text
-android/        Kotlin + Compose app (created in P007)
+android/        Kotlin + Compose app (from P007; Android Studio opens this folder)
 backend/        Hono + Zod API and pg-boss worker (from P002)
 moderation/     Moderator web app (P018)
 contracts/      openapi.json, generated, never hand-edited (from P004)
@@ -46,7 +46,7 @@ docs/prompt-logs/ One log per prompt (NNN-core-work.md)
 docs/runbooks/  Operational runbooks
 .claude/        settings.json (deny rules) + slash commands /start-prompt, /ship-prompt
 .githooks/      pre-push hook that rejects pushes to main
-.github/        PR template, CODEOWNERS, workflows (repo-checks, backend-ci, contracts-ci, container-ci, infra-ci, deploy-staging)
+.github/        PR template, CODEOWNERS, workflows (repo-checks, backend-ci, contracts-ci, container-ci, infra-ci, android-ci, deploy-staging)
 ```
 
 ## TEN GOLDEN RULES
@@ -193,6 +193,35 @@ Follow [ADR 0007](docs/adr/0007-gcp-staging-topology.md):
   Durga Puja load planning, `Asia/Kolkata` conversions, Bengali UI, test landmarks.
 - Multi-city support is deferred to Plan v7 §14.2 Stage 3. Don't build it early.
 
+## Android rules (since P007a, ADR 0008)
+
+Follow [ADR 0008](docs/adr/0008-android-foundation.md) and [`android/README.md`](android/README.md):
+
+- The application ID and namespace are `com.saferoute.app`. Never change the application ID.
+  No city names in packages, classes, resource names or Gradle modules (Naming rules above).
+- One Gradle module, feature packages. Create a package only in the prompt that fills it. Every
+  version goes in `android/gradle/libs.versions.toml`; stable releases only, and no `@OptIn` of
+  an experimental API in production code.
+- Every new Kotlin, Gradle, XML and properties file starts with the SPDX line. Third-party
+  assets keep their own licence and are listed in [`android/THIRD_PARTY.md`](android/THIRD_PARTY.md).
+- Every user-visible string is a resource, in **both** `values/strings.xml` and
+  `values-bn/strings.xml`, with the same key. Bengali written by Claude Code is a draft: list
+  new strings in the prompt log as "needs human review before release". Write the emergency
+  number as `112` in Latin digits.
+- Colours, type, shapes and spacing come from `core/designsystem/theme`. The `sos` red is only
+  for the emergency button and the emergency dialog. Dynamic colour stays off. Interactive
+  elements are at least 48 dp and have a label or content description.
+- Add a permission to the manifest only in a prompt whose feature needs it, and explain it in
+  the prompt log. `allowBackup` stays `false`.
+- Never commit `local.properties`, keystores (`*.jks`, `*.keystore`) or `google-services.json`.
+  Before shipping run `git ls-files android | grep -iE "local.properties|\.jks|google-services"`:
+  it must print nothing.
+- Claude Code has no phone or emulator. It verifies with JVM tests (Robolectric) and says so;
+  on-device checks are steps for Rahul in "How Rahul can verify".
+- If `gradlew` can't find a JDK, set `JAVA_HOME` to Android Studio's bundled JDK for that
+  command only. Never change it persistently.
+- Quality gate, inside `android/`: `./gradlew lint testDebugUnitTest assembleDebug`.
+
 ## Conventions (Plan v7 §17.3)
 
 | Item | Convention | Example |
@@ -220,7 +249,7 @@ to go green.
 | Container | in `backend/`: `node scripts/container-smoke.mjs` (needs Docker; builds the image and runs the smoke checks, including `scripts/smoke.mjs` pass and fail paths) · actionlint for workflow changes (CI: `.github/workflows/container-ci.yml`) | Active (since P006a) |
 | Deploy workflow | actionlint + shellcheck clean · no `pull_request_target` · every action pinned by commit SHA · deploy job gated on `STAGING_DEPLOY_ENABLED` · no step prints secrets, the environment or `gcloud config` (CI: the `actionlint` job in `container-ci`; the deploy itself runs only on `main`) | Active (since P006b) |
 | Infra scripts | `infra/staging/tests/Invoke-InfraCheck.ps1` with Windows PowerShell 5.1 **and** PowerShell 7 where installed: PSScriptAnalyzer (0 findings) and Pester (mocked `gcloud`/`gh`; needs `node`, no cloud access). Scripts stay pure ASCII (CI: `.github/workflows/infra-ci.yml`, Linux and Windows) | Active (since P006c) |
-| Android | `./gradlew lint testDebugUnitTest assembleDebug` (run inside `android/`) | Not yet applicable (from P007) |
+| Android | `./gradlew lint testDebugUnitTest assembleDebug` (run inside `android/`; lint errors fail, warnings don't; tests are JVM + Robolectric, no device) · actionlint for workflow changes (CI: `.github/workflows/android-ci.yml`) | Active (since P007a) |
 | Moderation | typecheck · lint · test · build | Not yet applicable (from P018) |
 
 ## Documentation duties (every prompt)

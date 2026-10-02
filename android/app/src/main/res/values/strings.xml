@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<!--
+    English, and the fallback for every language without its own file.
+    Every string here must also be in values-bn/strings.xml (StringResourceParityTest).
+-->
+<resources>
+    <string name="app_name">SafeRoute</string>
+    <string name="not_emergency_service">SafeRoute is not an emergency service.</string>
+
+    <!-- Search pill -->
+    <string name="search_hint">Search places</string>
+
+    <!-- Map controls: content descriptions read by TalkBack -->
+    <string name="map_control_my_location_unavailable">My location, not available yet</string>
+    <string name="map_control_layers_unavailable">Map layers, not available yet</string>
+
+    <!-- Emergency button. Keep the number 112 in Latin digits in every language. -->
+    <string name="emergency_button_label">Emergency 112</string>
+    <string name="emergency_button_click_label">show emergency options</string>
+
+    <!-- Bottom sheet handle: description, states and actions read by TalkBack -->
+    <string name="sheet_handle_description">Panel handle</string>
+    <string name="sheet_state_peek">Collapsed</string>
+    <string name="sheet_state_half">Half open</string>
+    <string name="sheet_state_full">Fully open</string>
+    <string name="sheet_action_expand">Expand panel</string>
+    <string name="sheet_action_collapse">Collapse panel</string>
+    <string name="sheet_action_cycle">change panel size</string>
+</resources>

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!--
+        No <uses-permission> on purpose. A permission is added only by the prompt whose feature
+        needs it (CLAUDE.md "Android rules").
+    -->
+
+    <!--
+        allowBackup=false + data_extraction_rules: nothing the app stores is copied to a cloud
+        backup or to a new phone (ADR 0008). Restoring an old SOS record or session blindly
+        would be worse than starting clean.
+        localeConfig: the languages offered under Settings > Apps > SafeRoute > Language
+        (Android 13+). Older versions follow the system language.
+        enableOnBackInvokedCallback: opts in to the predictive back gesture.
+        tools:targetApi: tells lint that the two attributes above are meant for Android 13+
+        and are simply ignored on older versions.
+    -->
+    <application
+        android:name=".SafeRouteApplication"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:enableOnBackInvokedCallback="true"
+        android:fullBackupContent="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:localeConfig="@xml/locales_config"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.SafeRoute"
+        tools:targetApi="33">
+
+        <!--
+            The only activity (single-activity app): every screen is a Compose destination
+            inside it. `exported` must be true for the launcher to start it.
+        -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.SafeRoute.Starting"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>
