@@ -6,7 +6,7 @@
 | Milestone | M2 (depends on P004, P005, P007; all merged) |
 | Branch | `feat/008a-android-api-client` |
 | PR title | `feat(android): OpenAPI-generated API client, auth interceptor and error mapping [P008a]` |
-| Notion | [P008 row in the Prompt Log](https://app.notion.com/p/3eb07370772081a9ba01dbe7d82a17f7) |
+| Notion | [P008a row in the Prompt Log](https://app.notion.com/p/3ed07370772081b19cbcc582a8970496) (umbrella row: [P008](https://app.notion.com/p/3eb07370772081a9ba01dbe7d82a17f7)) |
 | Date | 2026-10-03 |
 | Plan refs | Plan v7 §5.1, §6.1–6.3, §12.2, §12.4, §17, §20; ADR 0004, ADR 0006, ADR 0008, ADR 0009 |
 
@@ -108,7 +108,9 @@ built yet" instead of being dashed.
 | gitleaks 8.30.1 | no leaks |
 | `git ls-files android \| grep -iE "local.properties\|\.jks\|google-services"` | no output |
 
-`android-ci` and `repo-checks` run on the pull request; their result is added below once known.
+**Added after the first run (PR #16, run 37068063028):** `android-ci` passed in 4 min 25 s
+(`./gradlew lint testDebugUnitTest assembleDebug` on `ubuntu-24.04`, without the base URL
+property, so with the placeholder); `repo-checks` passed.
 
 | Class | Tests | Covers |
 | --- | --- | --- |
