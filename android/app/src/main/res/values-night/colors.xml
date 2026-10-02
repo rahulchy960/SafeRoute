@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<resources>
+    <color name="splash_background">#FF111415</color>
+    <color name="splash_icon_background">#FF004E5C</color>
+</resources>

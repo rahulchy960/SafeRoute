@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<resources>
+    <!--
+        The window theme. It only matters before Compose draws the first frame: all colours,
+        type and shapes of the UI come from SafeRouteTheme (core/designsystem/theme).
+    -->
+    <style name="Theme.SafeRoute" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <!-- Shown while the app starts (AndroidX SplashScreen), then replaced by Theme.SafeRoute. -->
+    <style name="Theme.SafeRoute.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="windowSplashScreenIconBackgroundColor">@color/splash_icon_background</item>
+        <item name="postSplashScreenTheme">@style/Theme.SafeRoute</item>
+    </style>
+</resources>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<resources>
+    <!--
+        Only the colours the system needs before Compose starts (the splash screen). They repeat
+        `surface` and `primary` from core/designsystem/theme/Color.kt; keep them in step.
+    -->
+    <color name="splash_background">#FFFAFBFC</color>
+    <color name="splash_icon_background">#FF006879</color>
+</resources>
