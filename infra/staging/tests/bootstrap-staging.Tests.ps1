@@ -376,6 +376,7 @@ Describe 'bootstrap-staging.ps1' {
         It 'uses a provider that exists under another name and reports its condition' {
             Start-Scenario 'full'; $script:Scenario.Providers[0].Id = 'gh-actions'; Invoke-Mode 'Audit'
             (Get-Row '^Workload Identity provider') | Should -Match '\(other name\) gh-actions: restricts repository, ref and environment\s+PRESENT'
+            $script:Output.Contains("Note: No provider is named github-saferoute; using the only one on the pool, gh-actions. Its condition: [$script:GoodCondition]") | Should -BeTrue
         }
         It 'reports a provider deleted less than 30 days ago' {
             Start-Scenario 'full'; $script:Scenario.Providers[0].State = 'DELETED'; Invoke-Mode 'Audit'
@@ -400,6 +401,8 @@ Describe 'bootstrap-staging.ps1' {
             @{ Name = 'a prefix of the repository'; Condition = "assertion.repository == 'rahulchy960/SafeRoute-fork' && assertion.ref == 'refs/heads/main' && assertion.environment == 'staging'" }
             @{ Name = 'an OR'; Condition = "assertion.repository == 'rahulchy960/SafeRoute' && assertion.ref == 'refs/heads/main' && assertion.environment == 'staging' || true" }
             @{ Name = 'the literal true'; Condition = 'true' }
+            @{ Name = 'a negation'; Condition = "!(assertion.repository == 'rahulchy960/SafeRoute' && assertion.ref == 'refs/heads/main' && assertion.environment == 'staging')" }
+            @{ Name = 'a conditional'; Condition = "true ? true : assertion.repository == 'rahulchy960/SafeRoute' && assertion.ref == 'refs/heads/main' && assertion.environment == 'staging'" }
         ) {
             (Test-ProviderCondition $Condition).Ok | Should -BeFalse
         }
@@ -503,6 +506,12 @@ Describe 'bootstrap-staging.ps1' {
             Start-Scenario 'real'; $script:Scenario.Password = ([char]0xFEFF) + "abc`r`n"; Invoke-Mode 'Apply'
             $create = Get-MutatingCall | Where-Object { $_.Line -match '^secrets create' }
             [System.Text.Encoding]::UTF8.GetString($create.Stdin) | Should -Match '^postgresql://saferoute_app:abc@/saferoute\?host='
+        }
+        It 'forgets the password and the URL when the step is over' {
+            Start-Scenario 'real'; $script:Scenario.Password = 'p@ss-to-forget'; Invoke-Mode 'Apply'
+            $script:Session.Secrets.Count | Should -Be 0
+            Start-Scenario 'real'; $script:Scenario.Password = 'p@ss-to-forget'; $script:Scenario.FailOn = '^secrets create'; Invoke-Mode 'Apply'
+            $script:Session.Secrets.Count | Should -Be 0
         }
         It 'warns that it cannot check that the password belongs to the user' {
             Start-Scenario 'real'; Invoke-Mode 'Apply'

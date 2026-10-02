@@ -408,8 +408,8 @@ function Test-ProviderCondition {
     if ([string]::IsNullOrWhiteSpace($Condition)) {
         return @{ Ok = $false; Reason = 'no attribute condition: every GitHub repository would be accepted' }
     }
-    if ($Condition -match '\|\|') {
-        return @{ Ok = $false; Reason = 'the condition contains "||" and may accept more than this repository' }
+    if ($Condition -match '\|\||!(?!=)|\?') {
+        return @{ Ok = $false; Reason = 'the condition contains "||", "!" or "?" and may accept more than this repository' }
     }
     $flat = ($Condition -replace '\s', '') -replace '"', "'"
     $repo = [regex]::Escape($script:Repo)
@@ -490,7 +490,11 @@ function Test-WorkloadIdentity {
     $condition = Test-ProviderCondition $chosen.attributeCondition
     if (-not $condition.Ok) { $problems += $condition.Reason }
     $found = "$($State.ProviderId): $($condition.Reason)"
-    if ($State.ProviderId -ne $Config.ProviderId) { $found = "(other name) $found" }
+    if ($State.ProviderId -ne $Config.ProviderId) {
+        $found = "(other name) $found"
+        [void]$State.Notes.Add("No provider is named $($Config.ProviderId); using the only one on the pool, " +
+            "$($State.ProviderId). Its condition: [$($chosen.attributeCondition)]")
+    }
     if ($problems.Count -gt 0) {
         Add-AuditItem $State 'wif:provider' 'Workload Identity provider' $expected ($problems -join '; ') 'WRONG' `
             ("Not changed by this script. Condition found: [$($chosen.attributeCondition)]. " +
@@ -779,6 +783,7 @@ function Invoke-Audit {
         Items = New-Object System.Collections.ArrayList
         ProjectId = ''; ProjectNumber = ''; ProviderName = ''; ProviderId = ''
         ConnectionName = ''; DbName = ''; DbUser = ''; Policies = @{}
+        Notes = New-Object System.Collections.ArrayList
     }
     if (-not (Get-ProjectContext $State)) { return $null }
     Test-Api $State
@@ -798,9 +803,10 @@ function Test-AuditClean {
 }
 
 function Show-AuditTable {
-    param($Items, [string]$Title)
+    param($Items, [string]$Title, $Notes = @())
     Write-Line ''
     Write-Line $Title
+    foreach ($note in $Notes) { Write-Line "Note: $note" }
     $rows = @($Items | ForEach-Object {
             [pscustomobject]@{
                 Item = ConvertTo-SafeText $_.Item; Expected = ConvertTo-SafeText $_.Expected
@@ -938,12 +944,21 @@ function Invoke-Apply {
             Write-Line 'if it fails with "password authentication failed", the two do not match.'
             $bytes = $null
             if ($plan -or (Confirm-Step "Read $($Config.PasswordSecret) into memory to build the URL?")) {
-                $bytes = Get-DatabaseUrlByte $State $Config
-                if ($null -eq $bytes) { return 1 }
-                $outcome = Invoke-Step "create secret $($Config.UrlSecret) with its first version" @(
-                    'secrets', 'create', $Config.UrlSecret, '--replication-policy=user-managed',
-                    "--locations=$script:Region", '--data-file=-') $bytes 'the database URL, built in memory, never shown'
-                $bytes = $null
+                $outcome = 'failed'
+                try {
+                    $bytes = Get-DatabaseUrlByte $State $Config
+                    if ($null -ne $bytes) {
+                        $outcome = Invoke-Step "create secret $($Config.UrlSecret) with its first version" @(
+                            'secrets', 'create', $Config.UrlSecret, '--replication-policy=user-managed',
+                            "--locations=$script:Region", '--data-file=-') $bytes 'the database URL, built in memory, never shown'
+                    }
+                }
+                finally {
+                    # Forget the password and the URL as soon as the step is over, whatever happened.
+                    if ($null -ne $bytes) { [Array]::Clear($bytes, 0, $bytes.Length) }
+                    $bytes = $null
+                    $script:Session.Secrets.Clear()
+                }
                 if ($outcome -eq 'failed') { return 1 }
                 if ($outcome -eq 'done') { $ran++; $secretReady = $true }
             }
@@ -1277,11 +1292,11 @@ function Invoke-BootstrapMode {
 
     switch ($Config.Mode) {
         'Audit' {
-            Show-AuditTable $State.Items 'Google Cloud staging setup'
+            Show-AuditTable $State.Items 'Google Cloud staging setup' $State.Notes
             return 0
         }
         'Apply' {
-            Show-AuditTable $State.Items 'Google Cloud staging setup (before -Apply)'
+            Show-AuditTable $State.Items 'Google Cloud staging setup (before -Apply)' $State.Notes
             return (Invoke-Apply $State $Config)
         }
         'SetGithubSecrets' {
@@ -1299,7 +1314,7 @@ function Invoke-BootstrapMode {
             $github = Get-GithubState
             $gcpClean = Test-AuditClean $State.Items
             Test-GithubSetup $State $Config $reference $github $gcpClean
-            Show-AuditTable $State.Items 'Staging setup compared with .github/workflows/deploy-staging.yml'
+            Show-AuditTable $State.Items 'Staging setup compared with .github/workflows/deploy-staging.yml' $State.Notes
             if ($Config.Plan) { return 0 }
             if (Test-AuditClean $State.Items) { Write-Line 'VERIFY: OK. Everything the workflow needs is present.'; return 0 }
             Write-Line 'VERIFY: NOT READY. See "Next actions" above.'
