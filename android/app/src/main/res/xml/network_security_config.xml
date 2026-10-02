@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<!--
+    Rules for every network connection the app makes (ADR 0009).
+    cleartextTrafficPermitted=false: plain http:// is refused for every host, so a token or a
+    location can never travel unencrypted, even if a URL is wrong.
+    Trust anchors: only the certificate authorities that ship with Android. Certificates a user
+    installs (for example a proxy used to inspect traffic) are not trusted, in debug builds too.
+    There is no <domain-config> and no <debug-overrides> on purpose: no host is an exception.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

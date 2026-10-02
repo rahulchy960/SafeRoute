@@ -1,11 +1,54 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
+import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
+    alias(libs.plugins.openapi.generator)
+}
+
+// The API client is generated from the contract on every build and is never committed or edited
+// (ADR 0009). Retrofit interfaces and @Serializable models land in build/generated/openapi. The
+// only supporting files kept are the ones that code imports (the UUID and date-time serializers
+// and CollectionFormats); the generator's own ApiClient, docs, tests and Gradle project are not
+// generated.
+val generatedApiDir = layout.buildDirectory.dir("generated/openapi")
+val generateApiClient = tasks.register<GenerateTask>("generateApiClient") {
+    group = "build"
+    description = "Generates the Kotlin API client from contracts/openapi.json."
+    generatorName.set("kotlin")
+    library.set("jvm-retrofit2")
+    inputSpec.set(rootProject.layout.projectDirectory.file("../contracts/openapi.json"))
+    outputDir.set(generatedApiDir)
+    packageName.set("com.saferoute.app.core.network.generated")
+    apiPackage.set("com.saferoute.app.core.network.generated.api")
+    modelPackage.set("com.saferoute.app.core.network.generated.model")
+    configOptions.set(
+        mapOf(
+            "serializationLibrary" to "kotlinx_serialization",
+            "useCoroutines" to "true",
+            // Response<T> instead of T: the caller sees the status (200 vs 201) and error bodies.
+            "useResponseAsReturnType" to "true",
+            "dateLibrary" to "java8",
+            "omitGradleWrapper" to "true",
+        ),
+    )
+    globalProperties.set(
+        mapOf(
+            "apis" to "",
+            "models" to "",
+            "supportingFiles" to "CollectionFormats.kt,OffsetDateTimeAdapter.kt,UUIDAdapter.kt",
+            "apiDocs" to "false",
+            "modelDocs" to "false",
+            "apiTests" to "false",
+            "modelTests" to "false",
+        ),
+    )
+    cleanupOutput.set(true)
 }
 
 android {
@@ -70,6 +113,15 @@ android {
     }
 }
 
+androidComponents {
+    onVariants { variant ->
+        // Adds the generated folder to every variant's Kotlin sources. AGP also makes each task
+        // that reads the sources (KSP, compile, lint) depend on generateApiClient, so a build
+        // always uses the current contract.
+        variant.sources.kotlin?.addGeneratedSourceDirectory(generateApiClient, GenerateTask::outputDir)
+    }
+}
+
 kotlin {
     // Compiles Kotlin and Java with JDK 17, whichever JDK runs Gradle itself.
     jvmToolchain(libs.versions.jdk.get().toInt())
@@ -102,6 +154,12 @@ dependencies {
 
     implementation(libs.kotlinx.coroutines.android)
 
+    // Networking. Only core/network uses these (ADR 0009).
+    implementation(libs.okhttp)
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.kotlinx.serialization)
+    implementation(libs.kotlinx.serialization.json)
+
     testImplementation(platform(libs.androidx.compose.bom))
     testImplementation(libs.androidx.compose.ui.test.junit4)
     testImplementation(libs.androidx.test.core)
@@ -109,6 +167,7 @@ dependencies {
     testImplementation(libs.hilt.android.testing)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.robolectric)
     testImplementation(libs.turbine)
     kspTest(libs.hilt.compiler)

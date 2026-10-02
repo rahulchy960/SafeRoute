@@ -15,6 +15,8 @@ agp = "9.4.1"
 kotlin = "2.4.20"
 ksp = "2.3.12"
 hilt = "2.60.1"
+# Generates the API client from contracts/openapi.json at build time (ADR 0009)
+openapiGenerator = "7.25.0"
 
 # AndroidX and Compose (the BOM picks the version of every androidx.compose artifact)
 composeBom = "2026.09.00"
@@ -27,6 +29,10 @@ hiltLifecycleViewmodelCompose = "1.4.0"
 # Kotlin libraries
 kotlinxCoroutines = "1.11.0"
 kotlinxSerialization = "1.11.0"
+
+# Networking (core/network only; ADR 0009)
+okhttp = "5.5.0"
+retrofit = "3.0.0"
 
 # Tests
 junit = "4.13.2"
@@ -62,6 +68,12 @@ kotlin-gradle-plugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-p
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "kotlinxCoroutines" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinxCoroutines" }
 kotlinx-serialization-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-core", version.ref = "kotlinxSerialization" }
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
+
+okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
+okhttp-mockwebserver = { group = "com.squareup.okhttp3", name = "mockwebserver3", version.ref = "okhttp" }
+retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
+retrofit-converter-kotlinx-serialization = { group = "com.squareup.retrofit2", name = "converter-kotlinx-serialization", version.ref = "retrofit" }
 
 androidx-test-core = { group = "androidx.test", name = "core", version.ref = "androidxTestCore" }
 androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestExtJunit" }
@@ -75,3 +87,4 @@ hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+openapi-generator = { id = "org.openapi.generator", version.ref = "openapiGenerator" }
