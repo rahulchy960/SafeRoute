@@ -44,7 +44,7 @@ $REGION = "asia-south1"
 $API_SERVICE = "saferoute-api"
 $MIGRATION_JOB = "saferoute-migrate"
 $ADMIN_JOB = "saferoute-admin"
-$SQL_INSTANCE = "saferoute-staging-db"
+$SQL_INSTANCE = "saferoute-db"
 $SECRET_NAME = "saferoute-staging-database-url"
 $GITHUB_REPO = "rahulchy960/SafeRoute"
 ```

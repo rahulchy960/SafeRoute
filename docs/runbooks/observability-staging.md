@@ -167,7 +167,7 @@ Do this after the first deploy, then record the result on the Notion P006b page.
 
 No dashboard is built yet (follow-up: Cloud Monitoring dashboard and alert policies, Plan v7
 §14.3, §14.5). Until then the same charts are in the console: **Cloud Run → saferoute-api →
-Metrics**, and **SQL → saferoute-staging-db → System insights**. In **Monitoring → Metrics
+Metrics**, and **SQL → saferoute-db → System insights**. In **Monitoring → Metrics
 explorer** the metric names below can be searched directly.
 
 | What | Metric | Why it matters on staging |

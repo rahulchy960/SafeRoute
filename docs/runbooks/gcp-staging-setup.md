@@ -1,16 +1,21 @@
 # Runbook: one-time Google Cloud staging setup
 
-Creates everything the staging deploy (P006b) needs: Artifact Registry, three service accounts,
-Cloud SQL, one secret, least-privilege IAM, Workload Identity Federation for GitHub Actions, a
-placeholder Cloud Run service and the GitHub `staging` environment. Design and reasons:
-[ADR 0007](../adr/0007-gcp-staging-topology.md).
+Creates everything the staging deploy needs: Artifact Registry, three service accounts,
+Cloud SQL, the database secret, least-privilege IAM, Workload Identity Federation for GitHub
+Actions, a placeholder Cloud Run service and the GitHub `staging` environment. Design and
+reasons: [ADR 0007](../adr/0007-gcp-staging-topology.md).
+
+**Use the script first** ([The short path](#the-short-path-the-setup-script) below). It shows
+what exists, creates only what is missing, fills in the GitHub secrets and variables, and checks
+the result against the deploy workflow. The numbered steps after it are the reference for what
+the script does, and the instructions for the few things it never creates.
 
 | | |
 | --- | --- |
-| **Who runs it** | Rahul, signed in to `gcloud` and `gh` as the project owner. Claude Code never runs these commands and has no Google credentials. |
-| **When** | Once, after P006a is merged and before P006b is merged. |
-| **Scope** | The **staging** project only. Nothing here touches production. |
-| **Time and cost** | About 45 minutes. Cloud SQL costs money from step 4 onward (see step 11). |
+| **Who runs it** | Rahul, signed in to `gcloud` and `gh` as the project owner. Claude Code never runs the script or these commands and has no Google credentials. |
+| **When** | Once, before the first deploy; again whenever `deploy-staging` fails at its guard step or at sign-in. |
+| **Scope** | The **staging** project only. The script refuses a project whose ID contains `prd` or `prod`. |
+| **Time and cost** | About 15 minutes with the script. Cloud SQL costs money from step 4 onward (see step 11). |
 
 ## Before you start
 
@@ -37,6 +42,101 @@ placeholder Cloud Run service and the GitHub `staging` environment. Design and r
 - Screenshots or terminal output that show any of the above.
 - Service-account JSON keys. None are created here. If a guide tells you to download one, stop.
 
+## The short path: the setup script
+
+[`infra/staging/bootstrap-staging.ps1`](../../infra/staging/bootstrap-staging.ps1) works in
+Windows PowerShell 5.1 and PowerShell 7. Run it from the repository root, in a window where
+`gcloud` is signed in and the **staging** project is active
+(`gcloud config set project <PROJECT_ID>`), and `gh auth status` shows your account.
+
+| Step | Command | What it does |
+| --- | --- | --- |
+| 1 | `.\infra\staging\bootstrap-staging.ps1` | **Audit.** Read-only. A table of item · expected · found · `PRESENT` / `MISSING` / `WRONG`, then the next action for each open item |
+| 2 | `.\infra\staging\bootstrap-staging.ps1 -Apply` | Creates only what is `MISSING`. Asks you to type the project ID, then `y/n` before each step. Stops at the first error |
+| 3 | `.\infra\staging\bootstrap-staging.ps1 -SetGithubSecrets` | Sets the GitHub `staging` environment secrets and variables the workflow reads. Keeps values that already exist (add `-Force` to overwrite) |
+| 4 | `.\infra\staging\bootstrap-staging.ps1 -Verify` | Audit plus a comparison with [`deploy-staging.yml`](../../.github/workflows/deploy-staging.yml). Ends with `VERIFY: OK` and exit code 0 only if nothing is missing |
+
+If PowerShell refuses to run the file ("running scripts is disabled"), start it as
+`powershell -ExecutionPolicy Bypass -File .\infra\staging\bootstrap-staging.ps1`.
+
+**Useful switches:**
+
+- `-Plan` prints every command the chosen mode could run and runs nothing. Read it once before
+  the first `-Apply`.
+- `-ShowIds` shows project ID, project number, e-mail addresses and URLs. Without it they appear
+  as `<project-id>`, `<project-number>`, `<sa-email>` and `<url>`, so the output is safe to
+  paste when you report a problem. Secret values are never shown, with or without it.
+
+**Names.** The defaults are the names that exist in the staging project. Pass a parameter only
+where yours differ:
+
+| Parameter | Default | Meaning |
+| --- | --- | --- |
+| `-DeploySa`, `-RuntimeSa`, `-MigrationSa` | `sa-deploy`, `sa-api-runtime`, `sa-migration` | The three service accounts (short names) |
+| `-PoolId`, `-ProviderId` | `github`, `github-saferoute` | Workload Identity pool and provider. A single provider under another name is used as it is |
+| `-SqlInstance` | `saferoute-db` | Cloud SQL instance |
+| `-DbName`, `-DbUser` | discovered | Needed only if the instance has more than one application database or user |
+| `-PasswordSecret` | `db-app-password` | Existing secret that holds the database user's password |
+| `-UrlSecret` | `saferoute-staging-database-url` | Secret the workflow mounts as `DATABASE_URL`. Must match the workflow |
+| `-ArRepo`, `-ApiService`, `-MigrationJob` | `saferoute`, `saferoute-api`, `saferoute-migrate` | Registry repository, Cloud Run service, migration job |
+| `-FirebaseProjectId` | the Google Cloud project ID (asks you to confirm) | Value of the `FIREBASE_PROJECT_ID` secret |
+
+**What `-Apply` creates, and what it never touches:**
+
+| Created if missing | Never created or changed (it prints the step below instead) |
+| --- | --- |
+| The eight APIs (step 1) | Artifact Registry repository (step 2) |
+| The Workload Identity **provider**, with the restrictive condition (step 7) | Service accounts (step 3) |
+| The database URL secret and its first version (step 5) | Cloud SQL instance, database and user (step 4) |
+| The ten IAM bindings (eight in step 6, one each in steps 7 and 8) | The Workload Identity **pool** (step 7) |
+| The placeholder Cloud Run service with public access (step 8) | Any secret that already exists, including `db-app-password` |
+| Optionally, the registry cleanup policy (step 2) | The GitHub environment itself (step 9.1) |
+
+Nothing is ever deleted, renamed or removed, no key is created, and roles an account holds
+beyond the list are reported as `WRONG-EXTRA`, not removed. The Firebase Admin SDK account, the
+default compute account and `sa-worker-runtime` are never touched.
+
+**The database URL.** `-Apply` reads the password from `-PasswordSecret` into memory, builds
+`postgresql://<user>:<password>@/<database>?host=/cloudsql/<connection name>` with the
+password URL-encoded, and sends it to Secret Manager on standard input, without a trailing line
+break. Nothing is printed or written to disk. ⚠️ The script cannot check that the password
+belongs to the database user it found. The first migration job proves it: if that job fails
+with `password authentication failed`, see "Rotating the password later" in step 5.
+
+**Public access.** The placeholder service allows unauthenticated calls on purpose: the API is
+public and checks Firebase tokens itself (ADR 0006). If an organization policy
+(`iam.allowedPolicyMemberDomains`) refuses `allUsers`, the script says so and stops. It does
+not work around the policy; an organization administrator has to allow it for the project.
+
+**The deploy switch.** `STAGING_DEPLOY_ENABLED` is a **repository** variable (step 9.4).
+`-SetGithubSecrets` creates it as `false` if it doesn't exist and never changes it afterwards.
+You turn it on yourself once `-Verify` says OK:
+
+```powershell
+gh variable set STAGING_DEPLOY_ENABLED --repo rahulchy960/SafeRoute --body "true"
+```
+
+**When `-Verify` is not OK,** each open item names its next action: usually "run with -Apply"
+or "run with -SetGithubSecrets", otherwise the numbered step below.
+
+## Reference: the manual steps
+
+Each step says what the script does for it. Follow a step by hand only where the script says
+it will not create something.
+
+| Step | By the script | By hand |
+| --- | --- | --- |
+| 1 APIs | Enables missing ones | |
+| 2 Artifact Registry | Optional cleanup policy | Create the repository |
+| 3 Service accounts | Checks they exist | Create them |
+| 4 Cloud SQL | Checks version, backups, deletion protection, SSL, networks, database, user | Create or change anything |
+| 5 Database secret | Builds the URL secret from the password secret | Create the password secret; rotate |
+| 6 IAM | Adds missing bindings; reports extra roles | Remove extra roles |
+| 7 Workload Identity | Creates the provider; checks its condition | Create the pool; fix a wrong provider |
+| 8 Placeholder service | Deploys it with public access | |
+| 9 GitHub | Sets secrets and variables | Create the `staging` environment (9.1) |
+| 10–12 | | Enable deploys, budget, teardown |
+
 ## Step 0: prerequisites and variables
 
 1. Install the [Google Cloud CLI](https://cloud.google.com/sdk/docs/install) and the
@@ -59,7 +159,9 @@ placeholder Cloud Run service and the GitHub `staging` environment. Design and r
 
    **bash:** `export CLOUDSDK_CORE_DISABLE_FILE_LOGGING=1`
 
-3. Define the variables. Type the two real IDs here only.
+3. Define the variables. Type the two real IDs here only. The names below are the ones the
+   script uses by default; `$DB_NAME` and `$DB_USER` are examples, so use the names your
+   instance really has (the audit shows them).
 
    ```powershell
    $PROJECT_ID = "<PROJECT_ID>"
@@ -68,12 +170,12 @@ placeholder Cloud Run service and the GitHub `staging` environment. Design and r
    $GITHUB_REPO = "rahulchy960/SafeRoute"
 
    $AR_REPOSITORY = "saferoute"
-   $SQL_INSTANCE = "saferoute-staging-db"
+   $SQL_INSTANCE = "saferoute-db"
    $DB_NAME = "saferoute_staging"
    $DB_USER = "saferoute_app"
    $SECRET_NAME = "saferoute-staging-database-url"
    $API_SERVICE = "saferoute-api"
-   $DEPLOY_SA = "gcp-deploy-staging@${PROJECT_ID}.iam.gserviceaccount.com"
+   $DEPLOY_SA = "sa-deploy@${PROJECT_ID}.iam.gserviceaccount.com"
    $RUNTIME_SA = "sa-api-runtime@${PROJECT_ID}.iam.gserviceaccount.com"
    $MIGRATION_SA = "sa-migration@${PROJECT_ID}.iam.gserviceaccount.com"
    ```
@@ -126,6 +228,8 @@ billing account in the console (Billing → Account management) before continuin
 
 ## Step 1: enable the APIs
 
+*Script: `-Apply` enables the ones that are missing.*
+
 ```powershell
 gcloud services enable run.googleapis.com artifactregistry.googleapis.com sqladmin.googleapis.com `
   secretmanager.googleapis.com iam.googleapis.com iamcredentials.googleapis.com `
@@ -139,6 +243,8 @@ gcloud services list --enabled --format="value(config.name)"
 ```
 
 ## Step 2: Artifact Registry
+
+*Script: checks the repository; never creates it. `-Apply` offers the cleanup policy if none is set.*
 
 A Docker repository for the API image, with a cleanup policy so old images don't accumulate.
 
@@ -165,11 +271,14 @@ gcloud artifacts repositories list-cleanup-policies $AR_REPOSITORY --location=$R
 
 ## Step 3: service accounts
 
+*Script: checks that the three exist; never creates one.*
+
 A service account is an identity for software rather than a person. Three are created, and none
-gets a key file.
+gets a key file. The deploy identity is `sa-deploy` (Plan v7 §13.1 and earlier versions of this
+runbook called it `gcp-deploy-staging`; the name in the project is what counts).
 
 ```powershell
-gcloud iam service-accounts create gcp-deploy-staging --display-name="GitHub Actions deploy (staging)" `
+gcloud iam service-accounts create sa-deploy --display-name="GitHub Actions deploy (staging)" `
   --description="Used by the deploy-staging workflow through Workload Identity Federation. No keys."
 gcloud iam service-accounts create sa-api-runtime --display-name="saferoute-api runtime (staging)" `
   --description="Identity of the Cloud Run API service. Reads the database secret, connects to Cloud SQL."
@@ -184,6 +293,9 @@ gcloud iam service-accounts list --format="value(email)"
 ```
 
 ## Step 4: Cloud SQL ⚠️ costs money from here
+
+*Script: checks version, region, backups, deletion protection, SSL, authorized networks,
+database and user. It never creates or changes anything here.*
 
 PostgreSQL 16 on the smallest shared-core machine. Cost class: the cheapest Cloud SQL tier,
 roughly US$10–15 a month if it runs all the time (an estimate: check the
@@ -253,6 +365,15 @@ gcloud sql users list --instance=$SQL_INSTANCE --format="value(name)"
 
 ## Step 5: the database URL in Secret Manager
 
+*Script: if the URL secret is missing, `-Apply` builds it from the password secret
+(`db-app-password` by default) and stores it. It never changes a secret that exists.*
+
+Two secrets are involved. The **password secret** holds only the database user's password; it
+is optional and exists in the staging project as `db-app-password`. The **URL secret**
+(`saferoute-staging-database-url`) holds the whole connection URL and is the one the workflow
+mounts as `DATABASE_URL`. The commands below create the URL secret by hand from the password
+generated in step 4.3, without a password secret.
+
 The API connects through a unix socket that Cloud Run mounts at `/cloudsql/<connection name>`,
 so the URL has no host before the `/` and names the socket directory in `host=`.
 
@@ -296,6 +417,9 @@ gcloud secrets versions list $SECRET_NAME --format="value(name,state)"
 
 ## Step 6: IAM, least privilege
 
+*Script: `-Apply` adds the bindings that are missing. Roles beyond this table are reported as
+`WRONG-EXTRA` and left for you to remove.*
+
 Each identity gets only what its job needs.
 
 | Identity | Role | On | Why |
@@ -304,9 +428,9 @@ Each identity gets only what its job needs.
 | `sa-api-runtime` | `roles/secretmanager.secretAccessor` | that one secret | Read `DATABASE_URL` at start |
 | `sa-migration` | `roles/cloudsql.client` | project | Same, for the migration and admin jobs |
 | `sa-migration` | `roles/secretmanager.secretAccessor` | that one secret | Same |
-| `gcp-deploy-staging` | `roles/run.developer` | project | Deploy revisions, run jobs, move traffic |
-| `gcp-deploy-staging` | `roles/artifactregistry.writer` | the `saferoute` repository | Push images |
-| `gcp-deploy-staging` | `roles/iam.serviceAccountUser` | `sa-api-runtime` and `sa-migration` only | Attach those two identities to a service or job |
+| `sa-deploy` | `roles/run.developer` | project | Deploy revisions, run jobs, move traffic |
+| `sa-deploy` | `roles/artifactregistry.writer` | the `saferoute` repository | Push images |
+| `sa-deploy` | `roles/iam.serviceAccountUser` | `sa-api-runtime` and `sa-migration` only | Attach those two identities to a service or job |
 
 ```powershell
 foreach ($sa in @($RUNTIME_SA, $MIGRATION_SA)) {
@@ -344,14 +468,18 @@ gcloud iam service-accounts get-iam-policy $MIGRATION_SA --format="table(binding
 gcloud artifacts repositories get-iam-policy $AR_REPOSITORY --location=$REGION --format="table(bindings.role, bindings.members)"
 ```
 
-The output matches the table above and nothing more: in particular `gcp-deploy-staging` has no
+The output matches the table above and nothing more: in particular `sa-deploy` has no
 `secretmanager` or `cloudsql` role, and no account has `roles/owner` or `roles/editor`.
 
 ## Step 7: Workload Identity Federation
 
+*Script: checks the pool and never creates it. `-Apply` creates the provider if none exists and
+adds the `workloadIdentityUser` binding. A provider whose condition is missing or too permissive
+is reported as `WRONG` and not changed.*
+
 GitHub Actions gets a short-lived token from GitHub that says which repository, branch and
 environment a job runs in. Google exchanges it for a one-hour access token of
-`gcp-deploy-staging`, if and only if the token matches the condition below. No key is stored
+`sa-deploy`, if and only if the token matches the condition below. No key is stored
 anywhere.
 
 ```powershell
@@ -396,6 +524,9 @@ $WIF_PROVIDER.StartsWith("projects/$PROJECT_NUMBER/locations/global/workloadIden
 
 ## Step 8: placeholder Cloud Run service
 
+*Script: `-Apply` deploys the placeholder if the service doesn't exist, and adds public access
+if it is missing.*
+
 Creates `saferoute-api` once, from Google's public sample image, so that two things exist before
 the first real deploy: the "anyone may call this" permission, and a previous revision to roll
 back to.
@@ -422,6 +553,10 @@ The status is `200` (Google's sample page), and the members include `allUsers`. 
 the URL anywhere public: it contains the project number.
 
 ## Step 9: GitHub environment, secrets and variables
+
+*Script: you create the environment (9.1); `-SetGithubSecrets` does 9.2 and 9.3 and creates the
+switch in 9.4 as `false` if it doesn't exist. The names come from the workflow file, so they
+can't drift from what the deploy reads.*
 
 1. In the browser: repository → **Settings → Environments → New environment**, name `staging`.
    - **Deployment branches and tags:** "Selected branches and tags" → add the rule `main`.
@@ -460,6 +595,19 @@ the URL anywhere public: it contains the project number.
    gh variable set STAGING_DEPLOY_ENABLED --repo $GITHUB_REPO --body "false"
    ```
 
+**Environment variables and repository variables are not interchangeable.** GitHub decides
+whether a job runs (its job-level `if:`) *before* the job enters its environment, so that
+condition can read **repository** variables only. A switch created on the `staging` environment
+is invisible to it: the job is skipped with no error, whatever the value. Everything else the
+workflow reads is used *inside* the job, after it has entered the environment, and lives on the
+environment so that the branch rule and secret masking apply. In short:
+
+| Value | Where it must be | What happens in the wrong place |
+| --- | --- | --- |
+| `STAGING_DEPLOY_ENABLED` | Repository variable | On the environment: the deploy job is always skipped |
+| The eight identifiers (`GCP_PROJECT_ID`, …) | Environment **secrets** | As variables: `secrets.X` is empty, so the guard step or the sign-in fails, and a variable's value isn't masked in logs |
+| The six settings (`GCP_REGION`, …) | Environment **variables** | As secrets: `vars.X` is empty and the guard step fails |
+
 **Verify:**
 
 ```powershell
@@ -488,12 +636,14 @@ gcloud sql instances describe $SQL_INSTANCE --format="value(state)"
 
 Expected: the `principalSet://…` member, `1  enabled`, `RUNNABLE`, `200`.
 
-Then tell Claude Code **"runbook done"** so it can prepare P006b. Flip the switch only when the
-P006b pull request is ready to merge:
+The script's `-Verify` runs these checks and more, and compares GitHub with the workflow. Flip
+the switch only when it ends with `VERIFY: OK`:
 
 ```powershell
 gh variable set STAGING_DEPLOY_ENABLED --repo $GITHUB_REPO --body "true"
 ```
+
+Then start a deploy: Actions → deploy-staging → Run workflow → `main`.
 
 Finally, close this PowerShell window. That discards every variable and restores `gcloud`'s
 normal logging.
@@ -551,15 +701,21 @@ the step again.
 
 | Symptom | Likely cause | What to do |
 | --- | --- | --- |
+| `deploy-staging` fails at "Check configuration and the connection budget" with `The staging environment has no value for …` (the deploy guard lists missing values) | Those environment secrets or variables don't exist, or are stored as the wrong kind (a secret where the workflow reads `vars.X`, or the reverse). The guard runs before any cloud call, so nothing was changed | `.\infra\staging\bootstrap-staging.ps1 -Verify` names each one and where it is; then `-SetGithubSecrets`. If a value can't be filled in yet, something in Google Cloud is missing: `-Apply` first |
+| The `deploy-staging` job shows **skipped**, although `STAGING_DEPLOY_ENABLED` is `true` | The variable was created on the `staging` environment. A job-level `if:` only sees repository variables (step 9.4) | `gh variable set STAGING_DEPLOY_ENABLED --repo rahulchy960/SafeRoute --body "true"`, and delete the environment one. Also check the run is on `main` |
+| The script says `REFUSED: the active gcloud project looks like PRODUCTION` | The active project's ID contains `prd` or `prod` | `gcloud config set project <staging project ID>` |
+| The script shows an item as `UNKNOWN` | A read failed: not signed in, no permission, or an API the check needs is still disabled | `gcloud auth login`; run `-Apply` to enable the APIs, then audit again |
+| The script asks for `-DbName` or `-DbUser` | The instance has several application databases or users | Pass the one the API should use |
+| `-Apply` stops at the placeholder with a message about `iam.allowedPolicyMemberDomains` | An organization policy forbids public (`allUsers`) access | An organization administrator must allow it for this project; the script doesn't work around it |
 | `PERMISSION_DENIED … API has not been used in project … or it is disabled` | An API from step 1 isn't enabled, or was enabled seconds ago | Rerun step 1, wait a minute, retry |
-| `Permission 'iam.serviceaccounts.actAs' denied` in a deploy | `gcp-deploy-staging` lacks `roles/iam.serviceAccountUser` on the runtime or migration account | Rerun the loop in step 6; check with `get-iam-policy` on that account |
+| `Permission 'iam.serviceaccounts.actAs' denied` in a deploy | `sa-deploy` lacks `roles/iam.serviceAccountUser` on the runtime or migration account | Rerun the loop in step 6; check with `get-iam-policy` on that account |
 | GitHub Actions auth fails with `The given credential is rejected by the attribute condition` | The job isn't on `main`, has no `environment: staging`, or the repository name in the condition is wrong (it is case-sensitive) | Check the workflow's branch and `environment:`; compare the condition from the step 7 verify with `rahulchy960/SafeRoute` |
 | Auth fails with `Permission 'iam.serviceAccounts.getAccessToken' denied` | The `roles/iam.workloadIdentityUser` binding is missing or uses the wrong project number | Rerun the third command of step 7 |
 | `/health/ready` 503, logs show a connection error to `/cloudsql/…` | The runtime account lacks `roles/cloudsql.client`, the service has no Cloud SQL connection attached, the Cloud SQL Admin API is off, or the instance is stopped | Step 6 verify; `gcloud sql instances describe … --format="value(state)"`; the deploy must pass `--set-cloudsql-instances` |
 | A revision fails to start: `Permission denied on secret` | The identity lacks `secretAccessor` on the secret | Step 6 |
 | The API refuses to start: `DATABASE_URL: must be a postgres:// or postgresql:// URL` | The secret value is damaged (extra characters, wrong form) | Add a new version as in "Rotating the password later", using `Send-Exact` |
 | Migration job fails at `CREATE EXTENSION postgis` with `permission denied` | The database user isn't a member of `cloudsqlsuperuser` | Users created with `gcloud sql users create` are members by default; recreate the user with step 4.3 rather than with SQL |
-| `password authentication failed for user "saferoute_app"` | The secret and the user's password differ | Rotate: "Rotating the password later" |
+| `password authentication failed for user "…"` in the migration job | The password in the URL secret isn't that user's password (for example, the password secret belonged to another user) | Rotate: "Rotating the password later" |
 | `gcloud sql instances create` rejects `--tier` | `--edition=enterprise` is missing (Enterprise Plus has no shared-core tiers) | Use the command in step 4 exactly |
 | `Resource … already exists` when recreating a pool or provider | It was deleted less than 30 days ago | `gcloud iam workload-identity-pools undelete github --location=global` (and `providers undelete`) |
 | `gh secret set` answers `HTTP 404` | The environment `staging` doesn't exist yet | Step 9.1 |
@@ -574,3 +730,18 @@ pieces (`Send-Exact`, the password generator, quoting of the long arguments) wer
 with fake values. The list of what could not be verified is in the P006a prompt log
 ([`docs/prompt-logs/006a-container-and-runbooks.md`](../prompt-logs/006a-container-and-runbooks.md), section 6).
 If a command fails, stop and record the exact error (with IDs masked) before trying variations.
+
+The script (P006c) was never run against Google Cloud or GitHub either, in any mode. Its
+commands were checked against `--help` of Google Cloud SDK 587.0.0 and `gh` 2.102.0, and its
+behaviour is covered by tests that replace `gcloud` and `gh` with fixtures
+([`infra/staging/tests`](../../infra/staging/tests)); they run in CI
+([`infra-ci`](../../.github/workflows/infra-ci.yml)). What the fixtures can't prove is the exact
+shape of `gcloud`'s real output; the list is in the P006c prompt log
+([`docs/prompt-logs/006c-staging-setup-script.md`](../prompt-logs/006c-staging-setup-script.md), section 6).
+The first audit shows any mismatch as `UNKNOWN` or an obviously wrong "found" value: report it
+(the default output hides identifiers) before running `-Apply`.
+
+**History.** The first version of this runbook (P006a) assumed names that the project didn't
+have: the deploy account is `sa-deploy`, not `gcp-deploy-staging`, and the instance is
+`saferoute-db`, not `saferoute-staging-db`. The first deploy failed at the guard step for that
+reason and because most GitHub values were missing. Names are now parameters of the script.
