@@ -51,6 +51,42 @@ val generateApiClient = tasks.register<GenerateTask>("generateApiClient") {
     cleanupOutput.set(true)
 }
 
+// The API base URL is not in the repository. It comes from the Gradle property
+// `saferoute.apiBaseUrl`, which each developer keeps in their user-level gradle.properties (or
+// CI passes with -P). Without it the build uses a placeholder that resolves nowhere, and the app
+// reports "no server configured". The same rule is checked again at runtime by
+// core/network/ApiBaseUrl.kt, which is where it is unit-tested.
+val apiBaseUrlPlaceholder = "https://api.invalid/"
+val apiBaseUrlProperty = providers.gradleProperty("saferoute.apiBaseUrl").orNull?.trim().orEmpty()
+val apiBaseUrlConfigured = apiBaseUrlProperty.isNotEmpty()
+val apiBaseUrl = if (apiBaseUrlConfigured) apiBaseUrlProperty else apiBaseUrlPlaceholder
+if (!Regex("""https://[^\s"\\]+/""").matches(apiBaseUrl)) {
+    // The value itself is deliberately not printed.
+    throw GradleException(
+        "saferoute.apiBaseUrl is malformed: it must start with https:// and end with / " +
+            "(for example https://host.example/), without spaces, quotes or backslashes.",
+    )
+}
+
+// A release build must never ship pointing at the placeholder. This fails when a release task
+// runs, not at configuration time, so debug builds and Android Studio sync work without the
+// property.
+val checkReleaseApiBaseUrl = tasks.register("checkReleaseApiBaseUrl") {
+    group = "verification"
+    description = "Fails a release build that has no saferoute.apiBaseUrl."
+    val configured = apiBaseUrlConfigured
+    doLast {
+        if (!configured) {
+            throw GradleException(
+                "Release builds need the Gradle property saferoute.apiBaseUrl " +
+                    "(user-level gradle.properties or -Psaferoute.apiBaseUrl=https://.../). " +
+                    "See android/README.md.",
+            )
+        }
+    }
+}
+tasks.matching { it.name == "preReleaseBuild" }.configureEach { dependsOn(checkReleaseApiBaseUrl) }
+
 android {
     // `namespace` is the Kotlin/Java package of generated code (R, BuildConfig).
     // `applicationId` is the app's identity on a device and on Google Play; it can never change
@@ -66,6 +102,11 @@ android {
         targetSdk = libs.versions.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
+
+        // Read by core/network. The URL is never shown or logged; the UI may only say whether
+        // one is configured.
+        buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
+        buildConfigField("boolean", "API_BASE_URL_CONFIGURED", apiBaseUrlConfigured.toString())
     }
 
     buildTypes {
@@ -90,7 +131,8 @@ android {
 
     buildFeatures {
         compose = true
-        // Generates BuildConfig (DEBUG, VERSION_NAME, VERSION_CODE), read by Home and Settings.
+        // Generates BuildConfig (DEBUG, VERSION_NAME, VERSION_CODE, API_BASE_URL), read by Home,
+        // Settings and core/network.
         buildConfig = true
     }
 
