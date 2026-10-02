@@ -1,0 +1,28 @@
+# Test fixture for Get-WorkflowReference. Not a real workflow; never runs.
+# A name in a comment must be ignored: secrets.COMMENTED_OUT and vars.ALSO_COMMENTED.
+name: sample
+
+on:
+  workflow_dispatch:
+
+env:
+  DATABASE_URL_SECRET: sample-database-url
+
+jobs:
+  deploy:
+    if: >-
+      github.ref == 'refs/heads/main'
+      && vars.SAMPLE_SWITCH == 'true'
+    runs-on: ubuntu-24.04
+    environment: staging
+    env:
+      REGION: ${{ vars.SAMPLE_REGION }}
+      PROJECT: ${{ secrets.SAMPLE_PROJECT }}
+    steps:
+      - name: Sign in
+        if: vars.SAMPLE_STEP_FLAG == 'yes'
+        with:
+          provider: ${{ secrets.SAMPLE_PROVIDER }} # trailing comment with secrets.IN_TRAILING_COMMENT
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Use a name twice
+        run: echo "${{ vars.SAMPLE_REGION }}"

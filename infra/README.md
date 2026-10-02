@@ -5,17 +5,30 @@ Google Cloud infrastructure and deployment configuration (Plan v7 §13): Cloud R
 Run Job, Cloud Scheduler, Secret Manager, Artifact Registry, and GitHub OIDC → Workload
 Identity Federation.
 
-**Status (P006b):** staging is set up by hand, once, with
-[`docs/runbooks/gcp-staging-setup.md`](../docs/runbooks/gcp-staging-setup.md); the topology and
-the reasons are in [ADR 0007](../docs/adr/0007-gcp-staging-topology.md). There is no Terraform
-yet (ADR 0007 says when to revisit). The API image is built from
-[`backend/Dockerfile`](../backend/Dockerfile) and deployed by
-[`.github/workflows/deploy-staging.yml`](../.github/workflows/deploy-staging.yml)
+**Status (P006c):** staging is set up once, by Rahul, with the script below; the manual steps
+and the reasons are in [`docs/runbooks/gcp-staging-setup.md`](../docs/runbooks/gcp-staging-setup.md)
+and [ADR 0007](../docs/adr/0007-gcp-staging-topology.md). There is no Terraform yet (ADR 0007
+says when to revisit). The API image is built from [`backend/Dockerfile`](../backend/Dockerfile)
+and deployed by [`.github/workflows/deploy-staging.yml`](../.github/workflows/deploy-staging.yml)
 ([diagram](../docs/diagrams/006-deploy-pipeline.svg)).
 
 | File | Used by |
 | --- | --- |
+| [`staging/bootstrap-staging.ps1`](staging/bootstrap-staging.ps1) | The setup script: `-Audit` (default, read-only), `-Apply`, `-SetGithubSecrets`, `-Verify`; `-Plan` prints every command and runs nothing ([flow](../docs/diagrams/006c-staging-setup-flow.svg)) |
+| [`staging/tests/`](staging/tests/) | Pester tests with a mocked `gcloud`/`gh`, and `Invoke-InfraCheck.ps1`, the quality gate (PSScriptAnalyzer + Pester; CI: [`infra-ci`](../.github/workflows/infra-ci.yml)) |
 | [`artifact-registry-cleanup-policy.json`](artifact-registry-cleanup-policy.json) | Runbook step 2: delete images older than 7 days, always keep the 10 most recent |
+
+```powershell
+.\infra\staging\bootstrap-staging.ps1            # audit: what exists, what is missing
+.\infra\staging\bootstrap-staging.ps1 -Apply     # create only what is missing (asks first)
+.\infra\staging\bootstrap-staging.ps1 -SetGithubSecrets
+.\infra\staging\bootstrap-staging.ps1 -Verify    # exit code 0 = ready to deploy
+```
+
+The script is additive and staging-only: it refuses a project whose ID contains `prd` or
+`prod`, never deletes or renames anything, never creates keys, and never creates or changes
+Cloud SQL, service accounts, the Workload Identity pool, the registry or an existing secret. Its
+output hides project ID, project number, e-mail addresses and URLs unless `-ShowIds` is passed.
 
 Later prompts add the OSRM image (P012) and backup exports (P020).
 
