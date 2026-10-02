@@ -102,6 +102,9 @@ dispatchers; and where P008, P009, P010 and P014 attach. 20 nodes.
 
 `android-ci` runs on the pull request; its result is added below once it is known.
 
+**Added after the first run (PR #15, run 37059028774):** `android-ci` passed in 3 min 15 s
+(`./gradlew lint testDebugUnitTest assembleDebug` on `ubuntu-24.04`); `repo-checks` passed.
+
 | Class | Tests | Covers |
 | --- | --- | --- |
 | `HomeViewModelTest` (Turbine) | 5 | Hidden → OfferDialer → Hidden; dialer opened; dialer unavailable; no duplicate emission |
