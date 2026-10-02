@@ -27,4 +27,43 @@
     <string name="sheet_action_expand">প্যানেল বড় করুন</string>
     <string name="sheet_action_collapse">প্যানেল ছোট করুন</string>
     <string name="sheet_action_cycle">প্যানেলের আকার বদলান</string>
+
+    <!-- Shared -->
+    <string name="navigate_back">ফিরে যান</string>
+    <string name="coming_later">পরের সংস্করণে আসছে</string>
+
+    <!-- Home -->
+    <string name="home_sheet_title">কোথায় যাবেন?</string>
+    <string name="home_saved_places">সংরক্ষিত জায়গা</string>
+    <string name="home_recent">সাম্প্রতিক</string>
+    <!-- Shown in debug builds only -->
+    <string name="map_placeholder_label">মানচিত্র পরের ধাপে আসবে</string>
+
+    <!--
+        Emergency dialog. It must never suggest that SafeRoute calls for help by itself:
+        "Call 112" only opens the phone app.
+    -->
+    <string name="emergency_dialog_title">SOS এখনও চালু হয়নি</string>
+    <string name="emergency_dialog_body">এই সংস্করণে SOS এখনও নেই। জরুরি অবস্থায় 112 নম্বরে কল করুন।</string>
+    <string name="emergency_dialog_dialer_hint">“112-এ কল করুন” আপনার ফোন অ্যাপ খুলে 112 নম্বরটি বসিয়ে দেয়। কল আপনাকেই শুরু করতে হবে।</string>
+    <string name="emergency_dialog_no_dialer">এই ডিভাইসে কোনো ফোন অ্যাপ পাওয়া যায়নি। যেকোনো ফোন থেকে 112 ডায়াল করুন।</string>
+    <string name="emergency_dialog_call">112-এ কল করুন</string>
+    <string name="emergency_dialog_cancel">বাতিল</string>
+    <string name="emergency_dialog_close">বন্ধ করুন</string>
+
+    <!-- Search -->
+    <string name="search_empty_title">খোঁজার সুবিধা এখনও নেই</string>
+    <string name="search_empty_body">জায়গা খোঁজার সুবিধা পরের সংস্করণে আসবে।</string>
+
+    <!-- Settings -->
+    <string name="settings_title">সেটিংস</string>
+    <string name="settings_language_title">ভাষা</string>
+    <string name="settings_language_supporting">English / বাংলা · শীঘ্রই আসছে</string>
+    <string name="settings_about_title">অ্যাপ সম্পর্কে</string>
+    <!-- %1$s is the version name, %2$d the build number -->
+    <string name="settings_version">সংস্করণ %1$s (%2$d)</string>
+    <string name="settings_licence">GNU Affero General Public License, সংস্করণ 3 (AGPL-3.0)-এর অধীনে মুক্ত সফটওয়্যার।</string>
+    <string name="settings_source_code">সোর্স কোড: github.com/rahulchy960/SafeRoute</string>
+    <string name="settings_safety_notice_title">নিরাপত্তা বিজ্ঞপ্তি</string>
+    <string name="settings_safety_notice_body">জরুরি অবস্থায় 112 নম্বরে কল করুন।</string>
 </resources>

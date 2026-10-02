@@ -4,9 +4,12 @@ The native Android app for SafeRoute: Kotlin, Jetpack Compose, Material 3 and Hi
 (Plan v7 §5). Decisions and their reasons are in
 [ADR 0008](../docs/adr/0008-android-foundation.md).
 
-**Status (P007a):** the foundation. The app starts, applies the SafeRoute theme and shows its
-name; the design-system components exist with previews and tests. Navigation and the Home,
-Search and Settings screens arrive with P007b; the map with P010; SOS with P014.
+**Status (P007):** the app shell. Home shows a placeholder where the map will be, a search pill,
+two map buttons (disabled), a bottom sheet and the emergency button; Search and Settings are
+reachable from it. The only real behaviour is the emergency button: a dialog that can open the
+phone dialer with 112. The map arrives with P010, sign-in with P009, SOS with P014.
+
+![App structure](../docs/diagrams/007-android-app-shell.svg)
 
 ## Open it in Android Studio
 
@@ -68,7 +71,11 @@ android/
     java/com/saferoute/app/
       SafeRouteApplication.kt      process entry point (@HiltAndroidApp)
       MainActivity.kt              the single activity
-      SafeRouteApp.kt              root composable (navigation host from P007b)
+      SafeRouteApp.kt              root composable: background + navigation host
+      navigation/                  destinations (type-safe routes) and the NavHost
+      feature/home/                Home screen, HomeViewModel, map placeholder, 112 dialog
+      feature/search/              Search screen (layout only until P011)
+      feature/settings/            Settings screen with the About section
       core/designsystem/theme/     colours, type, shapes, spacing: the design tokens
       core/designsystem/component/ SearchPill, MapControlButton, EmergencyButton, sheet
       core/designsystem/preview/   @SafeRoutePreviews (light, dark, Bengali, 200% font)
@@ -79,8 +86,16 @@ android/
   app/src/test/                    tests that run on the JVM (JUnit, Robolectric)
 ```
 
-Packages for later features (`feature/…`, `navigation/`, `data/`, `service/`, `work/`) are
-created by the prompt that needs them.
+Packages for later features (`data/`, `service/`, `work/`, more `feature/…`) are created by the
+prompt that needs them.
+
+How a screen is put together (see `feature/home`):
+
+- `HomeScreen` is plain UI: it takes values and callbacks, knows nothing about Hilt or
+  navigation, and can be previewed and tested alone.
+- `HomeRoute` connects it to `HomeViewModel`, which holds the state as a `StateFlow`.
+- `navigation/SafeRouteNavHost.kt` is the only place that knows which screen leads where.
+- Features depend on `core`; `core` never depends on a feature.
 
 ## Versions
 
@@ -95,9 +110,13 @@ Chosen on 2026-10-02 from Google Maven and Maven Central metadata; all are stabl
 | Hilt (Dagger) | 2.60.1 | |
 | Compose BOM | 2026.09.00 | Compose UI 1.12.1, Material 3 1.4.0, icons core 1.7.8 |
 | Activity Compose | 1.13.0 | |
+| Navigation Compose | 2.10.2 | type-safe routes |
+| Lifecycle (runtime-compose, viewmodel-compose) | 2.11.0 | |
+| Hilt ViewModel for Compose (`hilt-lifecycle-viewmodel-compose`) | 1.4.0 | provides `hiltViewModel()` |
+| kotlinx.serialization (core) | 1.11.0 | makes routes `@Serializable`; plugin version = Kotlin |
 | Core SplashScreen | 1.2.0 | |
 | kotlinx.coroutines | 1.11.0 | |
-| JUnit 4 · Robolectric · AndroidX Test | 4.13.2 · 4.17 · core 1.7.0, ext-junit 1.3.0 | tests only |
+| JUnit 4 · Robolectric · AndroidX Test · Turbine | 4.13.2 · 4.17 · core 1.7.0, ext-junit 1.3.0 · 1.2.1 | tests only |
 | compileSdk · targetSdk · minSdk | 37 · 36 · 26 | see ADR 0008 for why compileSdk is not 36 |
 | JDK | 17 to compile and test; 25 to run Gradle | Gradle downloads 17 if it is missing |
 

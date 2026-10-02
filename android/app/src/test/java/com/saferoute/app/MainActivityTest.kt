@@ -34,11 +34,11 @@ class MainActivityTest {
     val compose = createAndroidComposeRule<MainActivity>()
 
     @Test
-    fun `launches and shows the app name and the standing notice`() {
+    fun `launches into the home screen`() {
         val activity = compose.activity
 
-        compose.onNodeWithText(activity.getString(R.string.app_name)).assertIsDisplayed()
-        compose.onNodeWithText(activity.getString(R.string.not_emergency_service)).assertIsDisplayed()
+        compose.onNodeWithText(activity.getString(R.string.search_hint)).assertIsDisplayed()
+        compose.onNodeWithText(activity.getString(R.string.emergency_button_label)).assertIsDisplayed()
     }
 
     @Test

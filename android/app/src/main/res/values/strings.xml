@@ -27,4 +27,43 @@
     <string name="sheet_action_expand">Expand panel</string>
     <string name="sheet_action_collapse">Collapse panel</string>
     <string name="sheet_action_cycle">change panel size</string>
+
+    <!-- Shared -->
+    <string name="navigate_back">Back</string>
+    <string name="coming_later">Coming in a later version</string>
+
+    <!-- Home -->
+    <string name="home_sheet_title">Where to?</string>
+    <string name="home_saved_places">Saved places</string>
+    <string name="home_recent">Recent</string>
+    <!-- Shown in debug builds only -->
+    <string name="map_placeholder_label">Map arrives in a later milestone</string>
+
+    <!--
+        Emergency dialog. It must never suggest that SafeRoute calls for help by itself:
+        "Call 112" only opens the phone app.
+    -->
+    <string name="emergency_dialog_title">SOS is not available yet</string>
+    <string name="emergency_dialog_body">SOS is not available in this build yet. In an emergency call 112.</string>
+    <string name="emergency_dialog_dialer_hint">“Call 112” opens your phone app with 112 entered. You start the call yourself.</string>
+    <string name="emergency_dialog_no_dialer">No phone app was found on this device. Dial 112 from any phone.</string>
+    <string name="emergency_dialog_call">Call 112</string>
+    <string name="emergency_dialog_cancel">Cancel</string>
+    <string name="emergency_dialog_close">Close</string>
+
+    <!-- Search -->
+    <string name="search_empty_title">Search is not available yet</string>
+    <string name="search_empty_body">Place search arrives in a later version.</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_language_title">Language</string>
+    <string name="settings_language_supporting">English / বাংলা · Coming soon</string>
+    <string name="settings_about_title">About</string>
+    <!-- %1$s is the version name, %2$d the build number -->
+    <string name="settings_version">Version %1$s (%2$d)</string>
+    <string name="settings_licence">Free software under the GNU Affero General Public License, version 3 (AGPL-3.0).</string>
+    <string name="settings_source_code">Source code: github.com/rahulchy960/SafeRoute</string>
+    <string name="settings_safety_notice_title">Safety notice</string>
+    <string name="settings_safety_notice_body">In an emergency, call 112.</string>
 </resources>
