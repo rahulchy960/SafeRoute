@@ -136,6 +136,11 @@ screens and comes with P007b.
 at the time of writing. Unverified until then: that the runner provides platform 37, and that
 the two-JDK setup works on Linux.
 
+**Added after the first run (PR #14, run 37010952143):** `android-ci` passed in 4 min 5 s on
+`ubuntu-24.04`: `BUILD SUCCESSFUL`, 65 tasks executed. The log shows both Temurin JDKs
+registered and no JDK download by Gradle; it shows no SDK install step, so platform 37 was
+available on the runner. `repo-checks`, `actionlint` and `container-ci` passed too.
+
 Tests (all JVM; Robolectric where the Android framework is needed):
 
 | Class | Tests | Covers |
