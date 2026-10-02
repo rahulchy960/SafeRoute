@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1172" height="1435" viewBox="0 0 1172 1435" font-family="Helvetica, Arial, sans-serif">
+<title>Android network layer</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#495057"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="40" y="62" font-size="24" font-weight="700" fill="#1e1e1e">Android network layer</text>
+<text x="40" y="86" font-size="14" fill="#495057">One API call after P008a, from a screen to the SafeRoute API and back. Only core/network knows OkHttp and Retrofit. ADR 0009</text>
+<rect x="40" y="114" width="246" height="1235" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="54" y="135" font-size="14" font-weight="700" fill="#495057">Build time</text>
+<rect x="322" y="114" width="246" height="1235" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="336" y="135" font-size="14" font-weight="700" fill="#495057">App</text>
+<rect x="604" y="114" width="246" height="1235" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="618" y="135" font-size="14" font-weight="700" fill="#495057">OkHttp chain (core/network)</text>
+<rect x="886" y="114" width="246" height="1235" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="900" y="135" font-size="14" font-weight="700" fill="#495057">Sign-in seam</text>
+<line x1="163" y1="344" x2="163" y2="404" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="163" y1="491" x2="445" y2="551" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="445" y1="228" x2="445" y2="288" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="445" y1="344" x2="445" y2="551" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="445" y1="638" x2="445" y2="698" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="550" y1="731" x2="622" y2="731" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="727" y1="759" x2="727" y2="839.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="727" y1="895.5" x2="727" y2="971" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="727" y1="1037" x2="727" y2="1107.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="727" y1="1173.5" x2="727" y2="1244" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1009" y1="764" x2="1009" y2="839.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1009" y1="895.5" x2="727" y2="971" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1009" y1="895.5" x2="1009" y2="1097" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1009" y1="1184" x2="727" y2="1244" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="445" y1="764" x2="445" y2="824" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="445" y1="911" x2="445" y2="971" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="58" y="288" width="210" height="56" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="163" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="163" y="321.6">contracts/openapi.json</tspan>
+</text>
+<rect x="58" y="404" width="210" height="87" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="163" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="163" y="432.3">generateApiClient</tspan>
+<tspan x="163" y="453.1">(OpenAPI Generator,</tspan>
+<tspan x="163" y="473.9">every build)</tspan>
+</text>
+<rect x="340" y="162" width="210" height="66" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="445" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="445" y="190.2">Compose screen /</tspan>
+<tspan x="445" y="211">ViewModel</tspan>
+</text>
+<rect x="340" y="288" width="210" height="56" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="445" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="445" y="321.6">apiCall { } wrapper</tspan>
+</text>
+<rect x="340" y="551" width="210" height="87" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="445" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="445" y="579.3">Generated API interfaces</tspan>
+<tspan x="445" y="600.1">+ models (never</tspan>
+<tspan x="445" y="620.9">committed)</tspan>
+</text>
+<rect x="340" y="698" width="210" height="66" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="445" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="445" y="726.2">Retrofit +</tspan>
+<tspan x="445" y="747">kotlinx.serialization</tspan>
+</text>
+<rect x="340" y="824" width="210" height="87" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="445" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="445" y="852.3">Error mapper:</tspan>
+<tspan x="445" y="873.1">problem+json to</tspan>
+<tspan x="445" y="893.9">ApiFailure</tspan>
+</text>
+<rect x="340" y="971" width="210" height="66" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="445" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="445" y="999.2">ApiResult: Success or</tspan>
+<tspan x="445" y="1020">ApiFailure</tspan>
+</text>
+<rect x="622" y="703" width="210" height="56" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="727" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="727" y="736.6">RequestId: X-Request-Id</tspan>
+</text>
+<rect x="622" y="839.5" width="210" height="56" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="727" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="727" y="873.1">UserAgent</tspan>
+</text>
+<rect x="622" y="971" width="210" height="66" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="727" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="727" y="999.2">Auth: Bearer token, API</tspan>
+<tspan x="727" y="1020">host only</tspan>
+</text>
+<rect x="622" y="1107.5" width="210" height="66" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="727" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="727" y="1135.7">Retry: GET/HEAD on</tspan>
+<tspan x="727" y="1156.5">503 or I/O error</tspan>
+</text>
+<rect x="622" y="1244" width="210" height="87" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="727" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="727" y="1272.3">SafeRoute API (Cloud</tspan>
+<tspan x="727" y="1293.1">Run staging), HTTPS</tspan>
+<tspan x="727" y="1313.9">only</tspan>
+</text>
+<rect x="904" y="698" width="210" height="66" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="1009" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1009" y="726.2">Firebase token source</tspan>
+<tspan x="1009" y="747">(P009, not built yet)</tspan>
+</text>
+<rect x="904" y="839.5" width="210" height="56" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="1009" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1009" y="873.1">IdTokenProvider</tspan>
+</text>
+<rect x="904" y="1097" width="210" height="87" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="1009" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1009" y="1125.3">TokenAuthenticator: on</tspan>
+<tspan x="1009" y="1146.1">401 refresh once, retry</tspan>
+<tspan x="1009" y="1166.9">once</tspan>
+</text>
+<rect x="279.2" y="510" width="49.7" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="304" y="525.5" font-size="13" fill="#1e1e1e" text-anchor="middle">writes</text>
+<rect x="989.7" y="790.8" width="38.5" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="1009" y="806.3" font-size="13" fill="#1e1e1e" text-anchor="middle">later</text>
+<rect x="846" y="922.3" width="44" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="868" y="937.8" font-size="13" fill="#1e1e1e" text-anchor="middle">token</text>
+<rect x="970.4" y="985.3" width="77.3" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="1009" y="1000.8" font-size="13" fill="#1e1e1e" text-anchor="middle">fresh token</text>
+<rect x="848.4" y="1203" width="39.3" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="868" y="1218.5" font-size="13" fill="#1e1e1e" text-anchor="middle">retry</text>
+<rect x="396.2" y="783" width="97.5" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="445" y="798.5" font-size="13" fill="#1e1e1e" text-anchor="middle">error response</text>
+<rect x="40" y="1370" width="16" height="16" rx="3" fill="#a5d8ff" stroke="#1971c2" stroke-width="1.5"/>
+<text x="62" y="1383" font-size="13" fill="#495057">App / UI</text>
+<rect x="134.8" y="1370" width="16" height="16" rx="3" fill="#b2f2bb" stroke="#2f9e44" stroke-width="1.5"/>
+<text x="156.8" y="1383" font-size="13" fill="#495057">Service</text>
+<rect x="228.3" y="1370" width="16" height="16" rx="3" fill="#ffc9c9" stroke="#e03131" stroke-width="1.5"/>
+<text x="250.3" y="1383" font-size="13" fill="#495057">Security / emergency</text>
+<rect x="401.9" y="1370" width="16" height="16" rx="3" fill="#e9ecef" stroke="#495057" stroke-width="1.5"/>
+<text x="423.9" y="1383" font-size="13" fill="#495057">External</text>
+</svg>

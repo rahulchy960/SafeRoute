@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 package com.saferoute.app
 
+import android.Manifest
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import androidx.compose.ui.test.assertIsDisplayed
@@ -11,7 +12,6 @@ import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import dagger.hilt.android.testing.HiltTestApplication
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -47,20 +47,18 @@ class MainActivityTest {
     }
 
     @Test
-    fun `the app requests no Android permission`() {
+    fun `the only Android permission is INTERNET`() {
         val activity = compose.activity
         val info = activity.packageManager.getPackageInfo(
             activity.packageName,
             PackageManager.GET_PERMISSIONS,
         )
         // AndroidX adds one private permission named after the app itself (used to keep its own
-        // broadcast receivers unexported). Anything in the android.permission namespace would
-        // be a real permission and needs a prompt that asks for it.
-        val requested = info.requestedPermissions.orEmpty().toList()
-        assertTrue(
-            "Unexpected permissions: $requested",
-            requested.all { it.startsWith(activity.packageName) },
-        )
+        // broadcast receivers unexported). Anything else is a real permission and needs a prompt
+        // that asks for it. INTERNET came with the API client (P008).
+        val requested = info.requestedPermissions.orEmpty()
+            .filterNot { it.startsWith(activity.packageName) }
+        assertEquals(listOf(Manifest.permission.INTERNET), requested)
     }
 
     @Test

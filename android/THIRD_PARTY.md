@@ -35,7 +35,9 @@ No other Google or Apple logo, font or artwork is in the app.
 | AndroidX Activity, Core SplashScreen, Lifecycle, Navigation, Hilt ViewModel for Compose | Apache-2.0 |
 | Jetpack Compose (UI, Foundation, Material 3, Material icons core) | Apache-2.0 |
 | Dagger Hilt | Apache-2.0 |
-| Kotlin standard library, kotlinx.coroutines, kotlinx.serialization | Apache-2.0 |
+| Kotlin standard library, kotlinx.coroutines, kotlinx.serialization (core and JSON) | Apache-2.0 |
+| OkHttp 5.5.0 and Okio (its I/O library) | Apache-2.0 |
+| Retrofit 3.0.0 and its kotlinx.serialization converter | Apache-2.0 |
 
 Apache-2.0 code may be combined into an AGPL-3.0 work. No library with a proprietary or
 copyleft-incompatible licence is used.
@@ -50,6 +52,13 @@ copyleft-incompatible licence is used.
 | Robolectric | MIT |
 | Turbine | Apache-2.0 |
 | JUnit 4 | EPL-1.0 |
+| OpenAPI Generator 7.25.0 (Gradle plugin `org.openapi.generator`) | Apache-2.0 |
+| OkHttp MockWebServer 5.5.0 | Apache-2.0 |
+
+OpenAPI Generator runs while the app is built and writes the API client (Kotlin source) from
+`contracts/openapi.json`. The tool itself is not in the app. The code it writes comes from its
+Apache-2.0 templates, is compiled into the app and is never committed (ADR 0009). The networking
+licences were read from the published POMs on 2026-10-03.
 
 ## Fonts
 

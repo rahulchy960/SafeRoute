@@ -4,9 +4,11 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <!--
-        No <uses-permission> on purpose. A permission is added only by the prompt whose feature
-        needs it (CLAUDE.md "Android rules").
+        A permission is added only by the prompt whose feature needs it (CLAUDE.md "Android
+        rules"). INTERNET (P008): lets the app open network connections to the SafeRoute API.
+        It is a "normal" permission: granted at install, no dialog, nothing for the user to do.
     -->
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <!--
         allowBackup=false + data_extraction_rules: nothing the app stores is copied to a cloud
@@ -15,6 +17,8 @@
         localeConfig: the languages offered under Settings > Apps > SafeRoute > Language
         (Android 13+). Older versions follow the system language.
         enableOnBackInvokedCallback: opts in to the predictive back gesture.
+        networkSecurityConfig: HTTPS only, system certificate authorities only
+        (res/xml/network_security_config.xml, ADR 0009).
         tools:targetApi: tells lint that the two attributes above are meant for Android 13+
         and are simply ignored on older versions.
     -->
@@ -27,6 +31,7 @@
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:localeConfig="@xml/locales_config"
+        android:networkSecurityConfig="@xml/network_security_config"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.SafeRoute"
