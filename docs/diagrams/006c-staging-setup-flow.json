@@ -1,0 +1,128 @@
+{
+  "$schema": "../../tools/diagrams/diagram.schema.json",
+  "title": "Staging setup script",
+  "subtitle": "Audit → apply only what is missing → set GitHub secrets → verify → enable deploys (P006c, ADR 0007)",
+  "direction": "TB",
+  "layout": { "nodeWidth": 250, "rankGap": 50 },
+  "groups": [
+    {
+      "id": "script",
+      "label": "bootstrap-staging.ps1 (Rahul runs it)"
+    },
+    {
+      "id": "github",
+      "label": "GitHub"
+    },
+    {
+      "id": "cloud",
+      "label": "Google Cloud staging"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "guard",
+      "label": "Refuse a project ID with prd / prod",
+      "role": "security",
+      "group": "script",
+      "rank": 0
+    },
+    {
+      "id": "audit",
+      "label": "-Audit: read-only table PRESENT / MISSING / WRONG",
+      "role": "app",
+      "group": "script",
+      "rank": 1
+    },
+    {
+      "id": "apply",
+      "label": "-Apply: only MISSING items, type the project ID, y/n per step",
+      "role": "app",
+      "group": "script",
+      "rank": 2
+    },
+    {
+      "id": "setsecrets",
+      "label": "-SetGithubSecrets: names read from deploy-staging.yml",
+      "role": "app",
+      "group": "script",
+      "rank": 3
+    },
+    {
+      "id": "verify",
+      "label": "-Verify: exit code 0 only if nothing is missing",
+      "role": "security",
+      "group": "script",
+      "rank": 4
+    },
+    {
+      "id": "switch",
+      "label": "Rahul sets STAGING_DEPLOY_ENABLED = true",
+      "role": "app",
+      "group": "script",
+      "rank": 5
+    },
+    {
+      "id": "exists",
+      "label": "Checked, never created or changed: Cloud SQL, service accounts, pool, registry, existing secrets",
+      "role": "data",
+      "group": "cloud",
+      "rank": 1
+    },
+    {
+      "id": "created",
+      "label": "Created if missing: APIs, Workload Identity provider, IAM bindings, placeholder service",
+      "role": "service",
+      "group": "cloud",
+      "rank": 2
+    },
+    {
+      "id": "password",
+      "label": "Password secret (read into memory)",
+      "role": "security",
+      "group": "cloud",
+      "rank": 3
+    },
+    {
+      "id": "urlsecret",
+      "label": "Database URL secret (sent on stdin, never printed)",
+      "role": "security",
+      "group": "cloud",
+      "rank": 4
+    },
+    {
+      "id": "envvalues",
+      "label": "staging environment: 8 secrets + 6 variables",
+      "role": "infra",
+      "group": "github",
+      "rank": 3
+    },
+    {
+      "id": "repovar",
+      "label": "Repository variable (a job-level if cannot see environment variables)",
+      "role": "infra",
+      "group": "github",
+      "rank": 5
+    },
+    {
+      "id": "deploy",
+      "label": "deploy-staging run",
+      "role": "infra",
+      "group": "github",
+      "rank": 6
+    }
+  ],
+  "edges": [
+    { "from": "guard", "to": "audit" },
+    { "from": "audit", "to": "apply" },
+    { "from": "apply", "to": "setsecrets" },
+    { "from": "setsecrets", "to": "verify" },
+    { "from": "verify", "to": "switch", "label": "VERIFY: OK" },
+    { "from": "audit", "to": "exists", "label": "reads" },
+    { "from": "apply", "to": "created", "label": "adds" },
+    { "from": "apply", "to": "password" },
+    { "from": "password", "to": "urlsecret", "label": "builds" },
+    { "from": "setsecrets", "to": "envvalues", "label": "values on stdin" },
+    { "from": "switch", "to": "repovar" },
+    { "from": "repovar", "to": "deploy" }
+  ]
+}

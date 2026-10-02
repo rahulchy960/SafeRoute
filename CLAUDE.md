@@ -46,7 +46,7 @@ docs/prompt-logs/ One log per prompt (NNN-core-work.md)
 docs/runbooks/  Operational runbooks
 .claude/        settings.json (deny rules) + slash commands /start-prompt, /ship-prompt
 .githooks/      pre-push hook that rejects pushes to main
-.github/        PR template, CODEOWNERS, workflows (repo-checks, backend-ci, contracts-ci, container-ci, deploy-staging)
+.github/        PR template, CODEOWNERS, workflows (repo-checks, backend-ci, contracts-ci, container-ci, infra-ci, deploy-staging)
 ```
 
 ## TEN GOLDEN RULES
@@ -150,6 +150,17 @@ Follow [ADR 0007](docs/adr/0007-gcp-staging-topology.md):
 - One-time cloud setup is a runbook that Rahul runs:
   [`docs/runbooks/gcp-staging-setup.md`](docs/runbooks/gcp-staging-setup.md). The table of GitHub
   environment secrets and variables lives there (step 9), not in this file.
+- The setup is audited, completed and verified with
+  [`infra/staging/bootstrap-staging.ps1`](infra/staging/bootstrap-staging.ps1) (since P006c).
+  **Rahul runs it; Claude Code never does, in any mode, `-Audit` included**, and never runs
+  `gh secret set` or `gh variable set`. Claude Code changes it only with tests that mock `gcloud`
+  and `gh`. The script must stay additive: it never deletes, renames or widens anything, never
+  creates keys, and never touches Cloud SQL, existing secrets or accounts it doesn't own.
+- Resource names in the project are facts, not conventions: the deploy account is `sa-deploy` and
+  the instance is `saferoute-db` (ADR 0007, note of 2026-10-02). Don't assume a name; it is a
+  parameter of the script.
+- `STAGING_DEPLOY_ENABLED` is a **repository** variable. A job-level `if:` can't see environment
+  variables.
 - The API, the migration job and the admin job run from one image
   ([`backend/Dockerfile`](backend/Dockerfile)). Migrations never run at API startup.
 - Workflows that deploy never use `pull_request_target`, never print secrets, environment dumps
@@ -208,6 +219,7 @@ to go green.
 | Contracts | in `backend/`: `pnpm openapi:generate` then commit the diff · `pnpm openapi:check` · `pnpm openapi:lint`; breaking changes need the PR label `breaking-api-change` + a new ADR (CI: `backend-ci` runs check + lint; `.github/workflows/contracts-ci.yml` runs them plus the oasdiff breaking-change gate) | Active (since P004a; oasdiff gate since P004b) |
 | Container | in `backend/`: `node scripts/container-smoke.mjs` (needs Docker; builds the image and runs the smoke checks, including `scripts/smoke.mjs` pass and fail paths) · actionlint for workflow changes (CI: `.github/workflows/container-ci.yml`) | Active (since P006a) |
 | Deploy workflow | actionlint + shellcheck clean · no `pull_request_target` · every action pinned by commit SHA · deploy job gated on `STAGING_DEPLOY_ENABLED` · no step prints secrets, the environment or `gcloud config` (CI: the `actionlint` job in `container-ci`; the deploy itself runs only on `main`) | Active (since P006b) |
+| Infra scripts | `infra/staging/tests/Invoke-InfraCheck.ps1` with Windows PowerShell 5.1 **and** PowerShell 7 where installed: PSScriptAnalyzer (0 findings) and Pester (mocked `gcloud`/`gh`; needs `node`, no cloud access). Scripts stay pure ASCII (CI: `.github/workflows/infra-ci.yml`, Linux and Windows) | Active (since P006c) |
 | Android | `./gradlew lint testDebugUnitTest assembleDebug` (run inside `android/`) | Not yet applicable (from P007) |
 | Moderation | typecheck · lint · test · build | Not yet applicable (from P018) |
 

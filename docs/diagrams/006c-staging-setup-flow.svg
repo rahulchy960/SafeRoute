@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1010" height="1123" viewBox="0 0 1010 1123" font-family="Helvetica, Arial, sans-serif">
+<title>Staging setup script</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#495057"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="40" y="62" font-size="24" font-weight="700" fill="#1e1e1e">Staging setup script</text>
+<text x="40" y="86" font-size="14" fill="#495057">Audit → apply only what is missing → set GitHub secrets → verify → enable deploys (P006c, ADR 0007)</text>
+<rect x="40" y="114" width="286" height="923" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="54" y="135" font-size="14" font-weight="700" fill="#495057">bootstrap-staging.ps1 (Rahul runs it)</text>
+<rect x="362" y="114" width="286" height="923" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="376" y="135" font-size="14" font-weight="700" fill="#495057">GitHub</text>
+<rect x="684" y="114" width="286" height="923" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="698" y="135" font-size="14" font-weight="700" fill="#495057">Google Cloud staging</text>
+<line x1="183" y1="228" x2="183" y2="288.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="183" y1="375.5" x2="183" y2="446.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="183" y1="533.5" x2="183" y2="594" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="183" y1="660" x2="183" y2="710" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="183" y1="776" x2="183" y2="826" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="308" y1="332" x2="702" y2="332" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="308" y1="490" x2="702" y2="490" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="183" y1="533.5" x2="827" y2="594" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="827" y1="660" x2="827" y2="710" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="308" y1="627" x2="380" y2="627" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="308" y1="869.5" x2="380" y2="869.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="505" y1="913" x2="505" y2="963" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="58" y="162" width="250" height="66" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="183" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="183" y="190.2">Refuse a project ID with prd /</tspan>
+<tspan x="183" y="211">prod</tspan>
+</text>
+<rect x="58" y="288.5" width="250" height="87" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="183" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="183" y="316.8">-Audit: read-only table</tspan>
+<tspan x="183" y="337.6">PRESENT / MISSING /</tspan>
+<tspan x="183" y="358.4">WRONG</tspan>
+</text>
+<rect x="58" y="446.5" width="250" height="87" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="183" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="183" y="474.8">-Apply: only MISSING items,</tspan>
+<tspan x="183" y="495.6">type the project ID, y/n per</tspan>
+<tspan x="183" y="516.4">step</tspan>
+</text>
+<rect x="58" y="594" width="250" height="66" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="183" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="183" y="622.2">-SetGithubSecrets: names</tspan>
+<tspan x="183" y="643">read from deploy-staging.yml</tspan>
+</text>
+<rect x="58" y="710" width="250" height="66" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="183" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="183" y="738.2">-Verify: exit code 0 only if</tspan>
+<tspan x="183" y="759">nothing is missing</tspan>
+</text>
+<rect x="58" y="826" width="250" height="87" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="183" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="183" y="854.3">Rahul sets</tspan>
+<tspan x="183" y="875.1">STAGING_DEPLOY_ENABLED</tspan>
+<tspan x="183" y="895.9">= true</tspan>
+</text>
+<rect x="702" y="278" width="250" height="108" rx="10" fill="#ffd8a8" stroke="#e8590c" stroke-width="2"/>
+<text x="827" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="827" y="306.4">Checked, never created or</tspan>
+<tspan x="827" y="327.2">changed: Cloud SQL, service</tspan>
+<tspan x="827" y="348">accounts, pool, registry,</tspan>
+<tspan x="827" y="368.8">existing secrets</tspan>
+</text>
+<rect x="702" y="436" width="250" height="108" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="827" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="827" y="464.4">Created if missing: APIs,</tspan>
+<tspan x="827" y="485.2">Workload Identity provider,</tspan>
+<tspan x="827" y="506">IAM bindings, placeholder</tspan>
+<tspan x="827" y="526.8">service</tspan>
+</text>
+<rect x="702" y="594" width="250" height="66" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="827" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="827" y="622.2">Password secret (read into</tspan>
+<tspan x="827" y="643">memory)</tspan>
+</text>
+<rect x="702" y="710" width="250" height="66" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="827" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="827" y="738.2">Database URL secret (sent on</tspan>
+<tspan x="827" y="759">stdin, never printed)</tspan>
+</text>
+<rect x="380" y="594" width="250" height="66" rx="10" fill="#eebefa" stroke="#9c36b5" stroke-width="2"/>
+<text x="505" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="505" y="622.2">staging environment: 8</tspan>
+<tspan x="505" y="643">secrets + 6 variables</tspan>
+</text>
+<rect x="380" y="826" width="250" height="87" rx="10" fill="#eebefa" stroke="#9c36b5" stroke-width="2"/>
+<text x="505" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="505" y="854.3">Repository variable (a</tspan>
+<tspan x="505" y="875.1">job-level if cannot see</tspan>
+<tspan x="505" y="895.9">environment variables)</tspan>
+</text>
+<rect x="380" y="963" width="250" height="56" rx="10" fill="#eebefa" stroke="#9c36b5" stroke-width="2"/>
+<text x="505" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="505" y="996.6">deploy-staging run</tspan>
+</text>
+<rect x="140.3" y="790" width="85.3" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="183" y="805.5" font-size="13" fill="#1e1e1e" text-anchor="middle">VERIFY: OK</text>
+<rect x="482.6" y="321" width="44.8" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="505" y="336.5" font-size="13" fill="#1e1e1e" text-anchor="middle">reads</text>
+<rect x="485" y="479" width="40.1" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="505" y="494.5" font-size="13" fill="#1e1e1e" text-anchor="middle">adds</text>
+<rect x="803.1" y="674" width="47.9" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="827" y="689.5" font-size="13" fill="#1e1e1e" text-anchor="middle">builds</text>
+<rect x="293.4" y="616" width="101.2" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="344" y="631.5" font-size="13" fill="#1e1e1e" text-anchor="middle">values on stdin</text>
+<rect x="40" y="1058" width="16" height="16" rx="3" fill="#a5d8ff" stroke="#1971c2" stroke-width="1.5"/>
+<text x="62" y="1071" font-size="13" fill="#495057">App / UI</text>
+<rect x="134.8" y="1058" width="16" height="16" rx="3" fill="#b2f2bb" stroke="#2f9e44" stroke-width="1.5"/>
+<text x="156.8" y="1071" font-size="13" fill="#495057">Service</text>
+<rect x="228.3" y="1058" width="16" height="16" rx="3" fill="#ffd8a8" stroke="#e8590c" stroke-width="1.5"/>
+<text x="250.3" y="1071" font-size="13" fill="#495057">Data</text>
+<rect x="303.1" y="1058" width="16" height="16" rx="3" fill="#ffc9c9" stroke="#e03131" stroke-width="1.5"/>
+<text x="325.1" y="1071" font-size="13" fill="#495057">Security / emergency</text>
+<rect x="476.7" y="1058" width="16" height="16" rx="3" fill="#eebefa" stroke="#9c36b5" stroke-width="1.5"/>
+<text x="498.7" y="1071" font-size="13" fill="#495057">Infra / workflow</text>
+</svg>

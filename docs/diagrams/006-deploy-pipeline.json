@@ -15,7 +15,7 @@
     { "id": "actions", "label": "GitHub Actions deploy-staging (environment: staging)", "role": "infra", "group": "github", "rank": 2 },
     { "id": "oidc", "label": "GitHub OIDC token", "role": "security", "group": "github", "rank": 3 },
     { "id": "wif", "label": "Workload Identity Federation (this repo + main + staging only)", "role": "security", "group": "deploy", "rank": 3 },
-    { "id": "sa", "label": "gcp-deploy-staging SA (no keys)", "role": "security", "group": "deploy", "rank": 4 },
+    { "id": "sa", "label": "sa-deploy SA (no keys)", "role": "security", "group": "deploy", "rank": 4 },
     { "id": "ar", "label": "Artifact Registry: image tag = commit SHA", "role": "data", "group": "deploy", "rank": 5 },
     { "id": "migrate", "label": "Cloud Run Job: saferoute-migrate (sa-migration)", "role": "service", "group": "deploy", "rank": 6 },
     { "id": "api", "label": "Cloud Run service saferoute-api (sa-api-runtime)", "role": "service", "group": "deploy", "rank": 7 },
