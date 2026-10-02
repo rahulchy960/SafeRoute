@@ -1,0 +1,136 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1990" height="1099" viewBox="0 0 1990 1099" font-family="Helvetica, Arial, sans-serif">
+<title>Android app shell</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#495057"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="40" y="62" font-size="24" font-weight="700" fill="#1e1e1e">Android app shell</text>
+<text x="40" y="86" font-size="14" fill="#495057">Structure after P007: one activity, three screens, and the only real behaviour (the 112 dialer). ADR 0008</text>
+<rect x="40" y="114" width="462" height="899" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="54" y="135" font-size="14" font-weight="700" fill="#495057">Dependency injection</text>
+<rect x="538" y="114" width="1140" height="899" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="552" y="135" font-size="14" font-weight="700" fill="#495057">UI</text>
+<rect x="1714" y="114" width="236" height="899" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="1728" y="135" font-size="14" font-weight="700" fill="#495057">Later prompts</text>
+<line x1="271" y1="218" x2="158" y2="293.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="271" y1="218" x2="384" y2="278" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="995" y1="218" x2="1108" y2="288.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1221" y1="218" x2="1108" y2="288.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1108" y1="354.5" x2="1108" y2="425" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1108" y1="491" x2="882" y2="556" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1108" y1="491" x2="1108" y2="556" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1108" y1="491" x2="1334" y2="556" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="384" y1="365" x2="1108" y2="556" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1108" y1="612" x2="656" y2="682" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1108" y1="612" x2="882" y2="677" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1108" y1="612" x2="1108" y2="682" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1108" y1="612" x2="1334" y2="677" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1108" y1="612" x2="1560" y2="682" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1560" y1="738" x2="1560" y2="803" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1560" y1="869" x2="1560" y2="929" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="171" y="162" width="200" height="56" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="271" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="271" y="195.6">Hilt</tspan>
+</text>
+<rect x="58" y="293.5" width="200" height="56" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="158" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="158" y="327.1">Clock / dispatchers</tspan>
+</text>
+<rect x="284" y="278" width="200" height="87" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="384" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="384" y="306.3">HomeViewModel:</tspan>
+<tspan x="384" y="327.1">dialog state</tspan>
+<tspan x="384" y="347.9">(StateFlow)</tspan>
+</text>
+<rect x="895" y="162" width="200" height="56" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="995" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="995" y="195.6">MainActivity</tspan>
+</text>
+<rect x="1121" y="162" width="200" height="56" rx="10" fill="#eebefa" stroke="#9c36b5" stroke-width="2"/>
+<text x="1221" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1221" y="195.6">Design tokens</tspan>
+</text>
+<rect x="1008" y="288.5" width="200" height="66" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="1108" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1108" y="316.7">SafeRouteApp +</tspan>
+<tspan x="1108" y="337.5">SafeRouteTheme</tspan>
+</text>
+<rect x="1008" y="425" width="200" height="66" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="1108" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1108" y="453.2">NavHost: type-safe</tspan>
+<tspan x="1108" y="474">routes</tspan>
+</text>
+<rect x="782" y="556" width="200" height="56" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="882" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="882" y="589.6">Search</tspan>
+</text>
+<rect x="1008" y="556" width="200" height="56" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="1108" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1108" y="589.6">Home (start)</tspan>
+</text>
+<rect x="1234" y="556" width="200" height="56" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="1334" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1334" y="589.6">Settings</tspan>
+</text>
+<rect x="556" y="682" width="200" height="56" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="656" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="656" y="715.6">SearchPill</tspan>
+</text>
+<rect x="782" y="677" width="200" height="66" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="882" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="882" y="705.2">MapPlaceholder (map</tspan>
+<tspan x="882" y="726">slot, P010)</tspan>
+</text>
+<rect x="1008" y="682" width="200" height="56" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="1108" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1108" y="715.6">MapControls (disabled)</tspan>
+</text>
+<rect x="1234" y="677" width="200" height="66" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="1334" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1334" y="705.2">BottomSheet: peek,</tspan>
+<tspan x="1334" y="726">half, full</tspan>
+</text>
+<rect x="1460" y="682" width="200" height="56" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="1560" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1560" y="715.6">EmergencyButton</tspan>
+</text>
+<rect x="1460" y="803" width="200" height="66" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="1560" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1560" y="831.2">Dialog: SOS not</tspan>
+<tspan x="1560" y="852">available yet</tspan>
+</text>
+<rect x="1460" y="929" width="200" height="66" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="1560" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1560" y="957.2">System dialer tel:112</tspan>
+<tspan x="1560" y="978">(ACTION_DIAL)</tspan>
+</text>
+<rect x="1732" y="425" width="200" height="66" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="1832" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1832" y="453.2">P008: API client (uses</tspan>
+<tspan x="1832" y="474">Clock / dispatchers)</tspan>
+</text>
+<rect x="1732" y="551" width="200" height="66" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="1832" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1832" y="579.2">P009: sign-in (new</tspan>
+<tspan x="1832" y="600">destinations)</tspan>
+</text>
+<rect x="1732" y="929" width="200" height="66" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="1832" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1832" y="957.2">P014: SOS flow</tspan>
+<tspan x="1832" y="978">(replaces the dialog)</tspan>
+</text>
+<rect x="725.6" y="449.5" width="40.9" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="746" y="465" font-size="13" fill="#1e1e1e" text-anchor="middle">state</text>
+<rect x="1545" y="759.5" width="29.9" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="1560" y="775" font-size="13" fill="#1e1e1e" text-anchor="middle">tap</text>
+<rect x="1529.4" y="888" width="61.1" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="1560" y="903.5" font-size="13" fill="#1e1e1e" text-anchor="middle">Call 112</text>
+<rect x="40" y="1034" width="16" height="16" rx="3" fill="#a5d8ff" stroke="#1971c2" stroke-width="1.5"/>
+<text x="62" y="1047" font-size="13" fill="#495057">App / UI</text>
+<rect x="134.8" y="1034" width="16" height="16" rx="3" fill="#b2f2bb" stroke="#2f9e44" stroke-width="1.5"/>
+<text x="156.8" y="1047" font-size="13" fill="#495057">Service</text>
+<rect x="228.3" y="1034" width="16" height="16" rx="3" fill="#ffc9c9" stroke="#e03131" stroke-width="1.5"/>
+<text x="250.3" y="1047" font-size="13" fill="#495057">Security / emergency</text>
+<rect x="401.9" y="1034" width="16" height="16" rx="3" fill="#eebefa" stroke="#9c36b5" stroke-width="1.5"/>
+<text x="423.9" y="1047" font-size="13" fill="#495057">Infra / workflow</text>
+<rect x="543.5" y="1034" width="16" height="16" rx="3" fill="#e9ecef" stroke="#495057" stroke-width="1.5"/>
+<text x="565.5" y="1047" font-size="13" fill="#495057">External</text>
+</svg>

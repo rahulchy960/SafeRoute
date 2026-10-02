@@ -211,6 +211,11 @@ Follow [ADR 0008](docs/adr/0008-android-foundation.md) and [`android/README.md`]
 - Colours, type, shapes and spacing come from `core/designsystem/theme`. The `sos` red is only
   for the emergency button and the emergency dialog. Dynamic colour stays off. Interactive
   elements are at least 48 dp and have a label or content description.
+- A screen is a stateless composable (`HomeScreen`) plus a `Route` composable that connects its
+  `@HiltViewModel`; state is a `StateFlow` read with `collectAsStateWithLifecycle`. Only
+  `navigation/` knows which screen leads where. Features depend on `core`, never the reverse.
+- Emergency surfaces open the dialer with `ACTION_DIAL` and `tel:112`. Never `ACTION_CALL`,
+  and never wording that suggests the app calls for help by itself.
 - Add a permission to the manifest only in a prompt whose feature needs it, and explain it in
   the prompt log. `allowBackup` stays `false`.
 - Never commit `local.properties`, keystores (`*.jks`, `*.keystore`) or `google-services.json`.

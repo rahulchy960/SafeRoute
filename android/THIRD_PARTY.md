@@ -11,7 +11,7 @@ file in the same pull request that adds or removes a dependency or an asset.
 | --- | --- | --- | --- |
 | `res/drawable/ic_my_location.xml` | Material Symbols (Outlined) `my_location`, [google/material-design-icons](https://github.com/google/material-design-icons) | Apache-2.0 | header comment added, `tint` attribute removed |
 | `res/drawable/ic_layers.xml` | Material Symbols (Outlined) `layers`, same repository | Apache-2.0 | header comment added, `tint` attribute removed |
-| Search, Settings and Warning icons | `androidx.compose.material:material-icons-core` | Apache-2.0 | none (used from the library) |
+| Search, Settings, Warning, Star, Place, Info and back-arrow icons | `androidx.compose.material:material-icons-core` | Apache-2.0 | none (used from the library) |
 
 `material-icons-extended` is not used: it adds thousands of icons to the build for the two we
 need. Further icons are added one by one as vector drawables from Material Symbols.
@@ -32,10 +32,10 @@ No other Google or Apple logo, font or artwork is in the app.
 
 | Library | Licence |
 | --- | --- |
-| AndroidX Activity, Core SplashScreen | Apache-2.0 |
+| AndroidX Activity, Core SplashScreen, Lifecycle, Navigation, Hilt ViewModel for Compose | Apache-2.0 |
 | Jetpack Compose (UI, Foundation, Material 3, Material icons core) | Apache-2.0 |
 | Dagger Hilt | Apache-2.0 |
-| Kotlin standard library, kotlinx.coroutines | Apache-2.0 |
+| Kotlin standard library, kotlinx.coroutines, kotlinx.serialization | Apache-2.0 |
 
 Apache-2.0 code may be combined into an AGPL-3.0 work. No library with a proprietary or
 copyleft-incompatible licence is used.
@@ -48,6 +48,7 @@ copyleft-incompatible licence is used.
 | foojay toolchain resolver (Gradle plugin that finds a JDK) | Apache-2.0 |
 | AndroidX Test, Compose UI test | Apache-2.0 |
 | Robolectric | MIT |
+| Turbine | Apache-2.0 |
 | JUnit 4 | EPL-1.0 |
 
 ## Fonts

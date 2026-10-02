@@ -1,0 +1,54 @@
+{
+  "$schema": "../../tools/diagrams/diagram.schema.json",
+  "title": "Android app shell",
+  "subtitle": "Structure after P007: one activity, three screens, and the only real behaviour (the 112 dialer). ADR 0008",
+  "direction": "TB",
+  "layout": { "nodeWidth": 200 },
+  "groups": [
+    { "id": "di", "label": "Dependency injection" },
+    { "id": "ui", "label": "UI" },
+    { "id": "later", "label": "Later prompts" }
+  ],
+  "nodes": [
+    { "id": "hilt", "label": "Hilt", "role": "service", "group": "di" },
+    { "id": "core", "label": "Clock / dispatchers", "role": "service", "group": "di" },
+    { "id": "vm", "label": "HomeViewModel: dialog state (StateFlow)", "role": "service", "group": "di" },
+
+    { "id": "activity", "label": "MainActivity", "role": "app", "group": "ui" },
+    { "id": "tokens", "label": "Design tokens", "role": "infra", "group": "ui" },
+    { "id": "app", "label": "SafeRouteApp + SafeRouteTheme", "role": "app", "group": "ui" },
+    { "id": "nav", "label": "NavHost: type-safe routes", "role": "app", "group": "ui" },
+    { "id": "search", "label": "Search", "role": "app", "group": "ui" },
+    { "id": "home", "label": "Home (start)", "role": "app", "group": "ui" },
+    { "id": "settings", "label": "Settings", "role": "app", "group": "ui" },
+    { "id": "pill", "label": "SearchPill", "role": "app", "group": "ui" },
+    { "id": "map", "label": "MapPlaceholder (map slot, P010)", "role": "external", "group": "ui" },
+    { "id": "controls", "label": "MapControls (disabled)", "role": "app", "group": "ui" },
+    { "id": "sheet", "label": "BottomSheet: peek, half, full", "role": "app", "group": "ui" },
+    { "id": "emergency", "label": "EmergencyButton", "role": "security", "group": "ui" },
+    { "id": "dialog", "label": "Dialog: SOS not available yet", "role": "security", "group": "ui" },
+    { "id": "dialer", "label": "System dialer tel:112 (ACTION_DIAL)", "role": "security", "group": "ui" },
+
+    { "id": "p008", "label": "P008: API client (uses Clock / dispatchers)", "role": "external", "group": "later", "rank": 2 },
+    { "id": "p009", "label": "P009: sign-in (new destinations)", "role": "external", "group": "later", "rank": 3 },
+    { "id": "p014", "label": "P014: SOS flow (replaces the dialog)", "role": "external", "group": "later", "rank": 6 }
+  ],
+  "edges": [
+    { "from": "hilt", "to": "core" },
+    { "from": "hilt", "to": "vm" },
+    { "from": "activity", "to": "app" },
+    { "from": "tokens", "to": "app" },
+    { "from": "app", "to": "nav" },
+    { "from": "nav", "to": "search" },
+    { "from": "nav", "to": "home" },
+    { "from": "nav", "to": "settings" },
+    { "from": "vm", "to": "home", "label": "state" },
+    { "from": "home", "to": "pill" },
+    { "from": "home", "to": "map" },
+    { "from": "home", "to": "controls" },
+    { "from": "home", "to": "sheet" },
+    { "from": "home", "to": "emergency" },
+    { "from": "emergency", "to": "dialog", "label": "tap" },
+    { "from": "dialog", "to": "dialer", "label": "Call 112" }
+  ]
+}
