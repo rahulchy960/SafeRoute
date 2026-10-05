@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "SafeRoute API",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "description": "SafeRoute is a personal-safety navigation API. Safety information is context, never a guarantee that a route or area is safe. SafeRoute is not an emergency service; in an emergency call your local emergency number (112 in India).",
     "license": {
       "name": "AGPL-3.0-only",
@@ -21,7 +21,7 @@
     },
     {
       "name": "me",
-      "description": "The signed-in user's own account. Every operation needs a Firebase ID token (phone sign-in)."
+      "description": "The signed-in user's own account and consents. Every operation needs a Firebase ID token (phone sign-in)."
     }
   ],
   "components": {
@@ -86,7 +86,7 @@
         }
       },
       "Forbidden": {
-        "description": "Authenticated but not allowed: `forbidden`, `bootstrap_required` or `account_deleted`. Final: retrying the same request does not help.",
+        "description": "Authenticated but not allowed: `forbidden`, `bootstrap_required`, `account_deleted`, `consent_required` or `adult_required`. Final: retrying the same request does not help.",
         "headers": {
           "X-Request-Id": {
             "$ref": "#/components/headers/RequestId"
@@ -116,7 +116,7 @@
         }
       },
       "Conflict": {
-        "description": "Conflicts with the current state (`conflict`, `phone_already_registered`).",
+        "description": "Conflicts with the current state (`conflict`, `phone_already_registered`, `account_deletion_required`).",
         "headers": {
           "X-Request-Id": {
             "$ref": "#/components/headers/RequestId"
@@ -233,7 +233,7 @@
           },
           "code": {
             "type": "string",
-            "description": "Stable, machine-readable error code; clients switch on this, not on `title` or `detail`. Open set: clients must tolerate unknown values. Currently defined: `validation_error`, `unauthorized`, `forbidden`, `bootstrap_required`, `account_deleted`, `not_found`, `conflict`, `phone_already_registered`, `gone`, `rate_limited`, `internal_error`, `db_unavailable`, `db_not_configured`, `auth_unavailable`, `auth_not_configured`, `http_error`.",
+            "description": "Stable, machine-readable error code; clients switch on this, not on `title` or `detail`. Open set: clients must tolerate unknown values. Currently defined: `validation_error`, `unauthorized`, `forbidden`, `bootstrap_required`, `account_deleted`, `consent_required`, `adult_required`, `not_found`, `conflict`, `phone_already_registered`, `account_deletion_required`, `gone`, `rate_limited`, `internal_error`, `db_unavailable`, `db_not_configured`, `auth_unavailable`, `auth_not_configured`, `http_error`.",
             "examples": [
               "not_found"
             ]
@@ -450,9 +450,162 @@
             "examples": [
               "Sample Name"
             ]
+          },
+          "consent": {
+            "$ref": "#/components/schemas/BootstrapConsent"
           }
         },
-        "description": "Optional settings for a new account. The phone number is never sent: the server takes it from the verified ID token. Unknown properties are ignored."
+        "description": "Settings and consent for a new account. `consent` is needed to create an account (optional in the schema only because an existing account does not need it). The phone number is never sent: the server takes it from the verified ID token. Unknown properties are ignored."
+      },
+      "BootstrapConsent": {
+        "type": "object",
+        "properties": {
+          "ageConfirmed": {
+            "type": "boolean",
+            "description": "True when the user declared \"I am 18 or older\". Anything else → 403 `adult_required`. No date of birth is collected."
+          },
+          "noticeVersion": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9._-]{1,40}$",
+            "description": "Version of the consent notice the user was shown.",
+            "examples": [
+              "2026-10-v1"
+            ]
+          },
+          "noticeLocale": {
+            "type": "string",
+            "enum": [
+              "en",
+              "bn"
+            ],
+            "description": "Language the notice was shown in.",
+            "examples": [
+              "en"
+            ]
+          },
+          "purposes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]{2,40}$",
+              "description": "What the consent is for. Open set; currently accepted: `account_core`, `sos_alerts`, `live_sharing`, `safety_reports`.",
+              "examples": [
+                "account_core"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 4,
+            "description": "Purposes the user agreed to. Must contain `account_core`.",
+            "examples": [
+              [
+                "account_core"
+              ]
+            ]
+          }
+        },
+        "required": [
+          "noticeVersion",
+          "noticeLocale",
+          "purposes"
+        ],
+        "description": "The age declaration and the consent the user gave on the onboarding notice. Needed to create an account; ignored when the account already exists."
+      },
+      "ConsentList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Consent"
+            },
+            "description": "One entry per purpose the user has ever decided on, ordered by purpose."
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "description": "The signed-in user's current consents."
+      },
+      "Consent": {
+        "type": "object",
+        "properties": {
+          "purpose": {
+            "type": "string",
+            "description": "What the consent is for. Clients must tolerate unknown values.",
+            "examples": [
+              "account_core"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "description": "`granted` or `withdrawn`. Clients must tolerate unknown values.",
+            "examples": [
+              "granted"
+            ]
+          },
+          "noticeVersion": {
+            "type": "string",
+            "description": "Version of the notice this decision was made under.",
+            "examples": [
+              "2026-10-v1"
+            ]
+          },
+          "decidedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "RFC 3339 UTC timestamp of the decision.",
+            "examples": [
+              "2026-10-06T09:30:00.000Z"
+            ]
+          }
+        },
+        "required": [
+          "purpose",
+          "status",
+          "noticeVersion",
+          "decidedAt"
+        ],
+        "description": "The user's latest decision for one purpose."
+      },
+      "SetConsentRequest": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "granted",
+              "withdrawn"
+            ],
+            "examples": [
+              "granted"
+            ]
+          },
+          "noticeVersion": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9._-]{1,40}$",
+            "description": "Version of the consent notice the user was shown.",
+            "examples": [
+              "2026-10-v1"
+            ]
+          },
+          "noticeLocale": {
+            "type": "string",
+            "enum": [
+              "en",
+              "bn"
+            ],
+            "description": "Language the notice was shown in.",
+            "examples": [
+              "en"
+            ]
+          }
+        },
+        "required": [
+          "status",
+          "noticeVersion",
+          "noticeLocale"
+        ],
+        "description": "The user's decision for the purpose in the path."
       }
     },
     "parameters": {
@@ -546,7 +699,7 @@
           "me"
         ],
         "summary": "Create the signed-in user's account if needed",
-        "description": "Call after every sign-in. Creates the account for the token's Firebase user (201) or returns the existing one unchanged (200); safe to retry. The phone number comes from the verified token, never from the body. The client must record DPDP consent before calling this. Errors: `phone_already_registered` (409) when another account holds the number, `account_deleted` (403).",
+        "description": "Call after every sign-in. Creates the account for the token's Firebase user (201) or returns the existing one unchanged (200); safe to retry. The phone number comes from the verified token, never from the body. Creating an account needs `consent` from the onboarding notice: without it → `consent_required` (403); without `ageConfirmed: true` → `adult_required` (403); in both cases nothing is stored. For an existing account `consent` is ignored. Other errors: `phone_already_registered` (409) when another account holds the number, `account_deleted` (403).",
         "security": [
           {
             "firebaseBearer": []
@@ -657,6 +810,132 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/v1/me/consents": {
+      "get": {
+        "operationId": "getMyConsents",
+        "tags": [
+          "me"
+        ],
+        "summary": "List the signed-in user's consents",
+        "description": "The latest decision for each purpose the user has decided on. A purpose that was never asked is absent; treat it as not granted.",
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The current consents.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/CacheControlNoStore"
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsentList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/v1/me/consents/{purpose}": {
+      "put": {
+        "operationId": "setMyConsent",
+        "tags": [
+          "me"
+        ],
+        "summary": "Grant or withdraw consent for one purpose",
+        "description": "Records the decision and returns the latest state; safe to retry. Ask just-in-time, when the feature that needs the purpose is first used. Errors: `validation_error` (400) for an unknown purpose; `account_deletion_required` (409) when withdrawing `account_core`, which can only be withdrawn by deleting the account.",
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]{2,40}$",
+              "description": "What the consent is for. Open set; currently accepted: `account_core`, `sos_alerts`, `live_sharing`, `safety_reports`.",
+              "examples": [
+                "account_core"
+              ]
+            },
+            "required": true,
+            "description": "What the consent is for. Open set; currently accepted: `account_core`, `sos_alerts`, `live_sharing`, `safety_reports`.",
+            "name": "purpose",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetConsentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The latest decision for this purpose.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/CacheControlNoStore"
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Consent"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"

@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import type { Db } from '../../db/client.js';
 import { auditLog, users } from '../../db/schema/index.js';
 import { AppError } from '../../lib/problem.js';
+import type { ConsentPurpose } from '../consents/purposes.js';
+import { recordInitialConsents } from '../consents/service.js';
 import type { Me } from './schema.js';
 
 /** Row fields other modules may use. firebase_uid stays inside this module and auth. */
@@ -45,6 +47,15 @@ export interface BootstrapInput {
   phoneE164: string;
   locale: 'en' | 'bn';
   displayName?: string | undefined;
+  /** The age declaration and consent from the onboarding notice; needed for a new account. */
+  consent?:
+    | {
+        ageConfirmed?: boolean | undefined;
+        noticeVersion: string;
+        noticeLocale: 'en' | 'bn';
+        purposes: ConsentPurpose[];
+      }
+    | undefined;
 }
 
 export interface BootstrapResult {
@@ -55,19 +66,39 @@ export interface BootstrapResult {
 /**
  * Idempotent "create my account if it doesn't exist", in one transaction:
  *
- *   INSERT ... ON CONFLICT DO NOTHING RETURNING ...   (no conflict target)
- *   - a row came back → new account: write the `user.created` audit row, return created=true;
- *   - nothing came back → a unique index matched: read the row by firebase_uid.
- *     Found → existing account, returned unchanged (body values ignored). Not found → the phone
- *     number belongs to another account → 409 `phone_already_registered`, nothing written.
+ * 1. The account already exists → returned unchanged (body values and `consent` ignored).
+ *    A soft-deleted account → 403 `account_deleted`.
+ * 2. No account yet → the age declaration and consent are checked BEFORE anything is written
+ *    (ADR 0010): no `consent` → 403 `consent_required`; `ageConfirmed` not true → 403
+ *    `adult_required`. Nothing is stored about a person who is under 18 or has not agreed.
+ * 3. INSERT ... ON CONFLICT DO NOTHING RETURNING ...   (no conflict target)
+ *    - a row came back → new account: write the consent rows and the `user.created` and
+ *      `consent.recorded` audit rows, return created=true;
+ *    - nothing came back → a unique index matched: read the row by firebase_uid.
+ *      Found → a concurrent bootstrap won; return that account. Not found → the phone number
+ *      belongs to another account → 409 `phone_already_registered`, nothing written.
  *
  * Without a conflict target every unique index (firebase_uid and the partial phone index) is an
  * arbiter, so concurrent bootstraps of the same person never raise a unique-violation error:
  * Postgres makes the losers wait for the winner and then do nothing.
- * A soft-deleted account → 403 `account_deleted`.
  */
 export async function bootstrapUser(db: Db, input: BootstrapInput): Promise<BootstrapResult> {
   return db.transaction(async (tx) => {
+    const existing = await findUserByFirebaseUid(tx, input.firebaseUid);
+    if (existing !== undefined) return { created: false, user: activeOrThrow(existing) };
+
+    const { consent } = input;
+    if (consent === undefined) {
+      throw new AppError(
+        403,
+        'consent_required',
+        'Creating an account needs the consent given on the onboarding notice.',
+      );
+    }
+    if (consent.ageConfirmed !== true) {
+      throw new AppError(403, 'adult_required', 'SafeRoute is for people aged 18 or older.');
+    }
+
     const inserted = await tx
       .insert(users)
       .values({
@@ -75,6 +106,7 @@ export async function bootstrapUser(db: Db, input: BootstrapInput): Promise<Boot
         phoneE164: input.phoneE164,
         locale: input.locale,
         displayName: input.displayName ?? null,
+        adultAttestedAt: sql`now()`,
       })
       .onConflictDoNothing()
       .returning(userColumns);
@@ -90,22 +122,27 @@ export async function bootstrapUser(db: Db, input: BootstrapInput): Promise<Boot
         entityId: created.id,
         metadata: {},
       });
+      await recordInitialConsents(tx, created.id, consent);
       return { created: true, user: created };
     }
 
-    const existing = await findUserByFirebaseUid(tx, input.firebaseUid);
-    if (existing === undefined) {
+    const winner = await findUserByFirebaseUid(tx, input.firebaseUid);
+    if (winner === undefined) {
       throw new AppError(
         409,
         'phone_already_registered',
         'This phone number is already linked to another account.',
       );
     }
-    if (existing.deletedAt !== null) {
-      throw new AppError(403, 'account_deleted', 'This account has been deleted.');
-    }
-    return { created: false, user: existing };
+    return { created: false, user: activeOrThrow(winner) };
   });
+}
+
+function activeOrThrow(user: UserRecord): UserRecord {
+  if (user.deletedAt !== null) {
+    throw new AppError(403, 'account_deleted', 'This account has been deleted.');
+  }
+  return user;
 }
 
 /** API view of a user: no firebase_uid, deleted_at or updated_at. */

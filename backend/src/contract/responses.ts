@@ -44,13 +44,15 @@ export const ERROR_RESPONSES = {
   403: {
     name: 'Forbidden',
     description:
-      'Authenticated but not allowed: `forbidden`, `bootstrap_required` or `account_deleted`. ' +
-      'Final: retrying the same request does not help.',
+      'Authenticated but not allowed: `forbidden`, `bootstrap_required`, `account_deleted`, ' +
+      '`consent_required` or `adult_required`. Final: retrying the same request does not help.',
   },
   404: { name: 'NotFound', description: 'No such route or resource (`not_found`).' },
   409: {
     name: 'Conflict',
-    description: 'Conflicts with the current state (`conflict`, `phone_already_registered`).',
+    description:
+      'Conflicts with the current state (`conflict`, `phone_already_registered`, ' +
+      '`account_deletion_required`).',
   },
   410: { name: 'Gone', description: 'The resource existed but has expired or ended (`gone`).' },
   429: { name: 'TooManyRequests', description: 'Rate limit exceeded (`rate_limited`).' },

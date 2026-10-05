@@ -1,7 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
-import { auditLog, devices, idempotencyKeys, users } from '../../src/db/schema/index.js';
+import {
+  auditLog,
+  consentRecords,
+  devices,
+  idempotencyKeys,
+  users,
+} from '../../src/db/schema/index.js';
 import { connect, truncateAll } from './helpers.js';
 
 // Obviously fake test data only.
@@ -39,7 +45,12 @@ describe('users', () => {
   it('applies defaults: uuid id, locale en, role user, timestamps', async () => {
     const user = await createUser('test-uid-1');
     expect(user.id).toMatch(/^[0-9a-f-]{36}$/);
-    expect(user).toMatchObject({ locale: 'en', role: 'user', deletedAt: null });
+    expect(user).toMatchObject({
+      locale: 'en',
+      role: 'user',
+      deletedAt: null,
+      adultAttestedAt: null,
+    });
     expect(user.createdAt).toBeInstanceOf(Date);
   });
 
@@ -129,6 +140,68 @@ describe('idempotency_keys', () => {
   });
 });
 
+describe('consent_records', () => {
+  const row = (userId: string, values: Partial<typeof consentRecords.$inferInsert> = {}) => ({
+    userId,
+    purpose: 'account_core',
+    status: 'granted',
+    noticeVersion: 'test-v1',
+    noticeLocale: 'en',
+    ...values,
+  });
+
+  it('applies defaults (uuid id, decided_at) and enforces the user foreign key', async () => {
+    const user = await createUser('test-uid-1');
+    const [stored] = await db.insert(consentRecords).values(row(user.id)).returning();
+    expect(stored?.id).toMatch(/^[0-9a-f-]{36}$/);
+    expect(stored?.decidedAt).toBeInstanceOf(Date);
+
+    const orphan = db.insert(consentRecords).values(row('00000000-0000-4000-8000-000000000000'));
+    expect(await sqlState(orphan)).toBe(FK_VIOLATION);
+  });
+
+  it.each([
+    ['an upper-case purpose', { purpose: 'Account_Core' }],
+    ['a purpose starting with a digit', { purpose: '1abc' }],
+    ['a purpose shorter than 3 characters', { purpose: 'ab' }],
+    ['a purpose longer than 41 characters', { purpose: `a${'b'.repeat(41)}` }],
+    ['an unknown status', { status: 'maybe' }],
+    ['an unknown notice locale', { noticeLocale: 'fr' }],
+  ])('CHECK rejects %s', async (_label, values) => {
+    const user = await createUser('test-uid-1');
+    const insert = db.insert(consentRecords).values(row(user.id, values));
+    expect(await sqlState(insert)).toBe(CHECK_VIOLATION);
+  });
+
+  it('accepts a purpose the code does not know yet (the allowlist lives in the server)', async () => {
+    const user = await createUser('test-uid-1');
+    await db.insert(consentRecords).values(row(user.id, { purpose: 'trusted_circle' }));
+    expect(await db.select().from(consentRecords)).toHaveLength(1);
+  });
+
+  it('keeps history (several rows per purpose) and cascades on user delete', async () => {
+    const user = await createUser('test-uid-1');
+    await db.insert(consentRecords).values(row(user.id));
+    await db.insert(consentRecords).values(row(user.id, { status: 'withdrawn' }));
+    expect(await db.select().from(consentRecords)).toHaveLength(2);
+
+    await db.delete(users).where(eq(users.id, user.id));
+    expect(await db.select().from(consentRecords)).toHaveLength(0);
+  });
+
+  it('has the (user_id, purpose, decided_at desc) index and a personal-data table comment', async () => {
+    const { rows } = await pool.query<{ indexdef: string }>(
+      `select indexdef from pg_indexes where indexname = 'consent_records_user_purpose_decided_idx'`,
+    );
+    expect(rows[0]?.indexdef).toContain('(user_id, purpose, decided_at DESC)');
+
+    const comment = await pool.query<{ comment: string }>(
+      `select obj_description('consent_records'::regclass, 'pg_class') as comment`,
+    );
+    expect(comment.rows[0]?.comment).toMatch(/^PERSONAL DATA: append-only/);
+  });
+});
+
 describe('audit_log', () => {
   it('increments the identity id and keeps rows after the actor is deleted', async () => {
     const user = await createUser('test-uid-1');
@@ -174,6 +247,7 @@ describe('personal-data markers', () => {
     );
     expect(rows.map((r) => r.col)).toEqual([
       'devices.fcm_token',
+      'users.adult_attested_at',
       'users.display_name',
       'users.firebase_uid',
       'users.phone_e164',

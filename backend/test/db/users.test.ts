@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { auditLog, users } from '../../src/db/schema/index.js';
+import { auditLog, consentRecords, users } from '../../src/db/schema/index.js';
 import {
   createTestKeys,
   phoneClaims,
@@ -37,7 +37,24 @@ function setup() {
   return buildTestApp({}, undefined, { verifier: testVerifier(keys), db });
 }
 
-async function bootstrap(app: ReturnType<typeof setup>['app'], token: string, body?: unknown) {
+/** What the app sends after the age gate and the consent notice. */
+const CONSENT = {
+  ageConfirmed: true,
+  noticeVersion: 'test-v1',
+  noticeLocale: 'en',
+  purposes: ['account_core'],
+};
+
+/** Bootstrap with valid consent merged into `body`; `bootstrapRaw` sends exactly `body`. */
+async function bootstrap(
+  app: ReturnType<typeof setup>['app'],
+  token: string,
+  body: Record<string, unknown> = {},
+) {
+  return bootstrapRaw(app, token, { consent: CONSENT, ...body });
+}
+
+async function bootstrapRaw(app: ReturnType<typeof setup>['app'], token: string, body?: unknown) {
   return app.request('/v1/me/bootstrap', {
     method: 'POST',
     headers: {
@@ -54,6 +71,7 @@ async function getMe(app: ReturnType<typeof setup>['app'], token: string) {
 
 const auditRows = () => db.select().from(auditLog);
 const userRows = () => db.select().from(users);
+const consentRows = () => db.select().from(consentRecords);
 
 describe('POST /v1/me/bootstrap', () => {
   it('creates the user (201) with an audit row, phone from the token', async () => {
@@ -80,8 +98,23 @@ describe('POST /v1/me/bootstrap', () => {
 
     const [row] = await userRows();
     expect(row).toMatchObject({ id: me.id, firebaseUid: 'test-uid-1', phoneE164: '+910000000001' });
+    expect(row?.adultAttestedAt).toBeInstanceOf(Date);
+    expect(row?.adultAttestedAt).toEqual(row?.createdAt);
+
+    const consents = await consentRows();
+    expect(consents).toHaveLength(1);
+    expect(consents[0]).toMatchObject({
+      userId: me.id,
+      purpose: 'account_core',
+      status: 'granted',
+      noticeVersion: 'test-v1',
+      noticeLocale: 'en',
+    });
+    // One transaction: the account, its consent and the attestation share one timestamp.
+    expect(consents[0]?.decidedAt).toEqual(row?.createdAt);
+
     const audits = await auditRows();
-    expect(audits).toHaveLength(1);
+    expect(audits).toHaveLength(2);
     expect(audits[0]).toMatchObject({
       actorType: 'user',
       actorUserId: me.id,
@@ -90,9 +123,24 @@ describe('POST /v1/me/bootstrap', () => {
       entityId: me.id,
       metadata: {},
     });
+    expect(audits[1]).toMatchObject({
+      actorType: 'user',
+      actorUserId: me.id,
+      action: 'consent.recorded',
+      entity: 'consent',
+      entityId: me.id,
+      metadata: { purposes: ['account_core'], noticeVersion: 'test-v1' },
+    });
+    expect(JSON.stringify(audits)).not.toContain('+910000000001');
 
     const created = logs().find((line) => line.message === 'user created');
     expect(created).toMatchObject({ severity: 'INFO', user_id: me.id });
+    const recorded = logs().find((line) => line.message === 'consent recorded');
+    expect(recorded).toMatchObject({
+      severity: 'INFO',
+      user_id: me.id,
+      purposes: ['account_core'],
+    });
     expect(JSON.stringify(logs())).not.toContain('+910000000001');
     expect(JSON.stringify(logs())).not.toContain('test-uid-1');
   });
@@ -111,8 +159,116 @@ describe('POST /v1/me/bootstrap', () => {
     expect(await res.json()).toEqual(first);
     const [after] = await userRows();
     expect(after?.updatedAt).toEqual(before?.updatedAt);
-    expect(await auditRows()).toHaveLength(1);
+    expect(await auditRows()).toHaveLength(2);
+    expect(await consentRows()).toHaveLength(1);
   });
+
+  it('an existing user gets 200 with or without consent; the consent object is ignored', async () => {
+    const { app } = setup();
+    const token = await tokenFor(20);
+    const first = await (await bootstrap(app, token)).json();
+
+    const without = await bootstrapRaw(app, token);
+    expect(without.status).toBe(200);
+    expect(await without.json()).toEqual(first);
+
+    const withOther = await bootstrapRaw(app, token, {
+      consent: {
+        ageConfirmed: false,
+        noticeVersion: 'test-v2',
+        noticeLocale: 'bn',
+        purposes: ['account_core', 'sos_alerts'],
+      },
+    });
+    expect(withOther.status).toBe(200);
+    expect(await withOther.json()).toEqual(first);
+
+    const consents = await consentRows();
+    expect(consents).toHaveLength(1);
+    expect(consents[0]).toMatchObject({ purpose: 'account_core', noticeVersion: 'test-v1' });
+    expect(await auditRows()).toHaveLength(2);
+  });
+
+  it('records one consent row per purpose, without duplicates', async () => {
+    const { app } = setup();
+    const res = await bootstrap(app, await tokenFor(21), {
+      consent: {
+        ...CONSENT,
+        noticeLocale: 'bn',
+        purposes: ['sos_alerts', 'account_core', 'sos_alerts'],
+      },
+    });
+    expect(res.status).toBe(201);
+    const consents = await consentRows();
+    expect(consents.map((row) => row.purpose).sort()).toEqual(['account_core', 'sos_alerts']);
+    expect(new Set(consents.map((row) => row.noticeLocale))).toEqual(new Set(['bn']));
+  });
+
+  it.each([
+    ['no body', 'consent_required', undefined],
+    ['a body without consent', 'consent_required', { locale: 'bn' }],
+    ['ageConfirmed false', 'adult_required', { consent: { ...CONSENT, ageConfirmed: false } }],
+    [
+      'ageConfirmed absent',
+      'adult_required',
+      { consent: { noticeVersion: 'test-v1', noticeLocale: 'en', purposes: ['account_core'] } },
+    ],
+  ])('new user, %s → 403 %s and nothing is written', async (_name, code, body) => {
+    const { app } = setup();
+    const token = await tokenFor(22);
+    const res = await bootstrapRaw(app, token, body);
+    expect(res.status).toBe(403);
+    expect(res.headers.get('content-type')).toBe('application/problem+json');
+    expect(await res.json()).toMatchObject({ code });
+    expect(await userRows()).toHaveLength(0);
+    expect(await consentRows()).toHaveLength(0);
+    expect(await auditRows()).toHaveLength(0);
+    // Still no account: the next call is told to bootstrap, not that it exists.
+    expect(await (await getMe(app, token)).json()).toMatchObject({ code: 'bootstrap_required' });
+  });
+
+  it.each([
+    [
+      'an unknown purpose',
+      { purposes: ['account_core', 'secret_purpose'] },
+      'body.consent.purposes.1',
+    ],
+    [
+      'a malformed purpose',
+      { purposes: ['account_core', 'Secret Purpose!'] },
+      'body.consent.purposes.1',
+    ],
+    ['purposes without account_core', { purposes: ['sos_alerts'] }, 'body.consent.purposes'],
+    ['empty purposes', { purposes: [] }, 'body.consent.purposes'],
+    [
+      'a malformed noticeVersion',
+      { noticeVersion: 'secret version' },
+      'body.consent.noticeVersion',
+    ],
+    [
+      'a noticeVersion over 40 characters',
+      { noticeVersion: 'v'.repeat(41) },
+      'body.consent.noticeVersion',
+    ],
+    ['an unknown noticeLocale', { noticeLocale: 'fr' }, 'body.consent.noticeLocale'],
+    ['a non-boolean ageConfirmed', { ageConfirmed: 'yes' }, 'body.consent.ageConfirmed'],
+  ])(
+    'consent with %s → 400 validation_error, no echo, nothing written',
+    async (_name, part, path) => {
+      const { app } = setup();
+      const res = await bootstrapRaw(app, await tokenFor(23), { consent: { ...CONSENT, ...part } });
+      expect(res.status).toBe(400);
+      const text = await res.text();
+      const problem = JSON.parse(text) as { code: string; errors: { path: string }[] };
+      expect(problem.code).toBe('validation_error');
+      expect(problem.errors.map((error) => error.path)).toContain(path);
+      expect(text.toLowerCase()).not.toContain('secret');
+      expect(text).not.toContain('"fr"');
+      expect(await userRows()).toHaveLength(0);
+      expect(await consentRows()).toHaveLength(0);
+      expect(await auditRows()).toHaveLength(0);
+    },
+  );
 
   it('never takes the phone number from the body', async () => {
     const { app } = setup();
@@ -121,7 +277,7 @@ describe('POST /v1/me/bootstrap', () => {
     expect(await res.json()).toMatchObject({ phoneE164: '+910000000003' });
   });
 
-  it('10 parallel bootstraps create exactly one user and one audit row', async () => {
+  it('10 parallel bootstraps create exactly one user and one set of consent rows', async () => {
     const { app } = setup();
     const token = await tokenFor(4);
     const responses = await Promise.all(Array.from({ length: 10 }, () => bootstrap(app, token)));
@@ -132,7 +288,8 @@ describe('POST /v1/me/bootstrap', () => {
     );
     expect(ids.size).toBe(1);
     expect(await userRows()).toHaveLength(1);
-    expect(await auditRows()).toHaveLength(1);
+    expect(await consentRows()).toHaveLength(1);
+    expect(await auditRows()).toHaveLength(2);
   });
 
   it('a soft-deleted account → 403 account_deleted', async () => {
@@ -160,7 +317,8 @@ describe('POST /v1/me/bootstrap', () => {
     expect(JSON.parse(text)).toMatchObject({ code: 'phone_already_registered' });
     expect(text).not.toContain('+910000000006');
     expect(await userRows()).toHaveLength(1);
-    expect(await auditRows()).toHaveLength(1);
+    expect(await consentRows()).toHaveLength(1);
+    expect(await auditRows()).toHaveLength(2);
   });
 
   it.each([
