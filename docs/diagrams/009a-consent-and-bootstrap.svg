@@ -1,0 +1,136 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1904" height="1435" viewBox="0 0 1904 1435" font-family="Helvetica, Arial, sans-serif">
+<title>Consent and bootstrap</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#495057"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="40" y="62" font-size="24" font-weight="700" fill="#1e1e1e">Consent and bootstrap</text>
+<text x="40" y="86" font-size="14" fill="#495057">Age gate, consent notice, sign-in and account creation with consent in one transaction (P009a, ADR 0010)</text>
+<rect x="40" y="114" width="502" height="1235" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="54" y="135" font-size="14" font-weight="700" fill="#495057">Android app (P009b)</text>
+<rect x="578" y="114" width="502" height="1235" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="592" y="135" font-size="14" font-weight="700" fill="#495057">SafeRoute API</text>
+<rect x="1116" y="114" width="748" height="1235" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="1130" y="135" font-size="14" font-weight="700" fill="#495057">PostgreSQL (one transaction)</text>
+<line x1="291" y1="218" x2="168" y2="278" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="291" y1="218" x2="414" y2="278" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="414" y1="344" x2="414" y2="404" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="414" y1="470" x2="414" y2="530" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="414" y1="596" x2="829" y2="656" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="829" y1="722" x2="829" y2="782" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="829" y1="869" x2="829" y2="929" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="829" y1="869" x2="1244" y2="955" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="829" y1="869" x2="1490" y2="950" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="829" y1="869" x2="1736" y2="939.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="414" y1="596" x2="414" y2="939.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="414" y1="1026.5" x2="706" y2="1107.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="414" y1="1026.5" x2="952" y2="1107.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="414" y1="1026.5" x2="414" y2="1097" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="706" y1="1173.5" x2="706" y2="1244" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="706" y1="1107.5" x2="1490" y2="1016" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="181" y="162" width="220" height="56" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="291" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="291" y="195.6">Age gate: I am 18 or older</tspan>
+</text>
+<rect x="58" y="278" width="220" height="66" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="168" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="168" y="306.2">Under 18: blocked,</tspan>
+<tspan x="168" y="327">nothing sent or stored</tspan>
+</text>
+<rect x="304" y="278" width="220" height="66" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="414" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="414" y="306.2">Consent notice:</tspan>
+<tspan x="414" y="327">account_core, I agree</tspan>
+</text>
+<rect x="304" y="404" width="220" height="66" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="414" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="414" y="432.2">Firebase phone sign-in</tspan>
+<tspan x="414" y="453">(OTP)</tspan>
+</text>
+<rect x="304" y="530" width="220" height="66" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="414" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="414" y="558.2">POST /v1/me/bootstrap</tspan>
+<tspan x="414" y="579">with consent</tspan>
+</text>
+<rect x="304" y="939.5" width="220" height="87" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="414" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="414" y="967.8">Later, when a feature is</tspan>
+<tspan x="414" y="988.6">first used: ask for its</tspan>
+<tspan x="414" y="1009.4">purpose</tspan>
+</text>
+<rect x="304" y="1097" width="220" height="87" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="414" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="414" y="1125.3">Future: Trusted Circle</tspan>
+<tspan x="414" y="1146.1">consent (ADR 0011, not</tspan>
+<tspan x="414" y="1166.9">built)</tspan>
+</text>
+<rect x="719" y="656" width="220" height="66" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="829" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="829" y="684.2">authenticate: verify the ID</tspan>
+<tspan x="829" y="705">token</tspan>
+</text>
+<rect x="719" y="782" width="220" height="87" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="829" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="829" y="810.3">New account? consent</tspan>
+<tspan x="829" y="831.1">present, ageConfirmed</tspan>
+<tspan x="829" y="851.9">true, purposes allowed</tspan>
+</text>
+<rect x="719" y="929" width="220" height="108" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="829" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="829" y="957.4">403 consent_required /</tspan>
+<tspan x="829" y="978.2">adult_required, 400</tspan>
+<tspan x="829" y="999">unknown purpose: nothing</tspan>
+<tspan x="829" y="1019.8">written</tspan>
+</text>
+<rect x="596" y="1107.5" width="220" height="66" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="706" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="706" y="1135.7">PUT</tspan>
+<tspan x="706" y="1156.5">/v1/me/consents/{purpose}</tspan>
+</text>
+<rect x="842" y="1107.5" width="220" height="66" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="952" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="952" y="1135.7">GET /v1/me/consents:</tspan>
+<tspan x="952" y="1156.5">latest per purpose</tspan>
+</text>
+<rect x="596" y="1244" width="220" height="87" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="706" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="706" y="1272.3">Withdraw account_core:</tspan>
+<tspan x="706" y="1293.1">409</tspan>
+<tspan x="706" y="1313.9">account_deletion_required</tspan>
+</text>
+<rect x="1134" y="955" width="220" height="56" rx="10" fill="#ffd8a8" stroke="#e8590c" stroke-width="2"/>
+<text x="1244" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1244" y="988.6">users + adult_attested_at</tspan>
+</text>
+<rect x="1380" y="950" width="220" height="66" rx="10" fill="#ffd8a8" stroke="#e8590c" stroke-width="2"/>
+<text x="1490" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1490" y="978.2">consent_records</tspan>
+<tspan x="1490" y="999">(append-only)</tspan>
+</text>
+<rect x="1626" y="939.5" width="220" height="87" rx="10" fill="#ffd8a8" stroke="#e8590c" stroke-width="2"/>
+<text x="1736" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1736" y="967.8">audit_log: user.created,</tspan>
+<tspan x="1736" y="988.6">consent.recorded,</tspan>
+<tspan x="1736" y="1009.4">consent.changed</tspan>
+</text>
+<rect x="198" y="237" width="63" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="229.5" y="252.5" font-size="13" fill="#1e1e1e" text-anchor="middle">under 18</text>
+<rect x="335.7" y="237" width="33.6" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="352.5" y="252.5" font-size="13" fill="#1e1e1e" text-anchor="middle">18+</text>
+<rect x="391.6" y="363" width="44.8" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="414" y="378.5" font-size="13" fill="#1e1e1e" text-anchor="middle">agree</text>
+<rect x="797.8" y="888" width="62.4" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="829" y="903.5" font-size="13" fill="#1e1e1e" text-anchor="middle">not valid</text>
+<rect x="1016.1" y="901" width="40.9" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="1036.5" y="916.5" font-size="13" fill="#1e1e1e" text-anchor="middle">valid</text>
+<rect x="1066.1" y="1050.8" width="63.7" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="1098" y="1066.3" font-size="13" fill="#1e1e1e" text-anchor="middle">new row</text>
+<rect x="40" y="1370" width="16" height="16" rx="3" fill="#a5d8ff" stroke="#1971c2" stroke-width="1.5"/>
+<text x="62" y="1383" font-size="13" fill="#495057">App / UI</text>
+<rect x="134.8" y="1370" width="16" height="16" rx="3" fill="#b2f2bb" stroke="#2f9e44" stroke-width="1.5"/>
+<text x="156.8" y="1383" font-size="13" fill="#495057">Service</text>
+<rect x="228.3" y="1370" width="16" height="16" rx="3" fill="#ffd8a8" stroke="#e8590c" stroke-width="1.5"/>
+<text x="250.3" y="1383" font-size="13" fill="#495057">Data</text>
+<rect x="303.1" y="1370" width="16" height="16" rx="3" fill="#ffc9c9" stroke="#e03131" stroke-width="1.5"/>
+<text x="325.1" y="1383" font-size="13" fill="#495057">Security / emergency</text>
+<rect x="476.7" y="1370" width="16" height="16" rx="3" fill="#e9ecef" stroke="#495057" stroke-width="1.5"/>
+<text x="498.7" y="1383" font-size="13" fill="#495057">External</text>
+</svg>
