@@ -11,6 +11,12 @@ name: android-ci
 #   proves that a release build without saferoute.apiBaseUrl fails;
 # - checks that the release APK contains none of the debug-only developer tools.
 #
+# Since P009b (ADR 0012) the app uses Firebase sign-in, and the build needs
+# android/app/google-services.json. The real file is never in the repository, so this workflow
+# writes a DUMMY one first (project `demo-saferoute`, fake values). Tests never call Firebase.
+# A release build refuses the dummy file unless -Psaferoute.allowDummyFirebase=true is passed;
+# the steps below build one release that way and prove that the refusal works.
+#
 # No secrets, no signing, no cloud login: it behaves the same for pull requests from forks. The
 # APK is thrown away with the runner.
 # Not a required check in the ruleset yet: a path-filtered check would block unrelated PRs.
@@ -65,6 +71,15 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
 
+      # Must run before any Gradle task: the Google Services plugin fails without the file.
+      - name: Write the dummy google-services.json
+        run: |
+          sh scripts/write-dummy-google-services
+          git check-ignore -q app/google-services.json || {
+            echo "::error::android/app/google-services.json must be ignored by git."
+            exit 1
+          }
+
       # fromEnv points Gradle at the JDK 17 installed above instead of downloading another one.
       - name: Lint, unit tests and debug build
         run: >-
@@ -72,13 +87,15 @@ jobs:
           --console=plain
           -Porg.gradle.java.installations.fromEnv=JAVA_HOME_17_X64
 
-      # The placeholder address resolves nowhere; nothing is signed or uploaded.
-      - name: Release build with a dummy base URL
+      # The placeholder address resolves nowhere; nothing is signed or uploaded. This is the
+      # only build allowed to use the dummy Firebase configuration in a release.
+      - name: Release build with a dummy base URL and the dummy Firebase configuration
         run: >-
           ./gradlew assembleRelease
           --console=plain
           -Porg.gradle.java.installations.fromEnv=JAVA_HOME_17_X64
           -Psaferoute.apiBaseUrl=https://example.invalid/
+          -Psaferoute.allowDummyFirebase=true
 
       - name: A release build without the base URL fails
         run: |
@@ -87,6 +104,37 @@ jobs:
             exit 1
           fi
           echo "As expected: a release build without saferoute.apiBaseUrl fails."
+
+      - name: A release build with the dummy Firebase configuration fails without the allow flag
+        run: |
+          if ./gradlew :app:checkReleaseFirebaseConfig --console=plain \
+            -Porg.gradle.java.installations.fromEnv=JAVA_HOME_17_X64 > "$RUNNER_TEMP/guard.log" 2>&1; then
+            echo "::error::A release build must refuse a demo- Firebase project (checkReleaseFirebaseConfig)."
+            exit 1
+          fi
+          # It must fail for this reason and no other.
+          grep -q "must not use the dummy Firebase configuration" "$RUNNER_TEMP/guard.log" || {
+            cat "$RUNNER_TEMP/guard.log"
+            exit 1
+          }
+          echo "As expected: a release build refuses the dummy Firebase configuration."
+
+      # Last Gradle step on purpose: it takes the file away. `if: always()` on the restore is
+      # not needed because nothing after this step uses Gradle.
+      - name: A release build without google-services.json fails
+        run: |
+          mv app/google-services.json "$RUNNER_TEMP/google-services.json"
+          if ./gradlew :app:checkReleaseFirebaseConfig --console=plain \
+            -Porg.gradle.java.installations.fromEnv=JAVA_HOME_17_X64 > "$RUNNER_TEMP/guard.log" 2>&1; then
+            echo "::error::A release build without google-services.json must fail."
+            exit 1
+          fi
+          mv "$RUNNER_TEMP/google-services.json" app/google-services.json
+          grep -q "Release builds need app/google-services.json" "$RUNNER_TEMP/guard.log" || {
+            cat "$RUNNER_TEMP/guard.log"
+            exit 1
+          }
+          echo "As expected: a release build without google-services.json fails."
 
       # The developer server check lives in src/debug. Class names stay readable because R8 is
       # off (ADR 0008). The debug APK is the control: if it shows no hits, the check is broken.

@@ -47,7 +47,7 @@ class MainActivityTest {
     }
 
     @Test
-    fun `the only Android permission is INTERNET`() {
+    fun `the app asks for network permissions only, none of them shown to the user`() {
         val activity = compose.activity
         val info = activity.packageManager.getPackageInfo(
             activity.packageName,
@@ -56,9 +56,22 @@ class MainActivityTest {
         // AndroidX adds one private permission named after the app itself (used to keep its own
         // broadcast receivers unexported). Anything else is a real permission and needs a prompt
         // that asks for it. INTERNET came with the API client (P008).
+        //
+        // The other two are not in our manifest: they are merged in from the Firebase sign-in
+        // libraries (P009b, ADR 0012). ACCESS_NETWORK_STATE (firebase-auth, reCAPTCHA) lets the
+        // SDK see whether there is a connection. READ_GSERVICES (reCAPTCHA) reads Google Play
+        // services' settings. Both are granted at install without a dialog, and neither gives
+        // access to location, contacts, SMS or the phone number.
         val requested = info.requestedPermissions.orEmpty()
             .filterNot { it.startsWith(activity.packageName) }
-        assertEquals(listOf(Manifest.permission.INTERNET), requested)
+        assertEquals(
+            setOf(
+                Manifest.permission.INTERNET,
+                Manifest.permission.ACCESS_NETWORK_STATE,
+                "com.google.android.providers.gsf.permission.READ_GSERVICES",
+            ),
+            requested.toSet(),
+        )
     }
 
     @Test

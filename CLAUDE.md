@@ -261,9 +261,21 @@ and [`android/README.md`](android/README.md):
 - Debug-only tools (since P008b) live in `app/src/debug` with empty stand-ins in
   `app/src/release`; nothing in `src/main` refers to them (`DeveloperToolsLayoutTest`, and
   `android-ci` scans the release APK). Their tests go in `src/testDebug`.
+- Sign-in follows [ADR 0012](docs/adr/0012-firebase-config-in-builds.md) (since P009b):
+  onboarding order is **age → consent → phone**, and nothing is sent to any server before the
+  first two. Only `core/auth` uses the Firebase SDK; the rest of the app uses `PhoneAuthGateway`.
+  Never log, store or put in a test a real phone number, ID token, SMS code, verification id or
+  Firebase uid; tests use `FakePhoneAuthGateway` and its `FAKE_...` values and never start
+  Firebase (a Hilt test that reaches sign-in replaces `AuthModule`). DataStore holds flags only.
+  No other Firebase product (Analytics, Crashlytics, App Check) without a prompt that asks for it.
+- `android/app/google-services.json` is never opened, printed or committed by Claude Code. CI and
+  fresh clones use `android/scripts/write-dummy-google-services` (project `demo-saferoute`); a
+  release build refuses the dummy or a missing file unless `-Psaferoute.allowDummyFirebase=true`
+  (CI's release-assembly check only). Never weaken `checkReleaseFirebaseConfig`.
 - Never commit `local.properties`, keystores (`*.jks`, `*.keystore`) or `google-services.json`.
-  Before shipping run `git ls-files android | grep -iE "local.properties|\.jks|google-services"`:
-  it must print nothing.
+  Before shipping run `git ls-files android | grep -iE "local.properties|\.jks|google-services\.json"`:
+  it must print nothing. (The script `android/scripts/write-dummy-google-services` is tracked on
+  purpose; it contains fake values only.)
 - Claude Code has no phone or emulator. It verifies with JVM tests (Robolectric) and says so;
   on-device checks are steps for Rahul in "How Rahul can verify".
 - If `gradlew` can't find a JDK, set `JAVA_HOME` to Android Studio's bundled JDK for that
@@ -297,7 +309,7 @@ to go green.
 | Container | in `backend/`: `node scripts/container-smoke.mjs` (needs Docker; builds the image and runs the smoke checks, including `scripts/smoke.mjs` pass and fail paths) · actionlint for workflow changes (CI: `.github/workflows/container-ci.yml`) | Active (since P006a) |
 | Deploy workflow | actionlint + shellcheck clean · no `pull_request_target` · every action pinned by commit SHA · deploy job gated on `STAGING_DEPLOY_ENABLED` · no step prints secrets, the environment or `gcloud config` (CI: the `actionlint` job in `container-ci`; the deploy itself runs only on `main`) | Active (since P006b) |
 | Infra scripts | `infra/staging/tests/Invoke-InfraCheck.ps1` with Windows PowerShell 5.1 **and** PowerShell 7 where installed: PSScriptAnalyzer (0 findings) and Pester (mocked `gcloud`/`gh`; needs `node`, no cloud access). Scripts stay pure ASCII (CI: `.github/workflows/infra-ci.yml`, Linux and Windows) | Active (since P006c) |
-| Android | `./gradlew lint testDebugUnitTest assembleDebug` (run inside `android/`; lint errors fail, warnings don't; tests are JVM + Robolectric, no device) · `./gradlew assembleRelease -Psaferoute.apiBaseUrl=https://example.invalid/` when build files, `src/release` or `src/debug` change · actionlint for workflow changes (CI: `.github/workflows/android-ci.yml`, which also runs on `contracts/**` and scans the release APK) | Active (since P007a; release checks since P008b) |
+| Android | `./gradlew lint testDebugUnitTest assembleDebug` (run inside `android/`; lint errors fail, warnings don't; tests are JVM + Robolectric, no device; needs `app/google-services.json`, real or dummy) · `./gradlew assembleRelease -Psaferoute.apiBaseUrl=https://example.invalid/` when build files, `src/release` or `src/debug` change · actionlint for workflow changes (CI: `.github/workflows/android-ci.yml`, which also runs on `contracts/**`, scans the release APK, and since P009b writes the dummy Firebase file and proves the release guard) | Active (since P007a; release checks since P008b) |
 | Moderation | typecheck · lint · test · build | Not yet applicable (from P018) |
 
 ## Documentation duties (every prompt)

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
+import groovy.json.JsonSlurper
 import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 
 plugins {
@@ -9,6 +10,10 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
     alias(libs.plugins.openapi.generator)
+    // Reads app/google-services.json (never committed) and generates the string resources
+    // Firebase needs at start-up. The build fails without the file: see android/README.md
+    // "Signing in" for where it goes and how CI gets a dummy one (ADR 0012).
+    alias(libs.plugins.google.services)
 }
 
 // The API client is generated from the contract on every build and is never committed or edited
@@ -86,6 +91,43 @@ val checkReleaseApiBaseUrl = tasks.register("checkReleaseApiBaseUrl") {
     }
 }
 tasks.matching { it.name == "preReleaseBuild" }.configureEach { dependsOn(checkReleaseApiBaseUrl) }
+
+// A release build must never ship with the dummy Firebase configuration that CI writes
+// (android/scripts/write-dummy-google-services, project id starting with `demo-`): sign-in
+// would not work for anyone. The only build allowed to do so is the CI check that a release
+// still assembles, which passes -Psaferoute.allowDummyFirebase=true (ADR 0012).
+// The file's values are never printed.
+val checkReleaseFirebaseConfig = tasks.register("checkReleaseFirebaseConfig") {
+    group = "verification"
+    description = "Fails a release build without a real google-services.json."
+    val configFile = layout.projectDirectory.file("google-services.json").asFile
+    val allowDummy = providers.gradleProperty("saferoute.allowDummyFirebase").orNull == "true"
+    doLast {
+        if (allowDummy) return@doLast
+        val help = "See android/README.md, \"Signing in\"."
+        if (!configFile.isFile) {
+            throw GradleException("Release builds need app/google-services.json. $help")
+        }
+        val projectId = try {
+            val root = JsonSlurper().parse(configFile) as? Map<*, *>
+            (root?.get("project_info") as? Map<*, *>)?.get("project_id") as? String
+        } catch (e: Exception) {
+            null
+        }
+        if (projectId.isNullOrBlank()) {
+            throw GradleException("app/google-services.json has no project id. $help")
+        }
+        if (projectId.startsWith("demo-")) {
+            throw GradleException(
+                "Release builds must not use the dummy Firebase configuration (a demo- " +
+                    "project). $help",
+            )
+        }
+    }
+}
+tasks.matching { it.name == "preReleaseBuild" }.configureEach {
+    dependsOn(checkReleaseFirebaseConfig)
+}
 
 android {
     // `namespace` is the Kotlin/Java package of generated code (R, BuildConfig).
@@ -195,6 +237,15 @@ dependencies {
     ksp(libs.hilt.compiler)
 
     implementation(libs.kotlinx.coroutines.android)
+
+    // Sign-in (ADR 0012). Firebase Auth only: no Analytics, Crashlytics or App Check.
+    // Only core/auth uses Firebase; the rest of the app sees PhoneAuthGateway.
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
+    // Lets a coroutine wait for a Play services Task with `.await()`.
+    implementation(libs.kotlinx.coroutines.play.services)
+    // Small key-value storage for the onboarding and session flags (core/session).
+    implementation(libs.androidx.datastore.preferences)
 
     // Networking. Only core/network uses these (ADR 0009).
     implementation(libs.okhttp)

@@ -49,16 +49,19 @@ sealed interface ApiResult<out T> {
     data class Failure(val failure: ApiFailure) : ApiResult<Nothing>
 }
 
-/** The error codes the backend defines today (contract 0.2.0). Unknown codes must be tolerated. */
+/** The error codes the backend defines today (contract 0.3.0). Unknown codes must be tolerated. */
 object ProblemCodes {
     const val VALIDATION_ERROR = "validation_error"
     const val UNAUTHORIZED = "unauthorized"
     const val FORBIDDEN = "forbidden"
     const val BOOTSTRAP_REQUIRED = "bootstrap_required"
     const val ACCOUNT_DELETED = "account_deleted"
+    const val CONSENT_REQUIRED = "consent_required"
+    const val ADULT_REQUIRED = "adult_required"
     const val NOT_FOUND = "not_found"
     const val CONFLICT = "conflict"
     const val PHONE_ALREADY_REGISTERED = "phone_already_registered"
+    const val ACCOUNT_DELETION_REQUIRED = "account_deletion_required"
     const val GONE = "gone"
     const val RATE_LIMITED = "rate_limited"
     const val INTERNAL_ERROR = "internal_error"

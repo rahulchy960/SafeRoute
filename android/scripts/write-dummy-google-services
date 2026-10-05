@@ -1,0 +1,55 @@
+#!/bin/sh
+# SPDX-License-Identifier: AGPL-3.0-only
+#
+# Writes a DUMMY android/app/google-services.json so that the app can be built without access to
+# the real Firebase project (CI, a fresh clone). ADR 0012.
+#
+# Every value is obviously fake: the project id starts with `demo-`, and nothing has the shape of
+# a real API key. With this file the app builds and its tests run, but sign-in cannot work, and
+# a release build is refused unless -Psaferoute.allowDummyFirebase=true is passed.
+#
+# It NEVER overwrites an existing file: a developer's real configuration is safe.
+#
+# Usage (from anywhere):  android/scripts/write-dummy-google-services
+set -eu
+
+target="$(cd "$(dirname "$0")/.." && pwd)/app/google-services.json"
+
+if [ -e "$target" ]; then
+  echo "google-services.json already exists; left untouched."
+  exit 0
+fi
+
+cat > "$target" <<'JSON'
+{
+  "project_info": {
+    "project_number": "000000000000",
+    "project_id": "demo-saferoute",
+    "storage_bucket": "demo-saferoute.invalid"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:000000000000:android:0000000000000000",
+        "android_client_info": {
+          "package_name": "com.saferoute.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "dummy-not-a-real-key"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
+JSON
+
+echo "Wrote a dummy google-services.json (project demo-saferoute). Sign-in will not work with it."

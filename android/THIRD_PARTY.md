@@ -39,8 +39,29 @@ No other Google or Apple logo, font or artwork is in the app.
 | OkHttp 5.5.0 and Okio (its I/O library) | Apache-2.0 |
 | Retrofit 3.0.0 and its kotlinx.serialization converter | Apache-2.0 |
 
-Apache-2.0 code may be combined into an AGPL-3.0 work. No library with a proprietary or
-copyleft-incompatible licence is used.
+| AndroidX DataStore (Preferences) 1.2.1 | Apache-2.0 |
+| kotlinx-coroutines-play-services 1.11.0 | Apache-2.0 |
+| Firebase common and components (through the Firebase BoM 34.19.0) | Apache-2.0 |
+
+Apache-2.0 code may be combined into an AGPL-3.0 work.
+
+### Proprietary Google libraries (since P009b)
+
+Phone sign-in needs libraries that are **not open source**. Licence names as published in each
+POM, read on 2026-10-06:
+
+| Library | Licence |
+| --- | --- |
+| `com.google.firebase:firebase-auth` 24.2.0 | Android Software Development Kit License |
+| Google Play services: `play-services-basement`, `play-services-tasks`, `play-services-auth-api-phone` (and others firebase-auth pulls in) | Android Software Development Kit License |
+| `com.google.android.recaptcha:recaptcha` 18.6.1 | Android Software Development Kit License |
+| `com.google.android.play:integrity` 1.3.0 | Play Integrity API Terms of Service |
+
+They are used unchanged, as published by Google, and only through `core/auth`
+([ADR 0012](../docs/adr/0012-firebase-config-in-builds.md)). What combining them with
+AGPL-3.0 code means for people who rebuild the app (and whether an additional permission is
+wanted) is an open review item that must be closed before release (Notion follow-up "Android
+third-party SDK license review before P022").
 
 ## Build and test only (not shipped)
 
@@ -54,6 +75,7 @@ copyleft-incompatible licence is used.
 | JUnit 4 | EPL-1.0 |
 | OpenAPI Generator 7.25.0 (Gradle plugin `org.openapi.generator`) | Apache-2.0 |
 | OkHttp MockWebServer 5.5.0 | Apache-2.0 |
+| Google Services Gradle plugin 4.5.0 (`com.google.gms.google-services`) | Apache-2.0 |
 
 OpenAPI Generator runs while the app is built and writes the API client (Kotlin source) from
 `contracts/openapi.json`. The tool itself is not in the app. The code it writes comes from its

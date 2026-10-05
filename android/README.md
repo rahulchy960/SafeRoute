@@ -26,6 +26,8 @@ client. Release builds don't contain it.
    and a JDK 17, so it needs a network connection and a few minutes.
 3. The file `local.properties` that Android Studio creates holds the path of your Android SDK.
    It is ignored by git and must never be committed.
+4. The build needs `app/google-services.json` (the Firebase configuration). See
+   [Signing in](#signing-in) for where the real file goes, or how to write a dummy one.
 
 ## Run it on a phone
 
@@ -65,7 +67,9 @@ $env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"
 CI runs the same command: [`.github/workflows/android-ci.yml`](../.github/workflows/android-ci.yml).
 It also runs when `contracts/` changes, builds the release variant with the dummy address
 `https://example.invalid/`, checks that a release without `saferoute.apiBaseUrl` fails, and
-checks that the release APK has none of the debug-only code.
+checks that the release APK has none of the debug-only code. Since P009b it first writes a
+dummy `google-services.json`, and proves that a release build refuses that dummy file and a
+missing one (see [Signing in](#signing-in)).
 
 ## Project structure
 
@@ -77,7 +81,8 @@ android/
   gradle/gradle-daemon-jvm.properties   which JDK runs Gradle itself (25)
   app/build.gradle.kts             the app module's build
   app/src/main/
-    AndroidManifest.xml            app entry points; one permission (INTERNET)
+    AndroidManifest.xml            app entry points; one permission (INTERNET); the Firebase
+                                   libraries merge in two more (see ADR 0012)
     java/com/saferoute/app/
       SafeRouteApplication.kt      process entry point (@HiltAndroidApp)
       MainActivity.kt              the single activity
@@ -91,10 +96,14 @@ android/
       core/designsystem/preview/   @SafeRoutePreviews (light, dark, Bengali, 200% font)
       core/di/                     Hilt module: Clock and coroutine dispatchers
       core/network/                HTTP client, token seam, retries, error mapping (ADR 0009)
+      core/auth/                   phone sign-in behind PhoneAuthGateway; the only Firebase code
+      core/session/                session state machine and the stored onboarding flags
     res/values/strings.xml         English text
     res/values-bn/strings.xml      Bengali text
     res/xml/locales_config.xml     languages offered by the system per-app language picker
     res/xml/network_security_config.xml   HTTPS only, system certificates only
+  app/google-services.json         Firebase configuration (not in git; real or dummy)
+  scripts/write-dummy-google-services   writes the dummy Firebase configuration
   app/build/generated/openapi/     the generated API client (not in git, never edited)
   app/src/debug/                   debug builds only: the developer server check and its strings
   app/src/release/                 release builds only: no-op stand-ins for the debug hooks
@@ -136,6 +145,10 @@ Chosen on 2026-10-02 from Google Maven and Maven Central metadata; all are stabl
 | Retrofit and its kotlinx.serialization converter | 3.0.0 | turns the generated interfaces into calls |
 | kotlinx.serialization (JSON) | 1.11.0 | |
 | OpenAPI Generator (Gradle plugin `org.openapi.generator`) | 7.25.0 | build time only; writes the API client |
+| Firebase BoM | 34.19.0 | picks firebase-auth 24.2.0 (chosen 2026-10-06) |
+| Google Services Gradle plugin | 4.5.0 | build time only; reads `google-services.json` |
+| DataStore Preferences | 1.2.1 | the stored onboarding flags |
+| kotlinx-coroutines-play-services | 1.11.0 | `await()` for Play services tasks |
 | OkHttp MockWebServer | 5.5.0 | tests only |
 | JUnit 4 · Robolectric · AndroidX Test · Turbine | 4.13.2 · 4.17 · core 1.7.0, ext-junit 1.3.0 · 1.2.1 | tests only |
 | compileSdk · targetSdk · minSdk | 37 · 36 · 26 | see ADR 0008 for why compileSdk is not 36 |
@@ -213,6 +226,97 @@ the last one. Search Cloud Logging for that id as described in
 - Never put the server address in a tracked file, a test, a log, a screenshot or a pull request.
 - Never send the ID token to any server but the API, and never log a request or response body.
 - Never add an exception to `network_security_config.xml` (no cleartext, no user certificates).
+
+## Signing in
+
+Users sign in with a phone number and an SMS code through Firebase Authentication
+([ADR 0012](../docs/adr/0012-firebase-config-in-builds.md)). The order is fixed: **age → consent
+→ phone**. Nothing is sent to any server before the user has said "I am 18 or older" and
+accepted the consent notice ([ADR 0010](../docs/adr/0010-adults-only-and-consent-records.md)).
+
+![Onboarding and session](../docs/diagrams/009b-onboarding-and-session.svg)
+
+**What exists so far (P009b).** The parts without a screen: the Firebase wrapper
+(`core/auth`), the session state machine and the stored flags (`core/session`). The onboarding
+screens, the Settings account section and the consent notice text arrive in the next part
+(P009c). Until then the app still opens straight to Home.
+
+### The Firebase configuration file
+
+The build needs `android/app/google-services.json`. It is **never in the repository**.
+
+- **You have the real file** (downloaded from the Firebase console for the staging project):
+  put it at `android/app/google-services.json`. Git ignores it. Check with
+  `git check-ignore android/app/google-services.json`, which must print the path. Never commit
+  it, paste it anywhere, or screenshot it.
+- **You don't** (a fresh clone, CI): write a dummy one.
+
+  ```sh
+  android/scripts/write-dummy-google-services
+  ```
+
+  It creates the file with fake values (project `demo-saferoute`) and never overwrites an
+  existing file. With it the app builds and every test passes, but sign-in cannot work. On
+  Windows run it from Git Bash, or with `sh android/scripts/write-dummy-google-services`.
+
+Without either, Gradle stops with an error from the Google Services plugin.
+
+**Release builds** refuse the dummy file and a missing file (`checkReleaseFirebaseConfig`). CI
+passes `-Psaferoute.allowDummyFirebase=true` for the one release build it makes to check that
+a release still assembles; never use that flag for a build that goes to a phone.
+
+### Firebase console settings sign-in depends on
+
+- The Android app `com.saferoute.app` is registered in the project.
+- The **SHA-1 and SHA-256 fingerprints** of the key that signs the build are added to that app.
+  Firebase uses them to check that a sign-in request comes from the real app. For debug builds
+  that is your debug keystore (*Gradle → app → Tasks → android → signingReport* in Android
+  Studio). A release key's fingerprints come with P022.
+- *Authentication → Sign-in method → Phone* is enabled, and the SMS region policy allows India.
+- **Test phone numbers** (*Phone → Phone numbers for testing*): a number and a fixed 6-digit
+  code that work without an SMS being sent, cost nothing and don't count against quotas. Use
+  one for development. The numbers and codes live in the console only: never in the
+  repository, in Notion, in a chat or in a screenshot.
+
+### How the code is organised
+
+| Piece | Where | What it does |
+| --- | --- | --- |
+| `PhoneAuthGateway` | `core/auth` | Sign-in as the app sees it: start verification, verify code, resend, sign out, ID token. The only door to Firebase |
+| `FirebasePhoneAuthGateway` | `core/auth` | The implementation on the Firebase SDK. Thin; checked on a phone |
+| `FirebaseIdTokenProvider` | `core/auth` | Gives the network layer the ID token (the seam from "Talking to the backend") |
+| `normaliseIndianMobile` | `core/auth` | Turns typed input into `+91` and ten digits, or rejects it |
+| `SessionRepository` | `core/session` | Decides the `SessionState` from the stored flags, Firebase and the API |
+| `SessionStore` | `core/session` | Six flags in Jetpack DataStore; never the phone number, a token or a code |
+
+The session states: `Loading`, `NeedsAge`, `NeedsConsent`, `SignedOut`, `NeedsBootstrap`,
+`Ready`, `Blocked(UNDER_18 | ACCOUNT_DELETED)`, `Error(retryable)`.
+
+**Opening without a connection.** Once the app has been `Ready` with a sign-in, it shows Home
+at once on the next start and checks with the server in the background. Only a definite answer
+(the sign-in is no longer valid, the account was deleted, the consent is out of date) takes the
+user out of Home. A first run needs a connection.
+
+**In tests** nothing talks to Firebase: use `FakePhoneAuthGateway`. A Hilt test that reaches
+sign-in or the session replaces the production binding:
+
+```kotlin
+@HiltAndroidTest
+@UninstallModules(AuthModule::class)
+class MyTest {
+    @BindValue @JvmField val gateway: PhoneAuthGateway = FakePhoneAuthGateway()
+    @BindValue @JvmField val tokens: IdTokenProvider = FirebaseIdTokenProvider(gateway)
+}
+```
+
+**What not to do:**
+
+- Never log, store or put in a test a real phone number, an ID token, an SMS code or a
+  Firebase user id. Tests use the `FAKE_...` values next to `FakePhoneAuthGateway`.
+- Never call the Firebase SDK outside `core/auth`.
+- Never ask for the phone number before the age declaration and the consent notice.
+- Never add Analytics, Crashlytics or another Firebase product without a prompt that asks for
+  it.
 
 ## Design tokens
 

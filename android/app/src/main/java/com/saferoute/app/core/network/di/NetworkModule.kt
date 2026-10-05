@@ -6,7 +6,6 @@ import com.saferoute.app.core.network.ApiConfig
 import com.saferoute.app.core.network.apiConfigFromBuild
 import com.saferoute.app.core.network.auth.AuthInterceptor
 import com.saferoute.app.core.network.auth.IdTokenProvider
-import com.saferoute.app.core.network.auth.SignedOutIdTokenProvider
 import com.saferoute.app.core.network.auth.TokenAuthenticator
 import com.saferoute.app.core.network.generated.api.MeApi
 import com.saferoute.app.core.network.generated.api.OperationalApi
@@ -18,7 +17,6 @@ import com.saferoute.app.core.network.interceptor.UserAgentInterceptor
 import com.saferoute.app.core.network.networkJson
 import com.saferoute.app.core.network.retry.RetryInterceptor
 import com.saferoute.app.core.network.retry.Sleeper
-import dagger.Binds
 import dagger.Lazy
 import dagger.Module
 import dagger.Provides
@@ -37,6 +35,8 @@ import retrofit2.converter.kotlinx.serialization.asConverterFactory
  *
  * OkHttp sends the requests. The interceptors run in this order for every request: request id,
  * user agent, token, retry, and in debug builds the safe logger. The authenticator handles 401.
+ *
+ * Where ID tokens come from is bound in `core/auth/di/AuthModule` (Firebase, since P009b).
  */
 internal fun newApiHttpClient(
     config: ApiConfig,
@@ -103,16 +103,4 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideMeApi(retrofit: Retrofit): MeApi = retrofit.create(MeApi::class.java)
-}
-
-/**
- * Where ID tokens come from. Until sign-in exists nobody is signed in; P009 replaces this
- * binding with the Firebase implementation and nothing else in the network layer changes.
- */
-@Module
-@InstallIn(SingletonComponent::class)
-interface IdTokenModule {
-
-    @Binds
-    fun bindIdTokenProvider(provider: SignedOutIdTokenProvider): IdTokenProvider
 }
