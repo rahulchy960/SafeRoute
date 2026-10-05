@@ -28,16 +28,24 @@ git status --porcelain
 
 ## 2. Confirm the previous prompt's PR is merged
 
-Previous prompt = `NNN - 1` (P001 has no PR; for P002, check that `docs/prompt-logs/001-*.md`
-exists on main instead).
+Find the previous prompt (`<PREV>`):
+
+- **P001 is the one direct-to-main exception: it has no PR to check.** When the previous prompt
+  is P001 (this prompt is P002), check that `docs/prompt-logs/001-*.md` exists on main instead
+  and skip the `gh` check for it.
+- **This prompt is a later part of a split prompt** (`NNNb`, `NNNc`, ...): `<PREV>` is the part
+  before it (`NNNa` for `NNNb`).
+- **Otherwise** `<PREV>` is `NNN - 1`. If that prompt was split into parts (there are logs named
+  `docs/prompt-logs/<NNN-1>[a-z]-*.md`), `<PREV>` is its **last** part: that part's PR is the one
+  that must be merged (before P009, that is P008b, not P008a).
 
 ```sh
-gh pr list --state merged --search "[P<NNN-1>] in:title" --json number,title,mergedAt,mergeCommit,url
+gh pr list --state merged --search "[P<PREV>] in:title" --json number,title,mergedAt,mergeCommit,url
 gh pr list --state open --json number,title,headRefName,url
 ```
 
-- If the previous prompt's PR is **not merged**, STOP and ask Rahul. Don't stack branches unless
-  the prompt explicitly says so.
+- If the previous prompt's PR (for a split prompt, its last part's PR) is **not merged**, STOP
+  and ask Rahul. Don't stack branches unless the prompt explicitly says so.
 - Note the merge commit SHA and merge date for step 3.
 
 ## 3. Update the previous prompt's Notion page
