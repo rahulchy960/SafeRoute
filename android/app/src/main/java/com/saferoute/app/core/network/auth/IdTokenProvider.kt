@@ -2,7 +2,6 @@
 package com.saferoute.app.core.network.auth
 
 import java.io.IOException
-import javax.inject.Inject
 import kotlinx.coroutines.runBlocking
 
 /**
@@ -15,14 +14,11 @@ import kotlinx.coroutines.runBlocking
  *
  * `suspend` means the function may pause without blocking a thread, which a token refresh over
  * the network needs.
+ *
+ * The implementation is `core/auth/FirebaseIdTokenProvider` (since P009b).
  */
 interface IdTokenProvider {
     suspend fun idToken(forceRefresh: Boolean): String?
-}
-
-/** Used until sign-in exists (P009): nobody is signed in, so there is never a token. */
-class SignedOutIdTokenProvider @Inject constructor() : IdTokenProvider {
-    override suspend fun idToken(forceRefresh: Boolean): String? = null
 }
 
 /**

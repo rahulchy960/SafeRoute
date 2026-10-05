@@ -3,10 +3,10 @@ package com.saferoute.app.core.network.di
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.saferoute.app.BuildConfig
+import com.saferoute.app.core.auth.FirebaseIdTokenProvider
 import com.saferoute.app.core.network.ApiConfig
 import com.saferoute.app.core.network.auth.AuthInterceptor
 import com.saferoute.app.core.network.auth.IdTokenProvider
-import com.saferoute.app.core.network.auth.SignedOutIdTokenProvider
 import com.saferoute.app.core.network.auth.TokenAuthenticator
 import com.saferoute.app.core.network.generated.api.MeApi
 import com.saferoute.app.core.network.generated.api.OperationalApi
@@ -18,10 +18,8 @@ import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import dagger.hilt.android.testing.HiltTestApplication
 import javax.inject.Inject
-import kotlinx.coroutines.test.runTest
 import okhttp3.OkHttpClient
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -66,10 +64,9 @@ class NetworkModuleTest {
     }
 
     @Test
-    fun `nobody is signed in yet`() = runTest {
-        assertTrue(tokens is SignedOutIdTokenProvider)
-        assertNull(tokens.idToken(forceRefresh = false))
-        assertNull(tokens.idToken(forceRefresh = true))
+    fun `tokens come from Firebase sign-in`() {
+        // What it returns is covered by FirebaseIdTokenProviderTest and AuthWiringTest.
+        assertTrue(tokens is FirebaseIdTokenProvider)
     }
 
     @Test
