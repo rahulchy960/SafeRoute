@@ -17,7 +17,7 @@ Copy [`template.md`](template.md) to `NNNN-short-title.md`, and add a row to the
 | [0009](0009-android-api-client.md) | Android API client (generated at build time) and network rules | Accepted |
 | [0010](0010-adults-only-and-consent-records.md) | Adults only (18+) and per-purpose consent records | Accepted |
 | [0011](0011-trusted-circle-principles.md) | Trusted Circle principles | Proposed |
-| 0012 | Firebase configuration in builds (reserved for P009b) | Not written yet |
+| [0012](0012-firebase-config-in-builds.md) | Firebase configuration in builds, and how sign-in is wrapped and tested | Accepted |
 | [0013](0013-regions-and-expansion.md) | Regions and expansion (`regionCode`) | Accepted |
 | [0014](0014-civic-reports-ask-govt.md) | Civic reports ("Ask govt") | Proposed |
 

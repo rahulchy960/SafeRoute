@@ -1,0 +1,206 @@
+{
+  "$schema": "../../tools/diagrams/diagram.schema.json",
+  "title": "Onboarding and session",
+  "subtitle": "Order: age, consent, phone. The session state decides the screen; after the first sign-in the app opens offline (P009b, ADR 0010, ADR 0012)",
+  "direction": "TB",
+  "layout": {
+    "nodeWidth": 215
+  },
+  "groups": [
+    {
+      "id": "onboarding",
+      "label": "Onboarding (screens in P009c)"
+    },
+    {
+      "id": "session",
+      "label": "SessionRepository: app start with a sign-in"
+    },
+    {
+      "id": "ends",
+      "label": "Outcomes"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "welcome",
+      "label": "Welcome: not an emergency service, call 112",
+      "role": "app",
+      "group": "onboarding"
+    },
+    {
+      "id": "age",
+      "label": "NeedsAge: I am 18 or older?",
+      "role": "app",
+      "group": "onboarding"
+    },
+    {
+      "id": "notice",
+      "label": "NeedsConsent: notice for account_core, I agree",
+      "role": "app",
+      "group": "onboarding"
+    },
+    {
+      "id": "phone",
+      "label": "SignedOut: phone entry (+91)",
+      "role": "app",
+      "group": "onboarding"
+    },
+    {
+      "id": "otp",
+      "label": "SMS code (Firebase, PhoneAuthGateway)",
+      "role": "app",
+      "group": "onboarding"
+    },
+    {
+      "id": "start",
+      "label": "Signed in with Firebase",
+      "role": "service",
+      "group": "session",
+      "rank": 5
+    },
+    {
+      "id": "readyonce",
+      "label": "Ready once before? Show Home at once, check in the background",
+      "role": "service",
+      "group": "session"
+    },
+    {
+      "id": "getme",
+      "label": "GET /v1/me",
+      "role": "service",
+      "group": "session"
+    },
+    {
+      "id": "consents",
+      "label": "GET /v1/me/consents: account_core granted for the current notice?",
+      "role": "service",
+      "group": "session"
+    },
+    {
+      "id": "bootstrap",
+      "label": "NeedsBootstrap: POST /v1/me/bootstrap with age and consent",
+      "role": "service",
+      "group": "session"
+    },
+    {
+      "id": "put",
+      "label": "PUT consent for account_core",
+      "role": "service",
+      "group": "session"
+    },
+    {
+      "id": "under18",
+      "label": "Blocked UNDER_18: one local flag, no network, no sign-in",
+      "role": "security",
+      "group": "ends",
+      "rank": 2
+    },
+    {
+      "id": "error",
+      "label": "Error (retryable): first run without a connection, or 503",
+      "role": "external",
+      "group": "ends",
+      "rank": 7
+    },
+    {
+      "id": "out",
+      "label": "401 after one token refresh: sign out, phone entry again. account_deleted: Blocked, sign out",
+      "role": "security",
+      "group": "ends",
+      "rank": 8
+    },
+    {
+      "id": "ready",
+      "label": "Ready: Home (also offline after the first time)",
+      "role": "app",
+      "group": "ends",
+      "rank": 10
+    },
+    {
+      "id": "later",
+      "label": "Later: Trusted Circle consent (ADR 0011, not built)",
+      "role": "external",
+      "group": "ends",
+      "rank": 11
+    }
+  ],
+  "edges": [
+    {
+      "from": "welcome",
+      "to": "age"
+    },
+    {
+      "from": "age",
+      "to": "under18",
+      "label": "under 18"
+    },
+    {
+      "from": "age",
+      "to": "notice",
+      "label": "18+"
+    },
+    {
+      "from": "notice",
+      "to": "phone",
+      "label": "agree"
+    },
+    {
+      "from": "phone",
+      "to": "otp"
+    },
+    {
+      "from": "otp",
+      "to": "start"
+    },
+    {
+      "from": "start",
+      "to": "readyonce"
+    },
+    {
+      "from": "readyonce",
+      "to": "getme"
+    },
+    {
+      "from": "getme",
+      "to": "consents",
+      "label": "200"
+    },
+    {
+      "from": "getme",
+      "to": "bootstrap",
+      "label": "bootstrap_required"
+    },
+    {
+      "from": "getme",
+      "to": "error",
+      "label": "offline / 503"
+    },
+    {
+      "from": "consents",
+      "to": "put",
+      "label": "old or missing, after I agree"
+    },
+    {
+      "from": "getme",
+      "to": "out",
+      "label": "401 / account_deleted"
+    },
+    {
+      "from": "consents",
+      "to": "ready",
+      "label": "current"
+    },
+    {
+      "from": "bootstrap",
+      "to": "ready"
+    },
+    {
+      "from": "put",
+      "to": "ready"
+    },
+    {
+      "from": "ready",
+      "to": "later"
+    }
+  ]
+}
