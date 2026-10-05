@@ -37,6 +37,12 @@ new ADR file under `docs/adr/`.
   and `/health/ready` are public by design (`security: []`).
 - `components.parameters.IdempotencyKey` is declared ahead of use (first used in P015).
   `POST /v1/me/bootstrap` doesn't need it: it is naturally idempotent (keyed by the token's user).
+- Consent (since P009a, [ADR 0010](../docs/adr/0010-adults-only-and-consent-records.md)):
+  `POST /v1/me/bootstrap` takes a `consent` object (age declaration, notice version and locale,
+  purposes) and needs it to create an account. `GET /v1/me/consents` returns the latest decision
+  per purpose; `PUT /v1/me/consents/{purpose}` records a new one. `purpose` is an open string
+  checked against a server allowlist (`backend/src/modules/consents/purposes.ts`), so a new
+  purpose is not a contract change.
 - Paste the file into any OpenAPI viewer (e.g. editor.swagger.io) to browse it. It is public data.
 
 ## API contract rules (summary of ADR 0004)
@@ -50,8 +56,8 @@ new ADR file under `docs/adr/`.
 - Retryable state-changing calls take an `Idempotency-Key` header. Protected routes use
   `firebaseBearer`.
 - **City-neutral** (ADR 0005): no city or place names in paths, operationIds, schema names, tags,
-  descriptions or examples. Future city scoping is an optional `cityCode` field (additive, not
-  added yet).
+  descriptions or examples. Future scoping by region is an optional `regionCode` field (additive,
+  not added yet; [ADR 0013](../docs/adr/0013-regions-and-expansion.md)).
 - **Versioning:** `info.version` is the contract version. Additive change → minor bump in the same
   PR. Breaking change → new ADR + new path version or coordinated app release. CI then needs
   the PR label `breaking-api-change` **and** a new file under `docs/adr/`. Old app versions stay
@@ -84,9 +90,12 @@ Currently defined codes:
 | `forbidden` | 403 | Authenticated but the role is not allowed. Final |
 | `bootstrap_required` | 403 | Signed in, but no account yet: call `POST /v1/me/bootstrap`, then retry |
 | `account_deleted` | 403 | The account was deleted. Final |
+| `consent_required` | 403 | Bootstrap of a new account without the `consent` object. Show the consent notice, then retry with it |
+| `adult_required` | 403 | Bootstrap of a new account without `ageConfirmed: true`. SafeRoute is for adults (18+); nothing is stored |
 | `not_found` | 404 | No such route or resource |
 | `conflict` | 409 | Conflicts with the current state |
 | `phone_already_registered` | 409 | Bootstrap: another account already holds this phone number |
+| `account_deletion_required` | 409 | `account_core` consent can't be withdrawn on its own; the user must delete the account |
 | `gone` | 410 | Existed but expired or ended (e.g. a finished share) |
 | `rate_limited` | 429 | Too many requests |
 | `http_error` | 4xx | Framework-level rejection (e.g. malformed JSON, unsupported media type) |

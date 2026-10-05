@@ -5,6 +5,9 @@
 - **Prompt:** P004
 - **Plan refs:** Plan v7 §6.1–§6.3, §12.2, §13.2, §14.5, §17, §20
 
+> Note (P009a): the future optional scoping field is `regionCode`, not `cityCode`
+> (see [ADR 0013](0013-regions-and-expansion.md)).
+
 ## Context
 
 - ADR 0001 chose a native Kotlin app whose client is **generated** from an OpenAPI 3.1 contract

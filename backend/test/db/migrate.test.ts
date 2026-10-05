@@ -4,7 +4,11 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { runMigrations } from '../../src/db/migrate.js';
 import { createEmptyDatabase, databaseUrl } from './helpers.js';
 
-const ALL = ['0000_postgis', '0001_identity_support_tables'];
+const ALL = [
+  '0000_postgis',
+  '0001_identity_support_tables',
+  '0002_consent_records_adult_attestation',
+];
 
 async function query<T extends pg.QueryResultRow>(url: string, text: string): Promise<T[]> {
   const client = new pg.Client({ connectionString: url });
@@ -33,7 +37,7 @@ describe('runMigrations', () => {
       url,
       'select count(*)::text as n from drizzle.__drizzle_migrations',
     );
-    expect(rows[0]?.n).toBe('2');
+    expect(rows[0]?.n).toBe(String(ALL.length));
   });
 
   it('serialises concurrent runs with the advisory lock (each migration applied once)', async () => {
@@ -62,6 +66,7 @@ describe('runMigrations', () => {
     );
     expect(tables.map((t) => t.tablename)).toEqual([
       'audit_log',
+      'consent_records',
       'devices',
       'idempotency_keys',
       'spatial_ref_sys',

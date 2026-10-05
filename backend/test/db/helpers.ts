@@ -18,7 +18,7 @@ export function connect() {
 /** Empties every application table between tests; keeps the schema and migration history. */
 export async function truncateAll(pool: pg.Pool): Promise<void> {
   await pool.query(
-    'truncate table audit_log, idempotency_keys, devices, users restart identity cascade',
+    'truncate table audit_log, consent_records, idempotency_keys, devices, users restart identity cascade',
   );
 }
 

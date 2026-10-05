@@ -5,6 +5,9 @@
 - **Prompt:** P003c
 - **Plan refs:** Plan v7 §1, §14.2 (Stage 3), §15.1, §17, §20
 
+> Note (P009a): expansion is by "region" and the future field is `regionCode`, not `cityCode`
+> (see [ADR 0013](0013-regions-and-expansion.md)).
+
 ## Context
 
 - The project started as "SafeRoute Kolkata", the name used in Plan v7, the first prompt logs and

@@ -28,9 +28,11 @@ export const bootstrapMeRoute = createRoute({
   description:
     "Call after every sign-in. Creates the account for the token's Firebase user (201) or " +
     'returns the existing one unchanged (200); safe to retry. The phone number comes from the ' +
-    'verified token, never from the body. The client must record DPDP consent before calling ' +
-    'this. Errors: `phone_already_registered` (409) when another account holds the number, ' +
-    '`account_deleted` (403).',
+    'verified token, never from the body. Creating an account needs `consent` from the ' +
+    'onboarding notice: without it → `consent_required` (403); without `ageConfirmed: true` → ' +
+    '`adult_required` (403); in both cases nothing is stored. For an existing account ' +
+    '`consent` is ignored. Other errors: `phone_already_registered` (409) when another ' +
+    'account holds the number, `account_deleted` (403).',
   security: [{ firebaseBearer: [] }],
   request: {
     body: {
@@ -94,8 +96,13 @@ export function userRoutes(deps: AuthDeps) {
         // Schema defaults don't apply when the body is omitted, so default here.
         locale: body.locale ?? 'en',
         displayName: body.displayName,
+        consent: body.consent,
       });
-      if (created) c.get('logger').info({ user_id: user.id }, 'user created');
+      if (created) {
+        const log = c.get('logger');
+        log.info({ user_id: user.id }, 'user created');
+        log.info({ user_id: user.id, purposes: body.consent?.purposes }, 'consent recorded');
+      }
       return c.json(toMe(user), created ? 201 : 200);
     })
     .openapi({ ...getMeRoute, middleware: requireUser(deps) }, (c) => {

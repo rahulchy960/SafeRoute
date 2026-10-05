@@ -12,7 +12,14 @@ import { buildTestApp } from './helpers.js';
  * Every path in the contract. A prompt that adds routes extends this list in the same PR, so a
  * route can't appear (or vanish) without a reviewer seeing it here.
  */
-const DOCUMENTED_PATHS = ['/health', '/health/ready', '/v1/me', '/v1/me/bootstrap'];
+const DOCUMENTED_PATHS = [
+  '/health',
+  '/health/ready',
+  '/v1/me',
+  '/v1/me/bootstrap',
+  '/v1/me/consents',
+  '/v1/me/consents/{purpose}',
+];
 
 /** Operations that are public by design; every other operation must require firebaseBearer. */
 const PUBLIC_OPERATIONS = ['getHealth', 'getReadiness'];
@@ -139,6 +146,59 @@ describe('generated OpenAPI document', () => {
     expect(serialized).not.toMatch(/firebaseUid|firebase_uid|deletedAt/);
     const unauthorized = components.responses?.Unauthorized as { headers: Json };
     expect(unauthorized.headers).toHaveProperty('WWW-Authenticate');
+  });
+
+  it('documents consent and the age declaration (P009a, ADR 0010)', () => {
+    expect((doc.info as Json).version).toBe('0.3.0');
+    const paths = doc.paths as Record<string, Record<string, Json>>;
+    expect(paths['/v1/me/consents']?.get?.operationId).toBe('getMyConsents');
+    expect(paths['/v1/me/consents/{purpose}']?.put?.operationId).toBe('setMyConsent');
+    expect(Object.keys(paths['/v1/me/consents/{purpose}']?.put?.responses as Json).sort()).toEqual([
+      '200',
+      '400',
+      '401',
+      '403',
+      '409',
+      '500',
+      '503',
+    ]);
+
+    // Additive: `consent` is optional in the bootstrap request, and nothing became required.
+    const request = components.schemas?.BootstrapMeRequest as {
+      properties: Json;
+      required?: string[];
+    };
+    expect(request.properties).toHaveProperty('consent');
+    expect(request.required ?? []).toEqual([]);
+    const consent = components.schemas?.BootstrapConsent as {
+      properties: Json;
+      required: string[];
+    };
+    expect(Object.keys(consent.properties).sort()).toEqual([
+      'ageConfirmed',
+      'noticeLocale',
+      'noticeVersion',
+      'purposes',
+    ]);
+
+    // `purpose` and `status` stay open strings in responses: a new purpose is not a breaking change.
+    const item = components.schemas?.Consent as { properties: Record<string, Json> };
+    expect(item.properties.purpose).not.toHaveProperty('enum');
+    expect(item.properties.status).not.toHaveProperty('enum');
+    expect(Object.keys(item.properties).sort()).toEqual([
+      'decidedAt',
+      'noticeVersion',
+      'purpose',
+      'status',
+    ]);
+
+    const code = (components.schemas?.ProblemDetails as { properties: Record<string, Json> })
+      .properties.code?.description as string;
+    for (const name of ['consent_required', 'adult_required', 'account_deletion_required']) {
+      expect(code).toContain(`\`${name}\``);
+    }
+    // No date-of-birth or age field anywhere in the contract (ADR 0010).
+    expect(serialized).not.toMatch(/"(dateOfBirth|birthDate|birthday|dob|age)"\s*:/i);
   });
 
   it('is city-neutral (ADR 0005)', () => {

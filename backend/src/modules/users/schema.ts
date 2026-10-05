@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { z } from '@hono/zod-openapi';
+import { BootstrapConsentSchema } from '../consents/schema.js';
 
 /**
  * Zod schemas of the users API (contract). The `users` table itself is defined in
@@ -31,11 +32,14 @@ export const BootstrapMeRequestSchema = z
           'characters. Ignored if the account already exists.',
         examples: ['Sample Name'],
       }),
+    consent: BootstrapConsentSchema.optional(),
   })
   .openapi('BootstrapMeRequest', {
     description:
-      'Optional settings for a new account. The phone number is never sent: the server takes ' +
-      'it from the verified ID token. Unknown properties are ignored.',
+      'Settings and consent for a new account. `consent` is needed to create an account ' +
+      '(optional in the schema only because an existing account does not need it). The phone ' +
+      'number is never sent: the server takes it from the verified ID token. Unknown ' +
+      'properties are ignored.',
   });
 
 export const MeSchema = z

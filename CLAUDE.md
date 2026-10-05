@@ -2,7 +2,16 @@
 
 Claude Code loads this file at the start of every session. Read it fully before doing anything.
 The full design lives in [`docs/plan/SafeRoute_Plan_v7_MVP.pdf`](docs/plan/SafeRoute_Plan_v7_MVP.pdf)
-(cited as "Plan v7 §N").
+(cited as "Plan v7 §N"), amended by [`docs/plan/addendum-v7.1.md`](docs/plan/addendum-v7.1.md)
+(see "Plan addendum" below).
+
+## Plan addendum (since P009a)
+
+Read [`docs/plan/addendum-v7.1.md`](docs/plan/addendum-v7.1.md) after the PDF. **Where the addendum
+differs from Plan v7, the addendum wins.** It records what was built differently from v7, the
+product decisions made since (SOS entry points for P014, adults only, per-purpose consent, Trusted
+Circle principles), the section edits to v7, the roadmap order and new risks. The PDF itself is
+never edited; a full v8 comes after the MVP.
 
 ## Project summary
 
@@ -39,7 +48,7 @@ moderation/     Moderator web app (P018)
 contracts/      openapi.json, generated, never hand-edited (from P004)
 infra/          GCP / Cloud Run / WIF configuration (from P006)
 tools/diagrams/ JSON → Excalidraw + SVG + PNG diagram generator
-docs/plan/      Plan v7 PDF (source of truth for design)
+docs/plan/      Plan v7 PDF (source of truth for design) + addendum-v7.1.md (wins where it differs)
 docs/adr/       Architecture Decision Records (template.md, NNNN-title.md)
 docs/diagrams/  Diagram JSON specs + generated .excalidraw/.svg/.png
 docs/prompt-logs/ One log per prompt (NNN-core-work.md)
@@ -138,6 +147,28 @@ Follow [ADR 0006](docs/adr/0006-authentication-and-roles.md):
 - Never add an auth bypass, dev login route, emulator switch, or a variable that changes the
   token issuer, audience, algorithm or key URL.
 
+## Age and consent rules (since P009a, ADR 0010)
+
+Follow [ADR 0010](docs/adr/0010-adults-only-and-consent-records.md):
+
+- **Adults only (18+).** The user declares it; the server records when
+  (`users.adult_attested_at`). **Never collect a date of birth** or any other proof of age.
+- **No processing before consent.** Nothing about a person is stored or sent before they agreed to
+  the notice; the phone number is asked for after it. The server creates no account without the
+  `consent` object.
+- **Consent is per purpose and just-in-time, through the API** (`GET /v1/me/consents`,
+  `PUT /v1/me/consents/{purpose}`). A feature that uses personal data for a new purpose checks
+  and requests its own purpose when it is first used. Never bundle purposes, never pre-tick, and
+  never infer consent on the client alone. `consent_records` is append-only.
+- New purposes are added to the allowlist in `backend/src/modules/consents/purposes.ts`, in the
+  prompt that ships the feature.
+- **No child or teen features, parental control or hidden tracking** without a new ADR and legal
+  review.
+- **Trusted Circle** must follow [ADR 0011](docs/adr/0011-trusted-circle-principles.md) (mutual,
+  visible, time-limited, instant leave, no hidden mode, no remote activation). It is not built
+  before the legal review.
+- Legal statements in docs and notices are drafts marked "to be verified by a lawyer".
+
 ## Deployment rules (since P006a, ADR 0007)
 
 Follow [ADR 0007](docs/adr/0007-gcp-staging-topology.md):
@@ -191,7 +222,9 @@ Follow [ADR 0007](docs/adr/0007-gcp-staging-topology.md):
   load planning, local-language copy) live in configuration, data or docs.
 - "Kolkata" appears only where it is a fact: the launch city, pilot areas, the OSRM/tiles extract,
   Durga Puja load planning, `Asia/Kolkata` conversions, Bengali UI, test landmarks.
-- Multi-city support is deferred to Plan v7 §14.2 Stage 3. Don't build it early.
+- Multi-city support is deferred to Plan v7 §14.2 Stage 3. Don't build it early. Expansion is by
+  "region" and the future optional field is `regionCode`, never `cityCode`
+  ([ADR 0013](docs/adr/0013-regions-and-expansion.md)).
 
 ## Android rules (since P007a, ADR 0008)
 

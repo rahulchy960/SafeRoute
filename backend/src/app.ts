@@ -9,6 +9,7 @@ import { AppError, problemResponse } from './lib/problem.js';
 import { accessLog } from './middleware/access-log.js';
 import { requestId } from './middleware/request-id.js';
 import type { TokenVerifier } from './modules/auth/verifier.js';
+import { consentRoutes } from './modules/consents/routes.js';
 import { userRoutes } from './modules/users/routes.js';
 import { healthRoutes } from './routes/health.js';
 import { readyRoutes, type ReadinessCheck } from './routes/ready.js';
@@ -51,6 +52,7 @@ export function createApp({ config, logger, readiness, verifier, db }: AppDeps) 
   app.route('/', healthRoutes(config));
   app.route('/', readyRoutes(readiness));
   app.route('/', userRoutes({ verifier, db }));
+  app.route('/', consentRoutes({ verifier, db }));
 
   app.notFound((c) => {
     c.set('unmatchedRoute', true);

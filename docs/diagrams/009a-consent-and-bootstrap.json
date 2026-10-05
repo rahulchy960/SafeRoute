@@ -1,0 +1,50 @@
+{
+  "$schema": "../../tools/diagrams/diagram.schema.json",
+  "title": "Consent and bootstrap",
+  "subtitle": "Age gate, consent notice, sign-in and account creation with consent in one transaction (P009a, ADR 0010)",
+  "direction": "TB",
+  "layout": { "nodeWidth": 220 },
+  "groups": [
+    { "id": "app", "label": "Android app (P009b)" },
+    { "id": "api", "label": "SafeRoute API" },
+    { "id": "db", "label": "PostgreSQL (one transaction)" }
+  ],
+  "nodes": [
+    { "id": "age", "label": "Age gate: I am 18 or older", "role": "app", "group": "app" },
+    { "id": "under", "label": "Under 18: blocked, nothing sent or stored", "role": "security", "group": "app" },
+    { "id": "notice", "label": "Consent notice: account_core, I agree", "role": "app", "group": "app" },
+    { "id": "otp", "label": "Firebase phone sign-in (OTP)", "role": "app", "group": "app" },
+    { "id": "call", "label": "POST /v1/me/bootstrap with consent", "role": "app", "group": "app" },
+    { "id": "later", "label": "Later, when a feature is first used: ask for its purpose", "role": "app", "group": "app", "rank": 6 },
+    { "id": "circle", "label": "Future: Trusted Circle consent (ADR 0011, not built)", "role": "external", "group": "app", "rank": 7 },
+
+    { "id": "verify", "label": "authenticate: verify the ID token", "role": "service", "group": "api", "rank": 4 },
+    { "id": "check", "label": "New account? consent present, ageConfirmed true, purposes allowed", "role": "service", "group": "api" },
+    { "id": "refuse", "label": "403 consent_required / adult_required, 400 unknown purpose: nothing written", "role": "security", "group": "api" },
+    { "id": "put", "label": "PUT /v1/me/consents/{purpose}", "role": "service", "group": "api", "rank": 7 },
+    { "id": "get", "label": "GET /v1/me/consents: latest per purpose", "role": "service", "group": "api", "rank": 7 },
+    { "id": "core409", "label": "Withdraw account_core: 409 account_deletion_required", "role": "security", "group": "api" },
+
+    { "id": "users", "label": "users + adult_attested_at", "role": "data", "group": "db", "rank": 6 },
+    { "id": "consents", "label": "consent_records (append-only)", "role": "data", "group": "db", "rank": 6 },
+    { "id": "audit", "label": "audit_log: user.created, consent.recorded, consent.changed", "role": "data", "group": "db", "rank": 6 }
+  ],
+  "edges": [
+    { "from": "age", "to": "under", "label": "under 18" },
+    { "from": "age", "to": "notice", "label": "18+" },
+    { "from": "notice", "to": "otp", "label": "agree" },
+    { "from": "otp", "to": "call" },
+    { "from": "call", "to": "verify" },
+    { "from": "verify", "to": "check" },
+    { "from": "check", "to": "refuse", "label": "not valid" },
+    { "from": "check", "to": "users", "label": "valid" },
+    { "from": "check", "to": "consents" },
+    { "from": "check", "to": "audit" },
+    { "from": "call", "to": "later" },
+    { "from": "later", "to": "put" },
+    { "from": "later", "to": "get" },
+    { "from": "later", "to": "circle" },
+    { "from": "put", "to": "core409" },
+    { "from": "put", "to": "consents", "label": "new row" }
+  ]
+}

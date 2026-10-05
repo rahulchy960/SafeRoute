@@ -22,6 +22,11 @@ export const users = pgTable(
     locale: text('locale').notNull().default('en'),
     /** Authorisation role; the source of truth, read on every request (ADR 0006). */
     role: text('role').notNull().default('user'),
+    /**
+     * PERSONAL DATA: when the user declared "I am 18 or older" (ADR 0010). No date of birth is
+     * collected. NULL for accounts created before the age gate existed.
+     */
+    adultAttestedAt: timestamp('adult_attested_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true })
       .notNull()
