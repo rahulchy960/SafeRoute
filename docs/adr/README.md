@@ -23,6 +23,7 @@ Copy [`template.md`](template.md) to `NNNN-short-title.md`, and add a row to the
 | [0015](0015-map-stack-and-location-policy.md) | Map stack (MapLibre Native + MapTiler) and location policy | Accepted |
 | [0016](0016-statewide-coverage-layers.md) | Statewide coverage in three layers (West Bengal launch, active regions, claims rule) | Accepted |
 | [0017](0017-collect-statewide-publish-by-gate.md) | Collect reports statewide, publish by gate (`context_only`, `collecting`, `published`) | Accepted |
+| [0018](0018-search-and-geocoding.md) | Place search and geocoding (server-side proxy, provider adapters, rate limits, evaluation) | Accepted |
 
 A breaking API change, new infrastructure, a new data store or the Android package name each need
 an ADR.

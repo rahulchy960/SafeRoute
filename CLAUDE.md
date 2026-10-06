@@ -278,6 +278,28 @@ works: UI strings, docs, the README, PR text, pitch material, the website and th
 - Never show an unverified police number; unknown jurisdiction means 112 only.
 - Legal wording about coverage and advertising is a draft marked "to be verified by a lawyer".
 
+## Search and geocoding rules (since P011a, ADR 0018)
+
+Follow [ADR 0018](docs/adr/0018-search-and-geocoding.md):
+
+- The geocoding key is **server-only** (`GEOCODING_API_KEY`, Secret Manager → Cloud Run). It is never
+  in the app, a tracked file, a log, an error, a diagram, Notion or a chat, and it is not the map
+  key. Claude Code never reads it; the evaluation harness (`pnpm search:eval`) is run by Rahul.
+- Only `backend/src/modules/search/providers/` knows a geocoding provider. Everything else uses
+  `GeocoderProvider`, and the provider is chosen by name (`GEOCODING_PROVIDER`). The contract names
+  no provider.
+- **Read a provider's full terms before writing its adapter** (proxying, commercial use, caching,
+  attribution, safety clauses) and record them in the ADR in your own words. MapTiler geocoding,
+  Stadia Maps and the public Nominatim service failed that check; don't add them back without a
+  new finding.
+- Search queries, coordinates and results are never logged, stored or cached on the server. The
+  adapter's errors carry a kind only (the key travels in the request URL). `near` is coarsened to
+  two decimals on the server.
+- No recent searches or saved places without a consent purpose and a retention rule (ADR 0010).
+- Rate-limit numbers live in `SEARCH_LIMITS` and `SEARCH_GLOBAL_DAILY_LIMIT` only. New rate limits
+  use `src/lib/rate-limit.ts`.
+- Never state a search hit rate that `pnpm search:eval` did not measure ("Coverage claims").
+
 ## Android rules (since P007a, ADR 0008)
 
 Follow [ADR 0008](docs/adr/0008-android-foundation.md), [ADR 0009](docs/adr/0009-android-api-client.md)
@@ -390,7 +412,7 @@ to go green.
 | --- | --- | --- |
 | Repo-wide | markdown lint, JSON validity, gitleaks secret scan (`.github/workflows/repo-checks.yml`) | Active |
 | Diagrams | `cd tools/diagrams && pnpm install && pnpm generate` (no errors) | Active |
-| Backend | `pnpm typecheck` · `pnpm lint` · `pnpm format:check` · `pnpm test` · `pnpm build` (run inside `backend/`; CI: `.github/workflows/backend-ci.yml`) | Active (since P002) |
+| Backend | `pnpm typecheck` · `pnpm lint` · `pnpm format:check` · `pnpm test` · `pnpm build` (run inside `backend/`; CI: `.github/workflows/backend-ci.yml`). `pnpm search:eval` is a measurement Rahul runs with his own key; it is not part of the gate and never runs in CI | Active (since P002) |
 | Contracts | in `backend/`: `pnpm openapi:generate` then commit the diff · `pnpm openapi:check` · `pnpm openapi:lint`; breaking changes need the PR label `breaking-api-change` + a new ADR (CI: `backend-ci` runs check + lint; `.github/workflows/contracts-ci.yml` runs them plus the oasdiff breaking-change gate) | Active (since P004a; oasdiff gate since P004b) |
 | Container | in `backend/`: `node scripts/container-smoke.mjs` (needs Docker; builds the image and runs the smoke checks, including `scripts/smoke.mjs` pass and fail paths) · actionlint for workflow changes (CI: `.github/workflows/container-ci.yml`) | Active (since P006a) |
 | Deploy workflow | actionlint + shellcheck clean · no `pull_request_target` · every action pinned by commit SHA · deploy job gated on `STAGING_DEPLOY_ENABLED` · no step prints secrets, the environment or `gcloud config` (CI: the `actionlint` job in `container-ci`; the deploy itself runs only on `main`) | Active (since P006b) |

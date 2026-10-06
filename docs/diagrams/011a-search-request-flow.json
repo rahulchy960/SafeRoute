@@ -1,0 +1,138 @@
+{
+  "$schema": "../../tools/diagrams/diagram.schema.json",
+  "title": "Place search request flow",
+  "subtitle": "The app never holds the geocoding key. The provider sees SafeRoute's server, not the user. Nothing about a search is logged or stored (P011a, ADR 0018)",
+  "direction": "TB",
+  "layout": {
+    "nodeWidth": 225
+  },
+  "groups": [
+    {
+      "id": "client",
+      "label": "Phone"
+    },
+    {
+      "id": "api",
+      "label": "SafeRoute API"
+    },
+    {
+      "id": "outside",
+      "label": "Outside SafeRoute"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "app",
+      "label": "App: GET /v1/search with q, a coarse map area and a Firebase ID token",
+      "role": "app",
+      "group": "client",
+      "rank": 0
+    },
+    {
+      "id": "auth",
+      "label": "requireUser: verify the token, load the account (401, 403)",
+      "role": "security",
+      "group": "api",
+      "rank": 1
+    },
+    {
+      "id": "validate",
+      "label": "Validate and normalise q: NFC, 2 to 100 code points, no control characters, joiners kept (400)",
+      "role": "service",
+      "group": "api",
+      "rank": 2
+    },
+    {
+      "id": "coarsen",
+      "label": "Coarsen near to 2 decimals (about 1 km); default bias if absent",
+      "role": "security",
+      "group": "api",
+      "rank": 3
+    },
+    {
+      "id": "limiter",
+      "label": "Rate limiter, in order: user burst (30, then 1/s), user daily (1000), shared provider budget",
+      "role": "service",
+      "group": "api",
+      "rank": 4
+    },
+    {
+      "id": "buckets",
+      "label": "PostgreSQL rate_limit_buckets: one row per bucket, one atomic statement, database time",
+      "role": "data",
+      "group": "api",
+      "rank": 5
+    },
+    {
+      "id": "adapter",
+      "label": "Provider adapter, chosen by name: adds the key, 3 s timeout, no retry, size bound, strict parsing",
+      "role": "service",
+      "group": "api",
+      "rank": 6
+    },
+    {
+      "id": "provider",
+      "label": "Geocoding provider (Geoapify or LocationIQ)",
+      "role": "external",
+      "group": "outside",
+      "rank": 7
+    },
+    {
+      "id": "ok",
+      "label": "200: results + attribution, Cache-Control: no-store",
+      "role": "app",
+      "group": "client",
+      "rank": 8
+    },
+    {
+      "id": "limited",
+      "label": "429 rate_limited + Retry-After (a user's own limit)",
+      "role": "app",
+      "group": "client",
+      "rank": 5
+    },
+    {
+      "id": "unavailable",
+      "label": "503 search_unavailable (+ Retry-After): shared budget used up, provider 429, timeout, network, bad body, or our key refused. Never 401 or 403",
+      "role": "app",
+      "group": "client",
+      "rank": 7
+    },
+    {
+      "id": "secret",
+      "label": "Secret Manager → Cloud Run env: GEOCODING_API_KEY. Missing in production: the API refuses to start",
+      "role": "infra",
+      "group": "api",
+      "rank": 5
+    },
+    {
+      "id": "never",
+      "label": "NEVER LOGGED OR STORED: query, coordinates, results, key. One log line per call: outcome, latency, count",
+      "role": "security",
+      "group": "api",
+      "rank": 7
+    },
+    {
+      "id": "harness",
+      "label": "Evaluation harness (local, key from the environment): fixture queries → same adapter → hit rate by district and script",
+      "role": "external",
+      "group": "outside",
+      "rank": 5
+    }
+  ],
+  "edges": [
+    { "from": "app", "to": "auth" },
+    { "from": "auth", "to": "validate" },
+    { "from": "validate", "to": "coarsen" },
+    { "from": "coarsen", "to": "limiter" },
+    { "from": "limiter", "to": "buckets", "label": "take one token" },
+    { "from": "limiter", "to": "limited", "label": "user bucket empty" },
+    { "from": "buckets", "to": "adapter", "label": "all three passed" },
+    { "from": "secret", "to": "adapter" },
+    { "from": "adapter", "to": "provider", "label": "HTTPS, coarse area only" },
+    { "from": "adapter", "to": "unavailable", "label": "failure" },
+    { "from": "adapter", "to": "never" },
+    { "from": "provider", "to": "ok", "label": "mapped to Place" },
+    { "from": "harness", "to": "adapter" }
+  ]
+}
