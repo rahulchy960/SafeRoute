@@ -17,6 +17,13 @@ name: android-ci
 # A release build refuses the dummy file unless -Psaferoute.allowDummyFirebase=true is passed;
 # the steps below build one release that way and prove that the refusal works.
 #
+# Since P010a (ADR 0015) the app shows a map and needs a map key. The real key is never in the
+# repository or in this workflow. The debug build runs without one (the app then says "Map not
+# configured"); tests use a fake map and never contact the tile provider. A release build
+# refuses to assemble without a real key unless -Psaferoute.allowDummyMapKey=true is passed
+# with an obviously fake key; the steps below build one release that way, prove that the
+# refusal works, and check that the native libraries in the APKs support 16 KB memory pages.
+#
 # No secrets, no signing, no cloud login: it behaves the same for pull requests from forks. The
 # APK is thrown away with the runner.
 # Not a required check in the ruleset yet: a path-filtered check would block unrelated PRs.
@@ -88,14 +95,34 @@ jobs:
           -Porg.gradle.java.installations.fromEnv=JAVA_HOME_17_X64
 
       # The placeholder address resolves nowhere; nothing is signed or uploaded. This is the
-      # only build allowed to use the dummy Firebase configuration in a release.
-      - name: Release build with a dummy base URL and the dummy Firebase configuration
+      # only build allowed to use the dummy Firebase configuration and a dummy map key in a
+      # release.
+      - name: Release build with a dummy base URL, Firebase configuration and map key
         run: >-
           ./gradlew assembleRelease
           --console=plain
           -Porg.gradle.java.installations.fromEnv=JAVA_HOME_17_X64
           -Psaferoute.apiBaseUrl=https://example.invalid/
           -Psaferoute.allowDummyFirebase=true
+          -Psaferoute.mapTilerKey=dummy-map-key-for-ci
+          -Psaferoute.allowDummyMapKey=true
+
+      # Two cases: no key at all (the placeholder is used), and the dummy key without the flag.
+      - name: A release build without a real map key fails without the allow flag
+        run: |
+          for key_args in "" "-Psaferoute.mapTilerKey=dummy-map-key-for-ci"; do
+            # shellcheck disable=SC2086 # key_args is empty or one argument, on purpose
+            if ./gradlew :app:checkReleaseMapKey --console=plain $key_args               -Porg.gradle.java.installations.fromEnv=JAVA_HOME_17_X64 > "$RUNNER_TEMP/guard.log" 2>&1; then
+              echo "::error::A release build must refuse a missing or dummy map key (checkReleaseMapKey)."
+              exit 1
+            fi
+            # It must fail for this reason and no other.
+            grep -q "Release builds need a real map key" "$RUNNER_TEMP/guard.log" || {
+              cat "$RUNNER_TEMP/guard.log"
+              exit 1
+            }
+          done
+          echo "As expected: a release build refuses a missing or dummy map key."
 
       - name: A release build without the base URL fails
         run: |
@@ -156,6 +183,40 @@ jobs:
           fi
           if [ "$release_classes" -ne 0 ] || [ "$release_strings" -ne 0 ]; then
             echo "::error::The release APK contains the debug-only developer tools."
+            exit 1
+          fi
+
+      # Google Play requires apps that target Android 15+ to work on devices whose memory pages
+      # are 16 KB instead of 4 KB (64-bit devices only). Two things must hold for every native
+      # library (.so): its position inside the APK is a multiple of 16 KB (zipalign checks
+      # that), and its loadable segments are aligned to 16 KB (readelf shows that). The map
+      # library is the largest one. 32-bit libraries are outside the requirement.
+      - name: Native libraries support 16 KB memory pages
+        run: |
+          build_tools=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)
+          debug_apk=app/build/outputs/apk/debug/app-debug.apk
+          release_apk=app/build/outputs/apk/release/app-release-unsigned.apk
+          "$build_tools/zipalign" -c -P 16 4 "$debug_apk"
+          "$build_tools/zipalign" -c -P 16 4 "$release_apk"
+
+          work="$RUNNER_TEMP/native-libs"
+          mkdir -p "$work"
+          unzip -q -o "$release_apk" 'lib/arm64-v8a/*.so' 'lib/x86_64/*.so' -d "$work"
+          checked=0
+          failed=0
+          while IFS= read -r library; do
+            checked=$((checked + 1))
+            for alignment in $(readelf -lW "$library" | awk '$1 == "LOAD" { print $NF }'); do
+              if [ $((alignment)) -lt 16384 ]; then
+                echo "::error::Not aligned for 16 KB pages: ${library#"$work"/} ($alignment)"
+                failed=1
+              fi
+            done
+          done < <(find "$work" -name '*.so' | sort)
+          echo "64-bit native libraries checked: $checked"
+          # The map library must be among them, or this check is not looking in the right place.
+          if [ ! -f "$work/lib/arm64-v8a/libmaplibre.so" ] || [ "$failed" -ne 0 ]; then
+            echo "::error::16 KB page-size check failed."
             exit 1
           fi
 
