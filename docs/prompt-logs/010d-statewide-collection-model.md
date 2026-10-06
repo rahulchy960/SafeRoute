@@ -56,7 +56,7 @@ is gated by a data threshold and moderation capacity, region by region.
 Not changed: the plan PDF, `addendum-v7.1.md`, `addendum-v7.2.md`, the P010c log, any code,
 `contracts/`, migrations, workflows, dependencies.
 
-**Size:** about 470 changed lines, all documents.
+**Size:** about 510 changed lines, all documents.
 
 ## 5. Diagram
 
