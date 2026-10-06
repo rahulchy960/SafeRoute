@@ -10,7 +10,7 @@ import androidx.navigation.compose.rememberNavController
 import com.saferoute.app.BuildConfig
 import com.saferoute.app.feature.home.HomeRoute
 import com.saferoute.app.feature.search.SearchScreen
-import com.saferoute.app.feature.settings.SettingsScreen
+import com.saferoute.app.feature.settings.SettingsRoute
 
 /**
  * Maps each destination to its screen and owns the back stack.
@@ -48,7 +48,7 @@ fun SafeRouteNavHost(
             SearchScreen(onBack = { navController.popBackStack() })
         }
         composable<SettingsDestination> {
-            SettingsScreen(
+            SettingsRoute(
                 versionName = BuildConfig.VERSION_NAME,
                 versionCode = BuildConfig.VERSION_CODE,
                 onBack = { navController.popBackStack() },

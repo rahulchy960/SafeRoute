@@ -13,6 +13,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -24,7 +25,10 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.saferoute.app.R
 import com.saferoute.app.core.designsystem.theme.SafeRouteTheme
+import com.saferoute.app.core.session.AccountSummary
+import com.saferoute.app.core.session.maskPhone
 import com.saferoute.app.feature.search.SearchScreen
+import com.saferoute.app.feature.settings.AccountUiState
 import com.saferoute.app.feature.settings.SettingsScreen
 import com.saferoute.app.testing.assertMinTouchTarget
 import org.junit.Assert.assertEquals
@@ -92,6 +96,107 @@ class ScreensTest {
 
         backButton().performClick()
         assertEquals(1, backPresses)
+    }
+
+    @Composable
+    private fun SettingsWithAccount(account: AccountUiState, events: MutableList<String>, fontScale: Float = 1f) =
+        Themed(fontScale) {
+            SettingsScreen(
+                versionName = "9.8.7",
+                versionCode = 42,
+                onBack = {},
+                account = account,
+                onRetryAccount = { events += "retry" },
+                onSignOut = { events += "signOut" },
+            )
+        }
+
+    private val loadedAccount = AccountUiState.Loaded(
+        AccountSummary(
+            maskedPhone = maskPhone("+910000000123"),
+            role = "user",
+            locale = "en",
+            grantedPurposes = listOf("account_core", "a_purpose_from_the_future"),
+        ),
+    )
+
+    @Test
+    fun `settings without an account shows no account or privacy section`() {
+        compose.setContent { Settings() }
+
+        compose.onNodeWithText(string(R.string.settings_account_title)).assertDoesNotExist()
+        compose.onNodeWithText(string(R.string.settings_sign_out)).assertDoesNotExist()
+    }
+
+    @Test
+    fun `the account section shows the masked phone number and the consents on record`() {
+        compose.setContent { SettingsWithAccount(loadedAccount, mutableListOf()) }
+
+        compose.onNodeWithText(string(R.string.settings_account_title)).assertIsDisplayed()
+        compose.onNodeWithText("+91 ••••• ••123", useUnmergedTree = true).assertIsDisplayed()
+        // The full number is nowhere on the screen.
+        compose.onNodeWithText("0000000123", substring = true, useUnmergedTree = true).assertDoesNotExist()
+
+        compose.onNodeWithText(string(R.string.settings_privacy_title)).assertIsDisplayed()
+        compose.onNodeWithText("• " + string(R.string.consent_purpose_account_core), useUnmergedTree = true)
+            .assertIsDisplayed()
+        // A purpose this version does not know is shown as sent, not hidden.
+        compose.onNodeWithText("• a_purpose_from_the_future", useUnmergedTree = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun `sign out asks first, and cancel does nothing`() {
+        val events = mutableListOf<String>()
+        compose.setContent { SettingsWithAccount(loadedAccount, events) }
+
+        compose.onNodeWithText(string(R.string.settings_sign_out)).assertMinTouchTarget().performClick()
+        compose.onNodeWithText(string(R.string.settings_sign_out_dialog_title)).assertIsDisplayed()
+        compose.onNodeWithText(string(R.string.settings_sign_out_dialog_body)).assertIsDisplayed()
+        assertEquals(emptyList<String>(), events)
+
+        compose.onNodeWithText(string(R.string.settings_sign_out_cancel)).performClick()
+        compose.onNodeWithText(string(R.string.settings_sign_out_dialog_title)).assertDoesNotExist()
+        assertEquals(emptyList<String>(), events)
+    }
+
+    @Test
+    fun `confirming sign out reports it once`() {
+        val events = mutableListOf<String>()
+        compose.setContent { SettingsWithAccount(loadedAccount, events) }
+
+        compose.onNodeWithText(string(R.string.settings_sign_out)).performClick()
+        compose.onAllNodes(hasText(string(R.string.settings_sign_out)))[1].performClick()
+
+        assertEquals(listOf("signOut"), events)
+        compose.onNodeWithText(string(R.string.settings_sign_out_dialog_title)).assertDoesNotExist()
+    }
+
+    @Test
+    fun `an account that cannot be loaded offers try again, and sign out still works`() {
+        val events = mutableListOf<String>()
+        compose.setContent { SettingsWithAccount(AccountUiState.Unavailable, events) }
+
+        compose.onNodeWithText(string(R.string.settings_account_unavailable)).assertIsDisplayed()
+        compose.onNodeWithText(string(R.string.settings_account_retry)).assertMinTouchTarget().performClick()
+        compose.onNodeWithText(string(R.string.settings_sign_out)).assertIsDisplayed()
+        compose.onNodeWithText(string(R.string.settings_privacy_title)).assertDoesNotExist()
+        assertEquals(listOf("retry"), events)
+    }
+
+    @Test
+    fun `while the account loads the screen says so`() {
+        compose.setContent { SettingsWithAccount(AccountUiState.Loading, mutableListOf()) }
+        compose.onNodeWithText(string(R.string.settings_account_loading)).assertIsDisplayed()
+    }
+
+    @Test
+    fun `at 200 percent font the account section and sign out can be reached`() {
+        compose.setContent { SettingsWithAccount(loadedAccount, mutableListOf(), fontScale = 2f) }
+
+        compose.onNodeWithText("+91 ••••• ••123", useUnmergedTree = true).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(string(R.string.settings_sign_out)).performScrollTo()
+            .assertIsDisplayed()
+            .assertMinTouchTarget()
     }
 
     @Test
