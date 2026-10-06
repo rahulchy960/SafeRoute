@@ -48,6 +48,27 @@ class MapLibreBoundaryTest {
     }
 
     @Test
+    fun `only one file uses the play services location library`() {
+        val users = kotlinFiles("src/main", "src/debug", "src/release")
+            .filter { file -> file.codeLines().any { it.contains("com.google.android.gms.location") } }
+            .map { it.invariantSeparatorsPath }
+
+        assertEquals(listOf("src/main/java/com/saferoute/app/core/location/FusedLocation.kt"), users)
+    }
+
+    @Test
+    fun `location code never touches the network, storage or the log`() {
+        val forbidden = listOf(
+            "core.network", "okhttp3", "retrofit2", "android.util.Log", "datastore", "SharedPreferences", "java.io.File",
+        )
+        val offenders = kotlinFiles("src/main/java/com/saferoute/app/core/location")
+            .flatMap { file -> file.codeLines().map { file.name to it } }
+            .filter { (_, line) -> forbidden.any(line::contains) }
+
+        assertEquals(emptyList<Pair<String, String>>(), offenders)
+    }
+
+    @Test
     fun `the map vocabulary used by screens has no library or android view types`() {
         val types = File("src/main/java/com/saferoute/app/core/map/MapTypes.kt").readText()
 
