@@ -231,7 +231,7 @@ Follow [ADR 0007](docs/adr/0007-gcp-staging-topology.md):
   `in.saferoute.kolkata`).
 - City-specific facts (launch area, map/routing extract, time zone, police-station data, festival
   load planning, local-language copy) live in configuration, data or docs.
-- "Kolkata" appears only where it is a fact: the first pilot area and initial active region, the
+- "Kolkata" appears only where it is a fact: the first pilot area and first candidate for a published region, the
   metro routing extent measured in P012, Durga Puja load planning, `Asia/Kolkata` conversions,
   Bengali UI, test landmarks. It is not "the launch city": the launch geography is West Bengal (ADR 0016).
 - Multi-city support is deferred to Plan v7 §14.2 Stage 3. Don't build it early. Expansion is by
