@@ -5,7 +5,13 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 
-/** Numbers here are made up; the 00000 block is not assigned to anyone. */
+/**
+ * The numbers here are made-up patterns. The validator only accepts numbers that start with
+ * 6 to 9, so the usual all-zero placeholder cannot test the accepting path.
+ *
+ * They are never used to send anything: this test only calls a pure function, and no test in
+ * this project sends an SMS, calls Firebase or dials a number.
+ */
 class PhoneNumberTest {
 
     @Test

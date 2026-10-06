@@ -8,9 +8,15 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.saferoute.app.core.session.FakeSession
+import com.saferoute.app.core.session.Session
+import com.saferoute.app.core.session.SessionState
+import com.saferoute.app.core.session.di.SessionBindingModule
+import dagger.hilt.android.testing.BindValue
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import dagger.hilt.android.testing.HiltTestApplication
+import dagger.hilt.android.testing.UninstallModules
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
@@ -27,6 +33,7 @@ import org.robolectric.annotation.Config
  * of opening them, so the test can read the intent.
  */
 @HiltAndroidTest
+@UninstallModules(SessionBindingModule::class)
 @RunWith(AndroidJUnit4::class)
 @Config(application = HiltTestApplication::class, qualifiers = "w360dp-h640dp")
 class AppNavigationTest {
@@ -36,6 +43,12 @@ class AppNavigationTest {
 
     @get:Rule(order = 1)
     val compose = createAndroidComposeRule<MainActivity>()
+
+    // Signed in and ready: the app's own screens are shown. The fake replaces the real session,
+    // so the test needs no Firebase and never calls the server this machine's build points at.
+    @BindValue
+    @JvmField
+    val session: Session = FakeSession(SessionState.Ready)
 
     private fun string(id: Int): String = compose.activity.getString(id)
 

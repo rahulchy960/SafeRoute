@@ -66,4 +66,120 @@
     <string name="settings_source_code">সোর্স কোড: github.com/rahulchy960/SafeRoute</string>
     <string name="settings_safety_notice_title">নিরাপত্তা বিজ্ঞপ্তি</string>
     <string name="settings_safety_notice_body">জরুরি অবস্থায় 112 নম্বরে কল করুন।</string>
+
+    <!-- Settings: account (P009c). %1$s is a masked phone number such as +91 ••••• ••123 -->
+    <string name="settings_account_title">অ্যাকাউন্ট</string>
+    <string name="settings_account_phone">ফোন নম্বর</string>
+    <string name="settings_account_no_phone">এই অ্যাকাউন্টে কোনো ফোন নম্বর নেই</string>
+    <string name="settings_account_loading">আপনার অ্যাকাউন্ট লোড হচ্ছে…</string>
+    <string name="settings_account_unavailable">এই মুহূর্তে আপনার অ্যাকাউন্টের তথ্য লোড করা যাচ্ছে না।</string>
+    <string name="settings_account_retry">আবার চেষ্টা করুন</string>
+    <string name="settings_sign_out">সাইন আউট</string>
+    <string name="settings_sign_out_dialog_title">সাইন আউট করবেন?</string>
+    <string name="settings_sign_out_dialog_body">ফিরে আসতে হলে আপনাকে প্রথম ধাপগুলো আবার পেরোতে হবে এবং ফোন নম্বর যাচাই করতে হবে। আপনার অ্যাকাউন্ট মুছে যাবে না।</string>
+    <string name="settings_sign_out_cancel">বাতিল</string>
+    <string name="settings_privacy_title">গোপনীয়তা</string>
+    <string name="settings_privacy_granted">আপনি এগুলোতে সম্মতি দিয়েছেন:</string>
+    <string name="settings_privacy_none">কোনো সম্মতি নথিভুক্ত নেই।</string>
+    <string name="consent_purpose_account_core">আপনার অ্যাকাউন্ট ও ফোন নম্বর যাচাই</string>
+    <string name="consent_purpose_sos_alerts">আপনার জরুরি যোগাযোগের ব্যক্তিদের কাছে SOS সতর্কবার্তা</string>
+    <string name="consent_purpose_live_sharing">লাইভ অবস্থান শেয়ার</string>
+    <string name="consent_purpose_safety_reports">নিরাপত্তা সংক্রান্ত রিপোর্ট</string>
+
+    <!-- Onboarding: shared -->
+    <string name="onboarding_continue">এগিয়ে যান</string>
+    <string name="onboarding_emergency_note">জরুরি অবস্থায় 112 নম্বরে কল করুন।</string>
+    <string name="onboarding_working">একটু অপেক্ষা করুন…</string>
+    <string name="onboarding_creating_account">আপনার অ্যাকাউন্ট তৈরি হচ্ছে…</string>
+    <string name="onboarding_problem_title">কিছু একটা সমস্যা হয়েছে</string>
+    <string name="onboarding_problem_offline">SafeRoute তার সার্ভারের সঙ্গে যোগাযোগ করতে পারেনি। আপনার ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।</string>
+    <string name="onboarding_problem_generic">SafeRoute সেট আপ শেষ করতে পারেনি। কিছুক্ষণ পরে আবার চেষ্টা করুন।</string>
+    <string name="onboarding_try_again">আবার চেষ্টা করুন</string>
+
+    <!-- Onboarding: welcome -->
+    <string name="welcome_title">SafeRoute-এ স্বাগত</string>
+    <string name="welcome_body">SafeRoute আপনাকে পথ খুঁজে পেতে এবং আপনার বিশ্বস্ত মানুষদের সঙ্গে যাত্রার খবর ভাগ করে নিতে সাহায্য করে।</string>
+    <string name="welcome_safety_context">অ্যাপের নিরাপত্তা সংক্রান্ত তথ্য আপনাকে সিদ্ধান্ত নিতে সাহায্য করার জন্য। কোনো রাস্তা বা জায়গা নিরাপদ, এমন নিশ্চয়তা এটি কখনোই দেয় না।</string>
+
+    <!-- Onboarding: age gate. Adults only (18+). -->
+    <string name="age_title">আপনার বয়স কত?</string>
+    <string name="age_body">SafeRoute শুধু 18 বছর বা তার বেশি বয়সীদের জন্য। আমরা আপনার জন্মতারিখ জানতে চাই না।</string>
+    <string name="age_adult">আমার বয়স 18 বা তার বেশি</string>
+    <string name="age_minor">আমার বয়স 18-এর কম</string>
+    <string name="age_minor_dialog_title">আপনার বয়স কি 18-এর কম?</string>
+    <string name="age_minor_dialog_body">আপনি নিশ্চিত করলে এই ফোনে SafeRoute ব্যবহার করা যাবে না। এই সিদ্ধান্ত অ্যাপের ভেতরে আর বদলানো যাবে না।</string>
+    <string name="age_minor_dialog_confirm">হ্যাঁ, আমার বয়স 18-এর কম</string>
+    <string name="age_minor_dialog_cancel">ফিরে যান</string>
+
+    <!-- Onboarding: blocked -->
+    <string name="blocked_minor_title">SafeRoute প্রাপ্তবয়স্কদের জন্য</string>
+    <string name="blocked_minor_body">সত্যি বলার জন্য ধন্যবাদ। SafeRoute শুধু 18 বছর বা তার বেশি বয়সীদের জন্য, তাই এই ফোনে এটি ব্যবহার করা যাবে না। আপনার সম্পর্কে কোনো তথ্য এই ফোনের বাইরে পাঠানো বা সংরক্ষণ করা হয়নি।</string>
+    <string name="blocked_minor_mistake">ভুল করে উত্তর দিয়েছেন? [grievance contact]-এ লিখুন।</string>
+    <string name="blocked_deleted_title">এই অ্যাকাউন্টটি মুছে ফেলা হয়েছে</string>
+    <string name="blocked_deleted_body">এই ফোন নম্বরের অ্যাকাউন্টটি মুছে ফেলা হয়েছে, তাই আপনাকে সাইন আউট করা হয়েছে। এটি ভুল মনে হলে [grievance contact]-এ লিখুন।</string>
+
+    <!-- Onboarding: consent notice. DRAFT text: needs a native speaker AND a lawyer before any release. -->
+    <string name="notice_title">আপনার গোপনীয়তা</string>
+    <string name="notice_draft_marker">খসড়া · এখনও আইনজীবী দেখেননি</string>
+    <!-- %1$s is the notice version -->
+    <string name="notice_version">বিজ্ঞপ্তির সংস্করণ %1$s</string>
+    <string name="notice_language_label">এই বিজ্ঞপ্তির ভাষা</string>
+    <string name="notice_language_english">English</string>
+    <string name="notice_language_bengali">বাংলা</string>
+    <string name="notice_intro">এগিয়ে যাওয়ার আগে এটি পড়ুন। আপনার অ্যাকাউন্ট তৈরি করতে SafeRoute-এর কী দরকার এবং কেন, তা এখানে বলা আছে।</string>
+    <string name="notice_s1_title">আমরা কারা</string>
+    <string name="notice_s1_body">SafeRoute পরিচালনা করে [operator name]। এটি নিরাপত্তা সংক্রান্ত সুবিধা-সহ একটি পথনির্দেশক অ্যাপ। এটি কোনো জরুরি পরিষেবা নয়। জরুরি অবস্থায় 112 নম্বরে কল করুন।</string>
+    <string name="notice_s2_title">এখন আমাদের কী দরকার, এবং কেন</string>
+    <string name="notice_s2_body">আপনার অ্যাকাউন্ট তৈরি করতে আমরা:\n• SMS-এ পাঠানো একবার ব্যবহারযোগ্য কোড দিয়ে আপনার ফোন নম্বর যাচাই করব এবং নম্বরটি রাখব;\n• আপনি যে ভাষা ব্যবহার করেন তা এবং অ্যাকাউন্টের সাধারণ তথ্য রাখব;\n• আপনি যে বলেছেন আপনার বয়স 18 বা তার বেশি, এবং এই বিজ্ঞপ্তিতে সম্মতি দিয়েছেন, তা তারিখ-সহ লিখে রাখব।</string>
+    <string name="notice_s3_title">আপনার অবস্থান</string>
+    <string name="notice_s3_body">আপনি মানচিত্র ও পথনির্দেশ ব্যবহার করলে, আপনি কোথায় আছেন তা দেখাতে এবং পথ খুঁজতে SafeRoute আপনার অবস্থান ব্যবহার করে। আপনি ওই সুবিধাগুলো ব্যবহার করলে এবং ফোনে অবস্থানের অনুমতি দিলে তবেই এটি শুরু হয়।</string>
+    <string name="notice_s4_title">আপনার তথ্য কোথায় রাখা হয়</string>
+    <string name="notice_s4_body">আপনার অ্যাকাউন্টের তথ্য ভারতে অবস্থিত Google Cloud সার্ভারে রাখা হয়। আপনার ফোন নম্বর যাচাই করে Google-এর Firebase পরিষেবা; অপব্যবহার ঠেকাতে এটি নম্বরটি এবং আপনার ফোন সম্পর্কে কিছু তথ্য পায়।</string>
+    <string name="notice_s5_title">যেগুলো আলাদা করে অনুমতি চাইবে</string>
+    <string name="notice_s5_body">জরুরি যোগাযোগের ব্যক্তি, SOS সতর্কবার্তা, লাইভ অবস্থান শেয়ার এবং নিরাপত্তা সংক্রান্ত রিপোর্টে আরও তথ্য লাগে। প্রতিটি সুবিধা প্রথমবার ব্যবহারের সময় আপনার অনুমতি চাইবে। এগুলো ছাড়াও আপনি SafeRoute ব্যবহার করতে পারবেন।</string>
+    <string name="notice_s6_title">আপনার অধিকার</string>
+    <string name="notice_s6_body">আপনি নিজের তথ্য দেখতে, তা সংশোধন করাতে বা মুছে ফেলাতে চাইতে পারেন, এবং অভিযোগ জানাতে পারেন। যোগাযোগ: [grievance contact]।</string>
+    <string name="notice_s7_title">মত বদলালে</string>
+    <string name="notice_s7_body">আপনি যেকোনো সময় সম্মতি প্রত্যাহার করতে পারেন। সম্মতি ছাড়া আপনার অ্যাকাউন্ট চলতে পারে না, তাই প্রত্যাহার করা মানে অ্যাকাউন্ট মুছে ফেলা। অ্যাপের ভেতর থেকে অ্যাকাউন্ট মোছার সুবিধা পরের সংস্করণে আসবে; ততদিন [grievance contact]-এ লিখুন।</string>
+    <string name="notice_s8_title">বয়স</string>
+    <string name="notice_s8_body">SafeRoute শুধু 18 বছর বা তার বেশি বয়সীদের জন্য।</string>
+    <string name="notice_scroll_hint">এগিয়ে যেতে শেষ পর্যন্ত স্ক্রোল করুন।</string>
+    <string name="notice_agree">আমি সম্মত</string>
+    <string name="notice_decline">আমি সম্মত নই</string>
+    <string name="notice_declined">এই সম্মতি ছাড়া SafeRoute কাজ করতে পারে না, কারণ অ্যাকাউন্ট তৈরি করতে আপনার ফোন নম্বর লাগে। কিছুই পাঠানো বা সংরক্ষণ করা হয়নি। আপনি যখন খুশি বিজ্ঞপ্তিটি আবার পড়ে সম্মতি দিতে পারেন।</string>
+
+    <!-- Onboarding: phone number. India only for now. -->
+    <string name="phone_title">আপনার মোবাইল নম্বর</string>
+    <string name="phone_body">নম্বরটি আপনার কি না যাচাই করতে আমরা SMS-এ 6 সংখ্যার একটি কোড পাঠাব। SMS-এর খরচ লাগতে পারে।</string>
+    <string name="phone_country_code">+91</string>
+    <string name="phone_country_code_description">দেশের কোড: ভারত, +91</string>
+    <string name="phone_field_label">মোবাইল নম্বর</string>
+    <string name="phone_india_only">SafeRoute এখন শুধু ভারতীয় মোবাইল নম্বরে কাজ করে।</string>
+    <string name="phone_error_invalid">6, 7, 8 বা 9 দিয়ে শুরু হওয়া 10 সংখ্যার ভারতীয় মোবাইল নম্বর লিখুন।</string>
+    <string name="phone_send_code">কোড পাঠান</string>
+    <string name="phone_sending">কোড পাঠানো হচ্ছে…</string>
+
+    <!-- Onboarding: SMS code -->
+    <string name="code_title">কোডটি লিখুন</string>
+    <string name="code_body">SMS-এ আসা 6 সংখ্যার কোডটি লিখুন। আপনার ফোন SMS পড়তে পারলে এটি নিজে থেকেই হয়ে যাবে।</string>
+    <string name="code_field_label">6 সংখ্যার কোড</string>
+    <string name="code_verify">যাচাই করুন</string>
+    <string name="code_verifying">কোড যাচাই হচ্ছে…</string>
+    <string name="code_resend">নতুন কোড পাঠান</string>
+    <!-- %1$d is the number of seconds left -->
+    <plurals name="code_resend_wait">
+        <item quantity="one">%1$d সেকেন্ড পরে নতুন কোড চাইতে পারবেন।</item>
+        <item quantity="other">%1$d সেকেন্ড পরে নতুন কোড চাইতে পারবেন।</item>
+    </plurals>
+    <string name="code_change_number">নম্বর বদলান</string>
+
+    <!-- Sign-in errors. They never repeat the number or the code. -->
+    <string name="signin_error_invalid_phone">নম্বরটি গ্রহণ করা হয়নি। দেখে নিয়ে আবার চেষ্টা করুন।</string>
+    <string name="signin_error_wrong_code">কোডটি ঠিক নয়। SMS দেখে আবার চেষ্টা করুন।</string>
+    <string name="signin_error_code_expired">কোডটির মেয়াদ শেষ হয়ে গেছে। নতুন কোড চান।</string>
+    <string name="signin_error_too_many">অনেকবার চেষ্টা করা হয়েছে। কিছুক্ষণ অপেক্ষা করে আবার চেষ্টা করুন।</string>
+    <string name="signin_error_blocked">এই নম্বরে এখন সাইন-ইন করা যাচ্ছে না। পরে আবার চেষ্টা করুন।</string>
+    <string name="signin_error_network">ইন্টারনেট সংযোগ নেই। সংযোগ দেখে আবার চেষ্টা করুন।</string>
+    <string name="signin_error_app_not_verified">এটি আসল অ্যাপ কি না SafeRoute নিশ্চিত করতে পারেনি। Google Play services আপডেট আছে কি না দেখে আবার চেষ্টা করুন।</string>
+    <string name="signin_error_unknown">সাইন-ইন হয়নি। আবার চেষ্টা করুন।</string>
 </resources>

@@ -7,6 +7,9 @@ import com.saferoute.app.core.network.ProbeResult
 import com.saferoute.app.core.network.ServerCheck
 import com.saferoute.app.core.network.errors.ApiFailure
 import com.saferoute.app.core.network.errors.isRetryable
+import com.saferoute.app.core.session.AccountResult
+import com.saferoute.app.core.session.Session
+import com.saferoute.app.core.session.SessionState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -40,11 +43,25 @@ sealed interface ProbeState {
     data class Failed(val reason: FailureReason) : ProbeState
 }
 
+/** The answer of "Who am I": the signed-in account as the server sees it. */
+sealed interface WhoAmIState {
+    data object NotAsked : WhoAmIState
+
+    data object Asking : WhoAmIState
+
+    data class Known(val role: String, val locale: String) : WhoAmIState
+
+    data object Unavailable : WhoAmIState
+}
+
 data class DeveloperCheckUiState(
     val serverConfigured: Boolean,
     val health: ProbeState = ProbeState.NotChecked,
     val readiness: ProbeState = ProbeState.NotChecked,
     val lastRequestId: String? = null,
+    /** The session state's name, for example `Ready`. Never a token, uid or phone number. */
+    val sessionState: String = "",
+    val whoAmI: WhoAmIState = WhoAmIState.NotAsked,
 ) {
     val checking: Boolean get() = health == ProbeState.Checking || readiness == ProbeState.Checking
     val canCheck: Boolean get() = serverConfigured && !checking
@@ -59,6 +76,7 @@ data class DeveloperCheckUiState(
 @HiltViewModel
 class DeveloperCheckViewModel @Inject constructor(
     private val check: ServerCheck,
+    private val session: Session,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(DeveloperCheckUiState(serverConfigured = check.isConfigured))
@@ -66,6 +84,27 @@ class DeveloperCheckViewModel @Inject constructor(
 
     init {
         checkNow()
+        viewModelScope.launch {
+            session.state.collect { sessionState ->
+                _state.update { it.copy(sessionState = sessionState.label()) }
+            }
+        }
+    }
+
+    /**
+     * "Who am I": asks the API for the signed-in account (`GET /v1/me`) and shows the role and
+     * the language the server has. Proves that the phone's ID token is accepted.
+     */
+    fun whoAmI() {
+        if (_state.value.whoAmI == WhoAmIState.Asking) return
+        _state.update { it.copy(whoAmI = WhoAmIState.Asking) }
+        viewModelScope.launch {
+            val answer = when (val result = session.account()) {
+                is AccountResult.Loaded -> WhoAmIState.Known(result.account.role, result.account.locale)
+                is AccountResult.Unavailable -> WhoAmIState.Unavailable
+            }
+            _state.update { it.copy(whoAmI = answer) }
+        }
     }
 
     /** Without a configured server nothing is sent: the placeholder address resolves nowhere. */
@@ -86,6 +125,13 @@ class DeveloperCheckViewModel @Inject constructor(
             }
         }
     }
+}
+
+/** `Ready`, `SignedOut`, `Blocked(UNDER_18)`, ...: the state's name and nothing else. */
+private fun SessionState.label(): String = when (this) {
+    is SessionState.Blocked -> "Blocked($reason)"
+    is SessionState.Error -> "Error(retryable=$retryable)"
+    else -> this::class.simpleName.orEmpty()
 }
 
 private fun ProbeResult.toState(): ProbeState = when (this) {

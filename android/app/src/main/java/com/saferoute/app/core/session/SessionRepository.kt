@@ -14,6 +14,7 @@ import com.saferoute.app.core.network.generated.model.Consent
 import com.saferoute.app.core.network.generated.model.SetConsentRequest
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -45,47 +46,37 @@ class SessionRepository @Inject constructor(
     private val store: SessionStore,
     private val meApi: MeApi,
     private val appLocale: AppLocale,
-) {
+) : Session {
     private val _state = MutableStateFlow<SessionState>(SessionState.Loading)
 
-    /** A `StateFlow` always has a current value; screens collect it and redraw when it changes. */
-    val state: StateFlow<SessionState> = _state.asStateFlow()
+    override val state: StateFlow<SessionState> = _state.asStateFlow()
+
+    override val flags: Flow<SessionFlags> get() = store.flags
 
     /** One check at a time: a second caller waits and then works on the newer flags. */
     private val mutex = Mutex()
 
-    /**
-     * Works out the state from scratch. Call it when the app starts, after sign-in, and when the
-     * user taps "Try again".
-     */
-    suspend fun refresh() = mutex.withLock { _state.value = resolve() }
+    override suspend fun refresh() = mutex.withLock { _state.value = resolve() }
 
-    /** Welcome screen passed. */
-    suspend fun markWelcomeSeen() = mutex.withLock {
+    override suspend fun markWelcomeSeen() = mutex.withLock {
         store.update { it.copy(welcomeSeen = true) }
     }
 
-    /** "I am 18 or older". Stored on the phone only; the server learns it at account creation. */
-    suspend fun confirmAdult() = mutex.withLock {
+    override suspend fun confirmAdult() = mutex.withLock {
         store.update { it.copy(ageConfirmed = true, under18 = false) }
         _state.value = resolve()
     }
 
-    /** "I am under 18": a flag on this phone and nothing else. No network call, no sign-in. */
-    suspend fun declareUnder18() = mutex.withLock {
+    /**
+     * There is deliberately no way back from this in the app (ADR 0010, addendum): only clearing
+     * the app's data or reinstalling removes the flag. The screen asks for confirmation first.
+     */
+    override suspend fun declareUnder18() = mutex.withLock {
         store.update { it.copy(under18 = true, ageConfirmed = false) }
         _state.value = SessionState.Blocked(BlockReason.UNDER_18)
     }
 
-    /**
-     * "I agree" on the consent notice shown in [noticeLocale] (`en` or `bn`).
-     *
-     * For a new user this only stores the acceptance; it is sent when the account is created.
-     * For a signed-in user it is sent right away (`PUT /v1/me/consents/account_core`).
-     *
-     * Declining needs no function: nothing is stored and nothing is sent.
-     */
-    suspend fun acceptNotice(noticeLocale: String) = mutex.withLock {
+    override suspend fun acceptNotice(noticeLocale: String) = mutex.withLock {
         store.update {
             it.copy(
                 acceptedNoticeVersion = NOTICE_VERSION,
@@ -95,11 +86,34 @@ class SessionRepository @Inject constructor(
         _state.value = resolve()
     }
 
-    /** Signs out of Firebase and forgets the onboarding flags: the app starts over. */
-    suspend fun signOut() = mutex.withLock {
+    override suspend fun signOut() = mutex.withLock {
         gateway.signOut()
         store.clear()
         _state.value = resolve()
+    }
+
+    /**
+     * Two reads: the account and its consents. It does not change [state]; a failure here only
+     * means Settings cannot show the details right now.
+     */
+    override suspend fun account(): AccountResult {
+        if (gateway.currentUser == null) return AccountResult.Unavailable(retryable = false)
+        val me = when (val result = apiCall { meApi.getMe() }) {
+            is ApiResult.Success -> result.value
+            is ApiResult.Failure -> return AccountResult.Unavailable(isRetryable(result.failure))
+        }
+        val consents = when (val result = apiCall { meApi.getMyConsents() }) {
+            is ApiResult.Success -> result.value.items
+            is ApiResult.Failure -> return AccountResult.Unavailable(isRetryable(result.failure))
+        }
+        return AccountResult.Loaded(
+            AccountSummary(
+                maskedPhone = me.phoneE164?.let(::maskPhone),
+                role = me.role,
+                locale = me.locale,
+                grantedPurposes = consents.filter { it.status == STATUS_GRANTED }.map { it.purpose },
+            ),
+        )
     }
 
     private suspend fun resolve(): SessionState {

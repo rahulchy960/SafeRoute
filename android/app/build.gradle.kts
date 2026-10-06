@@ -178,6 +178,15 @@ android {
         buildConfig = true
     }
 
+    bundle {
+        language {
+            // Google Play normally delivers only the languages set on the phone. The consent
+            // notice can be switched to the other language on its own screen, so both English
+            // and Bengali must always be installed.
+            enableSplit = false
+        }
+    }
+
     androidResources {
         // Only ship the languages the app supports; drops other languages' strings from libraries.
         localeFilters += listOf("en", "bn")

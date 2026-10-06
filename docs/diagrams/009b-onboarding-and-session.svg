@@ -3,17 +3,17 @@
 <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#495057"/></marker></defs>
 <rect width="100%" height="100%" fill="#ffffff"/>
 <text x="40" y="62" font-size="24" font-weight="700" fill="#1e1e1e">Onboarding and session</text>
-<text x="40" y="86" font-size="14" fill="#495057">Order: age, consent, phone. The session state decides the screen; after the first sign-in the app opens offline (P009b, ADR 0010, ADR 0012)</text>
+<text x="40" y="86" font-size="14" fill="#495057">Order: age, consent, phone. The session state decides the screen; after the first sign-in the app opens offline (P009b and P009c, ADR 0010, ADR 0012)</text>
 <rect x="40" y="114" width="251" height="1675" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
-<text x="54" y="135" font-size="14" font-weight="700" fill="#495057">Onboarding (screens in P009c)</text>
+<text x="54" y="135" font-size="14" font-weight="700" fill="#495057">Onboarding screens</text>
 <rect x="327" y="114" width="492" height="1675" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
 <text x="341" y="135" font-size="14" font-weight="700" fill="#495057">SessionRepository: app start with a sign-in</text>
 <rect x="855" y="114" width="251" height="1675" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
 <text x="869" y="135" font-size="14" font-weight="700" fill="#495057">Outcomes</text>
 <line x1="165.5" y1="249" x2="165.5" y2="309" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
 <line x1="165.5" y1="375" x2="980.5" y2="435" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
-<line x1="165.5" y1="375" x2="165.5" y2="445.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
-<line x1="165.5" y1="511.5" x2="165.5" y2="582" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="165.5" y1="375" x2="165.5" y2="435" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="165.5" y1="522" x2="165.5" y2="582" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
 <line x1="165.5" y1="648" x2="165.5" y2="708" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
 <line x1="165.5" y1="774" x2="573" y2="834" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
 <line x1="573" y1="890" x2="573" y2="950" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
@@ -38,10 +38,11 @@
 <tspan x="165.5" y="337.2">NeedsAge: I am 18 or</tspan>
 <tspan x="165.5" y="358">older?</tspan>
 </text>
-<rect x="58" y="445.5" width="215" height="66" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<rect x="58" y="435" width="215" height="87" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
 <text x="165.5" font-size="16" fill="#1e1e1e" text-anchor="middle">
-<tspan x="165.5" y="473.7">NeedsConsent: notice for</tspan>
-<tspan x="165.5" y="494.5">account_core, I agree</tspan>
+<tspan x="165.5" y="463.3">NeedsConsent: notice for</tspan>
+<tspan x="165.5" y="484.1">account_core (EN / BN), I</tspan>
+<tspan x="165.5" y="504.9">agree</tspan>
 </text>
 <rect x="58" y="582" width="215" height="66" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
 <text x="165.5" font-size="16" fill="#1e1e1e" text-anchor="middle">
@@ -86,9 +87,9 @@
 </text>
 <rect x="873" y="435" width="215" height="87" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
 <text x="980.5" font-size="16" fill="#1e1e1e" text-anchor="middle">
-<tspan x="980.5" y="463.3">Blocked UNDER_18: one</tspan>
-<tspan x="980.5" y="484.1">local flag, no network, no</tspan>
-<tspan x="980.5" y="504.9">sign-in</tspan>
+<tspan x="980.5" y="463.3">Blocked UNDER_18: after</tspan>
+<tspan x="980.5" y="484.1">a confirmation; one local</tspan>
+<tspan x="980.5" y="504.9">flag, no network, no undo</tspan>
 </text>
 <rect x="873" y="1097" width="215" height="87" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
 <text x="980.5" font-size="16" fill="#1e1e1e" text-anchor="middle">
@@ -117,10 +118,10 @@
 </text>
 <rect x="541.5" y="394" width="63" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
 <text x="573" y="409.5" font-size="13" fill="#1e1e1e" text-anchor="middle">under 18</text>
-<rect x="148.7" y="399.3" width="33.6" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
-<text x="165.5" y="414.8" font-size="13" fill="#1e1e1e" text-anchor="middle">18+</text>
-<rect x="143.1" y="535.8" width="44.8" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
-<text x="165.5" y="551.3" font-size="13" fill="#1e1e1e" text-anchor="middle">agree</text>
+<rect x="148.7" y="394" width="33.6" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="165.5" y="409.5" font-size="13" fill="#1e1e1e" text-anchor="middle">18+</text>
+<rect x="143.1" y="541" width="44.8" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="165.5" y="556.5" font-size="13" fill="#1e1e1e" text-anchor="middle">agree</text>
 <rect x="495.8" y="1205.5" width="33.8" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
 <text x="512.8" y="1221" font-size="13" fill="#1e1e1e" text-anchor="middle">200</text>
 <rect x="572.3" y="1205.5" width="122" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>

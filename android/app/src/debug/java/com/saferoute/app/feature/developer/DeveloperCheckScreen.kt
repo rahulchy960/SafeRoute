@@ -59,13 +59,21 @@ fun DeveloperSettingsRow(onClick: () -> Unit, modifier: Modifier = Modifier) {
 @Composable
 fun DeveloperCheckRoute(onBack: () -> Unit, viewModel: DeveloperCheckViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    DeveloperCheckScreen(state = state, onBack = onBack, onCheckAgain = viewModel::checkNow)
+    DeveloperCheckScreen(
+        state = state,
+        onBack = onBack,
+        onCheckAgain = viewModel::checkNow,
+        onWhoAmI = viewModel::whoAmI,
+    )
 }
 
 /**
  * Shows whether the app can reach the backend: is a server configured, does `/health` answer
  * (and with which version), does `/health/ready` answer, and the last request id, which can be
  * looked up in the backend's logs. It never shows the server address or a token.
+ *
+ * Since P009c it also shows the session state and "Who am I": the role and language the server
+ * has for the signed-in account. Still no token, user id or phone number.
  */
 @Composable
 fun DeveloperCheckScreen(
@@ -73,6 +81,7 @@ fun DeveloperCheckScreen(
     onBack: () -> Unit,
     onCheckAgain: () -> Unit,
     modifier: Modifier = Modifier,
+    onWhoAmI: () -> Unit = {},
 ) {
     Scaffold(
         modifier = modifier,
@@ -140,6 +149,27 @@ fun DeveloperCheckScreen(
                 modifier = Modifier.padding(SafeRouteTheme.spacing.md),
             ) {
                 Text(text = stringResource(R.string.developer_check_again))
+            }
+            Line(
+                title = stringResource(R.string.developer_check_session),
+                value = state.sessionState,
+            )
+            Line(
+                title = stringResource(R.string.developer_check_who_am_i),
+                value = when (val who = state.whoAmI) {
+                    WhoAmIState.NotAsked -> stringResource(R.string.developer_check_not_checked)
+                    WhoAmIState.Asking -> stringResource(R.string.developer_check_checking)
+                    is WhoAmIState.Known ->
+                        stringResource(R.string.developer_check_who_am_i_known, who.role, who.locale)
+                    WhoAmIState.Unavailable -> stringResource(R.string.developer_check_who_am_i_unavailable)
+                },
+            )
+            Button(
+                onClick = onWhoAmI,
+                enabled = state.whoAmI != WhoAmIState.Asking,
+                modifier = Modifier.padding(SafeRouteTheme.spacing.md),
+            ) {
+                Text(text = stringResource(R.string.developer_check_who_am_i_ask))
             }
             Text(
                 text = stringResource(R.string.developer_check_footer),

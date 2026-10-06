@@ -7,7 +7,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 
-/** Obviously fake values. Tests assert that none of them ever reaches a log line. */
+/**
+ * Obviously fake values. Tests assert that none of them ever reaches a log line.
+ *
+ * Phone numbers in tests are made-up patterns and are never used to send anything: the fake
+ * below has no network, no Firebase and no SMS behind it.
+ */
 const val FAKE_ID_TOKEN = "fake-id-token-aaaa.bbbb.cccc"
 const val FAKE_REFRESHED_ID_TOKEN = "fake-refreshed-id-token-dddd.eeee.ffff"
 const val FAKE_PHONE_E164 = "+910000000001"

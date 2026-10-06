@@ -268,6 +268,12 @@ and [`android/README.md`](android/README.md):
   Firebase uid; tests use `FakePhoneAuthGateway` and its `FAKE_...` values and never start
   Firebase (a Hilt test that reaches sign-in replaces `AuthModule`). DataStore holds flags only.
   No other Firebase product (Analytics, Crashlytics, App Check) without a prompt that asks for it.
+- Onboarding (since P009c): the session state decides the screen (`navigation/OnboardingNavHost`);
+  Home is shown only for `SessionState.Ready`. "I am under 18" has no in-app undo and needs the
+  confirmation dialog first (ADR 0010, addendum). The consent notice text lives in the `notice_*`
+  strings and is mirrored in `docs/legal/consent-notice-v1.md` (`ConsentNoticeDocumentTest`);
+  changing it means changing `NOTICE_VERSION`. It is a draft until a lawyer has reviewed it. A UI
+  test that starts `MainActivity` replaces `SessionBindingModule` with `FakeSession`.
 - `android/app/google-services.json` is never opened, printed or committed by Claude Code. CI and
   fresh clones use `android/scripts/write-dummy-google-services` (project `demo-saferoute`); a
   release build refuses the dummy or a missing file unless `-Psaferoute.allowDummyFirebase=true`
