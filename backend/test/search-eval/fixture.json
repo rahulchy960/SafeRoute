@@ -1,0 +1,598 @@
+{
+  "description": "Search-quality evaluation queries (addendum v7.2 section E, ADR 0018). Public places only. See README.md in this folder before adding entries.",
+  "version": 1,
+  "entries": [
+    {
+      "id": "kol-victoria-en",
+      "query": "Victoria Memorial",
+      "script": "en",
+      "district": "Kolkata",
+      "expectedNameContains": ["Victoria Memorial", "ভিক্টোরিয়া"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "kol-indian-museum-en",
+      "query": "Indian Museum",
+      "script": "en",
+      "district": "Kolkata",
+      "expectedNameContains": ["Indian Museum"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "kol-sealdah-en",
+      "query": "Sealdah railway station",
+      "script": "en",
+      "district": "Kolkata",
+      "expectedNameContains": ["Sealdah", "শিয়ালদহ"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "kol-eden-en",
+      "query": "Eden Gardens",
+      "script": "en",
+      "district": "Kolkata",
+      "expectedNameContains": ["Eden Gardens"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "kol-medical-college-en",
+      "query": "Calcutta Medical College",
+      "script": "en",
+      "district": "Kolkata",
+      "expectedNameContains": ["Medical College"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "how-station-en",
+      "query": "Howrah railway station",
+      "script": "en",
+      "district": "Howrah",
+      "expectedNameContains": ["Howrah", "হাওড়া"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "how-belur-en",
+      "query": "Belur Math",
+      "script": "en",
+      "district": "Howrah",
+      "expectedNameContains": ["Belur"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "how-botanic-en",
+      "query": "Indian Botanic Garden Shibpur",
+      "script": "en",
+      "district": "Howrah",
+      "expectedNameContains": ["Botanic"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "n24-dakshineswar-en",
+      "query": "Dakshineswar Kali Temple",
+      "script": "en",
+      "district": "North 24 Parganas",
+      "expectedNameContains": ["Dakshineswar", "দক্ষিণেশ্বর"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "n24-airport-en",
+      "query": "Netaji Subhas Chandra Bose International Airport",
+      "script": "en",
+      "district": "North 24 Parganas",
+      "expectedNameContains": ["Netaji Subhas", "Netaji Subhash"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "n24-barasat-en",
+      "query": "Barasat",
+      "script": "en",
+      "district": "North 24 Parganas",
+      "expectedNameContains": ["Barasat"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "s24-diamond-harbour-en",
+      "query": "Diamond Harbour",
+      "script": "en",
+      "district": "South 24 Parganas",
+      "expectedNameContains": ["Diamond Harbour"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "s24-bakkhali-en",
+      "query": "Bakkhali",
+      "script": "en",
+      "district": "South 24 Parganas",
+      "expectedNameContains": ["Bakkhali"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "drj-station-en",
+      "query": "Darjeeling railway station",
+      "script": "en",
+      "district": "Darjeeling",
+      "expectedNameContains": ["Darjeeling"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "drj-tiger-hill-en",
+      "query": "Tiger Hill Darjeeling",
+      "script": "en",
+      "district": "Darjeeling",
+      "expectedNameContains": ["Tiger Hill"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "drj-siliguri-junction-en",
+      "query": "Siliguri Junction",
+      "script": "en",
+      "district": "Darjeeling",
+      "expectedNameContains": ["Siliguri"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "drj-bagdogra-en",
+      "query": "Bagdogra Airport",
+      "script": "en",
+      "district": "Darjeeling",
+      "expectedNameContains": ["Bagdogra"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "jal-njp-en",
+      "query": "New Jalpaiguri railway station",
+      "script": "en",
+      "district": "Jalpaiguri",
+      "expectedNameContains": ["New Jalpaiguri", "NJP"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "cob-palace-en",
+      "query": "Cooch Behar Palace",
+      "script": "en",
+      "district": "Cooch Behar",
+      "expectedNameContains": ["Cooch Behar", "Koch Bihar"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "mal-town-station-en",
+      "query": "Malda Town railway station",
+      "script": "en",
+      "district": "Malda",
+      "expectedNameContains": ["Malda"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "mur-hazarduari-en",
+      "query": "Hazarduari Palace",
+      "script": "en",
+      "district": "Murshidabad",
+      "expectedNameContains": ["Hazarduari"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "mur-berhampore-en",
+      "query": "Berhampore",
+      "script": "en",
+      "district": "Murshidabad",
+      "expectedNameContains": ["Berhampore", "Baharampur"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "nad-mayapur-en",
+      "query": "Mayapur",
+      "script": "en",
+      "district": "Nadia",
+      "expectedNameContains": ["Mayapur"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "nad-krishnanagar-en",
+      "query": "Krishnanagar",
+      "script": "en",
+      "district": "Nadia",
+      "expectedNameContains": ["Krishnanagar"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "hoo-bandel-church-en",
+      "query": "Bandel Church",
+      "script": "en",
+      "district": "Hooghly",
+      "expectedNameContains": ["Bandel"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "hoo-chandannagar-en",
+      "query": "Chandannagar",
+      "script": "en",
+      "district": "Hooghly",
+      "expectedNameContains": ["Chandannagar", "Chandernagore"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "hoo-tarakeswar-en",
+      "query": "Tarakeswar",
+      "script": "en",
+      "district": "Hooghly",
+      "expectedNameContains": ["Tarakeswar", "Tarakeshwar"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "pbd-station-en",
+      "query": "Bardhaman railway station",
+      "script": "en",
+      "district": "Purba Bardhaman",
+      "expectedNameContains": ["Bardhaman", "Barddhaman", "Burdwan"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "pbd-university-en",
+      "query": "University of Burdwan",
+      "script": "en",
+      "district": "Purba Bardhaman",
+      "expectedNameContains": ["Burdwan", "Bardhaman"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "pcb-asansol-en",
+      "query": "Asansol Junction",
+      "script": "en",
+      "district": "Paschim Bardhaman",
+      "expectedNameContains": ["Asansol"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "pcb-durgapur-en",
+      "query": "Durgapur",
+      "script": "en",
+      "district": "Paschim Bardhaman",
+      "expectedNameContains": ["Durgapur"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "bir-santiniketan-en",
+      "query": "Santiniketan",
+      "script": "en",
+      "district": "Birbhum",
+      "expectedNameContains": ["Santiniketan", "Shantiniketan"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "bir-tarapith-en",
+      "query": "Tarapith",
+      "script": "en",
+      "district": "Birbhum",
+      "expectedNameContains": ["Tarapith"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "ban-bishnupur-en",
+      "query": "Bishnupur",
+      "script": "en",
+      "district": "Bankura",
+      "expectedNameContains": ["Bishnupur"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "pcm-iit-en",
+      "query": "IIT Kharagpur",
+      "script": "en",
+      "district": "Paschim Medinipur",
+      "expectedNameContains": ["Kharagpur", "Indian Institute of Technology"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "pcm-midnapore-en",
+      "query": "Midnapore",
+      "script": "en",
+      "district": "Paschim Medinipur",
+      "expectedNameContains": ["Midnapore", "Medinipur"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "pbm-digha-en",
+      "query": "Digha",
+      "script": "en",
+      "district": "Purba Medinipur",
+      "expectedNameContains": ["Digha"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "pbm-haldia-en",
+      "query": "Haldia",
+      "script": "en",
+      "district": "Purba Medinipur",
+      "expectedNameContains": ["Haldia"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "pur-purulia-en",
+      "query": "Purulia",
+      "script": "en",
+      "district": "Purulia",
+      "expectedNameContains": ["Purulia", "Puruliya"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "alp-junction-en",
+      "query": "Alipurduar Junction",
+      "script": "en",
+      "district": "Alipurduar",
+      "expectedNameContains": ["Alipurduar"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "kal-kalimpong-en",
+      "query": "Kalimpong",
+      "script": "en",
+      "district": "Kalimpong",
+      "expectedNameContains": ["Kalimpong"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "udj-raiganj-en",
+      "query": "Raiganj",
+      "script": "en",
+      "district": "Uttar Dinajpur",
+      "expectedNameContains": ["Raiganj"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "ddj-balurghat-en",
+      "query": "Balurghat",
+      "script": "en",
+      "district": "Dakshin Dinajpur",
+      "expectedNameContains": ["Balurghat"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "jha-jhargram-en",
+      "query": "Jhargram",
+      "script": "en",
+      "district": "Jhargram",
+      "expectedNameContains": ["Jhargram"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "how-station-bn",
+      "query": "হাওড়া স্টেশন",
+      "script": "bn",
+      "district": "Howrah",
+      "expectedNameContains": ["Howrah", "হাওড়া"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "kol-victoria-bn",
+      "query": "ভিক্টোরিয়া মেমোরিয়াল",
+      "script": "bn",
+      "district": "Kolkata",
+      "expectedNameContains": ["Victoria", "ভিক্টোরিয়া"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "kol-sealdah-bn",
+      "query": "শিয়ালদহ স্টেশন",
+      "script": "bn",
+      "district": "Kolkata",
+      "expectedNameContains": ["Sealdah", "শিয়ালদহ"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "n24-dakshineswar-bn",
+      "query": "দক্ষিণেশ্বর",
+      "script": "bn",
+      "district": "North 24 Parganas",
+      "expectedNameContains": ["Dakshineswar", "দক্ষিণেশ্বর"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "how-belur-bn",
+      "query": "বেলুড় মঠ",
+      "script": "bn",
+      "district": "Howrah",
+      "expectedNameContains": ["Belur", "বেলুড়"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "bir-santiniketan-bn",
+      "query": "শান্তিনিকেতন",
+      "script": "bn",
+      "district": "Birbhum",
+      "expectedNameContains": ["Santiniketan", "Shantiniketan", "শান্তিনিকেতন"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "drj-darjeeling-bn",
+      "query": "দার্জিলিং",
+      "script": "bn",
+      "district": "Darjeeling",
+      "expectedNameContains": ["Darjeeling", "দার্জিলিং"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "drj-siliguri-bn",
+      "query": "শিলিগুড়ি",
+      "script": "bn",
+      "district": "Darjeeling",
+      "expectedNameContains": ["Siliguri", "শিলিগুড়ি"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "pbm-digha-bn",
+      "query": "দীঘা",
+      "script": "bn",
+      "district": "Purba Medinipur",
+      "expectedNameContains": ["Digha", "দীঘা", "দিঘা"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "cob-coochbehar-bn",
+      "query": "কোচবিহার",
+      "script": "bn",
+      "district": "Cooch Behar",
+      "expectedNameContains": ["Cooch Behar", "Koch Bihar", "কোচবিহার"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "nad-mayapur-bn",
+      "query": "মায়াপুর",
+      "script": "bn",
+      "district": "Nadia",
+      "expectedNameContains": ["Mayapur", "মায়াপুর"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "pbd-bardhaman-bn",
+      "query": "বর্ধমান",
+      "script": "bn",
+      "district": "Purba Bardhaman",
+      "expectedNameContains": ["Bardhaman", "Barddhaman", "Burdwan", "বর্ধমান"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "pcb-asansol-bn",
+      "query": "আসানসোল",
+      "script": "bn",
+      "district": "Paschim Bardhaman",
+      "expectedNameContains": ["Asansol", "আসানসোল"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "mal-malda-bn",
+      "query": "মালদা",
+      "script": "bn",
+      "district": "Malda",
+      "expectedNameContains": ["Malda", "মালদা", "মালদহ"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "nad-krishnanagar-bn",
+      "query": "কৃষ্ণনগর",
+      "script": "bn",
+      "district": "Nadia",
+      "expectedNameContains": ["Krishnanagar", "কৃষ্ণনগর"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "pcm-kharagpur-bn",
+      "query": "খড়গপুর",
+      "script": "bn",
+      "district": "Paschim Medinipur",
+      "expectedNameContains": ["Kharagpur", "খড়গপুর"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "pur-purulia-bn",
+      "query": "পুরুলিয়া",
+      "script": "bn",
+      "district": "Purulia",
+      "expectedNameContains": ["Purulia", "Puruliya", "পুরুলিয়া"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "mur-berhampore-bn",
+      "query": "বহরমপুর",
+      "script": "bn",
+      "district": "Murshidabad",
+      "expectedNameContains": ["Berhampore", "Baharampur", "বহরমপুর"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "how-station-translit",
+      "query": "Haora station",
+      "script": "translit",
+      "district": "Howrah",
+      "expectedNameContains": ["Howrah", "Haora"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "kol-sealdah-translit",
+      "query": "Sialdah station",
+      "script": "translit",
+      "district": "Kolkata",
+      "expectedNameContains": ["Sealdah", "Sialdah"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "n24-dakshineswar-translit",
+      "query": "Dakhineswar mandir",
+      "script": "translit",
+      "district": "North 24 Parganas",
+      "expectedNameContains": ["Dakshineswar", "Dakhineswar"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "pbd-station-translit",
+      "query": "Burdwan station",
+      "script": "translit",
+      "district": "Purba Bardhaman",
+      "expectedNameContains": ["Bardhaman", "Barddhaman", "Burdwan"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "bir-santiniketan-translit",
+      "query": "Shantiniketan",
+      "script": "translit",
+      "district": "Birbhum",
+      "expectedNameContains": ["Santiniketan", "Shantiniketan"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "cob-palace-translit",
+      "query": "Koch Bihar rajbari",
+      "script": "translit",
+      "district": "Cooch Behar",
+      "expectedNameContains": ["Cooch Behar", "Koch Bihar"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "pcm-midnapore-translit",
+      "query": "Medinipur",
+      "script": "translit",
+      "district": "Paschim Medinipur",
+      "expectedNameContains": ["Midnapore", "Medinipur"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "drj-darjeeling-translit",
+      "query": "Darjiling",
+      "script": "translit",
+      "district": "Darjeeling",
+      "expectedNameContains": ["Darjeeling", "Darjiling"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "mur-berhampore-translit",
+      "query": "Baharampur",
+      "script": "translit",
+      "district": "Murshidabad",
+      "expectedNameContains": ["Berhampore", "Baharampur"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "nad-krishnanagar-translit",
+      "query": "Krishnagar",
+      "script": "translit",
+      "district": "Nadia",
+      "expectedNameContains": ["Krishnanagar", "Krishnagar"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "hoo-chandannagar-translit",
+      "query": "Chandernagore",
+      "script": "translit",
+      "district": "Hooghly",
+      "expectedNameContains": ["Chandannagar", "Chandernagore"],
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "drj-siliguri-translit",
+      "query": "Shiliguri",
+      "script": "translit",
+      "district": "Darjeeling",
+      "expectedNameContains": ["Siliguri", "Shiliguri"],
+      "addedBy": "claude-known"
+    }
+  ]
+}

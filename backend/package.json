@@ -28,7 +28,8 @@
     "admin:set-role": "tsx --env-file-if-exists=.env.example --env-file-if-exists=.env src/scripts/set-role.ts",
     "openapi:generate": "tsx src/contract/generate.ts",
     "openapi:check": "tsx src/contract/generate.ts --check",
-    "openapi:lint": "redocly lint --config redocly.yaml ../contracts/openapi.json"
+    "openapi:lint": "redocly lint --config redocly.yaml ../contracts/openapi.json",
+    "search:eval": "tsx --env-file-if-exists=.env test/search-eval/run.ts"
   },
   "dependencies": {
     "@hono/node-server": "2.1.3",

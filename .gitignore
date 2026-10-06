@@ -62,6 +62,9 @@ android/**/build/
 Thumbs.db
 desktop.ini
 
+# ── Search evaluation detail (per-query results; local only, ADR 0018) ──
+backend/test/search-eval/out/
+
 # ── Logs / temp ───────────────────────────────────────────────────
 *.log
 tmp/
