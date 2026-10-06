@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 package com.saferoute.app.feature.developer
 
+import com.saferoute.app.core.location.FakeLocationEnvironment
+import com.saferoute.app.core.location.FakeLocationRepository
+import com.saferoute.app.core.location.GrantedLocation
+import com.saferoute.app.core.location.LocationState
+import com.saferoute.app.core.location.fakeFix
+import com.saferoute.app.core.map.LatLng
 import com.saferoute.app.core.network.ProbeResult
 import com.saferoute.app.core.network.ServerCheck
 import com.saferoute.app.core.network.errors.ApiFailure
@@ -8,6 +14,9 @@ import com.saferoute.app.core.session.AccountResult
 import com.saferoute.app.core.session.BlockReason
 import com.saferoute.app.core.session.FakeSession
 import com.saferoute.app.core.session.SessionState
+import java.time.Clock
+import java.time.Instant
+import java.time.ZoneOffset
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -60,7 +69,31 @@ class DeveloperCheckViewModelTest {
     private val session = FakeSession(SessionState.Ready)
 
     @Suppress("TestFunctionName") // reads like the constructor it wraps
-    private fun DeveloperCheckViewModel(check: ServerCheck) = DeveloperCheckViewModel(check, session)
+    private fun DeveloperCheckViewModel(check: ServerCheck) =
+        DeveloperCheckViewModel(check, session, locationEnvironment, location, Clock.fixed(Instant.ofEpochMilli(100_000), ZoneOffset.UTC))
+
+    private val locationEnvironment = FakeLocationEnvironment()
+    private val location = FakeLocationRepository()
+
+    @Test
+    fun `location is shown as permission, switch and age bucket, never as values`() = runTest {
+        val viewModel = DeveloperCheckViewModel(FakeServerCheck())
+        assertEquals("None · on · no fix", viewModel.state.value.location)
+
+        locationEnvironment.granted = GrantedLocation.Precise
+        // Distinctive digits: none of them may reach the screen.
+        location.state.value = LocationState.Fix(
+            fakeFix(position = LatLng(12.345678, 98.765432), accuracyMeters = 13.57f, timeMillis = 95_000),
+        )
+        assertEquals("Precise · on · fix <10 s", viewModel.state.value.location)
+
+        locationEnvironment.granted = GrantedLocation.Approximate
+        locationEnvironment.locationEnabled = false
+        location.state.value = LocationState.Stale(fakeFix(timeMillis = 0, isApproximate = true), ageSeconds = 100)
+        assertEquals("Approximate · off · fix older", viewModel.state.value.location)
+
+        listOf("12.3", "98.7", "13.5", "95").forEach { assertFalse(viewModel.state.value.toString().contains(it)) }
+    }
 
     @Test
     fun `the session state is shown by name and follows changes`() = runTest {

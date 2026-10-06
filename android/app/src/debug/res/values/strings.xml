@@ -31,6 +31,7 @@
     <string name="developer_check_unexpected_no_status">Unexpected answer from the server.</string>
     <string name="developer_check_again">Check again</string>
     <string name="developer_check_session">Session state</string>
+    <string name="developer_check_location">Location</string>
     <string name="developer_check_who_am_i">Who am I</string>
     <string name="developer_check_who_am_i_ask">Ask the server who I am</string>
     <!-- %1$s is the role, %2$s the account language, both as the server sent them -->

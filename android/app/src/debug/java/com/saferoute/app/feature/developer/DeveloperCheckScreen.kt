@@ -155,6 +155,10 @@ fun DeveloperCheckScreen(
                 value = state.sessionState,
             )
             Line(
+                title = stringResource(R.string.developer_check_location),
+                value = state.location,
+            )
+            Line(
                 title = stringResource(R.string.developer_check_who_am_i),
                 value = when (val who = state.whoAmI) {
                     WhoAmIState.NotAsked -> stringResource(R.string.developer_check_not_checked)
