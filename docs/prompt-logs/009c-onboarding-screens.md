@@ -314,3 +314,13 @@ ideally, the manual checks above done first, since P010 builds on a signed-in ap
   Switching them off keeps both of ours installed, which the notice's language switch needs.
 - **Masking.** Showing `+91 ••••• ••123` instead of a full number. It is done once, as close to
   the source as possible, so the full number cannot leak into a screen, a log or a screenshot.
+
+## Revision 2026-10-06 (P010a): manual phone checks passed
+
+Added after the merge. Sections 1–12 above are unchanged and describe what was known when the
+pull request was opened.
+
+On 2026-10-06, after the P009d fix (PR #21), Rahul reported that all the manual phone checks
+listed in section 11 passed. The result was reported as a whole, without per-check details. The
+same note is on the Notion page of this prompt, and the Notion follow-up "Record Rahul's manual
+phone checks for P009c" is closed.

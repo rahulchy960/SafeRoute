@@ -263,3 +263,13 @@ Still open: "Record Rahul's manual phone checks for P009c" (now including the ch
   removed. The reproduction test calls it directly to play the part of navigation.
 - **Idempotent.** An operation that is safe to repeat. Creating the account is: a second
   bootstrap returns the existing account, so retrying after a timeout cannot create two.
+
+## Revision 2026-10-06 (P010a): confirmed on the phone
+
+Added after the merge. Sections 1–12 above are unchanged and describe what was known when the
+pull request was opened.
+
+On 2026-10-06 Rahul confirmed on his phone that the first sign-in no longer sticks after the
+SMS code, and then reported that all the other manual phone checks passed too (the checks in
+section 11 and the P009c list). The result was reported as a whole, without per-check details.
+The same note is on the Notion page of this prompt.
