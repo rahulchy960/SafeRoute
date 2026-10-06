@@ -7,7 +7,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -16,6 +18,8 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -39,6 +43,10 @@ private const val DisabledContentAlpha = 0.38f
  * @param painter The icon, e.g. `painterResource(R.drawable.ic_my_location)`.
  * @param contentDescription What the button does, read by TalkBack.
  * @param onClick Called on tap. Not called while disabled.
+ * @param busy Shows a spinner instead of the icon (looking for a position, say). The button
+ * keeps its description and stays tappable.
+ * @param selected Draws the icon in the accent colour: the mode this button switches is on.
+ * Say so in [contentDescription] too.
  */
 @Composable
 fun MapControlButton(
@@ -47,29 +55,44 @@ fun MapControlButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    busy: Boolean = false,
+    selected: Boolean = false,
 ) {
     val colors = SafeRouteTheme.colors
     Surface(
         onClick = onClick,
         modifier = modifier
             .size(MinTouchTarget)
-            .semantics { role = Role.Button },
+            .semantics {
+                role = Role.Button
+                // The spinner has no icon to carry the description, so the button does.
+                if (busy) this.contentDescription = contentDescription
+            },
         enabled = enabled,
         shape = CircleShape,
         color = colors.mapOverlay,
-        contentColor = if (enabled) {
-            colors.onMapOverlay
-        } else {
-            colors.onMapOverlay.copy(alpha = DisabledContentAlpha)
+        contentColor = when {
+            !enabled -> colors.onMapOverlay.copy(alpha = DisabledContentAlpha)
+            selected -> MaterialTheme.colorScheme.primary
+            else -> colors.onMapOverlay
         },
         shadowElevation = SafeRouteTheme.elevation.raised,
     ) {
         Box(contentAlignment = Alignment.Center) {
-            Icon(
-                painter = painter,
-                contentDescription = contentDescription,
-                modifier = Modifier.size(MapControlIconSize),
-            )
+            if (busy) {
+                CircularProgressIndicator(
+                    modifier = Modifier
+                        .size(MapControlIconSize)
+                        .clearAndSetSemantics { },
+                    strokeWidth = 2.dp,
+                )
+            } else {
+                Icon(
+                    painter = painter,
+                    contentDescription = contentDescription,
+                    modifier = Modifier.size(MapControlIconSize),
+                )
+            }
         }
     }
 }
@@ -84,7 +107,7 @@ private fun MapControlButtonPreview() {
         ) {
             MapControlButton(
                 painter = painterResource(R.drawable.ic_my_location),
-                contentDescription = stringResource(R.string.map_control_my_location_unavailable),
+                contentDescription = stringResource(R.string.my_location_off),
                 onClick = {},
             )
             MapControlButton(

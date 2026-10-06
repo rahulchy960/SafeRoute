@@ -4,6 +4,8 @@ package com.saferoute.app.feature.home
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.saferoute.app.core.location.LocationRepository
+import com.saferoute.app.core.location.LocationState
 import com.saferoute.app.core.map.CameraState
 import com.saferoute.app.core.map.LatLng
 import com.saferoute.app.core.map.MapController
@@ -11,8 +13,11 @@ import com.saferoute.app.core.map.MapEngine
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /** What the emergency dialog on the Home screen is showing. */
@@ -37,8 +42,12 @@ enum class EmergencyDialogState {
  *
  * `@HiltViewModel` lets Hilt create it; the screen obtains it with `hiltViewModel()`.
  *
- * The map and the emergency dialog are two separate pieces of state on purpose: nothing the map
- * does (loading, failing, having no key) can reach the dialog.
+ * The map, the location and the emergency dialog are separate pieces of state on purpose:
+ * nothing the map or the location does (loading, failing, having no key, having no position)
+ * can reach the dialog.
+ *
+ * Location here is display only: positions go from [LocationRepository] to the map as overlays
+ * and to the camera. They are not saved, logged or sent anywhere.
  *
  * There is no SOS logic here. P014 replaces the dialog with the real device-first SOS flow.
  *
@@ -50,6 +59,7 @@ enum class EmergencyDialogState {
 class HomeViewModel @Inject constructor(
     private val savedState: SavedStateHandle,
     val mapEngine: MapEngine,
+    private val location: LocationRepository,
 ) : ViewModel() {
 
     /** The map's state. It survives rotation with this ViewModel; the map view does not. */
@@ -61,6 +71,19 @@ class HomeViewModel @Inject constructor(
     /** A StateFlow always has a current value and tells its collectors when it changes. */
     val emergencyDialog: StateFlow<EmergencyDialogState> = _emergencyDialog.asStateFlow()
 
+    /** True while Home is visible and the location permission is granted. */
+    private val locationActive = MutableStateFlow(false)
+    private val following = MutableStateFlow(false)
+
+    /** Set by a tap on "my location": the next position centres the map, once. */
+    private var recentreOnNextFix = false
+
+    val locationState: StateFlow<LocationState> = location.state
+
+    val myLocation: StateFlow<MyLocationControl> =
+        combine(locationActive, location.state, following, ::myLocationControl)
+            .stateIn(viewModelScope, SharingStarted.Eagerly, MyLocationControl.Off)
+
     init {
         viewModelScope.launch {
             map.camera.collect { camera ->
@@ -70,8 +93,83 @@ class HomeViewModel @Inject constructor(
                     camera.zoom,
                     camera.bearing,
                 )
+                // The user dragged the map away: stop following instead of pulling it back.
+                val fix = location.state.value.fixOrNull()
+                if (following.value && fix != null && !camera.isCentredOn(fix)) following.value = false
             }
         }
+        viewModelScope.launch { location.state.collect(::onLocationState) }
+    }
+
+    /** Home is visible and location is permitted: start updates (the repository checks again). */
+    fun onLocationAvailable(userAsked: Boolean) {
+        if (userAsked) recentreOnNextFix = true
+        locationActive.value = true
+        location.start()
+        onLocationState(location.state.value)
+    }
+
+    /**
+     * Home is no longer visible, or the permission is gone: updates stop at once.
+     *
+     * @param permissionLost also takes the dot off the map; a position the app may no longer
+     * read must not stay on screen.
+     */
+    fun onLocationUnavailable(permissionLost: Boolean) {
+        location.stop()
+        if (permissionLost) {
+            locationActive.value = false
+            following.value = false
+            recentreOnNextFix = false
+            map.setOverlays(emptyList())
+        }
+    }
+
+    /**
+     * "My location" was tapped with the permission in place. Returns false when there is no
+     * position to act on, so that the screen can say why.
+     */
+    fun onMyLocationClick(): Boolean {
+        val fix = location.state.value.fixOrNull()
+        when (myLocation.value) {
+            MyLocationControl.Following -> following.value = false
+            MyLocationControl.Located -> if (fix != null) {
+                // First tap centres the map; a tap while centred starts following.
+                if (map.camera.value.isCentredOn(fix)) following.value = true else centreOn(fix.position)
+            }
+            MyLocationControl.Searching, MyLocationControl.Off -> recentreOnNextFix = true
+            MyLocationControl.Unavailable -> {
+                recentreOnNextFix = true
+                // Try once more: the user may have gone outdoors or switched Location on.
+                location.stop()
+                location.start()
+                return location.state.value != LocationState.Unavailable
+            }
+        }
+        return true
+    }
+
+    private fun onLocationState(state: LocationState) {
+        if (!locationActive.value) return
+        map.setOverlays(locationOverlays(state))
+        val fix = (state as? LocationState.Fix)?.fix ?: return
+        when {
+            recentreOnNextFix -> {
+                recentreOnNextFix = false
+                centreOn(fix.position)
+            }
+            // Later positions move the dot only, unless the user chose to follow.
+            following.value -> map.moveCamera(map.camera.value.copy(target = fix.position))
+        }
+    }
+
+    private fun centreOn(position: LatLng) {
+        val camera = map.camera.value
+        map.moveCamera(camera.copy(target = position, zoom = maxOf(camera.zoom, LOCATE_ZOOM)))
+    }
+
+    override fun onCleared() {
+        location.stop()
     }
 
     private fun savedCamera(): CameraState? =

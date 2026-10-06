@@ -1,6 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 package com.saferoute.app.feature.home
 
+import android.Manifest
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
+import androidx.activity.compose.LocalActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -52,7 +60,10 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.app.ActivityCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.LifecycleResumeEffect
+import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.saferoute.app.R
 import com.saferoute.app.core.designsystem.component.EmergencyButton
@@ -65,6 +76,7 @@ import com.saferoute.app.core.designsystem.component.SheetDetent
 import com.saferoute.app.core.designsystem.component.rememberSafeRouteSheetState
 import com.saferoute.app.core.designsystem.preview.SafeRoutePreviews
 import com.saferoute.app.core.designsystem.theme.SafeRouteTheme
+import com.saferoute.app.core.location.LocationState
 import com.saferoute.app.core.map.MapLoadState
 import com.saferoute.app.core.map.MapPadding
 import com.saferoute.app.core.map.MapStyleVariant
@@ -77,6 +89,7 @@ import kotlin.math.roundToInt
 internal object HomeTraversal {
     const val Search = 0f
     const val MapStatus = 0.5f
+    const val LocationNotice = 0.75f
     const val MapControls = 1f
     const val Emergency = 2f
     const val Sheet = 3f
@@ -95,11 +108,69 @@ fun HomeRoute(
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel(),
+    permissionViewModel: LocationPermissionViewModel = hiltViewModel(),
 ) {
     val emergencyDialog by viewModel.emergencyDialog.collectAsStateWithLifecycle()
     val mapState by viewModel.map.loadState.collectAsStateWithLifecycle()
+    val myLocation by viewModel.myLocation.collectAsStateWithLifecycle()
+    val locationState by viewModel.locationState.collectAsStateWithLifecycle()
+    val permission by permissionViewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
+
+    // "Should the app explain itself before asking again?" Android answers per activity.
+    val activity = LocalActivity.current
+    val showRationale = {
+        activity != null && ActivityCompat.shouldShowRequestPermissionRationale(
+            activity,
+            Manifest.permission.ACCESS_FINE_LOCATION,
+        )
+    }
+
+    // The system permission dialog. `launch` shows it; the lambda receives the answer. The
+    // state is then read from Android again rather than from the answer itself.
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions(),
+    ) { answers ->
+        // No answers at all: Android dropped the request (another one was already open).
+        // That is not a refusal.
+        if (answers.isEmpty()) {
+            permissionViewModel.onPermissionRequestCancelled()
+        } else {
+            permissionViewModel.onPermissionResult(showRationale())
+        }
+    }
+    LaunchedEffect(permission.requestPending) {
+        if (permission.requestPending) {
+            permissionViewModel.onRequestLaunched()
+            // Both together: Android then offers "precise" and "approximate" in one dialog.
+            permissionLauncher.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION,
+                ),
+            )
+        }
+    }
+
+    // Every time Home comes back to the front the permission is read again: the user may have
+    // changed it in system Settings in the meantime.
+    LifecycleResumeEffect(Unit) {
+        permissionViewModel.refresh(showRationale())
+        onPauseOrDispose { }
+    }
+
+    // Location runs only while Home is visible AND permitted, and stops the moment Home is
+    // not visible (onStop). Nothing keeps it alive in the background.
+    val granted = permission.permission as? LocationPermissionState.Granted
+    LifecycleStartEffect(granted) {
+        if (granted != null) {
+            viewModel.onLocationAvailable(userAsked = permissionViewModel.consumeUserAsked())
+        } else {
+            viewModel.onLocationUnavailable(permissionLost = true)
+        }
+        onStopOrDispose { viewModel.onLocationUnavailable(permissionLost = false) }
+    }
 
     // The map follows the app theme, which follows the phone's dark-mode setting.
     val darkTheme = isSystemInDarkTheme()
@@ -115,6 +186,29 @@ fun HomeRoute(
         // A phone without a browser: the link simply does not open.
         onOpenLink = { url -> runCatching { uriHandler.openUri(url) } },
         map = { mapModifier -> viewModel.mapEngine.Map(viewModel.map, mapModifier) },
+        myLocation = myLocation,
+        locationStale = locationState is LocationState.Stale,
+        locationApproximate = locationState.fixOrNull()?.isApproximate == true,
+        onMyLocationClick = {
+            // The only place the permission flow can start.
+            if (permissionViewModel.onMyLocationClick() && !viewModel.onMyLocationClick()) {
+                permissionViewModel.onNoFix()
+            }
+        },
+        showLocationDisclosure = permission.permission == LocationPermissionState.DisclosureShown,
+        onLocationDisclosureContinue = permissionViewModel::onDisclosureContinue,
+        onLocationDisclosureNotNow = permissionViewModel::onDisclosureNotNow,
+        locationNotice = permission.notice,
+        onLocationNoticeAction = { notice ->
+            when (notice) {
+                LocationNotice.DeniedPermanently -> context.openSettings(appSettingsIntent(context))
+                LocationNotice.ServicesOff ->
+                    context.openSettings(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                LocationNotice.Approximate -> permissionViewModel.onUsePreciseClick()
+                else -> Unit
+            }
+        },
+        onLocationNoticeDismiss = permissionViewModel::onNoticeDismiss,
         onSearchClick = onOpenSearch,
         onSettingsClick = onOpenSettings,
         onEmergencyClick = viewModel::onEmergencyClick,
@@ -128,6 +222,17 @@ fun HomeRoute(
         onDismissEmergencyDialog = viewModel::onEmergencyDialogDismiss,
         modifier = modifier,
     )
+}
+
+/** The app's own page in system Settings, where a permission denied for good can be allowed. */
+private fun appSettingsIntent(context: Context) = Intent(
+    Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+    Uri.fromParts("package", context.packageName, null),
+)
+
+/** Opens a system Settings page; a phone without that page simply does nothing. */
+private fun Context.openSettings(intent: Intent) {
+    runCatching { startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
 }
 
 /**
@@ -163,6 +268,16 @@ fun HomeScreen(
     onOpenLink: (String) -> Unit = {},
     sheetState: SafeRouteSheetState = rememberSafeRouteSheetState(),
     map: @Composable (Modifier) -> Unit = {},
+    myLocation: MyLocationControl = MyLocationControl.Off,
+    locationStale: Boolean = false,
+    locationApproximate: Boolean = false,
+    onMyLocationClick: () -> Unit = {},
+    showLocationDisclosure: Boolean = false,
+    onLocationDisclosureContinue: () -> Unit = {},
+    onLocationDisclosureNotNow: () -> Unit = {},
+    locationNotice: LocationNotice? = null,
+    onLocationNoticeAction: (LocationNotice) -> Unit = {},
+    onLocationNoticeDismiss: () -> Unit = {},
 ) {
     val spacing = SafeRouteTheme.spacing
     // Keeps floating controls clear of display cut-outs and the gesture areas at the sides.
@@ -252,6 +367,19 @@ fun HomeScreen(
                         traversalIndex = HomeTraversal.MapStatus
                     },
             )
+            locationNotice?.let { notice ->
+                LocationNoticeCard(
+                    notice = notice,
+                    onAction = onLocationNoticeAction,
+                    onDismiss = onLocationNoticeDismiss,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .semantics {
+                            isTraversalGroup = true
+                            traversalIndex = HomeTraversal.LocationNotice
+                        },
+                )
+            }
         }
 
         Column(
@@ -267,19 +395,19 @@ fun HomeScreen(
                 },
             verticalArrangement = Arrangement.spacedBy(spacing.sm),
         ) {
-            // Layers has no prompt yet; my location arrives with P010b. The descriptions say
-            // so; the faded icon alone would be a colour-only signal.
+            // Layers has no prompt yet. Its description says so; the faded icon alone would
+            // be a colour-only signal.
             MapControlButton(
                 painter = painterResource(R.drawable.ic_layers),
                 contentDescription = stringResource(R.string.map_control_layers_unavailable),
                 onClick = {},
                 enabled = false,
             )
-            MapControlButton(
-                painter = painterResource(R.drawable.ic_my_location),
-                contentDescription = stringResource(R.string.map_control_my_location_unavailable),
-                onClick = {},
-                enabled = false,
+            MyLocationButton(
+                control = myLocation,
+                onClick = onMyLocationClick,
+                stale = locationStale,
+                approximate = locationApproximate,
             )
         }
 
@@ -304,6 +432,13 @@ fun HomeScreen(
                     isTraversalGroup = true
                     traversalIndex = HomeTraversal.Emergency
                 },
+        )
+    }
+
+    if (showLocationDisclosure) {
+        LocationDisclosureDialog(
+            onContinue = onLocationDisclosureContinue,
+            onNotNow = onLocationDisclosureNotNow,
         )
     }
 

@@ -3,6 +3,7 @@ package com.saferoute.app.feature.home
 
 import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
+import com.saferoute.app.core.location.FakeLocationRepository
 import com.saferoute.app.core.map.CameraState
 import com.saferoute.app.core.map.FakeMapEngine
 import com.saferoute.app.core.map.LatLng
@@ -33,12 +34,13 @@ class HomeViewModelTest {
 
     private val savedState = SavedStateHandle()
     private val mapEngine = FakeMapEngine()
+    private val location = FakeLocationRepository()
     private lateinit var viewModel: HomeViewModel
 
     @Before
     fun setUp() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
-        viewModel = HomeViewModel(savedState, mapEngine)
+        viewModel = HomeViewModel(savedState, mapEngine, location)
     }
 
     @After
@@ -56,7 +58,7 @@ class HomeViewModelTest {
 
         // Android hands the saved values to a new ViewModel in a new process.
         val restoredEngine = FakeMapEngine()
-        HomeViewModel(savedState, restoredEngine)
+        HomeViewModel(savedState, restoredEngine, location)
 
         assertEquals(listOf<CameraState?>(moved), restoredEngine.initialCameras)
     }
@@ -64,7 +66,7 @@ class HomeViewModelTest {
     @Test
     fun `a damaged saved camera is ignored`() {
         val engine = FakeMapEngine()
-        HomeViewModel(SavedStateHandle(mapOf("map_camera" to doubleArrayOf(1.0, 2.0))), engine)
+        HomeViewModel(SavedStateHandle(mapOf("map_camera" to doubleArrayOf(1.0, 2.0))), engine, location)
 
         assertEquals(listOf<CameraState?>(null), engine.initialCameras)
     }

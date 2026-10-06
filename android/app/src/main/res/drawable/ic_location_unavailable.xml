@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<!-- "No position": a ring with a line through it. Drawn for SafeRoute. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="@android:color/white"
+        android:fillType="evenOdd"
+        android:pathData="M12,4A8,8 0,1 0,12 20A8,8 0,1 0,12 4ZM12,6A6,6 0,1 1,12 18A6,6 0,1 1,12 6Z" />
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M4.4,3L21,19.6L19.6,21L3,4.4Z" />
+</vector>

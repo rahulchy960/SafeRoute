@@ -12,7 +12,6 @@
     <string name="search_hint">Search places</string>
 
     <!-- Map controls: content descriptions read by TalkBack -->
-    <string name="map_control_my_location_unavailable">My location, not available yet</string>
     <string name="map_control_layers_unavailable">Map layers, not available yet</string>
 
     <!-- Emergency button. Keep the number 112 in Latin digits in every language. -->
@@ -202,4 +201,38 @@
     <string name="signin_error_network">No internet connection. Check your connection and try again.</string>
     <string name="signin_error_app_not_verified">SafeRoute couldn’t confirm that this is the real app. Make sure Google Play services is up to date and try again.</string>
     <string name="signin_error_unknown">Sign-in didn’t work. Please try again.</string>
+    <!--
+        Current location (P010b). The "my location" button has one description per state, read
+        by TalkBack. The disclosure is shown before Android's own permission dialog; its wording
+        is a draft to be verified by a lawyer.
+    -->
+    <string name="my_location_off">Show my location</string>
+    <string name="my_location_searching">Finding your location</string>
+    <string name="my_location_located">My location. Centre the map on it</string>
+    <string name="my_location_located_approximate">My approximate location. Centre the map on it</string>
+    <string name="my_location_located_stale">My last known location. Centre the map on it</string>
+    <string name="my_location_following">Following my location. Stop following</string>
+    <string name="my_location_unavailable">Location unavailable. Find out why</string>
+    <string name="location_disclosure_title">Show your location on the map?</string>
+    <string name="location_disclosure_what">SafeRoute will read your phone’s location while the app is open.</string>
+    <string name="location_disclosure_why">It is used to show where you are on the map. Later features will also use it for routes, and for SOS and live sharing when you start them yourself.</string>
+    <string name="location_disclosure_not">SafeRoute does not read your location in the background. For this feature nothing is sent to SafeRoute’s servers. Your location is shared with others only if you start SOS or live sharing.</string>
+    <string name="location_disclosure_stop">You can stop this at any time in your phone’s Settings, under Apps, SafeRoute, Permissions.</string>
+    <string name="location_disclosure_continue">Continue</string>
+    <string name="location_disclosure_not_now">Not now</string>
+    <string name="location_notice_denied_title">Location is not allowed</string>
+    <string name="location_notice_denied_body">The map works without it. Tap the location button if you change your mind.</string>
+    <string name="location_notice_settings_body">To show your location, allow it for SafeRoute in your phone’s Settings, under Permissions, Location.</string>
+    <string name="location_notice_open_settings">Open Settings</string>
+    <string name="location_notice_off_title">Your phone’s location is off</string>
+    <string name="location_notice_off_body">Turn on Location in your phone’s settings to see where you are.</string>
+    <string name="location_notice_turn_on">Location settings</string>
+    <string name="location_notice_no_play_title">Location is not available on this phone</string>
+    <string name="location_notice_no_play_body">SafeRoute needs Google Play services to find your location. The map and the emergency button still work.</string>
+    <string name="location_notice_approximate_title">Approximate location</string>
+    <string name="location_notice_approximate_body">You allowed approximate location, so the map shows the area you are in, not the exact spot.</string>
+    <string name="location_notice_use_precise">Use precise location</string>
+    <string name="location_notice_no_fix_title">Can’t find your location</string>
+    <string name="location_notice_no_fix_body">Your phone has no position yet. Try again near a window or outdoors.</string>
+    <string name="location_notice_close">Close</string>
 </resources>
