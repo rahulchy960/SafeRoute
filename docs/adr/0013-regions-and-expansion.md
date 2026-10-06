@@ -5,6 +5,9 @@
 - **Prompt:** P009a
 - **Plan refs:** Plan v7 §10, §14, §14.2 (Stage 3); [addendum v7.1](../plan/addendum-v7.1.md) D, E
 
+> Note (2026-10-07, P010c): West Bengal is the launch geography; see
+> [ADR 0016](0016-statewide-coverage-layers.md).
+
 ## Context
 
 - [ADR 0005](0005-product-name-and-multi-city-readiness.md) and
