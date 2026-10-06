@@ -136,7 +136,7 @@ class OnboardingNavigationTest {
         text(R.string.emergency_button_label).assertIsDisplayed()
         text(R.string.home_sheet_title).assertIsDisplayed()
         assertEquals(
-            listOf("refresh", "markWelcomeSeen", "confirmAdult", "acceptNotice(en)", "refresh"),
+            listOf("refresh", "markWelcomeSeen", "confirmAdult", "acceptNotice(en)", "onSignedIn"),
             fakeSession.calls,
         )
         assertEquals(listOf("startVerification", "verifyCode"), fakeGateway.calls)

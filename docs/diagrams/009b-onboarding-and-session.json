@@ -1,7 +1,7 @@
 {
   "$schema": "../../tools/diagrams/diagram.schema.json",
   "title": "Onboarding and session",
-  "subtitle": "Order: age, consent, phone. The session state decides the screen; after the first sign-in the app opens offline (P009b and P009c, ADR 0010, ADR 0012)",
+  "subtitle": "Order: age, consent, phone. The session state decides the screen. Checks run in the app scope and end within 60 s (P009b to P009d)",
   "direction": "TB",
   "layout": {
     "nodeWidth": 215
@@ -78,7 +78,7 @@
     },
     {
       "id": "bootstrap",
-      "label": "NeedsBootstrap: POST /v1/me/bootstrap with age and consent",
+      "label": "NeedsBootstrap: POST /v1/me/bootstrap with age and consent, then read the account back",
       "role": "service",
       "group": "session"
     },
@@ -97,7 +97,7 @@
     },
     {
       "id": "error",
-      "label": "Error (retryable): first run without a connection, or 503",
+      "label": "Error (retry screen): no connection, 503, or no answer within 60 s",
       "role": "external",
       "group": "ends",
       "rank": 7

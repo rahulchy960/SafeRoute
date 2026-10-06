@@ -22,6 +22,16 @@ interface Session {
      */
     suspend fun refresh()
 
+    /**
+     * Sign-in with Firebase just succeeded: check the account, create it if needed, and move
+     * on. Unlike [refresh] it does nothing when the session has already left "signed out",
+     * so a second report of the same sign-in does not start a second check.
+     *
+     * The work does not belong to the caller: it finishes even if the calling screen is
+     * replaced while it runs.
+     */
+    suspend fun onSignedIn()
+
     /** Welcome screen passed. */
     suspend fun markWelcomeSeen()
 

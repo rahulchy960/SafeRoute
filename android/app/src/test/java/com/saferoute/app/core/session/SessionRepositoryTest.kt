@@ -53,7 +53,15 @@ class SessionRepositoryTest {
             refreshed = if (signedIn) FAKE_REFRESHED_ID_TOKEN else null,
         )
         val meApi = TestApi(server, tokens).create<MeApi>()
-        return Fixture(SessionRepository(gateway, store, meApi) { uiLocale }, gateway, store)
+        val repository = SessionRepository(gateway, store, meApi, { uiLocale }, immediateAppScope())
+        return Fixture(repository, gateway, store)
+    }
+
+    /** A new user: no account, then (after the bootstrap) the account with its consent. */
+    private fun noAccountYet() {
+        api.on(GET_ME, problemResponse(403, "bootstrap_required"), ok(ME_JSON))
+            .on(POST_BOOTSTRAP, ok(ME_JSON, code = 201))
+            .on(GET_CONSENTS, ok(consentsJson(consentJson())))
     }
 
     private fun accountExistsWithCurrentConsent() {
@@ -171,23 +179,50 @@ class SessionRepositoryTest {
     // --- After sign-in ---------------------------------------------------------------------
 
     @Test
-    fun `no account yet - bootstrap with age and consent, then Ready`() = runTest {
-        api.on(GET_ME, problemResponse(403, "bootstrap_required"))
-            .on(POST_BOOTSTRAP, ok(ME_JSON, code = 201))
+    fun `no account yet - bootstrap with age and consent, read it back, then Ready`() = runTest {
+        noAccountYet()
         uiLocale = LOCALE_BENGALI
         val f = fixture(signedIn = true, flags = ONBOARDED)
 
         f.repository.refresh()
 
         assertEquals(SessionState.Ready, f.repository.state.value)
-        assertEquals(listOf(GET_ME, POST_BOOTSTRAP), api.routesCalled())
+        assertEquals(listOf(GET_ME, POST_BOOTSTRAP, GET_ME, GET_CONSENTS), api.routesCalled())
         assertTrue(f.store.current.readyOnce)
     }
 
     @Test
-    fun `the bootstrap body has the age declaration, notice, purposes and locale, never a phone number`() = runTest {
-        api.on(GET_ME, problemResponse(403, "bootstrap_required"))
+    fun `a server that still says no account after the bootstrap is an error, not a loop`() = runTest {
+        api.on(GET_ME, problemResponse(403, "bootstrap_required")).on(POST_BOOTSTRAP, ok(ME_JSON, code = 201))
+        val f = fixture(signedIn = true, flags = ONBOARDED)
+
+        f.repository.refresh()
+
+        assertEquals(SessionState.Error(retryable = false), f.repository.state.value)
+        assertEquals(listOf(GET_ME, POST_BOOTSTRAP, GET_ME), api.routesCalled())
+        assertFalse(f.store.current.readyOnce)
+    }
+
+    @Test
+    fun `the consents check failing after a bootstrap shows retry, and retrying finishes`() = runTest {
+        api.on(GET_ME, problemResponse(403, "bootstrap_required"), ok(ME_JSON))
             .on(POST_BOOTSTRAP, ok(ME_JSON, code = 201))
+            .on(GET_CONSENTS, problemResponse(503, "db_unavailable"))
+        val f = fixture(signedIn = true, flags = ONBOARDED)
+
+        f.repository.refresh()
+        assertEquals(SessionState.Error(retryable = true), f.repository.state.value)
+
+        // The account exists now, so the retry does not bootstrap again.
+        api.on(GET_ME, ok(ME_JSON)).on(GET_CONSENTS, ok(consentsJson(consentJson())))
+        f.repository.refresh()
+        assertEquals(SessionState.Ready, f.repository.state.value)
+        assertEquals(1, api.routesCalled().count { it == POST_BOOTSTRAP })
+    }
+
+    @Test
+    fun `the bootstrap body has the age declaration, notice, purposes and locale, never a phone number`() = runTest {
+        noAccountYet()
         uiLocale = LOCALE_BENGALI
         val f = fixture(signedIn = true, flags = ONBOARDED.copy(acceptedNoticeLocale = LOCALE_BENGALI))
 
@@ -207,8 +242,7 @@ class SessionRepositoryTest {
 
     @Test
     fun `the UI locale and the notice locale are sent independently`() = runTest {
-        api.on(GET_ME, problemResponse(403, "bootstrap_required"))
-            .on(POST_BOOTSTRAP, ok(ME_JSON, code = 201))
+        noAccountYet()
         uiLocale = LOCALE_ENGLISH
         val f = fixture(signedIn = true, flags = ONBOARDED.copy(acceptedNoticeLocale = LOCALE_BENGALI))
 
@@ -236,8 +270,11 @@ class SessionRepositoryTest {
 
     @Test
     fun `resuming after bootstrap_required - accepting the notice creates the account`() = runTest {
-        api.on(GET_ME, problemResponse(403, "bootstrap_required"))
+        // GET /v1/me is asked three times: at the start, when the notice is accepted, and after
+        // the bootstrap.
+        api.on(GET_ME, problemResponse(403, "bootstrap_required"), problemResponse(403, "bootstrap_required"), ok(ME_JSON))
             .on(POST_BOOTSTRAP, ok(ME_JSON, code = 201))
+            .on(GET_CONSENTS, ok(consentsJson(consentJson())))
         val f = fixture(signedIn = true, flags = SessionFlags(ageConfirmed = true))
         f.repository.refresh()
         assertEquals(SessionState.NeedsConsent, f.repository.state.value)

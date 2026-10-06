@@ -274,6 +274,12 @@ and [`android/README.md`](android/README.md):
   strings and is mirrored in `docs/legal/consent-notice-v1.md` (`ConsentNoticeDocumentTest`);
   changing it means changing `NOTICE_VERSION`. It is a draft until a lawyer has reviewed it. A UI
   test that starts `MainActivity` replaces `SessionBindingModule` with `FakeSession`.
+- Work that changes the session state runs in the app-lifetime scope (`@ApplicationScope`, inside
+  `SessionRepository`), never in a screen's `viewModelScope`: a state change replaces the screen,
+  which cancels that screen's ViewModel (the P009d bug). A loading state must always end, in
+  `Ready` or in the retry screen, within `SESSION_CHECK_TIMEOUT_MILLIS`. Any change to this flow
+  needs a test with the REAL `SessionRepository` in which the calling screen is cleared mid-flow
+  (`PostSignInFlowTest`, `SignInToHomeTest`); a `FakeSession` test alone cannot see such a bug.
 - `android/app/google-services.json` is never opened, printed or committed by Claude Code. CI and
   fresh clones use `android/scripts/write-dummy-google-services` (project `demo-saferoute`); a
   release build refuses the dummy or a missing file unless `-Psaferoute.allowDummyFirebase=true`

@@ -4,7 +4,7 @@ package com.saferoute.app.core.auth
 import android.app.Activity
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.flowOf
 
 /**
@@ -27,7 +27,31 @@ const val FAKE_VERIFICATION_ID = "fake-verification-id"
  */
 class FakePhoneAuthGateway(signedIn: Boolean = false) : PhoneAuthGateway {
 
-    private val user = MutableStateFlow(if (signedIn) AuthUser else null)
+    @Volatile
+    private var user: AuthUser? = if (signedIn) AuthUser else null
+
+    // A SharedFlow, not a StateFlow: Firebase's listener can report the same state twice, and
+    // a StateFlow would swallow the repeat.
+    private val states = MutableSharedFlow<AuthUser?>(replay = 1, extraBufferCapacity = 16)
+        .apply { tryEmit(user) }
+
+    private fun setUser(value: AuthUser?) {
+        user = value
+        states.tryEmit(value)
+    }
+
+    /**
+     * When true, `verifyCode` reports success but the user only appears when the test calls
+     * [completeSignIn]: Firebase's auth state arriving a moment after the code was accepted.
+     */
+    var signInCompletesLater = false
+
+    fun completeSignIn() = setUser(AuthUser)
+
+    /** Firebase's listener fires again without anything having changed. */
+    fun reportAuthStateAgain() {
+        states.tryEmit(user)
+    }
 
     /** What `startVerification` and `resend` report. Default: the SMS was sent. */
     var nextVerification: List<VerificationEvent> =
@@ -45,13 +69,11 @@ class FakePhoneAuthGateway(signedIn: Boolean = false) : PhoneAuthGateway {
     /** The `forceRefresh` value of every `idToken` call. */
     val tokenRequests = CopyOnWriteArrayList<Boolean>()
 
-    override val currentUser: AuthUser? get() = user.value
+    override val currentUser: AuthUser? get() = user
 
-    override val authState: Flow<AuthUser?> = user
+    override val authState: Flow<AuthUser?> = states
 
-    fun signInDirectly() {
-        user.value = AuthUser
-    }
+    fun signInDirectly() = setUser(AuthUser)
 
     override fun startVerification(phoneE164: String, activity: Activity): Flow<VerificationEvent> =
         verification("startVerification")
@@ -61,7 +83,7 @@ class FakePhoneAuthGateway(signedIn: Boolean = false) : PhoneAuthGateway {
 
     private fun verification(call: String): Flow<VerificationEvent> {
         calls += call
-        if (VerificationEvent.SignedIn in nextVerification) user.value = AuthUser
+        if (VerificationEvent.SignedIn in nextVerification) setUser(AuthUser)
         return flowOf(*nextVerification.toTypedArray())
     }
 
@@ -72,19 +94,19 @@ class FakePhoneAuthGateway(signedIn: Boolean = false) : PhoneAuthGateway {
             return SignInResult.Failure(PhoneAuthError.CODE_EXPIRED)
         }
         if (code != FAKE_SMS_CODE) return SignInResult.Failure(PhoneAuthError.WRONG_CODE)
-        user.value = AuthUser
+        if (!signInCompletesLater) setUser(AuthUser)
         return SignInResult.Success
     }
 
     override suspend fun idToken(forceRefresh: Boolean): String? {
         tokenRequests += forceRefresh
         idTokenFailure?.let { throw it }
-        if (user.value == null) return null
+        if (user == null) return null
         return if (forceRefresh) FAKE_REFRESHED_ID_TOKEN else FAKE_ID_TOKEN
     }
 
     override suspend fun signOut() {
         calls += "signOut"
-        user.value = null
+        setUser(null)
     }
 }

@@ -171,13 +171,13 @@ class SignInViewModelTest {
         runCurrent()
 
         assertEquals(listOf("startVerification", "verifyCode"), gateway.calls)
-        assertEquals(listOf("refresh"), session.calls)
+        assertEquals(listOf("onSignedIn"), session.calls)
         assertEquals(SessionState.Ready, session.state.value)
         // Nothing typed is kept once signed in, and the countdown has stopped.
         assertEquals("", state.phoneInput)
         assertEquals("", state.codeInput)
         advanceUntilIdle()
-        assertEquals(listOf("refresh"), session.calls)
+        assertEquals(listOf("onSignedIn"), session.calls)
     }
 
     @Test
@@ -199,7 +199,7 @@ class SignInViewModelTest {
         viewModel.onCodeChange(FAKE_SMS_CODE)
         viewModel.submitCode()
         runCurrent()
-        assertEquals(listOf("refresh"), session.calls)
+        assertEquals(listOf("onSignedIn"), session.calls)
     }
 
     @Test
@@ -248,7 +248,7 @@ class SignInViewModelTest {
         sendCodeTo()
 
         assertEquals(listOf("startVerification"), gateway.calls)
-        assertEquals(listOf("refresh"), session.calls)
+        assertEquals(listOf("onSignedIn"), session.calls)
         assertEquals(SessionState.Ready, session.state.value)
     }
 
@@ -260,7 +260,7 @@ class SignInViewModelTest {
         )
         sendCodeTo()
 
-        assertEquals(listOf("refresh"), session.calls)
+        assertEquals(listOf("onSignedIn"), session.calls)
     }
 
     @Test
