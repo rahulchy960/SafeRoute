@@ -42,6 +42,10 @@ const postgresUrl = z.string().refine((value) => parsePostgresUrl(value) !== und
 /** Firebase/GCP project ID rules: 6–30 characters, lowercase letters, digits and hyphens. */
 export const FIREBASE_PROJECT_ID_PATTERN = /^[a-z][a-z0-9-]{4,28}[a-z0-9]$/;
 
+/** Geocoding providers that have an adapter (src/modules/search/providers, ADR 0018). */
+export const GEOCODING_PROVIDERS = ['geoapify', 'locationiq'] as const;
+export type GeocodingProviderName = (typeof GEOCODING_PROVIDERS)[number];
+
 const BaseSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().min(1).max(65535).default(8080),
@@ -62,11 +66,45 @@ const BaseSchema = z.object({
     .string()
     .regex(FIREBASE_PROJECT_ID_PATTERN, { message: 'must be a Firebase project ID' })
     .optional(),
+  // Server-side key of the geocoding provider (ADR 0018). A SECRET: never logged, never in an
+  // error message, never in /health. Optional outside production: search then answers 503.
+  GEOCODING_API_KEY: z
+    .string()
+    .regex(/^[\x21-\x7e]{8,200}$/, { message: 'must be 8-200 printable characters' })
+    .optional(),
+  // Which adapter the key belongs to. Not a secret.
+  GEOCODING_PROVIDER: z.enum(GEOCODING_PROVIDERS).optional(),
+  // Provider calls per day across all users and instances. Keep it under the provider plan's
+  // daily quota; revisit whenever the plan or the provider changes (ADR 0018).
+  SEARCH_GLOBAL_DAILY_LIMIT: z.coerce.number().int().min(1).max(10_000_000).default(2500),
+  SEARCH_PROVIDER_TIMEOUT_MS: z.coerce.number().int().min(200).max(20_000).default(3000),
 });
 
 /** What the API additionally needs before it may serve requests in production. */
 const ConfigSchema = BaseSchema.superRefine((config, ctx) => {
+  // A key without a provider name (or the reverse) is a mistake in any environment.
+  if (config.GEOCODING_API_KEY !== undefined && config.GEOCODING_PROVIDER === undefined) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['GEOCODING_PROVIDER'],
+      message: 'required when GEOCODING_API_KEY is set',
+    });
+  }
+  if (config.GEOCODING_PROVIDER !== undefined && config.GEOCODING_API_KEY === undefined) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['GEOCODING_API_KEY'],
+      message: 'required when GEOCODING_PROVIDER is set',
+    });
+  }
   if (config.NODE_ENV !== 'production') return;
+  // Without the key a production revision must not start: the deploy then fails at the candidate
+  // stage and traffic never shifts (docs/runbooks/rollback-staging.md).
+  if (config.GEOCODING_API_KEY === undefined && config.GEOCODING_PROVIDER === undefined) {
+    for (const name of ['GEOCODING_API_KEY', 'GEOCODING_PROVIDER'] as const) {
+      ctx.addIssue({ code: 'custom', path: [name], message: 'required when NODE_ENV=production' });
+    }
+  }
   if (config.DATABASE_URL === undefined) {
     ctx.addIssue({
       code: 'custom',

@@ -10,6 +10,8 @@ import { accessLog } from './middleware/access-log.js';
 import { requestId } from './middleware/request-id.js';
 import type { TokenVerifier } from './modules/auth/verifier.js';
 import { consentRoutes } from './modules/consents/routes.js';
+import { searchRoutes } from './modules/search/routes.js';
+import type { GeocoderProvider } from './modules/search/types.js';
 import { userRoutes } from './modules/users/routes.js';
 import { healthRoutes } from './routes/health.js';
 import { readyRoutes, type ReadinessCheck } from './routes/ready.js';
@@ -27,6 +29,11 @@ export interface AppDeps {
   verifier?: TokenVerifier;
   /** Database for the /v1 modules; omitted when no DATABASE_URL is configured. */
   db?: Db;
+  /**
+   * Geocoding provider behind GET /v1/search. Omitted when GEOCODING_API_KEY is not set (dev/test
+   * only): the route then answers 503 `search_not_configured`.
+   */
+  geocoder?: GeocoderProvider;
 }
 
 /**
@@ -42,7 +49,7 @@ export interface AppDeps {
  * applies to all routers mounted below, because OpenAPIHono resolves the default hook through
  * the parent app.
  */
-export function createApp({ config, logger, readiness, verifier, db }: AppDeps) {
+export function createApp({ config, logger, readiness, verifier, db, geocoder }: AppDeps) {
   const app = new OpenAPIHono<AppEnv>({ defaultHook: validationHook });
   registerContractComponents(app);
 
@@ -53,6 +60,10 @@ export function createApp({ config, logger, readiness, verifier, db }: AppDeps) 
   app.route('/', readyRoutes(readiness));
   app.route('/', userRoutes({ verifier, db }));
   app.route('/', consentRoutes({ verifier, db }));
+  app.route(
+    '/',
+    searchRoutes({ verifier, db, geocoder, globalDailyLimit: config.SEARCH_GLOBAL_DAILY_LIMIT }),
+  );
 
   app.notFound((c) => {
     c.set('unmatchedRoute', true);

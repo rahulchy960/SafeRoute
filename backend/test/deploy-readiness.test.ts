@@ -23,6 +23,8 @@ describe('production-mode startup (deploy readiness for P006)', () => {
       // Unroutable documentation address: any connection attempt would fail the checks below.
       DATABASE_URL: 'postgres://fake-user:fake-pw@192.0.2.1:5432/fake_db',
       FIREBASE_PROJECT_ID: 'example-staging-1',
+      GEOCODING_API_KEY: 'fake-geocoding-key-for-tests',
+      GEOCODING_PROVIDER: 'geoapify',
     });
     const logger = createLogger(config, { write: () => undefined });
     const { app, database } = createRuntime(config, logger);
@@ -36,6 +38,10 @@ describe('production-mode startup (deploy readiness for P006)', () => {
       expect(me.status).toBe(401);
       expect(me.headers.get('www-authenticate')).toBe('Bearer');
       expect(me.headers.get('x-request-id')).toBeTruthy();
+
+      const search = await app.request('/v1/search?q=station');
+      expect(search.status).toBe(401);
+      expect(search.headers.get('www-authenticate')).toBe('Bearer');
 
       expect(fetchSpy).not.toHaveBeenCalled();
       expect(database?.pool.totalCount).toBe(0);

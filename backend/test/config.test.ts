@@ -3,6 +3,12 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ConfigError, parseConfig, parseJobConfig } from '../src/config.js';
 
+/** Obviously fake; a production config needs both. */
+const GEOCODING = {
+  GEOCODING_API_KEY: 'fake-geocoding-key-for-tests',
+  GEOCODING_PROVIDER: 'geoapify',
+};
+
 function configError(env: Record<string, string>): ConfigError {
   try {
     parseConfig(env);
@@ -25,6 +31,8 @@ describe('parseConfig', () => {
       DB_POOL_MAX: 5,
       DB_STATEMENT_TIMEOUT_MS: 10_000,
       DB_CONNECT_TIMEOUT_MS: 5_000,
+      SEARCH_GLOBAL_DAILY_LIMIT: 2500,
+      SEARCH_PROVIDER_TIMEOUT_MS: 3000,
     });
   });
 
@@ -37,6 +45,7 @@ describe('parseConfig', () => {
       GIT_SHA: 'abc1234',
       DATABASE_URL: 'postgres://fake-user:fake-pw@127.0.0.1:5433/fake_db',
       FIREBASE_PROJECT_ID: 'example-staging-1',
+      ...GEOCODING,
       PATH: '/usr/bin',
     });
     expect(config).toMatchObject({ NODE_ENV: 'production', PORT: 3000, LOG_LEVEL: 'warn' });
@@ -87,13 +96,18 @@ describe('parseConfig', () => {
     });
 
     it('requires DATABASE_URL in production', () => {
-      const err = configError({ NODE_ENV: 'production', FIREBASE_PROJECT_ID: 'example-staging-1' });
+      const err = configError({
+        NODE_ENV: 'production',
+        FIREBASE_PROJECT_ID: 'example-staging-1',
+        ...GEOCODING,
+      });
       expect(err.issues).toEqual(['DATABASE_URL: required when NODE_ENV=production']);
       expect(
         parseConfig({
           NODE_ENV: 'production',
           DATABASE_URL: URL_WITH_SECRET,
           FIREBASE_PROJECT_ID: 'example-staging-1',
+          ...GEOCODING,
         }).DATABASE_URL,
       ).toBe(URL_WITH_SECRET);
     });
@@ -128,6 +142,8 @@ describe('parseConfig', () => {
       expect(parseJobConfig(JOB)).toMatchObject({ NODE_ENV: 'production', LOG_LEVEL: 'info' });
       expect(parseJobConfig(JOB).FIREBASE_PROJECT_ID).toBeUndefined();
       expect(configError(JOB).issues).toEqual([
+        'GEOCODING_API_KEY: required when NODE_ENV=production',
+        'GEOCODING_PROVIDER: required when NODE_ENV=production',
         'FIREBASE_PROJECT_ID: required when NODE_ENV=production',
       ]);
     });
@@ -152,8 +168,76 @@ describe('parseConfig', () => {
     });
   });
 
+  describe('geocoding and search settings (ADR 0018)', () => {
+    const PROD = {
+      NODE_ENV: 'production',
+      DATABASE_URL: 'postgres://u:p@127.0.0.1:5433/db',
+      FIREBASE_PROJECT_ID: 'example-staging-1',
+    };
+
+    it('is optional in development and test', () => {
+      for (const NODE_ENV of ['development', 'test']) {
+        const config = parseConfig({ NODE_ENV });
+        expect(config.GEOCODING_API_KEY).toBeUndefined();
+        expect(config.GEOCODING_PROVIDER).toBeUndefined();
+      }
+      expect(parseConfig(GEOCODING)).toMatchObject(GEOCODING);
+    });
+
+    it('requires the key and the provider name in production, by name only', () => {
+      expect(configError(PROD).issues).toEqual([
+        'GEOCODING_API_KEY: required when NODE_ENV=production',
+        'GEOCODING_PROVIDER: required when NODE_ENV=production',
+      ]);
+      expect(parseConfig({ ...PROD, ...GEOCODING })).toMatchObject(GEOCODING);
+    });
+
+    it('rejects a key without a provider and a provider without a key, in any environment', () => {
+      const secret = 'fake-geocoding-key-DO-NOT-LOG';
+      const keyOnly = configError({ GEOCODING_API_KEY: secret });
+      expect(keyOnly.issues).toEqual([
+        'GEOCODING_PROVIDER: required when GEOCODING_API_KEY is set',
+      ]);
+      expect(keyOnly.message).not.toContain(secret);
+      expect(configError({ GEOCODING_PROVIDER: 'geoapify' }).issues).toEqual([
+        'GEOCODING_API_KEY: required when GEOCODING_PROVIDER is set',
+      ]);
+      expect(configError({ ...PROD, GEOCODING_API_KEY: secret }).issues).toEqual([
+        'GEOCODING_PROVIDER: required when GEOCODING_API_KEY is set',
+      ]);
+    });
+
+    it.each([
+      ['GEOCODING_API_KEY', 'short'],
+      ['GEOCODING_API_KEY', 'has spaces in the fake key'],
+      ['GEOCODING_PROVIDER', 'some-other-provider'],
+      ['SEARCH_GLOBAL_DAILY_LIMIT', '0'],
+      ['SEARCH_GLOBAL_DAILY_LIMIT', 'many'],
+      ['SEARCH_PROVIDER_TIMEOUT_MS', '50'],
+    ])('rejects an invalid %s without echoing it', (name, value) => {
+      const err = configError({ ...GEOCODING, [name]: value });
+      expect(err.issues).toHaveLength(1);
+      expect(err.issues[0]).toMatch(new RegExp('^' + name + ': '));
+      expect(err.message).not.toContain(value);
+    });
+
+    it('reads the limits', () => {
+      expect(
+        parseConfig({ SEARCH_GLOBAL_DAILY_LIMIT: '4000', SEARCH_PROVIDER_TIMEOUT_MS: '1500' }),
+      ).toMatchObject({ SEARCH_GLOBAL_DAILY_LIMIT: 4000, SEARCH_PROVIDER_TIMEOUT_MS: 1500 });
+    });
+
+    it('the migration job needs no geocoding key', () => {
+      expect(parseJobConfig(PROD).GEOCODING_API_KEY).toBeUndefined();
+    });
+  });
+
   describe('FIREBASE_PROJECT_ID (ADR 0006)', () => {
-    const PROD = { NODE_ENV: 'production', DATABASE_URL: 'postgres://u:p@127.0.0.1:5433/db' };
+    const PROD = {
+      NODE_ENV: 'production',
+      DATABASE_URL: 'postgres://u:p@127.0.0.1:5433/db',
+      ...GEOCODING,
+    };
 
     it('is optional in development and test, and demo- IDs are allowed there', () => {
       expect(parseConfig({ NODE_ENV: 'development' }).FIREBASE_PROJECT_ID).toBeUndefined();

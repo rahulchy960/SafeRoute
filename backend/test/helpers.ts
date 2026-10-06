@@ -8,12 +8,13 @@ export type LogLine = Record<string, unknown>;
 /**
  * Builds an app whose logger writes JSON lines into memory instead of stdout. `readiness` is the
  * injected database probe for GET /health/ready (omit it to simulate "no database configured").
- * `deps` passes the token verifier and database (omit them to simulate "not configured").
+ * `deps` passes the token verifier, database and geocoder (omit them to simulate "not
+ * configured").
  */
 export function buildTestApp(
   overrides: Partial<Record<keyof Config, string>> = {},
   readiness?: ReadinessCheck,
-  deps: Pick<AppDeps, 'verifier' | 'db'> = {},
+  deps: Pick<AppDeps, 'verifier' | 'db' | 'geocoder'> = {},
 ) {
   const lines: string[] = [];
   const config = parseConfig({ NODE_ENV: 'test', LOG_LEVEL: 'debug', ...overrides });

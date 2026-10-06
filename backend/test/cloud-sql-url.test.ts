@@ -27,6 +27,8 @@ describe('Cloud SQL unix-socket DATABASE_URL', () => {
         NODE_ENV: 'production',
         DATABASE_URL: SOCKET_URL,
         FIREBASE_PROJECT_ID: 'example-staging-1',
+        GEOCODING_API_KEY: 'fake-geocoding-key-for-tests',
+        GEOCODING_PROVIDER: 'geoapify',
       }).DATABASE_URL,
     ).toBe(SOCKET_URL);
   });

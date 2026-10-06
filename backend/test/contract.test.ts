@@ -19,6 +19,7 @@ const DOCUMENTED_PATHS = [
   '/v1/me/bootstrap',
   '/v1/me/consents',
   '/v1/me/consents/{purpose}',
+  '/v1/search',
 ];
 
 /** Operations that are public by design; every other operation must require firebaseBearer. */
@@ -149,7 +150,6 @@ describe('generated OpenAPI document', () => {
   });
 
   it('documents consent and the age declaration (P009a, ADR 0010)', () => {
-    expect((doc.info as Json).version).toBe('0.3.0');
     const paths = doc.paths as Record<string, Record<string, Json>>;
     expect(paths['/v1/me/consents']?.get?.operationId).toBe('getMyConsents');
     expect(paths['/v1/me/consents/{purpose}']?.put?.operationId).toBe('setMyConsent');
@@ -199,6 +199,61 @@ describe('generated OpenAPI document', () => {
     }
     // No date-of-birth or age field anywhere in the contract (ADR 0010).
     expect(serialized).not.toMatch(/"(dateOfBirth|birthDate|birthday|dob|age)"\s*:/i);
+  });
+
+  it('documents place search (P011a, ADR 0018)', () => {
+    expect((doc.info as Json).version).toBe('0.4.0');
+    const paths = doc.paths as Record<string, Record<string, Json>>;
+    const op = paths['/v1/search']?.get ?? {};
+    expect(op.operationId).toBe('searchPlaces');
+    expect(op.tags).toEqual(['search']);
+    expect(Object.keys(op.responses as Json).sort()).toEqual([
+      '200',
+      '400',
+      '401',
+      '403',
+      '429',
+      '500',
+      '503',
+    ]);
+    const parameters = op.parameters as { name: string; in: string; required?: boolean }[];
+    expect(parameters.map((p) => `${p.in}:${p.name}`).sort()).toEqual([
+      'query:language',
+      'query:limit',
+      'query:nearLatitude',
+      'query:nearLongitude',
+      'query:q',
+    ]);
+    // Only `q` is required: everything else has a default or is optional.
+    expect(parameters.filter((p) => p.required).map((p) => p.name)).toEqual(['q']);
+    // Explicit latitude/longitude, never a bare `near` pair (ADR 0004).
+    expect(parameters.map((p) => p.name)).not.toContain('near');
+
+    const place = components.schemas?.Place as { properties: Record<string, Json> };
+    expect(Object.keys(place.properties).sort()).toEqual([
+      'id',
+      'kind',
+      'label',
+      'latitude',
+      'longitude',
+      'name',
+    ]);
+    expect(place.properties.kind).not.toHaveProperty('enum');
+    const results = components.schemas?.SearchResults as { properties: Json; required: string[] };
+    expect(Object.keys(results.properties).sort()).toEqual(['attribution', 'results']);
+
+    const code = (components.schemas?.ProblemDetails as { properties: Record<string, Json> })
+      .properties.code?.description as string;
+    for (const name of ['rate_limited', 'search_unavailable', 'search_not_configured']) {
+      expect(code).toContain('`' + name + '`');
+    }
+    for (const name of ['TooManyRequests', 'ServiceUnavailable']) {
+      expect((components.responses?.[name] as { headers: Json }).headers).toHaveProperty(
+        'Retry-After',
+      );
+    }
+    // No provider is named in the contract: swapping it is not a contract change.
+    expect(serialized.toLowerCase()).not.toMatch(/geoapify|locationiq|maptiler|nominatim/);
   });
 
   it('is city-neutral (ADR 0005)', () => {
