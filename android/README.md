@@ -82,13 +82,15 @@ android/
   app/build.gradle.kts             the app module's build
   app/src/main/
     AndroidManifest.xml            app entry points; one permission (INTERNET); the Firebase
-                                   libraries merge in two more (see ADR 0012)
+                                   libraries merge in two more (see ADR 0012); the three the
+                                   map library would add are removed (ADR 0015)
     java/com/saferoute/app/
       SafeRouteApplication.kt      process entry point (@HiltAndroidApp)
       MainActivity.kt              the single activity
       SafeRouteApp.kt              root composable: background + navigation host
       navigation/                  destinations (type-safe routes) and the NavHost
-      feature/home/                Home screen, HomeViewModel, map placeholder, 112 dialog
+      feature/home/                Home screen, HomeViewModel, map status card and credit,
+                                   112 dialog
       feature/search/              Search screen (layout only until P011)
       feature/settings/            Settings: account, privacy, About
       feature/onboarding/          welcome, age gate, consent notice, phone and code, blocked
@@ -98,6 +100,8 @@ android/
       core/di/                     Hilt module: Clock and coroutine dispatchers
       core/network/                HTTP client, token seam, retries, error mapping (ADR 0009)
       core/auth/                   phone sign-in behind PhoneAuthGateway; the only Firebase code
+      core/map/                    the map behind MapEngine/MapController; MapLibreEngine.kt is
+                                   the only file that uses MapLibre (ADR 0015)
       core/session/                session state machine and the stored onboarding flags
     res/values/strings.xml         English text
     res/values-bn/strings.xml      Bengali text
@@ -356,6 +360,80 @@ A test that goes through sign-in also replaces `AuthModule` with `FakePhoneAuthG
 - Never ask for the phone number before the age declaration and the consent notice.
 - Never add Analytics, Crashlytics or another Firebase product without a prompt that asks for
   it.
+
+## Map and MapTiler
+
+The map is drawn by [MapLibre Native](https://github.com/maplibre/maplibre-native) (open
+source) with styles and tiles from [MapTiler](https://www.maptiler.com/), built on
+OpenStreetMap data. Decisions and their reasons:
+[ADR 0015](../docs/adr/0015-map-stack-and-location-policy.md).
+
+### Get a key and tell the build
+
+1. Sign in at <https://cloud.maptiler.com/>, open **Account → API keys** and create a key for
+   development (keep a separate one for production later).
+2. Add one line to your **user-level** `gradle.properties` (the same file that holds
+   `saferoute.apiBaseUrl`; on Windows it is in the `.gradle` folder of your user profile):
+
+   ```properties
+   saferoute.mapTilerKey=<your key>
+   ```
+
+3. Sync Gradle and run the app.
+
+The key is never written in a tracked file, never printed by the build and never shown or
+logged by the app. Do not paste it into an issue, a pull request, a prompt log or a chat.
+
+### Restrict the key (do this once, in the MapTiler dashboard)
+
+A key that ships inside an app can be read by anyone who unpacks the APK. It is protected by
+what the dashboard allows it to do, not by hiding it:
+
+- **Allowed user-agent header:** enter `com.saferoute.app`. MapLibre sends the app's package
+  name in its `User-Agent`, so requests from other software are refused. (This is a string
+  check and can be imitated; it stops casual reuse.)
+- **Usage alert and limit:** set an alert well below the plan's monthly limit, so that a leak
+  or a bug is noticed before the map stops for everyone.
+- **If the key leaks or is abused:** delete it in the dashboard, create a new one, put the new
+  one in `gradle.properties`.
+
+Tile requests are the main cost of running the app (Plan v7 §14.1). Watch the request count in
+the MapTiler dashboard; there is nothing in the app that reports it.
+
+### What the map area can show
+
+| What you see | State | Meaning |
+| --- | --- | --- |
+| The map | Ready | Also when offline, as long as the area was viewed before (it comes from the cache) |
+| "Loading map…" | Loading | The style is being fetched. Ends within 20 seconds at the latest |
+| "The map couldn't load" + Try again | Error | The request failed for a reason a retry may fix |
+| "Map unavailable offline" + Try again | Offline | No connection and nothing cached. Recovers by itself when the connection returns |
+| "Map temporarily unavailable" + Try again | RateLimited | MapTiler refused the key (wrong, restricted) or the plan's quota is used up |
+| "Map not configured" | NotConfigured | This build has no `saferoute.mapTilerKey` |
+
+In every state the search pill, the map controls, the bottom sheet and the emergency button
+work as usual: they are separate from the map.
+
+### Run without a key
+
+Just build: without the property the app shows "Map not configured" and everything else works.
+CI builds this way. A **release** build refuses to assemble without a real key
+(`checkReleaseMapKey`); CI's release check passes an obviously fake key together with
+`-Psaferoute.allowDummyMapKey=true`, which nobody else should use.
+
+### How the code is organised
+
+- `core/map/MapTypes.kt`: the map vocabulary of the app (`LatLng`, `CameraState`,
+  `MapLoadState`, overlay descriptions, `MapController`). Plain Kotlin.
+- `core/map/MapProviderConfig.kt`: everything MapTiler-specific (style names, URL, credit
+  links, cache size) and `RegionDefaults`, where the map opens.
+- `core/map/MapStateHolder.kt`: the state machine. It survives rotation in `HomeViewModel`;
+  the map view does not, and re-attaches to it.
+- `core/map/MapLibreEngine.kt`: **the only file that imports MapLibre.**
+  `MapLibreBoundaryTest` fails if another file does. Tests never load the native library:
+  Hilt tests get `FakeMapEngine` (`src/test/.../core/map/FakeMap.kt`).
+- The camera position is saved in the ViewModel's `SavedStateHandle`, so the map reopens where
+  you left it after a rotation or after Android reclaimed the app's memory.
 
 ## Design tokens
 

@@ -36,8 +36,25 @@
     <string name="home_sheet_title">কোথায় যাবেন?</string>
     <string name="home_saved_places">সংরক্ষিত জায়গা</string>
     <string name="home_recent">সাম্প্রতিক</string>
-    <!-- Shown in debug builds only -->
-    <string name="map_placeholder_label">মানচিত্র পরের ধাপে আসবে</string>
+    <!-- Map (P010a). Draft Bengali: needs human review before release. -->
+    <string name="map_content_description">মানচিত্র</string>
+    <string name="map_status_loading">মানচিত্র লোড হচ্ছে…</string>
+    <string name="map_status_error_title">মানচিত্র লোড করা যায়নি</string>
+    <string name="map_status_error_body">আপনার সংযোগ দেখে আবার চেষ্টা করুন।</string>
+    <string name="map_status_offline_title">অফলাইনে মানচিত্র পাওয়া যাচ্ছে না</string>
+    <string name="map_status_offline_body">মানচিত্র লোড করতে ইন্টারনেটে সংযুক্ত হন। আগে দেখা এলাকা এখনও দেখা যেতে পারে।</string>
+    <string name="map_status_rate_limited_title">মানচিত্র সাময়িকভাবে পাওয়া যাচ্ছে না</string>
+    <string name="map_status_rate_limited_body">কিছুক্ষণ পরে আবার চেষ্টা করুন।</string>
+    <string name="map_status_not_configured_title">মানচিত্র কনফিগার করা হয়নি</string>
+    <string name="map_status_not_configured_body">অ্যাপের এই বিল্ডে মানচিত্রের কী নেই।</string>
+    <string name="map_status_rest_works">অনুসন্ধান ও জরুরি বোতাম এখনও কাজ করে।</string>
+    <string name="map_status_retry">আবার চেষ্টা করুন</string>
+    <string name="map_attribution">© MapTiler © OpenStreetMap অবদানকারীরা</string>
+    <string name="map_attribution_dialog_title">মানচিত্রের কৃতিত্ব</string>
+    <string name="map_attribution_dialog_body">মানচিত্রের টাইল MapTiler-এর। মানচিত্রের তথ্য OpenStreetMap অবদানকারীদের, Open Database License-এর অধীনে উপলব্ধ।</string>
+    <string name="map_attribution_provider_link">MapTiler কপিরাইট</string>
+    <string name="map_attribution_data_link">OpenStreetMap কপিরাইট</string>
+    <string name="map_attribution_close">বন্ধ করুন</string>
 
     <!--
         Emergency dialog. It must never suggest that SafeRoute calls for help by itself:

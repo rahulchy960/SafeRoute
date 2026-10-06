@@ -129,6 +129,45 @@ tasks.matching { it.name == "preReleaseBuild" }.configureEach {
     dependsOn(checkReleaseFirebaseConfig)
 }
 
+// The map key (MapTiler) is not in the repository either. It comes from the Gradle property
+// `saferoute.mapTilerKey` in the developer's user-level gradle.properties (ADR 0015). Without
+// it the app builds and the map area says "Map not configured". A key that starts with
+// `dummy-` counts as "no key": CI uses one to prove that a release still assembles.
+// The value is never printed. core/map/MapProviderConfig.kt applies the same format rule and
+// is where it is unit-tested.
+val mapTilerKeyPlaceholder = "map-key-not-configured"
+val mapTilerKeyProperty = providers.gradleProperty("saferoute.mapTilerKey").orNull?.trim().orEmpty()
+val mapTilerKeyUsable = mapTilerKeyProperty.isNotEmpty() &&
+    mapTilerKeyProperty != mapTilerKeyPlaceholder &&
+    !mapTilerKeyProperty.startsWith("dummy-")
+val mapTilerKey = mapTilerKeyProperty.ifEmpty { mapTilerKeyPlaceholder }
+if (!Regex("""[A-Za-z0-9_-]{8,64}""").matches(mapTilerKey)) {
+    throw GradleException(
+        "saferoute.mapTilerKey is malformed: it must be 8 to 64 characters, using only " +
+            "letters, digits, '-' and '_'. (The value is not shown on purpose.)",
+    )
+}
+
+// A release build must never ship without a real map key: the map would be empty for everyone.
+// The only build allowed to do so is the CI check that a release still assembles, which passes
+// -Psaferoute.allowDummyMapKey=true together with a dummy key.
+val checkReleaseMapKey = tasks.register("checkReleaseMapKey") {
+    group = "verification"
+    description = "Fails a release build that has no real saferoute.mapTilerKey."
+    val usable = mapTilerKeyUsable
+    val allowDummy = providers.gradleProperty("saferoute.allowDummyMapKey").orNull == "true"
+    doLast {
+        if (!usable && !allowDummy) {
+            throw GradleException(
+                "Release builds need a real map key in the Gradle property " +
+                    "saferoute.mapTilerKey (user-level gradle.properties). " +
+                    "See android/README.md, \"Map and MapTiler\".",
+            )
+        }
+    }
+}
+tasks.matching { it.name == "preReleaseBuild" }.configureEach { dependsOn(checkReleaseMapKey) }
+
 android {
     // `namespace` is the Kotlin/Java package of generated code (R, BuildConfig).
     // `applicationId` is the app's identity on a device and on Google Play; it can never change
@@ -149,6 +188,11 @@ android {
         // one is configured.
         buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
         buildConfigField("boolean", "API_BASE_URL_CONFIGURED", apiBaseUrlConfigured.toString())
+
+        // Read by core/map only. The key is never shown or logged; the UI may only say whether
+        // the map is configured.
+        buildConfigField("String", "MAPTILER_KEY", "\"$mapTilerKey\"")
+        buildConfigField("boolean", "MAPTILER_KEY_CONFIGURED", mapTilerKeyUsable.toString())
     }
 
     buildTypes {
@@ -173,8 +217,8 @@ android {
 
     buildFeatures {
         compose = true
-        // Generates BuildConfig (DEBUG, VERSION_NAME, VERSION_CODE, API_BASE_URL), read by Home,
-        // Settings and core/network.
+        // Generates BuildConfig (DEBUG, VERSION_NAME, VERSION_CODE, API_BASE_URL, MAPTILER_KEY),
+        // read by Home, Settings, core/network and core/map.
         buildConfig = true
     }
 
@@ -196,6 +240,10 @@ android {
         // Errors fail the build; warnings are reported but don't.
         abortOnError = true
         warningsAsErrors = false
+        // Timber arrives with MapLibre and brings a lint rule that wants every Log call to use
+        // it. The app does not use Timber: its few log lines go through filters that remove
+        // secrets (SafeLoggingInterceptor, the map log filter).
+        disable += "LogNotTimber"
     }
 
     testOptions {
@@ -261,6 +309,9 @@ dependencies {
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.kotlinx.serialization)
     implementation(libs.kotlinx.serialization.json)
+
+    // The map. Only core/map uses MapLibre (ADR 0015; MapLibreBoundaryTest enforces it).
+    implementation(libs.maplibre.android.opengl)
 
     testImplementation(platform(libs.androidx.compose.bom))
     testImplementation(libs.androidx.compose.ui.test.junit4)

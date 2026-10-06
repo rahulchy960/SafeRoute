@@ -32,6 +32,10 @@ hiltLifecycleViewmodelCompose = "1.4.0"
 firebaseBom = "34.19.0"
 datastore = "1.2.1"
 
+# Map (core/map only; ADR 0015). The OpenGL ES build of MapLibre Native: the default artifact
+# (android-sdk) renders with Vulkan and declares it as a required device feature.
+maplibre = "13.6.1"
+
 # Kotlin libraries
 kotlinxCoroutines = "1.11.0"
 kotlinxSerialization = "1.11.0"
@@ -81,6 +85,8 @@ kotlinx-coroutines-play-services = { group = "org.jetbrains.kotlinx", name = "ko
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinxCoroutines" }
 kotlinx-serialization-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-core", version.ref = "kotlinxSerialization" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
+
+maplibre-android-opengl = { group = "org.maplibre.gl", name = "android-sdk-opengl", version.ref = "maplibre" }
 
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 okhttp-mockwebserver = { group = "com.squareup.okhttp3", name = "mockwebserver3", version.ref = "okhttp" }
