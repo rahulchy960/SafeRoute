@@ -15,6 +15,7 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -106,7 +107,7 @@ class HomeScreenTest {
     private fun searchPill() = compose.onNodeWithText(string(R.string.search_hint))
     private fun settingsButton() = compose.onNodeWithContentDescription(string(R.string.settings_title))
     private fun myLocation() =
-        compose.onNodeWithContentDescription(string(R.string.map_control_my_location_unavailable))
+        compose.onNodeWithContentDescription(string(R.string.my_location_off))
     private fun layers() =
         compose.onNodeWithContentDescription(string(R.string.map_control_layers_unavailable))
     private fun emergencyButton() = compose.onNodeWithText(string(R.string.emergency_button_label))
@@ -119,7 +120,7 @@ class HomeScreenTest {
 
         searchPill().assertIsDisplayed()
         settingsButton().assertIsDisplayed()
-        myLocation().assertIsDisplayed().assertIsNotEnabled()
+        myLocation().assertIsDisplayed().assertIsEnabled()
         layers().assertIsDisplayed().assertIsNotEnabled()
         emergencyButton().assertIsDisplayed()
         sheetHandle().assertIsDisplayed()
@@ -127,7 +128,7 @@ class HomeScreenTest {
     }
 
     @Test
-    fun `controls report their events and disabled map controls report nothing`() {
+    fun `controls report their events and the disabled layers control reports nothing`() {
         compose.setContent { Home() }
 
         searchPill().performClick()

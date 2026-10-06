@@ -71,7 +71,7 @@ class ComponentsTest {
                     SearchPill(hint = string(R.string.search_hint), onClick = { onEvent("search") })
                     MapControlButton(
                         painter = painterResource(R.drawable.ic_my_location),
-                        contentDescription = string(R.string.map_control_my_location_unavailable),
+                        contentDescription = string(R.string.my_location_off),
                         onClick = { onEvent("location") },
                         enabled = false,
                     )
@@ -111,7 +111,7 @@ class ComponentsTest {
         val events = mutableListOf<String>()
         compose.setContent { Gallery(onEvent = events::add) }
 
-        compose.onNodeWithContentDescription(string(R.string.map_control_my_location_unavailable))
+        compose.onNodeWithContentDescription(string(R.string.my_location_off))
             .assertIsDisplayed()
             .assert(hasRole(Role.Button))
             .assertIsNotEnabled()

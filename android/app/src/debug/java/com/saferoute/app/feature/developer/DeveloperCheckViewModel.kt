@@ -3,6 +3,10 @@ package com.saferoute.app.feature.developer
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.saferoute.app.core.location.LocationDebugSummary
+import com.saferoute.app.core.location.LocationEnvironment
+import com.saferoute.app.core.location.LocationRepository
+import com.saferoute.app.core.location.locationDebugSummary
 import com.saferoute.app.core.network.ProbeResult
 import com.saferoute.app.core.network.ServerCheck
 import com.saferoute.app.core.network.errors.ApiFailure
@@ -11,6 +15,7 @@ import com.saferoute.app.core.session.AccountResult
 import com.saferoute.app.core.session.Session
 import com.saferoute.app.core.session.SessionState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.time.Clock
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -62,6 +67,11 @@ data class DeveloperCheckUiState(
     /** The session state's name, for example `Ready`. Never a token, uid or phone number. */
     val sessionState: String = "",
     val whoAmI: WhoAmIState = WhoAmIState.NotAsked,
+    /**
+     * Location in words and buckets only, for example `Precise · on · fix <10 s`. Never a
+     * coordinate, an accuracy in metres or a time.
+     */
+    val location: String = "",
 ) {
     val checking: Boolean get() = health == ProbeState.Checking || readiness == ProbeState.Checking
     val canCheck: Boolean get() = serverConfigured && !checking
@@ -77,6 +87,9 @@ data class DeveloperCheckUiState(
 class DeveloperCheckViewModel @Inject constructor(
     private val check: ServerCheck,
     private val session: Session,
+    private val locationEnvironment: LocationEnvironment,
+    private val location: LocationRepository,
+    private val clock: Clock,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(DeveloperCheckUiState(serverConfigured = check.isConfigured))
@@ -87,6 +100,12 @@ class DeveloperCheckViewModel @Inject constructor(
         viewModelScope.launch {
             session.state.collect { sessionState ->
                 _state.update { it.copy(sessionState = sessionState.label()) }
+            }
+        }
+        viewModelScope.launch {
+            location.state.collect { locationState ->
+                val summary = locationDebugSummary(locationEnvironment, locationState, clock.millis())
+                _state.update { it.copy(location = summary.label()) }
             }
         }
     }
@@ -125,6 +144,17 @@ class DeveloperCheckViewModel @Inject constructor(
             }
         }
     }
+}
+
+/** Permission, the phone's Location switch and how old the last fix is. No values. */
+private fun LocationDebugSummary.label(): String {
+    val age = when (fixAge) {
+        LocationDebugSummary.FixAge.None -> "no fix"
+        LocationDebugSummary.FixAge.UnderTenSeconds -> "fix <10 s"
+        LocationDebugSummary.FixAge.UnderOneMinute -> "fix <1 min"
+        LocationDebugSummary.FixAge.Older -> "fix older"
+    }
+    return "$granted · ${if (locationEnabled) "on" else "off"} · $age"
 }
 
 /** `Ready`, `SignedOut`, `Blocked(UNDER_18)`, ...: the state's name and nothing else. */

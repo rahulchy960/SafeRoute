@@ -36,6 +36,9 @@ datastore = "1.2.1"
 # (android-sdk) renders with Vulkan and declares it as a required device feature.
 maplibre = "13.6.1"
 
+# Current location (core/location only; ADR 0015). A proprietary Google Play services library.
+playServicesLocation = "21.4.0"
+
 # Kotlin libraries
 kotlinxCoroutines = "1.11.0"
 kotlinxSerialization = "1.11.0"
@@ -85,6 +88,8 @@ kotlinx-coroutines-play-services = { group = "org.jetbrains.kotlinx", name = "ko
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinxCoroutines" }
 kotlinx-serialization-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-core", version.ref = "kotlinxSerialization" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
+
+play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
 
 maplibre-android-opengl = { group = "org.maplibre.gl", name = "android-sdk-opengl", version.ref = "maplibre" }
 

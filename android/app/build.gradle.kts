@@ -312,6 +312,8 @@ dependencies {
 
     // The map. Only core/map uses MapLibre (ADR 0015; MapLibreBoundaryTest enforces it).
     implementation(libs.maplibre.android.opengl)
+    // Current location (Fused Location Provider). Only core/location/FusedLocation.kt uses it.
+    implementation(libs.play.services.location)
 
     testImplementation(platform(libs.androidx.compose.bom))
     testImplementation(libs.androidx.compose.ui.test.junit4)

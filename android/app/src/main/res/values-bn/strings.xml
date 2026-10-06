@@ -12,7 +12,6 @@
     <string name="search_hint">জায়গা খুঁজুন</string>
 
     <!-- Map controls: content descriptions read by TalkBack -->
-    <string name="map_control_my_location_unavailable">আমার অবস্থান, এখনও উপলব্ধ নয়</string>
     <string name="map_control_layers_unavailable">মানচিত্রের স্তর, এখনও উপলব্ধ নয়</string>
 
     <!-- Emergency button. Keep the number 112 in Latin digits in every language. -->
@@ -199,4 +198,34 @@
     <string name="signin_error_network">ইন্টারনেট সংযোগ নেই। সংযোগ দেখে আবার চেষ্টা করুন।</string>
     <string name="signin_error_app_not_verified">এটি আসল অ্যাপ কি না SafeRoute নিশ্চিত করতে পারেনি। Google Play services আপডেট আছে কি না দেখে আবার চেষ্টা করুন।</string>
     <string name="signin_error_unknown">সাইন-ইন হয়নি। আবার চেষ্টা করুন।</string>
+    <!-- Current location (P010b). Draft Bengali: needs native speaker and lawyer review. -->
+    <string name="my_location_off">আমার অবস্থান দেখান</string>
+    <string name="my_location_searching">আপনার অবস্থান খোঁজা হচ্ছে</string>
+    <string name="my_location_located">আমার অবস্থান। মানচিত্র এখানে কেন্দ্র করুন</string>
+    <string name="my_location_located_approximate">আমার আনুমানিক অবস্থান। মানচিত্র এখানে কেন্দ্র করুন</string>
+    <string name="my_location_located_stale">আমার শেষ জানা অবস্থান। মানচিত্র এখানে কেন্দ্র করুন</string>
+    <string name="my_location_following">আমার অবস্থান অনুসরণ করা হচ্ছে। অনুসরণ বন্ধ করুন</string>
+    <string name="my_location_unavailable">অবস্থান পাওয়া যাচ্ছে না। কারণ জানুন</string>
+    <string name="location_disclosure_title">মানচিত্রে আপনার অবস্থান দেখাবেন?</string>
+    <string name="location_disclosure_what">অ্যাপ খোলা থাকাকালীন SafeRoute আপনার ফোনের অবস্থান পড়বে।</string>
+    <string name="location_disclosure_why">মানচিত্রে আপনি কোথায় আছেন তা দেখাতে এটি ব্যবহার হয়। পরের ফিচারগুলিতে পথের জন্য, এবং আপনি নিজে শুরু করলে SOS ও লাইভ শেয়ারিংয়ের জন্যও এটি ব্যবহার হবে।</string>
+    <string name="location_disclosure_not">SafeRoute ব্যাকগ্রাউন্ডে আপনার অবস্থান পড়ে না। এই ফিচারের জন্য SafeRoute-এর সার্ভারে কিছুই পাঠানো হয় না। আপনি SOS বা লাইভ শেয়ারিং শুরু করলে তবেই আপনার অবস্থান অন্যদের সঙ্গে শেয়ার হয়।</string>
+    <string name="location_disclosure_stop">আপনি যে কোনো সময় ফোনের সেটিংসে, অ্যাপ, SafeRoute, অনুমতি থেকে এটি বন্ধ করতে পারেন।</string>
+    <string name="location_disclosure_continue">এগিয়ে যান</string>
+    <string name="location_disclosure_not_now">এখন নয়</string>
+    <string name="location_notice_denied_title">অবস্থানের অনুমতি নেই</string>
+    <string name="location_notice_denied_body">এটি ছাড়াও মানচিত্র কাজ করে। মত বদলালে অবস্থান বোতামে ট্যাপ করুন।</string>
+    <string name="location_notice_settings_body">আপনার অবস্থান দেখাতে, ফোনের সেটিংসে অনুমতি, অবস্থান থেকে SafeRoute-কে অনুমতি দিন।</string>
+    <string name="location_notice_open_settings">সেটিংস খুলুন</string>
+    <string name="location_notice_off_title">আপনার ফোনের অবস্থান বন্ধ আছে</string>
+    <string name="location_notice_off_body">আপনি কোথায় আছেন দেখতে ফোনের সেটিংসে অবস্থান চালু করুন।</string>
+    <string name="location_notice_turn_on">অবস্থান সেটিংস</string>
+    <string name="location_notice_no_play_title">এই ফোনে অবস্থান পাওয়া যাচ্ছে না</string>
+    <string name="location_notice_no_play_body">আপনার অবস্থান খুঁজতে SafeRoute-এর Google Play services দরকার। মানচিত্র ও জরুরি বোতাম এখনও কাজ করে।</string>
+    <string name="location_notice_approximate_title">আনুমানিক অবস্থান</string>
+    <string name="location_notice_approximate_body">আপনি আনুমানিক অবস্থানের অনুমতি দিয়েছেন, তাই মানচিত্র সঠিক জায়গা নয়, আপনি যে এলাকায় আছেন তা দেখায়।</string>
+    <string name="location_notice_use_precise">সঠিক অবস্থান ব্যবহার করুন</string>
+    <string name="location_notice_no_fix_title">আপনার অবস্থান খুঁজে পাওয়া যাচ্ছে না</string>
+    <string name="location_notice_no_fix_body">আপনার ফোনে এখনও কোনো অবস্থান নেই। জানালার কাছে বা বাইরে গিয়ে আবার চেষ্টা করুন।</string>
+    <string name="location_notice_close">বন্ধ করুন</string>
 </resources>

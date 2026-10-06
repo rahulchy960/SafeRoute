@@ -31,6 +31,7 @@
     <string name="developer_check_unexpected_no_status">সার্ভার থেকে অপ্রত্যাশিত উত্তর।</string>
     <string name="developer_check_again">আবার পরীক্ষা করুন</string>
     <string name="developer_check_session">সেশনের অবস্থা</string>
+    <string name="developer_check_location">অবস্থান</string>
     <string name="developer_check_who_am_i">আমি কে</string>
     <string name="developer_check_who_am_i_ask">সার্ভারকে জিজ্ঞাসা করুন আমি কে</string>
     <!-- %1$s is the role, %2$s the account language, both as the server sent them -->

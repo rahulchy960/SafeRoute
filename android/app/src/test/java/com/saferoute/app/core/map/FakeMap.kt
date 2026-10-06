@@ -72,11 +72,18 @@ class FakeMapController(initialCamera: CameraState) : MapController {
         retries++
     }
 
+    val cameraMoves = mutableListOf<CameraState>()
+    var overlays: List<MapOverlay> = emptyList()
+        private set
+
     override fun moveCamera(camera: CameraState, animate: Boolean) {
+        cameraMoves += camera
         this.camera.value = camera
     }
 
-    override fun setOverlays(overlays: List<MapOverlay>) = Unit
+    override fun setOverlays(overlays: List<MapOverlay>) {
+        this.overlays = overlays
+    }
 }
 
 class FakeMapEngine : MapEngine {
