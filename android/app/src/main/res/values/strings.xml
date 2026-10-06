@@ -36,8 +36,28 @@
     <string name="home_sheet_title">Where to?</string>
     <string name="home_saved_places">Saved places</string>
     <string name="home_recent">Recent</string>
-    <!-- Shown in debug builds only -->
-    <string name="map_placeholder_label">Map arrives in a later milestone</string>
+    <!--
+        Map (P010a). The credit line names the tile provider and the data source; both require
+        it to be visible. Product names stay in Latin script in every language.
+    -->
+    <string name="map_content_description">Map</string>
+    <string name="map_status_loading">Loading map…</string>
+    <string name="map_status_error_title">The map couldn’t load</string>
+    <string name="map_status_error_body">Check your connection and try again.</string>
+    <string name="map_status_offline_title">Map unavailable offline</string>
+    <string name="map_status_offline_body">Connect to the internet to load the map. Areas you have viewed before may still appear.</string>
+    <string name="map_status_rate_limited_title">Map temporarily unavailable</string>
+    <string name="map_status_rate_limited_body">Please try again in a little while.</string>
+    <string name="map_status_not_configured_title">Map not configured</string>
+    <string name="map_status_not_configured_body">This build of the app has no map key.</string>
+    <string name="map_status_rest_works">Search and the emergency button still work.</string>
+    <string name="map_status_retry">Try again</string>
+    <string name="map_attribution">© MapTiler © OpenStreetMap contributors</string>
+    <string name="map_attribution_dialog_title">Map credits</string>
+    <string name="map_attribution_dialog_body">Map tiles by MapTiler. Map data from OpenStreetMap contributors, available under the Open Database License.</string>
+    <string name="map_attribution_provider_link">MapTiler copyright</string>
+    <string name="map_attribution_data_link">OpenStreetMap copyright</string>
+    <string name="map_attribution_close">Close</string>
 
     <!--
         Emergency dialog. It must never suggest that SafeRoute calls for help by itself:
