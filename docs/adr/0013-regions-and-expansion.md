@@ -7,6 +7,9 @@
 
 > Note (2026-10-07, P010c): West Bengal is the launch geography; see
 > [ADR 0016](0016-statewide-coverage-layers.md).
+>
+> Note (2026-10-07, P010d): reports are collected statewide and published region by region
+> through a gate; see [ADR 0017](0017-collect-statewide-publish-by-gate.md).
 
 ## Context
 

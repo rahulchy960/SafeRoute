@@ -11,7 +11,10 @@ decisions made after v7.
 with Kolkata as the first pilot area for community safety data), the three coverage layers and
 the rule for public coverage claims.
 
-**Reading order: PDF → v7.1 → v7.2.** Where they differ, the later document wins. A full v8 will
+[`addendum-v7.3.md`](addendum-v7.3.md) (since P010d) replaces "reports only in active regions":
+reports are accepted anywhere inside West Bengal, and publication is gated region by region.
+
+**Reading order: PDF → v7.1 → v7.2 → v7.3.** Where they differ, the later document wins. A full v8 will
 be written after the MVP and company registration.
 
 Do not edit the PDF. A new plan version is committed as a new file, and the change is noted in an ADR.
