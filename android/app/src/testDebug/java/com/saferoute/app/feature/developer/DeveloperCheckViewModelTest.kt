@@ -4,6 +4,10 @@ package com.saferoute.app.feature.developer
 import com.saferoute.app.core.network.ProbeResult
 import com.saferoute.app.core.network.ServerCheck
 import com.saferoute.app.core.network.errors.ApiFailure
+import com.saferoute.app.core.session.AccountResult
+import com.saferoute.app.core.session.BlockReason
+import com.saferoute.app.core.session.FakeSession
+import com.saferoute.app.core.session.SessionState
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -52,6 +56,48 @@ class DeveloperCheckViewModelTest {
 
     @After
     fun resetMain() = Dispatchers.resetMain()
+
+    private val session = FakeSession(SessionState.Ready)
+
+    @Suppress("TestFunctionName") // reads like the constructor it wraps
+    private fun DeveloperCheckViewModel(check: ServerCheck) = DeveloperCheckViewModel(check, session)
+
+    @Test
+    fun `the session state is shown by name and follows changes`() = runTest {
+        val viewModel = DeveloperCheckViewModel(FakeServerCheck())
+        assertEquals("Ready", viewModel.state.value.sessionState)
+
+        session.setState(SessionState.SignedOut)
+        assertEquals("SignedOut", viewModel.state.value.sessionState)
+
+        session.setState(SessionState.Blocked(BlockReason.UNDER_18))
+        assertEquals("Blocked(UNDER_18)", viewModel.state.value.sessionState)
+
+        session.setState(SessionState.Error(retryable = true))
+        assertEquals("Error(retryable=true)", viewModel.state.value.sessionState)
+    }
+
+    @Test
+    fun `who am I shows the role and language from the server, never the phone number`() = runTest {
+        val viewModel = DeveloperCheckViewModel(FakeServerCheck())
+        assertEquals(WhoAmIState.NotAsked, viewModel.state.value.whoAmI)
+
+        viewModel.whoAmI()
+
+        assertEquals(WhoAmIState.Known(role = "user", locale = "en"), viewModel.state.value.whoAmI)
+        assertFalse(viewModel.state.value.toString().contains("+91"))
+        assertEquals(listOf("account"), session.calls)
+    }
+
+    @Test
+    fun `who am I says so when the server cannot be asked`() = runTest {
+        session.accountResult = AccountResult.Unavailable(retryable = true)
+        val viewModel = DeveloperCheckViewModel(FakeServerCheck())
+
+        viewModel.whoAmI()
+
+        assertEquals(WhoAmIState.Unavailable, viewModel.state.value.whoAmI)
+    }
 
     @Test
     fun `a reachable server shows its version, readiness and the last request id`() = runTest {

@@ -30,5 +30,11 @@
     <string name="developer_check_unexpected">Unexpected answer from the server (status %1$d).</string>
     <string name="developer_check_unexpected_no_status">Unexpected answer from the server.</string>
     <string name="developer_check_again">Check again</string>
+    <string name="developer_check_session">Session state</string>
+    <string name="developer_check_who_am_i">Who am I</string>
+    <string name="developer_check_who_am_i_ask">Ask the server who I am</string>
+    <!-- %1$s is the role, %2$s the account language, both as the server sent them -->
+    <string name="developer_check_who_am_i_known">Role %1$s · language %2$s</string>
+    <string name="developer_check_who_am_i_unavailable">The server did not say. Are you signed in and online?</string>
     <string name="developer_check_footer">Debug builds only. This screen never shows the server address or a token.</string>
 </resources>

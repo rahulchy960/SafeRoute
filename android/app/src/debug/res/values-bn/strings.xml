@@ -30,5 +30,11 @@
     <string name="developer_check_unexpected">সার্ভার থেকে অপ্রত্যাশিত উত্তর (স্ট্যাটাস %1$d)।</string>
     <string name="developer_check_unexpected_no_status">সার্ভার থেকে অপ্রত্যাশিত উত্তর।</string>
     <string name="developer_check_again">আবার পরীক্ষা করুন</string>
+    <string name="developer_check_session">সেশনের অবস্থা</string>
+    <string name="developer_check_who_am_i">আমি কে</string>
+    <string name="developer_check_who_am_i_ask">সার্ভারকে জিজ্ঞাসা করুন আমি কে</string>
+    <!-- %1$s is the role, %2$s the account language, both as the server sent them -->
+    <string name="developer_check_who_am_i_known">ভূমিকা %1$s · ভাষা %2$s</string>
+    <string name="developer_check_who_am_i_unavailable">সার্ভার জানায়নি। আপনি কি সাইন-ইন করা এবং অনলাইনে আছেন?</string>
     <string name="developer_check_footer">শুধু ডিবাগ বিল্ডে। এই স্ক্রিন কখনও সার্ভারের ঠিকানা বা টোকেন দেখায় না।</string>
 </resources>
