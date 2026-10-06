@@ -1,0 +1,185 @@
+{
+  "$schema": "../../tools/diagrams/diagram.schema.json",
+  "title": "Location permission flow",
+  "subtitle": "Nothing is asked until the user taps 'my location'. The state is read again from Android on every resume. Foreground only, nothing stored or sent (P010b)",
+  "direction": "TB",
+  "layout": {
+    "nodeWidth": 215
+  },
+  "groups": [
+    {
+      "id": "ask",
+      "label": "Asking"
+    },
+    {
+      "id": "granted",
+      "label": "Permitted"
+    },
+    {
+      "id": "refused",
+      "label": "Not permitted or not possible"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "home",
+      "label": "Home opens: NotAsked. No request, no location",
+      "role": "app",
+      "group": "ask",
+      "rank": 0
+    },
+    {
+      "id": "tap",
+      "label": "User taps 'my location'",
+      "role": "external",
+      "group": "ask",
+      "rank": 1
+    },
+    {
+      "id": "disclosure",
+      "label": "DisclosureShown: what, why, what not, how to stop. Continue, or Not now (nothing is asked, map stays usable)",
+      "role": "security",
+      "group": "ask",
+      "rank": 2
+    },
+    {
+      "id": "system",
+      "label": "Android permission dialog (fine + coarse)",
+      "role": "external",
+      "group": "ask",
+      "rank": 3
+    },
+    {
+      "id": "precise",
+      "label": "Granted (precise)",
+      "role": "service",
+      "group": "granted",
+      "rank": 4
+    },
+    {
+      "id": "approximate",
+      "label": "Granted (approximate): hint, and one offer of 'Use precise location' (asks once more)",
+      "role": "service",
+      "group": "granted",
+      "rank": 4
+    },
+    {
+      "id": "running",
+      "label": "LocationRepository runs while Home is visible: Searching, Fix, Stale. Dot and accuracy circle on the map",
+      "role": "app",
+      "group": "granted",
+      "rank": 5
+    },
+    {
+      "id": "stopped",
+      "label": "Home not visible (onStop): updates stop at once",
+      "role": "app",
+      "group": "granted",
+      "rank": 6
+    },
+    {
+      "id": "servicesoff",
+      "label": "ServicesOff (found on resume): the phone's Location switch is off. Button opens location settings",
+      "role": "data",
+      "group": "refused",
+      "rank": 5
+    },
+    {
+      "id": "deniedonce",
+      "label": "DeniedOnce / RationaleNeeded: brief note, the button stays; a tap shows the explanation again",
+      "role": "data",
+      "group": "refused",
+      "rank": 4
+    },
+    {
+      "id": "permanent",
+      "label": "DeniedPermanently: Android no longer asks. Button opens the app's settings page",
+      "role": "security",
+      "group": "refused",
+      "rank": 4
+    },
+    {
+      "id": "noplay",
+      "label": "PlayServicesUnavailable (found on resume): no position on this phone. Map and emergency button still work",
+      "role": "data",
+      "group": "refused",
+      "rank": 5
+    },
+    {
+      "id": "resume",
+      "label": "Every resume: read permission, Location switch and Play services again and move to the matching state (revoked: back to NotAsked)",
+      "role": "infra",
+      "group": "refused",
+      "rank": 7
+    }
+  ],
+  "edges": [
+    {
+      "from": "home",
+      "to": "tap"
+    },
+    {
+      "from": "tap",
+      "to": "disclosure",
+      "label": "not permitted yet"
+    },
+    {
+      "from": "disclosure",
+      "to": "system",
+      "label": "Continue"
+    },
+    {
+      "from": "system",
+      "to": "precise",
+      "label": "precise"
+    },
+    {
+      "from": "system",
+      "to": "approximate",
+      "label": "approximate"
+    },
+    {
+      "from": "system",
+      "to": "deniedonce",
+      "label": "denied"
+    },
+    {
+      "from": "system",
+      "to": "permanent",
+      "label": "denied again, or no dialog shown"
+    },
+    {
+      "from": "precise",
+      "to": "running"
+    },
+    {
+      "from": "approximate",
+      "to": "running"
+    },
+    {
+      "from": "running",
+      "to": "stopped",
+      "label": "background"
+    },
+    {
+      "from": "stopped",
+      "to": "resume",
+      "label": "foreground"
+    },
+    {
+      "from": "permanent",
+      "to": "resume",
+      "label": "back from Settings"
+    },
+    {
+      "from": "servicesoff",
+      "to": "resume",
+      "label": "back from Settings"
+    },
+    {
+      "from": "resume",
+      "to": "running",
+      "label": "still permitted, Location on"
+    }
+  ]
+}

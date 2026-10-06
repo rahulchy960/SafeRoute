@@ -1,0 +1,148 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1387" height="1494" viewBox="0 0 1387 1494" font-family="Helvetica, Arial, sans-serif">
+<title>Location permission flow</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#495057"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="40" y="62" font-size="24" font-weight="700" fill="#1e1e1e">Location permission flow</text>
+<text x="40" y="86" font-size="14" fill="#495057">Nothing is asked until the user taps 'my location'. The state is read again from Android on every resume. Foreground only, nothing stored or sent (P010b)</text>
+<rect x="40" y="114" width="251" height="1294" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="54" y="135" font-size="14" font-weight="700" fill="#495057">Asking</text>
+<rect x="327" y="114" width="492" height="1294" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="341" y="135" font-size="14" font-weight="700" fill="#495057">Permitted</text>
+<rect x="855" y="114" width="492" height="1294" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="869" y="135" font-size="14" font-weight="700" fill="#495057">Not permitted or not possible</text>
+<line x1="165.5" y1="228" x2="165.5" y2="288" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="165.5" y1="344" x2="165.5" y2="404" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="165.5" y1="532" x2="165.5" y2="592" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="165.5" y1="658" x2="452.5" y2="754" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="165.5" y1="658" x2="693.5" y2="728" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="165.5" y1="658" x2="980.5" y2="718" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="165.5" y1="658" x2="1221.5" y2="728" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="452.5" y1="810" x2="573" y2="906" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="693.5" y1="836" x2="573" y2="906" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="573" y1="1034" x2="573" y2="1094" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="573" y1="1181" x2="1101" y2="1241" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1221.5" y1="836" x2="1101" y2="1241" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="980.5" y1="1034" x2="1101" y2="1241" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1101" y1="1241" x2="573" y2="1034" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="58" y="162" width="215" height="66" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="165.5" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="165.5" y="190.2">Home opens: NotAsked.</tspan>
+<tspan x="165.5" y="211">No request, no location</tspan>
+</text>
+<rect x="58" y="288" width="215" height="56" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="165.5" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="165.5" y="321.6">User taps 'my location'</tspan>
+</text>
+<rect x="58" y="404" width="215" height="128" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="165.5" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="165.5" y="432">DisclosureShown: what,</tspan>
+<tspan x="165.5" y="452.8">why, what not, how to</tspan>
+<tspan x="165.5" y="473.6">stop. Continue, or Not</tspan>
+<tspan x="165.5" y="494.4">now (nothing is asked,</tspan>
+<tspan x="165.5" y="515.2">map stays usable)</tspan>
+</text>
+<rect x="58" y="592" width="215" height="66" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="165.5" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="165.5" y="620.2">Android permission</tspan>
+<tspan x="165.5" y="641">dialog (fine + coarse)</tspan>
+</text>
+<rect x="345" y="754" width="215" height="56" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="452.5" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="452.5" y="787.6">Granted (precise)</tspan>
+</text>
+<rect x="586" y="728" width="215" height="108" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="693.5" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="693.5" y="756.4">Granted (approximate):</tspan>
+<tspan x="693.5" y="777.2">hint, and one offer of 'Use</tspan>
+<tspan x="693.5" y="798">precise location' (asks</tspan>
+<tspan x="693.5" y="818.8">once more)</tspan>
+</text>
+<rect x="465.5" y="906" width="215" height="128" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="573" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="573" y="934">LocationRepository runs</tspan>
+<tspan x="573" y="954.8">while Home is visible:</tspan>
+<tspan x="573" y="975.6">Searching, Fix, Stale.</tspan>
+<tspan x="573" y="996.4">Dot and accuracy circle</tspan>
+<tspan x="573" y="1017.2">on the map</tspan>
+</text>
+<rect x="465.5" y="1094" width="215" height="87" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="573" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="573" y="1122.3">Home not visible</tspan>
+<tspan x="573" y="1143.1">(onStop): updates stop at</tspan>
+<tspan x="573" y="1163.9">once</tspan>
+</text>
+<rect x="873" y="906" width="215" height="128" rx="10" fill="#ffd8a8" stroke="#e8590c" stroke-width="2"/>
+<text x="980.5" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="980.5" y="934">ServicesOff (found on</tspan>
+<tspan x="980.5" y="954.8">resume): the phone's</tspan>
+<tspan x="980.5" y="975.6">Location switch is off.</tspan>
+<tspan x="980.5" y="996.4">Button opens location</tspan>
+<tspan x="980.5" y="1017.2">settings</tspan>
+</text>
+<rect x="873" y="718" width="215" height="128" rx="10" fill="#ffd8a8" stroke="#e8590c" stroke-width="2"/>
+<text x="980.5" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="980.5" y="746">DeniedOnce /</tspan>
+<tspan x="980.5" y="766.8">RationaleNeeded: brief</tspan>
+<tspan x="980.5" y="787.6">note, the button stays; a</tspan>
+<tspan x="980.5" y="808.4">tap shows the</tspan>
+<tspan x="980.5" y="829.2">explanation again</tspan>
+</text>
+<rect x="1114" y="728" width="215" height="108" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="1221.5" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1221.5" y="756.4">DeniedPermanently:</tspan>
+<tspan x="1221.5" y="777.2">Android no longer asks.</tspan>
+<tspan x="1221.5" y="798">Button opens the app's</tspan>
+<tspan x="1221.5" y="818.8">settings page</tspan>
+</text>
+<rect x="1114" y="906" width="215" height="128" rx="10" fill="#ffd8a8" stroke="#e8590c" stroke-width="2"/>
+<text x="1221.5" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1221.5" y="934">PlayServicesUnavailable</tspan>
+<tspan x="1221.5" y="954.8">(found on resume): no</tspan>
+<tspan x="1221.5" y="975.6">position on this phone.</tspan>
+<tspan x="1221.5" y="996.4">Map and emergency</tspan>
+<tspan x="1221.5" y="1017.2">button still work</tspan>
+</text>
+<rect x="993.5" y="1241" width="215" height="149" rx="10" fill="#eebefa" stroke="#9c36b5" stroke-width="2"/>
+<text x="1101" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1101" y="1269.1">Every resume: read</tspan>
+<tspan x="1101" y="1289.9">permission, Location</tspan>
+<tspan x="1101" y="1310.7">switch and Play services</tspan>
+<tspan x="1101" y="1331.5">again and move to the</tspan>
+<tspan x="1101" y="1352.3">matching state (revoked:</tspan>
+<tspan x="1101" y="1373.1">back to NotAsked)</tspan>
+</text>
+<rect x="110.1" y="363" width="110.8" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="165.5" y="378.5" font-size="13" fill="#1e1e1e" text-anchor="middle">not permitted yet</text>
+<rect x="133.6" y="551" width="63.7" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="165.5" y="566.5" font-size="13" fill="#1e1e1e" text-anchor="middle">Continue</text>
+<rect x="281.2" y="695" width="55.7" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="309" y="710.5" font-size="13" fill="#1e1e1e" text-anchor="middle">precise</text>
+<rect x="387.1" y="682" width="84.8" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="429.5" y="697.5" font-size="13" fill="#1e1e1e" text-anchor="middle">approximate</text>
+<rect x="547.5" y="677" width="51" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="573" y="692.5" font-size="13" fill="#1e1e1e" text-anchor="middle">denied</text>
+<rect x="590.5" y="682" width="206" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="693.5" y="697.5" font-size="13" fill="#1e1e1e" text-anchor="middle">denied again, or no dialog shown</text>
+<rect x="533.1" y="1053" width="79.9" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="573" y="1068.5" font-size="13" fill="#1e1e1e" text-anchor="middle">background</text>
+<rect x="799.8" y="1200" width="74.4" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="837" y="1215.5" font-size="13" fill="#1e1e1e" text-anchor="middle">foreground</text>
+<rect x="1099.9" y="1027.5" width="122.8" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="1161.3" y="1043" font-size="13" fill="#1e1e1e" text-anchor="middle">back from Settings</text>
+<rect x="979.4" y="1126.5" width="122.8" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="1040.8" y="1142" font-size="13" fill="#1e1e1e" text-anchor="middle">back from Settings</text>
+<rect x="751.6" y="1126.5" width="170.9" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="837" y="1142" font-size="13" fill="#1e1e1e" text-anchor="middle">still permitted, Location on</text>
+<rect x="40" y="1429" width="16" height="16" rx="3" fill="#a5d8ff" stroke="#1971c2" stroke-width="1.5"/>
+<text x="62" y="1442" font-size="13" fill="#495057">App / UI</text>
+<rect x="134.8" y="1429" width="16" height="16" rx="3" fill="#b2f2bb" stroke="#2f9e44" stroke-width="1.5"/>
+<text x="156.8" y="1442" font-size="13" fill="#495057">Service</text>
+<rect x="228.3" y="1429" width="16" height="16" rx="3" fill="#ffd8a8" stroke="#e8590c" stroke-width="1.5"/>
+<text x="250.3" y="1442" font-size="13" fill="#495057">Data</text>
+<rect x="303.1" y="1429" width="16" height="16" rx="3" fill="#ffc9c9" stroke="#e03131" stroke-width="1.5"/>
+<text x="325.1" y="1442" font-size="13" fill="#495057">Security / emergency</text>
+<rect x="476.7" y="1429" width="16" height="16" rx="3" fill="#eebefa" stroke="#9c36b5" stroke-width="1.5"/>
+<text x="498.7" y="1442" font-size="13" fill="#495057">Infra / workflow</text>
+<rect x="618.3" y="1429" width="16" height="16" rx="3" fill="#e9ecef" stroke="#495057" stroke-width="1.5"/>
+<text x="640.3" y="1442" font-size="13" fill="#495057">External</text>
+</svg>
