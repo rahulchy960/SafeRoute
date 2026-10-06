@@ -5,6 +5,10 @@
 - **Prompt:** P010c
 - **Plan refs:** Plan v7 §1, §3.2–3.4, §9, §12, §13–14, §21–22; [addendum v7.1](../plan/addendum-v7.1.md); [addendum v7.2](../plan/addendum-v7.2.md); [ADR 0005](0005-product-name-and-multi-city-readiness.md), [ADR 0013](0013-regions-and-expansion.md), [ADR 0015](0015-map-stack-and-location-policy.md)
 
+> Note (2026-10-07, P010d): reports are now accepted anywhere inside West Bengal and publication
+> is gated region by region; "active regions" become the statuses `context_only`, `collecting`
+> and `published`. See [ADR 0017](0017-collect-statewide-publish-by-gate.md).
+
 ## Context
 
 - Plan v7 and addendum v7.1 describe a launch in Kolkata, with expansion region by region
