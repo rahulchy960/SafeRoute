@@ -10,6 +10,8 @@ import com.saferoute.app.core.di.IoDispatcher
 import com.saferoute.app.core.session.AppLocale
 import com.saferoute.app.core.session.DataStoreSessionStore
 import com.saferoute.app.core.session.ResourcesAppLocale
+import com.saferoute.app.core.session.Session
+import com.saferoute.app.core.session.SessionRepository
 import com.saferoute.app.core.session.SessionStore
 import dagger.Binds
 import dagger.Module
@@ -21,6 +23,18 @@ import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
+
+/**
+ * The session as the UI sees it. A separate module so that a UI test can replace just this
+ * binding with a fake (`@UninstallModules(SessionBindingModule::class)`).
+ */
+@Module
+@InstallIn(SingletonComponent::class)
+interface SessionBindingModule {
+
+    @Binds
+    fun bindSession(repository: SessionRepository): Session
+}
 
 @Module
 @InstallIn(SingletonComponent::class)
