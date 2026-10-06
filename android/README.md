@@ -90,7 +90,8 @@ android/
       navigation/                  destinations (type-safe routes) and the NavHost
       feature/home/                Home screen, HomeViewModel, map placeholder, 112 dialog
       feature/search/              Search screen (layout only until P011)
-      feature/settings/            Settings screen with the About section
+      feature/settings/            Settings: account, privacy, About
+      feature/onboarding/          welcome, age gate, consent notice, phone and code, blocked
       core/designsystem/theme/     colours, type, shapes, spacing: the design tokens
       core/designsystem/component/ SearchPill, MapControlButton, EmergencyButton, sheet
       core/designsystem/preview/   @SafeRoutePreviews (light, dark, Bengali, 200% font)
@@ -236,10 +237,36 @@ accepted the consent notice ([ADR 0010](../docs/adr/0010-adults-only-and-consent
 
 ![Onboarding and session](../docs/diagrams/009b-onboarding-and-session.svg)
 
-**What exists so far (P009b).** The parts without a screen: the Firebase wrapper
-(`core/auth`), the session state machine and the stored flags (`core/session`). The onboarding
-screens, the Settings account section and the consent notice text arrive in the next part
-(P009c). Until then the app still opens straight to Home.
+**The screens (since P009c).** Welcome → "How old are you?" → the consent notice → mobile
+number → SMS code → Home. Home cannot be reached before all of them are done.
+
+- **Age.** "I am under 18" asks for confirmation and then blocks the app on that phone. There
+  is no undo in the app; clearing the app's storage or reinstalling asks the question again
+  (ADR 0010, addendum).
+- **Consent notice.** English or Bengali, switchable on that screen only. "I agree" becomes
+  available once the notice has been scrolled to its end. The text is a **draft**; debug
+  builds say so on the screen. It is mirrored in
+  [`docs/legal/consent-notice-v1.md`](../docs/legal/consent-notice-v1.md), and a test fails if
+  the two differ. Changing the text means changing `NOTICE_VERSION`.
+- **Phone and code.** `+91` is fixed. A new code can be requested after 60 seconds. If Android
+  kills the app on the code screen, you come back to the phone screen.
+- **Settings → Account** shows the masked phone number (`+91 ••••• ••123`), "Sign out" (asks
+  first, then returns to the start) and the consents on record.
+- **Settings → Developer** (debug builds) also shows the session state and "Who am I": the
+  role and language the server has for you. It proves the phone's ID token is accepted.
+
+### Try it on a phone with a Firebase test number
+
+1. Have the real `google-services.json` in place and `saferoute.apiBaseUrl` set (see above and
+   "Talking to the backend").
+2. In the Firebase console, add a **test phone number** with a fixed code (*Authentication →
+   Sign-in method → Phone → Phone numbers for testing*). No SMS is sent and nothing is charged.
+3. Run the debug app, go through the screens, type the test number without `+91`, then its
+   code.
+4. *Settings → Developer → Ask the server who I am* should answer with role `user`.
+
+Type the test number and code on the phone only. Don't put them in the repository, in Notion,
+in a chat or in a screenshot.
 
 ### The Firebase configuration file
 
@@ -286,7 +313,9 @@ a release still assembles; never use that flag for a build that goes to a phone.
 | `FirebasePhoneAuthGateway` | `core/auth` | The implementation on the Firebase SDK. Thin; checked on a phone |
 | `FirebaseIdTokenProvider` | `core/auth` | Gives the network layer the ID token (the seam from "Talking to the backend") |
 | `normaliseIndianMobile` | `core/auth` | Turns typed input into `+91` and ten digits, or rejects it |
-| `SessionRepository` | `core/session` | Decides the `SessionState` from the stored flags, Firebase and the API |
+| `Session` / `SessionRepository` | `core/session` | Decides the `SessionState` from the stored flags, Firebase and the API. Screens use the `Session` interface |
+| `OnboardingNavHost` | `navigation` | Shows the onboarding screen that belongs to the session state |
+| Welcome, age, notice, phone, code, blocked screens | `feature/onboarding` | Plain UI plus `OnboardingViewModel` and `SignInViewModel` |
 | `SessionStore` | `core/session` | Six flags in Jetpack DataStore; never the phone number, a token or a code |
 
 The session states: `Loading`, `NeedsAge`, `NeedsConsent`, `SignedOut`, `NeedsBootstrap`,
@@ -297,17 +326,19 @@ at once on the next start and checks with the server in the background. Only a d
 (the sign-in is no longer valid, the account was deleted, the consent is out of date) takes the
 user out of Home. A first run needs a connection.
 
-**In tests** nothing talks to Firebase: use `FakePhoneAuthGateway`. A Hilt test that reaches
-sign-in or the session replaces the production binding:
+**In tests** nothing talks to Firebase or the server. A test that starts the real activity
+replaces the session with `FakeSession` (ready, so the app's own screens show):
 
 ```kotlin
 @HiltAndroidTest
-@UninstallModules(AuthModule::class)
+@UninstallModules(SessionBindingModule::class)
 class MyTest {
-    @BindValue @JvmField val gateway: PhoneAuthGateway = FakePhoneAuthGateway()
-    @BindValue @JvmField val tokens: IdTokenProvider = FirebaseIdTokenProvider(gateway)
+    @BindValue @JvmField val session: Session = FakeSession(SessionState.Ready)
 }
 ```
+
+A test that goes through sign-in also replaces `AuthModule` with `FakePhoneAuthGateway`
+(see `OnboardingNavigationTest`).
 
 **What not to do:**
 

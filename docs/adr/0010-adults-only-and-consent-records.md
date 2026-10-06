@@ -81,6 +81,32 @@
 - Revisit when: the lawyer review is done; DPDP rules commence or change; a teen or family
   feature is proposed.
 
+## Addendum (P009c, 2026-10-06): the under-18 answer on the phone
+
+Decided by Rahul after the age gate was designed in P009b.
+
+- **No in-app undo.** Once a person has confirmed "I am under 18", the app stays blocked on
+  that phone. A button to change the answer would turn the gate into a formality.
+- **A confirmation comes first.** "I am under 18" opens a dialog that says the choice cannot be
+  changed in the app. Only "Yes, I am under 18" records it; "Go back", the back gesture and a
+  tap outside record nothing. This is the protection against a mis-tap.
+- **What is recorded:** one flag in the app's private storage on that phone (`under_18`).
+  Nothing is sent to any server, Firebase is not contacted, and no account exists.
+- **The blocked screen** thanks the person, says that nothing left the phone, repeats "In an
+  emergency, call 112" and gives a contact for people who answered by mistake. Until an
+  operator exists that contact is the placeholder `[grievance contact]`.
+- **Reinstall behaviour.** The flag is not backed up (`allowBackup=false`, ADR 0008) and lives
+  only in the app's data. Uninstalling and reinstalling the app, or *Settings → Apps →
+  SafeRoute → Storage → Clear storage*, removes it and the age question is asked again. This
+  is accepted: the gate is a self-declaration, not an identity check, and a person who
+  reinstalls to answer differently is making a new declaration. The same reset is how the
+  grievance contact can help someone who answered by mistake.
+- **Not done:** no device identifier, account or server-side record is used to remember the
+  answer across reinstalls. That would mean storing data about someone who said they are a
+  child, which this ADR set out to avoid.
+- Revisit with the lawyer review of the age gate (follow-up "Make the age gate stricter if the
+  lawyer requires it").
+
 ## References
 
 - Plan v7 §3.2, §11, §12.1; [addendum v7.1](../plan/addendum-v7.1.md).

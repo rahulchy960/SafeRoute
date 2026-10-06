@@ -1,7 +1,7 @@
 {
   "$schema": "../../tools/diagrams/diagram.schema.json",
   "title": "Onboarding and session",
-  "subtitle": "Order: age, consent, phone. The session state decides the screen; after the first sign-in the app opens offline (P009b, ADR 0010, ADR 0012)",
+  "subtitle": "Order: age, consent, phone. The session state decides the screen; after the first sign-in the app opens offline (P009b and P009c, ADR 0010, ADR 0012)",
   "direction": "TB",
   "layout": {
     "nodeWidth": 215
@@ -9,7 +9,7 @@
   "groups": [
     {
       "id": "onboarding",
-      "label": "Onboarding (screens in P009c)"
+      "label": "Onboarding screens"
     },
     {
       "id": "session",
@@ -35,7 +35,7 @@
     },
     {
       "id": "notice",
-      "label": "NeedsConsent: notice for account_core, I agree",
+      "label": "NeedsConsent: notice for account_core (EN / BN), I agree",
       "role": "app",
       "group": "onboarding"
     },
@@ -90,7 +90,7 @@
     },
     {
       "id": "under18",
-      "label": "Blocked UNDER_18: one local flag, no network, no sign-in",
+      "label": "Blocked UNDER_18: after a confirmation; one local flag, no network, no undo",
       "role": "security",
       "group": "ends",
       "rank": 2
