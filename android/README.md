@@ -321,6 +321,14 @@ a release still assembles; never use that flag for a build that goes to a phone.
 The session states: `Loading`, `NeedsAge`, `NeedsConsent`, `SignedOut`, `NeedsBootstrap`,
 `Ready`, `Blocked(UNDER_18 | ACCOUNT_DELETED)`, `Error(retryable)`.
 
+**Who runs the session check.** `SessionRepository` runs every state change in a scope that
+lives as long as the app, and callers only wait for the result. A screen's `viewModelScope` is
+cancelled when the screen is replaced, and a session state change is exactly what replaces the
+screen: work started there would be cut off half-way (that was the "stuck on One moment…" bug
+fixed in P009d). A check that takes longer than 60 seconds, or fails unexpectedly, ends in the
+"Something went wrong" screen with "Try again", never in an endless spinner. After creating an
+account the app reads the account and its consents back before it shows Home.
+
 **Opening without a connection.** Once the app has been `Ready` with a sign-in, it shows Home
 at once on the next start and checks with the server in the background. Only a definite answer
 (the sign-in is no longer valid, the account was deleted, the consent is out of date) takes the
