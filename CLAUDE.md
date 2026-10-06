@@ -3,7 +3,7 @@
 Claude Code loads this file at the start of every session. Read it fully before doing anything.
 The full design lives in [`docs/plan/SafeRoute_Plan_v7_MVP.pdf`](docs/plan/SafeRoute_Plan_v7_MVP.pdf)
 (cited as "Plan v7 §N"), amended by [`docs/plan/addendum-v7.1.md`](docs/plan/addendum-v7.1.md)
-(see "Plan addendum" below).
+and [`docs/plan/addendum-v7.2.md`](docs/plan/addendum-v7.2.md) (see "Plan addendum" below).
 
 ## Plan addendum (since P009a)
 
@@ -13,10 +13,17 @@ product decisions made since (SOS entry points for P014, adults only, per-purpos
 Circle principles), the section edits to v7, the roadmap order and new risks. The PDF itself is
 never edited; a full v8 comes after the MVP.
 
+Then read [`docs/plan/addendum-v7.2.md`](docs/plan/addendum-v7.2.md) (since P010c). **Reading
+order: PDF → v7.1 → v7.2; where they differ, the later document wins.** v7.2 records the launch
+geography (West Bengal, with Kolkata as the first pilot area for community safety data), the
+three coverage layers, the region model, the changed scopes of P011, P012, P017 and P019, and the
+claims rule (see "Coverage claims" below).
+
 ## Project summary
 
-SafeRoute is a navigation-first personal-safety Android app that launches first in Kolkata (see
-"Naming rules" below). It offers a map, search, walking/driving routes, transparent
+SafeRoute is a navigation-first personal-safety Android app that launches in West Bengal, with
+Kolkata as the first pilot area for community safety data (see "Coverage claims" and "Naming
+rules" below). It offers a map, search, walking/driving routes, transparent
 safety context along routes, temporary live-location sharing and a **device-first SOS** that
 reaches emergency contacts even when the server or mobile data is down. The app is not an
 emergency service: every SOS surface offers a one-tap call to **112**. Safety information is
@@ -48,7 +55,7 @@ moderation/     Moderator web app (P018)
 contracts/      openapi.json, generated, never hand-edited (from P004)
 infra/          GCP / Cloud Run / WIF configuration (from P006)
 tools/diagrams/ JSON → Excalidraw + SVG + PNG diagram generator
-docs/plan/      Plan v7 PDF (source of truth for design) + addendum-v7.1.md (wins where it differs)
+docs/plan/      Plan v7 PDF (source of truth for design) + addendum-v7.1.md, addendum-v7.2.md (the later one wins)
 docs/adr/       Architecture Decision Records (template.md, NNNN-title.md)
 docs/diagrams/  Diagram JSON specs + generated .excalidraw/.svg/.png
 docs/prompt-logs/ One log per prompt (NNN-core-work.md)
@@ -220,11 +227,37 @@ Follow [ADR 0007](docs/adr/0007-gcp-staging-topology.md):
   `in.saferoute.kolkata`).
 - City-specific facts (launch area, map/routing extract, time zone, police-station data, festival
   load planning, local-language copy) live in configuration, data or docs.
-- "Kolkata" appears only where it is a fact: the launch city, pilot areas, the OSRM/tiles extract,
-  Durga Puja load planning, `Asia/Kolkata` conversions, Bengali UI, test landmarks.
+- "Kolkata" appears only where it is a fact: the first pilot area and initial active region, the
+  metro routing extent measured in P012, Durga Puja load planning, `Asia/Kolkata` conversions,
+  Bengali UI, test landmarks. It is not "the launch city": the launch geography is West Bengal (ADR 0016).
 - Multi-city support is deferred to Plan v7 §14.2 Stage 3. Don't build it early. Expansion is by
   "region" and the future optional field is `regionCode`, never `cityCode`
   ([ADR 0013](docs/adr/0013-regions-and-expansion.md)).
+
+## Coverage claims (since P010c, ADR 0016)
+
+Follow [ADR 0016](docs/adr/0016-statewide-coverage-layers.md) and
+[`docs/plan/addendum-v7.2.md`](docs/plan/addendum-v7.2.md) in every text that says where SafeRoute
+works: UI strings, docs, the README, PR text, pitch material, the website and the store listing.
+
+- **Always use the three layers; never a single "coverage" claim.**
+  1. Core safety tools (device-first SOS by SMS, 112 dialer, emergency contacts, live location
+     sharing): statewide, wherever cellular signal and GPS exist.
+  2. Navigation: map and search statewide; routing statewide only if the P012 measurements pass,
+     otherwise the recorded extent and a "Routes aren't available here yet" state, never an error.
+  3. Safety data (community reports, official aggregates, exposure metric): only in **active
+     regions**. Elsewhere: map context and "Community reports aren't available here yet".
+- **Never claim or imply safety data, safety ratings or a "safe" status outside active regions.**
+  No "safe" label anywhere. The k-threshold (≥3 distinct reporters) is never lowered.
+- Never state user numbers, reliability figures, extents or hit rates that are not measured and
+  recorded. Where a value is missing, write "not recorded".
+- The pitch, the website, the store listing and `README.md` must match addendum v7.2. Change the
+  addendum first (in a prompt), then the public text.
+- "Kolkata" appears only as a pilot-area fact (see "Naming rules").
+- Reports are accepted, and overlays shown, only inside active regions; the list of regions is
+  server-side configuration, never an identifier.
+- Never show an unverified police number; unknown jurisdiction means 112 only.
+- Legal wording about coverage and advertising is a draft marked "to be verified by a lawyer".
 
 ## Android rules (since P007a, ADR 0008)
 

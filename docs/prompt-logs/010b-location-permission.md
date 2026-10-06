@@ -307,3 +307,18 @@ Do the P010a checks first if they are still open (its log, section 11).
   same.
 - **Mock locations.** A developer setting that lets another app feed fake positions. Useful
   for testing; something SOS will have to think about (P014).
+
+## Revision 2026-10-07 (P010c): manual phone checks passed
+
+Added after the merge. Sections 1–12 above are unchanged and describe what was known when the
+pull request was opened.
+
+On 2026-10-06, after the merge (PR #23, `2e08043`), Rahul reported that all phone checks
+passed. The result was reported as a whole, without per-check details. The same note is on the
+Notion page of this prompt.
+
+On 2026-10-07 Rahul reported the devices: **one device, Android 17**. The device model was not
+recorded. The plan's M3 exit asks for three test devices, so the checks are **two devices
+short**: no second Android version, no other manufacturer and no phone without Google Play
+services has been tried. The Notion follow-up "Record the device count and Android versions for
+M3" stays open until two more devices have been used.

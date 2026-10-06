@@ -21,6 +21,7 @@ Copy [`template.md`](template.md) to `NNNN-short-title.md`, and add a row to the
 | [0013](0013-regions-and-expansion.md) | Regions and expansion (`regionCode`) | Accepted |
 | [0014](0014-civic-reports-ask-govt.md) | Civic reports ("Ask govt") | Proposed |
 | [0015](0015-map-stack-and-location-policy.md) | Map stack (MapLibre Native + MapTiler) and location policy | Accepted |
+| [0016](0016-statewide-coverage-layers.md) | Statewide coverage in three layers (West Bengal launch, active regions, claims rule) | Accepted |
 
 A breaking API change, new infrastructure, a new data store or the Android package name each need
 an ADR.

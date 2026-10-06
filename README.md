@@ -10,11 +10,30 @@ unavailable.
 
 ## Coverage
 
-SafeRoute launches first in Kolkata, India. More cities are planned; nothing beyond Kolkata is
-built or promised yet.
+SafeRoute is planned to launch in **West Bengal, India**, with **Kolkata as the first pilot area**
+for community safety data. The app is in development and is not released; nothing below has been
+measured or verified in the field yet.
+
+"Coverage" means three different things, so it is always described in three layers:
+
+| Layer | What it contains | Where |
+| --- | --- | --- |
+| 1. Core safety tools | Device-first SOS by SMS, the 112 dialer, emergency contacts, live location sharing | Statewide, wherever there is cellular signal and GPS. Signal gaps in rural areas limit this layer. |
+| 2. Navigation | Map, search, routes | Map and search statewide, with search quality still to be measured per district. Routes statewide only if the routing measurements pass; otherwise a smaller recorded extent, and "Routes aren't available here yet" outside it. |
+| 3. Safety data | Community reports, official aggregates, the exposure metric | Only in **active regions**. |
+
+- **Active regions today: none.** The first planned one is the Kolkata metropolitan area (the
+  pilot); its boundary is not defined yet.
+- Outside active regions the map shows context only (police stations, hospitals, 24-hour
+  pharmacies where tagged) and the text "Community reports aren't available here yet".
+- **An area without reports is an area without data, not a safe area.** SafeRoute never labels a
+  place or a route "safe".
 
 The design, product and technical plan is in
-[`docs/plan/SafeRoute_Plan_v7_MVP.pdf`](docs/plan/SafeRoute_Plan_v7_MVP.pdf) (Plan v7).
+[`docs/plan/SafeRoute_Plan_v7_MVP.pdf`](docs/plan/SafeRoute_Plan_v7_MVP.pdf) (Plan v7), amended by
+[addendum v7.1](docs/plan/addendum-v7.1.md) and [addendum v7.2](docs/plan/addendum-v7.2.md) (the
+coverage layers; decision in [ADR 0016](docs/adr/0016-statewide-coverage-layers.md)). Where they
+differ, the later document wins.
 
 ## Public repository status
 
@@ -69,7 +88,7 @@ will be described in its privacy policy when it is published.
 | [`contracts/`](contracts/) | Generated `openapi.json` | P004 |
 | [`infra/`](infra/) | GCP / Cloud Run / WIF config | P006, P012, P020 |
 | [`tools/diagrams/`](tools/diagrams/) | JSON → Excalidraw/SVG/PNG diagram generator | P001 |
-| [`docs/plan/`](docs/plan/) | Plan v7 PDF | P001 |
+| [`docs/plan/`](docs/plan/) | Plan v7 PDF and its addenda | P001, P009a, P010c |
 | [`docs/adr/`](docs/adr/) | Architecture Decision Records | any prompt |
 | [`docs/diagrams/`](docs/diagrams/) | Diagram specs + exports | any prompt |
 | [`docs/prompt-logs/`](docs/prompt-logs/) | One log per prompt | every prompt |

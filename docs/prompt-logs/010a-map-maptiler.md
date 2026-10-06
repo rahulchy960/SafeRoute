@@ -310,3 +310,20 @@ cost (Plan v7 §14.1).
   when the phone goes online or offline, instead of the app asking again and again.
 - Fine and coarse location, "while using the app", Fused Location and permission state
   machines belong to P010b and are explained in its log.
+
+## Revision 2026-10-07 (P010c): manual phone checks passed
+
+Added after the merge. Sections 1–12 above are unchanged and describe what was known when the
+pull request was opened.
+
+On 2026-10-06, after P010b was merged (PR #23), Rahul reported that all phone checks passed. The
+result was reported as a whole, without per-check details, so the individual points listed as
+"not verified" in sections 7 and 9 (the dark style id, the message shown for a refused key,
+airplane-mode behaviour) are covered by that statement and were not reported one by one. The
+same note is on the Notion page of this prompt, and the Notion follow-up "Confirm on a device
+what P010a could not run" is closed.
+
+On 2026-10-07 Rahul reported the devices: **one device, Android 17**. The device model was not
+recorded. The plan's M3 exit asks for three test devices, so the checks are **two devices
+short**; the Notion follow-up "Record the device count and Android versions for M3" stays open
+until two more devices have been used.
