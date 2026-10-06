@@ -291,6 +291,17 @@ and [`android/README.md`](android/README.md):
   shown. A map failure must never affect the emergency button. Changing the map or tile
   provider needs a superseding ADR and a parity test suite at `MapController`. Never weaken
   `checkReleaseMapKey`.
+- Location follows ADR 0015, "Location policy" (since P010b): **foreground only** (no
+  `ACCESS_BACKGROUND_LOCATION` and no foreground-service permission without a prompt that asks
+  for it; `MainActivityTest` pins the list); positions are never stored, logged, printed or
+  sent, and the types that hold one hide it in `toString()`; the system permission dialog is
+  requested only after the user tapped "my location" and continued past the disclosure, never
+  at app start or in onboarding, and never in a loop; the permission state is recomputed on
+  every resume. Only `core/location/FusedLocation.kt` uses `play-services-location`; the rest
+  of the app uses `LocationRepository`, and tests use `FakeLocationRepository` and
+  `FakeLocationEnvironment`. Tests use round fixture coordinates, never a real place of a
+  person. The disclosure wording is a draft until a lawyer has reviewed it; changing what
+  location is used for means changing the disclosure in the same prompt.
 - `android/app/google-services.json` is never opened, printed or committed by Claude Code. CI and
   fresh clones use `android/scripts/write-dummy-google-services` (project `demo-saferoute`); a
   release build refuses the dummy or a missing file unless `-Psaferoute.allowDummyFirebase=true`

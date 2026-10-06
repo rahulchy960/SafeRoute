@@ -1,8 +1,8 @@
 # ADR 0015: Map stack (MapLibre Native + MapTiler) and location policy
 
-- **Status:** Accepted (the "Location policy" section is to be confirmed in P010b)
+- **Status:** Accepted
 - **Date:** 2026-10-06
-- **Prompt:** P010a
+- **Prompt:** P010a (map), P010b (location policy)
 - **Plan refs:** Plan v7 §1, §3.2 (F-02), §4, §5.1, §5.3, §12.3, §12.4, §14.1, §14.2; [ADR 0005](0005-product-name-and-multi-city-readiness.md), [ADR 0008](0008-android-foundation.md), [ADR 0009](0009-android-api-client.md), [ADR 0013](0013-regions-and-expansion.md)
 
 ## Context
@@ -124,18 +124,58 @@ Facts found in the P010a spike (2026-10-06), with their sources:
   Regions become configuration when they arrive (`regionCode`, ADR 0013); no identifier names a
   place (ADR 0005).
 
-### Location policy (to be confirmed in P010b)
+### Location policy (confirmed in P010b)
 
-- Location is used **in the foreground only**: while the app is open and on screen. No
-  `ACCESS_BACKGROUND_LOCATION` in the MVP (Plan v7 §5.3).
-- For the map, **nothing about the user's location is sent to SafeRoute's servers or stored**.
-  The last position lives in memory only. Sharing happens only when the user starts SOS or
-  live sharing (later prompts).
-- The system permission dialog is shown only after a prominent disclosure and only after the
-  user asked for their location (Plan v7 §12.3).
-- Balanced-power accuracy by default; higher accuracy only while the map is visible.
-- P010a adds **no** location permission: the two that MapLibre's manifest would merge in are
-  removed until P010b.
+Facts found in the P010b spike (2026-10-06): `com.google.android.gms:play-services-location`
+21.4.0 is the current release (Google's Maven repository); its manifest declares no
+permissions; `LocationRequest.Builder`, `Priority` and `requestLocationUpdates` with a
+callback are the current API (read from the artifact's class files). The library is
+proprietary ("Android Software Development Kit License").
+
+- **Foreground only.** Location updates run only while Home is visible and the permission is
+  granted, and stop in `onStop`. The manifest declares `ACCESS_FINE_LOCATION` and
+  `ACCESS_COARSE_LOCATION` and nothing else: no `ACCESS_BACKGROUND_LOCATION`, no
+  foreground-service permission (Plan v7 §5.3). A test pins the list.
+- **Nothing is stored, logged or sent.** For the map, the position goes from
+  `LocationRepository` to the map overlay and the camera. The last fix is a field in memory.
+  `LatLng`, `LocationFix` and `RawFix` hide their values in `toString()`; tests capture Logcat
+  and scan the saved state. Sharing happens only when the user starts SOS or live sharing
+  (later prompts).
+- **Disclosure first, and only on request.** The system dialog is requested only after the
+  user tapped "my location" and chose "Continue" on the app's own explanation (what is
+  collected, why, what is not done, how to stop). Never at app start or during onboarding.
+  "Not now" is final until the next tap. The wording is a draft until a lawyer has reviewed it.
+- **The permission is a state machine, recomputed on every resume**
+  (`LocationPermissionViewModel`): NotAsked, DisclosureShown, RationaleNeeded, Granted (precise
+  or approximate), DeniedOnce, DeniedPermanently, ServicesOff, PlayServicesUnavailable. The
+  user can change any of it in system Settings at any time, so the state is read from Android,
+  not remembered. One system dialog per tap at most; no loops.
+- **"Denied for good" is inferred**, because Android does not say it: the request came back
+  refused without `shouldShowRequestPermissionRationale` turning true, either after an earlier
+  refusal or within 400 ms (no dialog can have been shown). A dialog closed without an answer
+  on the first request is treated as a single refusal.
+- **"Only this time"** grants are taken back by Android when the app is closed. The next start
+  finds no permission and starts again from the explanation.
+- **Accuracy and interval.** Precise permission: `PRIORITY_HIGH_ACCURACY` about every 3 seconds
+  (2 at the fastest) while the map is visible, for a dot that moves smoothly. Approximate
+  permission: `PRIORITY_BALANCED_POWER_ACCURACY` about every 10 seconds. Nothing otherwise. A
+  fix older than 30 seconds is shown as stale; 45 seconds without a first fix is reported as
+  unavailable.
+- **Approximate location is used as it is**, with a hint and one offer of "Use precise
+  location". If that is declined the offer is not repeated.
+- **A custom layer, not MapLibre's `LocationComponent`.** `LocationRepository` is the one
+  source of the phone's position (the map now, SOS in P014). The dot, the accuracy circle and
+  the heading arrow are ordinary overlay descriptions drawn by the map component. This keeps
+  one source of truth, keeps the logic testable on the JVM, and keeps the map library
+  replaceable. `LocationComponent` would have brought its own location engine and its own
+  permission assumptions inside the map library.
+- **Location switched off** is handled by opening the system's location settings, not by the
+  Play services resolution dialog: one code path, works without Play services, and the state
+  is read again on return.
+- **Phones without Google Play services** get no position (the map and the emergency button
+  work). An alternative source is a follow-up.
+- **Mock locations** are recognised and kept as an internal flag; nothing acts on it yet
+  (P014).
 
 ## Switching the map provider
 

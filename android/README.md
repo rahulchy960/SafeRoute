@@ -81,16 +81,17 @@ android/
   gradle/gradle-daemon-jvm.properties   which JDK runs Gradle itself (25)
   app/build.gradle.kts             the app module's build
   app/src/main/
-    AndroidManifest.xml            app entry points; one permission (INTERNET); the Firebase
-                                   libraries merge in two more (see ADR 0012); the three the
-                                   map library would add are removed (ADR 0015)
+    AndroidManifest.xml            app entry points; permissions: INTERNET and fine/coarse
+                                   location (foreground only); the Firebase libraries merge
+                                   in two more (ADR 0012); the Wi-Fi one the map library
+                                   would add is removed (ADR 0015)
     java/com/saferoute/app/
       SafeRouteApplication.kt      process entry point (@HiltAndroidApp)
       MainActivity.kt              the single activity
       SafeRouteApp.kt              root composable: background + navigation host
       navigation/                  destinations (type-safe routes) and the NavHost
       feature/home/                Home screen, HomeViewModel, map status card and credit,
-                                   112 dialog
+                                   location permission flow and "my location", 112 dialog
       feature/search/              Search screen (layout only until P011)
       feature/settings/            Settings: account, privacy, About
       feature/onboarding/          welcome, age gate, consent notice, phone and code, blocked
@@ -100,6 +101,8 @@ android/
       core/di/                     Hilt module: Clock and coroutine dispatchers
       core/network/                HTTP client, token seam, retries, error mapping (ADR 0009)
       core/auth/                   phone sign-in behind PhoneAuthGateway; the only Firebase code
+      core/location/               LocationRepository; FusedLocation.kt is the only file that
+                                   uses Google's location library (ADR 0015)
       core/map/                    the map behind MapEngine/MapController; MapLibreEngine.kt is
                                    the only file that uses MapLibre (ADR 0015)
       core/session/                session state machine and the stored onboarding flags
@@ -434,6 +437,75 @@ CI builds this way. A **release** build refuses to assemble without a real key
   Hilt tests get `FakeMapEngine` (`src/test/.../core/map/FakeMap.kt`).
 - The camera position is saved in the ViewModel's `SavedStateHandle`, so the map reopens where
   you left it after a rotation or after Android reclaimed the app's memory.
+
+## Location
+
+The map can show where you are. Policy and reasons:
+[ADR 0015](../docs/adr/0015-map-stack-and-location-policy.md), "Location policy". Flow:
+[`docs/diagrams/010-location-permission-flow.svg`](../docs/diagrams/010-location-permission-flow.svg).
+
+- **Foreground only.** Location runs while Home is visible and stops when it is not. There is
+  no background location and no foreground service.
+- **Nothing leaves the phone.** The position is drawn on the map and kept in memory. It is not
+  saved, logged or sent to the SafeRoute API.
+- **Nothing is asked until the user taps "my location".** The app's explanation comes first,
+  Android's dialog second.
+
+### Permission states
+
+| State | When | What the user sees |
+| --- | --- | --- |
+| NotAsked | fresh install, or after "Only this time" expired | the plain "my location" button |
+| DisclosureShown | after a tap | the app's explanation: Continue / Not now |
+| Granted (precise) | "Precise" + "While using the app" | blue dot, accuracy circle, arrow while moving |
+| Granted (approximate) | "Approximate" | a ring and a wide circle; a hint with "Use precise location" (offered once) |
+| DeniedOnce / RationaleNeeded | refused once | a short note; the button still works and explains again |
+| DeniedPermanently | refused twice, or "Don't allow" in Settings | a note with "Open Settings" (the app's page) |
+| ServicesOff | the phone's Location switch is off | a note with "Location settings" |
+| PlayServicesUnavailable | no Google Play services | a note; the map and the emergency button work |
+
+The state is read from Android again every time Home resumes, so changing a permission in
+system Settings while the app is in the background takes effect on return.
+
+The button itself: plain (off), spinner (searching), crosshair (located: a tap centres the
+map, a second tap follows you), arrowhead in the accent colour (following: a tap stops),
+crossed ring (unavailable: a tap says why). Each state has its own TalkBack description.
+
+### Test it on a phone
+
+1. Tap "my location": the explanation appears. "Not now" closes it and nothing was asked.
+2. Tap again, "Continue", then "While using the app" with "Precise": dot and circle appear and
+   the map centres on you. Tap the button to centre, tap again to follow, drag the map to stop.
+3. **Revoke or change:** system Settings → Apps → SafeRoute → Permissions → Location. Choose
+   "Don't allow", or switch off "Use precise location", and return to the app.
+4. **Location off:** switch off Location in quick settings and return to the app.
+5. **Background:** press Home. The location indicator in the status bar goes away.
+6. **Start over:** Settings → Apps → SafeRoute → Storage → Clear storage (this also signs you
+   out), or `adb shell pm reset-permissions`.
+
+### Test with mock locations
+
+- **Emulator:** the "…" button → Location: set a point or play a route. The emulator image
+  must include Google Play services ("Google Play" or "Google APIs" images).
+- **Phone:** enable Developer options, choose a mock-location app under "Select mock location
+  app", and set a position in that app.
+
+The debug Developer screen (Settings → Developer) has a "Location" row that shows the
+permission, whether the phone's Location is on, and how old the last fix is, in words and
+buckets (`Precise · on · fix <10 s`). It never shows coordinates.
+
+### How the code is organised
+
+- `core/location/LocationRepository.kt`: `LocationState` (NoPermission, Searching, Fix, Stale,
+  Unavailable) and `DefaultLocationRepository`, the one source of the phone's position (the
+  map now, SOS in P014). Tested with virtual time and a fake phone.
+- `core/location/FusedLocation.kt`: **the only file that uses Google's location library**
+  (`MapLibreBoundaryTest` checks it). Not run in JVM tests.
+- `feature/home/LocationPermissionViewModel.kt`: the permission state machine.
+- `feature/home/MyLocation.kt`: the button, the explanation, the notices, and what is drawn
+  for each location state. `core/map/MapOverlayGeoJson.kt` turns that into shapes.
+- Hilt tests get `FakeLocationRepository` and `FakeLocationEnvironment` automatically
+  (`FakeLocationModule`).
 
 ## Design tokens
 

@@ -10,6 +10,7 @@ file in the same pull request that adds or removes a dependency or an asset.
 | Asset | Source | Licence | Changes |
 | --- | --- | --- | --- |
 | `res/drawable/ic_my_location.xml` | Material Symbols (Outlined) `my_location`, [google/material-design-icons](https://github.com/google/material-design-icons) | Apache-2.0 | header comment added, `tint` attribute removed |
+| `res/drawable/ic_location_following.xml`, `ic_location_unavailable.xml` | drawn for SafeRoute (simple shapes, not from an icon set) | AGPL-3.0-only | n/a |
 | `res/drawable/ic_layers.xml` | Material Symbols (Outlined) `layers`, same repository | Apache-2.0 | header comment added, `tint` attribute removed |
 | Search, Settings, Warning, Star, Place, Info and back-arrow icons | `androidx.compose.material:material-icons-core` | Apache-2.0 | none (used from the library) |
 
@@ -86,7 +87,17 @@ POM, read on 2026-10-06:
 | `com.google.android.recaptcha:recaptcha` 18.6.1 | Android Software Development Kit License |
 | `com.google.android.play:integrity` 1.3.0 | Play Integrity API Terms of Service |
 
-They are used unchanged, as published by Google, and only through `core/auth`
+Since P010b, for the current-location dot on the map (read on 2026-10-06):
+
+| Library | Licence |
+| --- | --- |
+| `com.google.android.gms:play-services-location` 21.4.0 (and `play-services-base`, which it pulls in) | Android Software Development Kit License |
+
+It is used unchanged and only in `core/location/FusedLocation.kt`
+([ADR 0015](../docs/adr/0015-map-stack-and-location-policy.md)); it belongs to the same
+licence review as the sign-in libraries.
+
+The sign-in libraries are used unchanged, as published by Google, and only through `core/auth`
 ([ADR 0012](../docs/adr/0012-firebase-config-in-builds.md)). What combining them with
 AGPL-3.0 code means for people who rebuild the app (and whether an additional permission is
 wanted) is an open review item that must be closed before release (Notion follow-up "Android
