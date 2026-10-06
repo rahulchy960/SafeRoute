@@ -17,6 +17,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.graphics.createBitmap
+import androidx.core.graphics.toColorInt
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.saferoute.app.core.designsystem.theme.SafeRouteTheme
 import javax.inject.Inject
@@ -301,8 +303,8 @@ private class MapLibreRenderer(
 private fun headingArrow(context: Context, colorHex: String): Bitmap {
     val density = context.resources.displayMetrics.density
     val size = (HEADING_IMAGE_DP * density).toInt()
-    val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
-    val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = android.graphics.Color.parseColor(colorHex) }
+    val bitmap = createBitmap(size, size)
+    val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = colorHex.toColorInt() }
     val center = size / 2f
     val arrow = Path().apply {
         moveTo(center, 0f)
