@@ -18,6 +18,7 @@ import dagger.hilt.android.testing.HiltAndroidTest
 import dagger.hilt.android.testing.HiltTestApplication
 import dagger.hilt.android.testing.UninstallModules
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -60,7 +61,7 @@ class MainActivityTest {
     }
 
     @Test
-    fun `the app asks for network permissions only, none of them shown to the user`() {
+    fun `the app asks for exactly these permissions and never for background location`() {
         val activity = compose.activity
         val info = activity.packageManager.getPackageInfo(
             activity.packageName,
@@ -70,11 +71,13 @@ class MainActivityTest {
         // broadcast receivers unexported). Anything else is a real permission and needs a prompt
         // that asks for it. INTERNET came with the API client (P008).
         //
-        // The other two are not in our manifest: they are merged in from the Firebase sign-in
-        // libraries (P009b, ADR 0012). ACCESS_NETWORK_STATE (firebase-auth, reCAPTCHA) lets the
-        // SDK see whether there is a connection. READ_GSERVICES (reCAPTCHA) reads Google Play
-        // services' settings. Both are granted at install without a dialog, and neither gives
-        // access to location, contacts, SMS or the phone number.
+        // ACCESS_NETWORK_STATE and READ_GSERVICES are not in our manifest: they are merged in
+        // from the Firebase sign-in libraries (P009b, ADR 0012). Both are granted at install
+        // without a dialog.
+        //
+        // The two location permissions (P010b, ADR 0015) show where the user is on the map.
+        // They are "dangerous" permissions: Android asks the user at runtime, and the app asks
+        // only after the user tapped "my location" and read the app's own explanation.
         val requested = info.requestedPermissions.orEmpty()
             .filterNot { it.startsWith(activity.packageName) }
         assertEquals(
@@ -82,9 +85,18 @@ class MainActivityTest {
                 Manifest.permission.INTERNET,
                 Manifest.permission.ACCESS_NETWORK_STATE,
                 "com.google.android.providers.gsf.permission.READ_GSERVICES",
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION,
             ),
             requested.toSet(),
         )
+        // Foreground only (Plan v7 5.3): none of these may ever appear without a new prompt.
+        listOf(
+            Manifest.permission.ACCESS_BACKGROUND_LOCATION,
+            Manifest.permission.FOREGROUND_SERVICE,
+            "android.permission.FOREGROUND_SERVICE_LOCATION",
+            Manifest.permission.ACCESS_WIFI_STATE,
+        ).forEach { assertFalse(it, it in requested) }
     }
 
     @Test

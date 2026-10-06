@@ -11,19 +11,22 @@
     <uses-permission android:name="android.permission.INTERNET" />
 
     <!--
-        The map library (MapLibre, P010a) declares these three in its own manifest, and Android
-        merges library manifests into the app's. The app does not use them yet, so they are
-        taken out again: the map draws without them. Location arrives with its own prompt
-        (P010b), together with the screen that explains it; that prompt deletes the two
-        location lines below. Wi-Fi state is not needed at all.
-        tools:node="remove" means "leave this out of the merged manifest".
+        Location (P010b), to show where you are on the map. These are "dangerous" permissions:
+        declaring them here only makes it possible to ASK. Android shows its dialog when the
+        app requests them at runtime, which happens only after the user taps "my location" and
+        has read the app's own explanation (Plan v7 12.3). Both are declared because since
+        Android 12 the user may choose "approximate", which grants only the coarse one.
+        Used in the foreground only. ACCESS_BACKGROUND_LOCATION is deliberately absent, and so
+        are the foreground-service permissions (Plan v7 5.3, ADR 0015).
     -->
-    <uses-permission
-        android:name="android.permission.ACCESS_FINE_LOCATION"
-        tools:node="remove" />
-    <uses-permission
-        android:name="android.permission.ACCESS_COARSE_LOCATION"
-        tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <!--
+        The map library (MapLibre, P010a) declares this one in its own manifest, and Android
+        merges library manifests into the app's. The app does not need it, so it is taken out
+        again. tools:node="remove" means "leave this out of the merged manifest".
+    -->
     <uses-permission
         android:name="android.permission.ACCESS_WIFI_STATE"
         tools:node="remove" />
