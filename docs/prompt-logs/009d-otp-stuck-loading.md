@@ -57,8 +57,8 @@ with retry within a bounded time. Keep the offline-open, under-18 and consent ru
 | Tests | `PostSignInFlowTest` (17), `SignInToHomeTest` (2), `FakeMeApi`; `SessionRepositoryTest` +2 and adapted; `FakePhoneAuthGateway` can delay or repeat the auth state; `FakeSession` |
 | Docs | `CLAUDE.md` rule, `android/README.md`, diagram labels, this log |
 
-**Size:** about 1,000 changed lines: code 140, tests 620, documents 240 (this log is most of
-them).
+**Size:** about 1,200 changed lines: code 144, tests 782, documents 282 (this log is most of
+the documents).
 
 **API contract diff:** none. **Migrations:** none. **New dependencies:** none.
 **Deployment impact:** none.
@@ -83,7 +83,7 @@ change, so no new diagram.
 | → lint | 0 errors, 2 warnings (both `OldTargetApi`, known, ADR 0008) |
 | `./gradlew assembleRelease -Psaferoute.apiBaseUrl=https://example.invalid/` | BUILD SUCCESSFUL |
 | `pnpm check` in `tools/diagrams` | 14 diagrams up to date |
-| markdownlint-cli2 · JSON validity · gitleaks | see the ship checks; recorded in Notion |
+| markdownlint-cli2 · JSON validity · gitleaks 8.30.1 | 0 errors · 43 files valid · no leaks |
 
 `PostSignInFlowTest` (real repository, real sign-in ViewModel, virtual time):
 
