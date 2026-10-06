@@ -87,7 +87,7 @@ variable (never its value). Empty values count as unset. See [`.env.example`](.e
 | `DB_CONNECT_TIMEOUT_MS` | no / no / no | no | `5000` (100–60000) | Cloud Run env var |
 | `FIREBASE_PROJECT_ID` | no / no / **yes** (`demo-` IDs rejected) | no, but kept out of tracked files | none (`/v1` then answers 503) | GitHub environment secret (so public logs mask it) → Cloud Run env var |
 | `GEOCODING_API_KEY` | no / no / **yes** | **yes** (never logged, never in an error or in `/health`) | none (search then answers 503 `search_not_configured`) | Secret Manager `saferoute-staging-geocoding-key` → Cloud Run env var `GEOCODING_API_KEY`. A server-only key of the geocoding provider, separate from the app's map key |
-| `GEOCODING_PROVIDER` | no / no / **yes**; always required together with the key | no | none | GitHub environment variable → Cloud Run env var. `geoapify` or `locationiq` |
+| `GEOCODING_PROVIDER` | no / no / **yes**; always required together with the key | no | none | A constant in `deploy-staging.yml` → Cloud Run env var. `geoapify` or `locationiq` |
 | `SEARCH_GLOBAL_DAILY_LIMIT` | no / no / no | no | `2500` (1–10000000) | Cloud Run env var. Provider calls per day for all users together; keep it under the provider plan's daily quota |
 | `SEARCH_PROVIDER_TIMEOUT_MS` | no / no / no | no | `3000` (200–20000) | Cloud Run env var |
 

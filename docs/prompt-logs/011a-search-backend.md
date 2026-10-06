@@ -71,7 +71,7 @@ Commands whose behaviour was verified rather than assumed:
 | `src/regions/defaults.ts` | `LAUNCH_REGION_CENTER`, the default search bias; `LAUNCH_COUNTRY_CODE` |
 | Contract | `GET /v1/search` (`searchPlaces`, tag `search`), `Place`, `SearchResults`, `Retry-After` header on 429 and 503, codes `search_unavailable` and `search_not_configured`. `info.version` 0.3.0 → 0.4.0 |
 | `test/search-eval/` | `fixture.json` (74 queries, 23 districts), schema, harness, `pnpm search:eval`, README |
-| Deploy | `deploy-staging.yml`: the candidate revision mounts `saferoute-staging-geocoding-key` as `GEOCODING_API_KEY` and gets `GEOCODING_PROVIDER` from the environment variable. `container-smoke.mjs`: fake settings, a missing-key guard check, `/v1/search` → 401 |
+| Deploy | `deploy-staging.yml`: the candidate revision mounts `saferoute-staging-geocoding-key` as `GEOCODING_API_KEY` and gets `GEOCODING_PROVIDER` from a constant in the workflow. `container-smoke.mjs`: fake settings, a missing-key guard check, `/v1/search` → 401 |
 | Docs | ADR 0018, diagram, runbook step 5b and rollback rows, backend, contracts and modules READMEs, `CLAUDE.md` "Search and geocoding rules", this log |
 
 **API contract diff:** additive. oasdiff reports no breaking change. Plan v7 §6.3 wrote the
@@ -82,7 +82,11 @@ latitude and longitude rule). Recorded in ADR 0018.
 
 - **Provider.** No MapTiler adapter. Adapters for Geoapify and LocationIQ; none for Stadia Maps.
 - **`GEOCODING_PROVIDER`** is a new variable (Rahul's instruction to select the provider by
-  name). The deploy needs it as a GitHub environment variable.
+  name). For the deploy it is a constant in `deploy-staging.yml`, set to `geoapify` (the
+  recommendation in section 7); Rahul changes that line if the evaluation favours LocationIQ.
+  The first push read it from a GitHub environment variable, which failed `infra-ci`:
+  `bootstrap-staging.ps1` checks that it can fill in every `vars.` name the workflow uses.
+  Teaching the script a new name is a follow-up, so the workflow was changed instead.
 - **`SEARCH_GLOBAL_DAILY_LIMIT` defaults to 2500**, not 5000 (prompt) or 1500 (amendment). The
   amendment's reason, a quota shared with map tiles, no longer applies; 2500 sits under the
   smaller free daily quota of the two candidates (3,000).
@@ -114,6 +118,7 @@ to the app; the secret; the local evaluation harness; and a red node for what is
 | oasdiff 1.32.1 `breaking main…HEAD --fail-on ERR` | no breaking changes (one endpoint and one response header added) |
 | `node scripts/container-smoke.mjs` | 36 checks passed |
 | actionlint 1.7.12 with shellcheck | clean |
+| `infra/staging/tests/Invoke-InfraCheck.ps1` (the workflow file is one of its inputs) | Pester 87 passed, 0 failed (Windows PowerShell 5.1, mocked `gcloud` and `gh`) |
 | `pnpm generate` · `pnpm check` in `tools/diagrams` | 16 diagrams, up to date |
 | markdownlint-cli2 · JSON validity · gitleaks 8.30.1 | 78 files, 0 errors · 49 files valid · no leaks |
 | "kolkata" in `contracts/openapi.json` | 0 occurrences |
@@ -227,8 +232,9 @@ decides.
 - **`backend/.env.example` is not updated in this pull request.** Claude Code cannot read the
   file, and Rahul's uncommitted edit was written when the plan was a shared MapTiler key, so
   committing it unseen could publish a wrong note. Lines to use are in section 11.
-- **The staging deploy will fail at the candidate stage** unless the secret, its binding and
-  the `GEOCODING_PROVIDER` variable exist before the merge. Traffic stays on the old revision.
+- **The staging deploy will fail at the candidate stage** unless the secret and its binding
+  exist before the merge. Traffic stays on the old revision. A key that does not belong to the
+  provider named in the workflow deploys cleanly and then makes every search answer 503.
 - **The MapTiler safety clause is an open question for the map itself** (follow-up; not changed
   here).
 - **LocationIQ's 60 requests a minute** for all users is not smoothed by our daily budget.
@@ -307,9 +313,10 @@ Terms as they read on 2026-10-07; check the wording against the live page before
 6. Choose the provider and confirm or change the thresholds.
 7. **Before merging:** follow
    [runbook step 5b](../runbooks/gcp-staging-setup.md#step-5b-the-geocoding-key-in-secret-manager-since-p011a):
-   create `saferoute-staging-geocoding-key`, let `sa-api-runtime` read it, and set the GitHub
-   environment variable `GEOCODING_PROVIDER`. Make sure the staging Cloud SQL instance is
-   running.
+   create `saferoute-staging-geocoding-key` with the chosen provider's key and let
+   `sa-api-runtime` read it. If you chose LocationIQ, say so: `GEOCODING_PROVIDER` in
+   `deploy-staging.yml` must be changed in this pull request first. Make sure the staging Cloud
+   SQL instance is running.
 8. CI green, squash and merge. Check the `deploy-staging` run, then that
    `GET <staging>/v1/search?q=station` without a token answers 401. Then say "P011b".
 

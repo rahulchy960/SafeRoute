@@ -190,9 +190,10 @@ for search. What remains true and is recorded here:
   deleted users go with the user; other stale buckets are not purged yet (P020).
 - Search latency and the provider error rate must join the capacity dashboard; a "search p95"
   row is proposed for the SLO table of Plan v7 §14.3 in v8.
-- Deploy: the staging secret `saferoute-staging-geocoding-key` and the environment variable
-  `GEOCODING_PROVIDER` must exist before this is merged
-  ([runbook, step 5b](../runbooks/gcp-staging-setup.md)).
+- Deploy: the staging secret `saferoute-staging-geocoding-key` must exist before this is
+  merged, and its key must belong to the provider named by `GEOCODING_PROVIDER` in
+  `deploy-staging.yml` ([runbook, step 5b](../runbooks/gcp-staging-setup.md)). The name is a
+  constant in the workflow, so a provider change is a reviewed commit.
 - Revisit when the evaluation is in, when a provider's terms or plan change, and before any
   commercial use.
 

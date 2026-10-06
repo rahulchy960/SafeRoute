@@ -38,6 +38,10 @@ env:
   DATABASE_URL_SECRET: saferoute-staging-database-url
   # Secret Manager secret mounted as GEOCODING_API_KEY (runbook step 5b). The name is not a secret.
   GEOCODING_SECRET: saferoute-staging-geocoding-key
+  # Which geocoding adapter that key belongs to: geoapify or locationiq (ADR 0018). Not a secret.
+  # A constant here, not a GitHub variable: a provider change is then a reviewed commit, and it
+  # must go together with a new version of the secret (runbook step 5b).
+  GEOCODING_PROVIDER: geoapify
   # Connections per API instance. API_MAX_INSTANCES × DB_POOL_MAX must stay within the budget
   # below: the staging database tier allows 25 connections, some reserved, plus one per job.
   DB_POOL_MAX: "5"
@@ -69,8 +73,6 @@ jobs:
       MIGRATION_JOB: ${{ vars.MIGRATION_JOB }}
       API_MIN_INSTANCES: ${{ vars.API_MIN_INSTANCES }}
       API_MAX_INSTANCES: ${{ vars.API_MAX_INSTANCES }}
-      # Which geocoding adapter the key belongs to (geoapify or locationiq). Not a secret.
-      GEOCODING_PROVIDER: ${{ vars.GEOCODING_PROVIDER }}
       PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
       # Not used by a command. Referenced so the number is masked: service URLs contain it.
       PROJECT_NUMBER: ${{ secrets.GCP_PROJECT_NUMBER }}
@@ -89,7 +91,7 @@ jobs:
           set -u
           missing=0
           for name in REGION AR_REPOSITORY API_SERVICE MIGRATION_JOB API_MIN_INSTANCES API_MAX_INSTANCES \
-            GEOCODING_PROVIDER PROJECT_ID RUNTIME_SA MIGRATION_SA CLOUD_SQL_CONNECTION_NAME FIREBASE_PROJECT_ID; do
+            PROJECT_ID RUNTIME_SA MIGRATION_SA CLOUD_SQL_CONNECTION_NAME FIREBASE_PROJECT_ID; do
             if [ -z "${!name}" ]; then
               echo "::error::The staging environment has no value for ${name} (runbook step 9)."
               missing=1

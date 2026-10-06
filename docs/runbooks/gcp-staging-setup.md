@@ -449,20 +449,19 @@ a candidate revision that cannot start; the deploy fails and traffic stays on th
      --member="serviceAccount:$RUNTIME_SA" --role=roles/secretmanager.secretAccessor
    ```
 
-3. Tell the deploy which adapter the key belongs to (`geoapify` or `locationiq`). An
-   environment **variable**, not a secret:
+3. Check that the key belongs to the provider named in the workflow: the line
+   `GEOCODING_PROVIDER: geoapify` near the top of
+   [`deploy-staging.yml`](../../.github/workflows/deploy-staging.yml). It is a constant in the
+   file, not a GitHub variable. If the key is for the other provider (`locationiq`), change that
+   line in a pull request; a key and a provider name that do not match make every search answer
+   503.
 
-   ```powershell
-   gh variable set GEOCODING_PROVIDER --env staging --repo $GITHUB_REPO --body "geoapify"
-   ```
-
-**Verify:** one version, state `enabled`; one member on the secret; the variable is listed.
-Never run `gcloud secrets versions access`: it prints the key.
+**Verify:** one version, state `enabled`; one member on the secret. Never run
+`gcloud secrets versions access`: it prints the key.
 
 ```powershell
 gcloud secrets versions list $GEOCODING_SECRET --format="value(name,state)"
 gcloud secrets get-iam-policy $GEOCODING_SECRET --format="value(bindings.members)"
-gh variable list --env staging --repo $GITHUB_REPO
 ```
 
 These are the runbook's commands, written in the style of step 5. If you created the secret
@@ -473,9 +472,11 @@ another way (the console, for example), check the three results above instead of
 1. Create the new key in the provider's dashboard. Keep the old one active for now.
 2. Add it as a new version (same prompt as above, with
    `gcloud secrets versions add $GEOCODING_SECRET --data-file=-` in place of `create`).
-3. If the provider changed, change the variable too:
-   `gh variable set GEOCODING_PROVIDER --env staging --repo $GITHUB_REPO --body "<name>"`.
-4. Run the `deploy-staging` workflow. A new revision reads the `latest` version when it starts.
+3. If the provider changed, change `GEOCODING_PROVIDER` in `deploy-staging.yml` in a pull
+   request and merge it: the merge starts the deploy. Add the new secret version just before
+   merging, because a revision started in between would pair the new key with the old provider.
+4. Otherwise run the `deploy-staging` workflow. A new revision reads the `latest` version when
+   it starts.
 5. Search once from the app, then disable the old version
    (`gcloud secrets versions disable <OLD_VERSION_NUMBER> --secret=$GEOCODING_SECRET`) and
    delete the old key in the provider's dashboard.
@@ -653,7 +654,6 @@ can't drift from what the deploy reads.*
    gh variable set MIGRATION_JOB --env staging --repo $GITHUB_REPO --body "saferoute-migrate"
    gh variable set API_MIN_INSTANCES --env staging --repo $GITHUB_REPO --body "0"
    gh variable set API_MAX_INSTANCES --env staging --repo $GITHUB_REPO --body "3"
-   gh variable set GEOCODING_PROVIDER --env staging --repo $GITHUB_REPO --body "geoapify"   # step 5b
    ```
 
 4. The switch that keeps deploys off until everything is ready. A **repository** variable, not
@@ -674,7 +674,7 @@ environment so that the branch rule and secret masking apply. In short:
 | --- | --- | --- |
 | `STAGING_DEPLOY_ENABLED` | Repository variable | On the environment: the deploy job is always skipped |
 | The eight identifiers (`GCP_PROJECT_ID`, …) | Environment **secrets** | As variables: `secrets.X` is empty, so the guard step or the sign-in fails, and a variable's value isn't masked in logs |
-| The seven settings (`GCP_REGION`, …, `GEOCODING_PROVIDER`) | Environment **variables** | As secrets: `vars.X` is empty and the guard step fails |
+| The six settings (`GCP_REGION`, …) | Environment **variables** | As secrets: `vars.X` is empty and the guard step fails |
 
 **Verify:**
 
@@ -688,7 +688,7 @@ gh variable list --repo $GITHUB_REPO
 
 - `{"custom_branch_policies":true,"protected_branches":false}`, then the protection rule types
   (`branch_policy` only, no `required_reviewers`), then `main`.
-- Eight secrets (names only; values are never shown), seven environment variables, and
+- Eight secrets (names only; values are never shown), six environment variables, and
   `STAGING_DEPLOY_ENABLED  false`.
 
 ## Step 10: pre-flight, then enable deploys
