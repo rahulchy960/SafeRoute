@@ -11,6 +11,24 @@
     <uses-permission android:name="android.permission.INTERNET" />
 
     <!--
+        The map library (MapLibre, P010a) declares these three in its own manifest, and Android
+        merges library manifests into the app's. The app does not use them yet, so they are
+        taken out again: the map draws without them. Location arrives with its own prompt
+        (P010b), together with the screen that explains it; that prompt deletes the two
+        location lines below. Wi-Fi state is not needed at all.
+        tools:node="remove" means "leave this out of the merged manifest".
+    -->
+    <uses-permission
+        android:name="android.permission.ACCESS_FINE_LOCATION"
+        tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.ACCESS_COARSE_LOCATION"
+        tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.ACCESS_WIFI_STATE"
+        tools:node="remove" />
+
+    <!--
         allowBackup=false + data_extraction_rules: nothing the app stores is copied to a cloud
         backup or to a new phone (ADR 0008). Restoring an old SOS record or session blindly
         would be worse than starting clean.
