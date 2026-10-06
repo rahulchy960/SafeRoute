@@ -415,6 +415,73 @@ gcloud secrets versions list $SECRET_NAME --format="value(name,state)"
 4. Check `/health/ready`, then disable the old version:
    `gcloud secrets versions disable <OLD_VERSION_NUMBER> --secret=$SECRET_NAME`.
 
+## Step 5b: the geocoding key in Secret Manager (since P011a)
+
+*Script: `bootstrap-staging.ps1` does not know this secret yet (follow-up). Do it by hand.*
+
+Place search ([ADR 0018](../adr/0018-search-and-geocoding.md)) needs the key of the geocoding
+provider. It is a **server-only** key: it is never put in the app, the repository, a workflow
+file, a log or a chat. The deploy mounts it on the API revision as `GEOCODING_API_KEY`, and the
+API refuses to start in production without it.
+
+**Do this before merging the pull request that adds search.** Otherwise the next deploy creates
+a candidate revision that cannot start; the deploy fails and traffic stays on the old revision.
+
+1. Create the secret. Type or paste the key at the prompt; it is not echoed and not written to
+   a file or to the shell history.
+
+   ```powershell
+   $GEOCODING_SECRET = "saferoute-staging-geocoding-key"
+   $key = Read-Host -AsSecureString "Geocoding API key"
+   $plain = [System.Net.NetworkCredential]::new("", $key).Password
+   Send-Exact $plain "gcloud secrets create $GEOCODING_SECRET --replication-policy=user-managed --locations=$REGION --data-file=-"
+   Remove-Variable plain, key
+   ```
+
+   `Send-Exact` is the helper from step 0: it sends the text without a trailing line break or a
+   byte-order mark, either of which would become part of the key.
+
+2. Let the API's runtime identity, and only it, read the secret. The deploy identity and the
+   migration identity get no access.
+
+   ```powershell
+   gcloud secrets add-iam-policy-binding $GEOCODING_SECRET `
+     --member="serviceAccount:$RUNTIME_SA" --role=roles/secretmanager.secretAccessor
+   ```
+
+3. Tell the deploy which adapter the key belongs to (`geoapify` or `locationiq`). An
+   environment **variable**, not a secret:
+
+   ```powershell
+   gh variable set GEOCODING_PROVIDER --env staging --repo $GITHUB_REPO --body "geoapify"
+   ```
+
+**Verify:** one version, state `enabled`; one member on the secret; the variable is listed.
+Never run `gcloud secrets versions access`: it prints the key.
+
+```powershell
+gcloud secrets versions list $GEOCODING_SECRET --format="value(name,state)"
+gcloud secrets get-iam-policy $GEOCODING_SECRET --format="value(bindings.members)"
+gh variable list --env staging --repo $GITHUB_REPO
+```
+
+These are the runbook's commands, written in the style of step 5. If you created the secret
+another way (the console, for example), check the three results above instead of repeating them.
+
+### Rotating or replacing the geocoding key
+
+1. Create the new key in the provider's dashboard. Keep the old one active for now.
+2. Add it as a new version (same prompt as above, with
+   `gcloud secrets versions add $GEOCODING_SECRET --data-file=-` in place of `create`).
+3. If the provider changed, change the variable too:
+   `gh variable set GEOCODING_PROVIDER --env staging --repo $GITHUB_REPO --body "<name>"`.
+4. Run the `deploy-staging` workflow. A new revision reads the `latest` version when it starts.
+5. Search once from the app, then disable the old version
+   (`gcloud secrets versions disable <OLD_VERSION_NUMBER> --secret=$GEOCODING_SECRET`) and
+   delete the old key in the provider's dashboard.
+
+A key that leaked is rotated the same way, without waiting between the steps.
+
 ## Step 6: IAM, least privilege
 
 *Script: `-Apply` adds the bindings that are missing. Roles beyond this table are reported as
@@ -586,6 +653,7 @@ can't drift from what the deploy reads.*
    gh variable set MIGRATION_JOB --env staging --repo $GITHUB_REPO --body "saferoute-migrate"
    gh variable set API_MIN_INSTANCES --env staging --repo $GITHUB_REPO --body "0"
    gh variable set API_MAX_INSTANCES --env staging --repo $GITHUB_REPO --body "3"
+   gh variable set GEOCODING_PROVIDER --env staging --repo $GITHUB_REPO --body "geoapify"   # step 5b
    ```
 
 4. The switch that keeps deploys off until everything is ready. A **repository** variable, not
@@ -606,7 +674,7 @@ environment so that the branch rule and secret masking apply. In short:
 | --- | --- | --- |
 | `STAGING_DEPLOY_ENABLED` | Repository variable | On the environment: the deploy job is always skipped |
 | The eight identifiers (`GCP_PROJECT_ID`, …) | Environment **secrets** | As variables: `secrets.X` is empty, so the guard step or the sign-in fails, and a variable's value isn't masked in logs |
-| The six settings (`GCP_REGION`, …) | Environment **variables** | As secrets: `vars.X` is empty and the guard step fails |
+| The seven settings (`GCP_REGION`, …, `GEOCODING_PROVIDER`) | Environment **variables** | As secrets: `vars.X` is empty and the guard step fails |
 
 **Verify:**
 
@@ -620,7 +688,7 @@ gh variable list --repo $GITHUB_REPO
 
 - `{"custom_branch_policies":true,"protected_branches":false}`, then the protection rule types
   (`branch_policy` only, no `required_reviewers`), then `main`.
-- Eight secrets (names only; values are never shown), six environment variables, and
+- Eight secrets (names only; values are never shown), seven environment variables, and
   `STAGING_DEPLOY_ENABLED  false`.
 
 ## Step 10: pre-flight, then enable deploys

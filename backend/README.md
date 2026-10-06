@@ -86,11 +86,16 @@ variable (never its value). Empty values count as unset. See [`.env.example`](.e
 | `DB_STATEMENT_TIMEOUT_MS` | no / no / no | no | `10000` (100–300000) | Cloud Run env var |
 | `DB_CONNECT_TIMEOUT_MS` | no / no / no | no | `5000` (100–60000) | Cloud Run env var |
 | `FIREBASE_PROJECT_ID` | no / no / **yes** (`demo-` IDs rejected) | no, but kept out of tracked files | none (`/v1` then answers 503) | GitHub environment secret (so public logs mask it) → Cloud Run env var |
+| `GEOCODING_API_KEY` | no / no / **yes** | **yes** (never logged, never in an error or in `/health`) | none (search then answers 503 `search_not_configured`) | Secret Manager `saferoute-staging-geocoding-key` → Cloud Run env var `GEOCODING_API_KEY`. A server-only key of the geocoding provider, separate from the app's map key |
+| `GEOCODING_PROVIDER` | no / no / **yes**; always required together with the key | no | none | GitHub environment variable → Cloud Run env var. `geoapify` or `locationiq` |
+| `SEARCH_GLOBAL_DAILY_LIMIT` | no / no / no | no | `2500` (1–10000000) | Cloud Run env var. Provider calls per day for all users together; keep it under the provider plan's daily quota |
+| `SEARCH_PROVIDER_TIMEOUT_MS` | no / no / no | no | `3000` (200–20000) | Cloud Run env var |
 
 Other allowed values: `NODE_ENV` ∈ `development`, `test`, `production`; `LOG_LEVEL` ∈ `debug`,
 `info`, `warn`, `error`; `DATABASE_URL` is a `postgres://` or `postgresql://` URL, either with a
 host or in the Cloud SQL unix-socket form `postgresql://<user>:<password>@/<db>?host=/cloudsql/<connection name>`
-(URL-encode the password); `FIREBASE_PROJECT_ID` matches `^[a-z][a-z0-9-]{4,28}[a-z0-9]$`.
+(URL-encode the password); `FIREBASE_PROJECT_ID` matches `^[a-z][a-z0-9-]{4,28}[a-z0-9]$`;
+`GEOCODING_API_KEY` is 8–200 printable characters without spaces.
 
 The container image sets `NODE_ENV=production` and bakes `GIT_SHA` and `APP_VERSION` from the
 `GIT_SHA` build argument; runtime values override them. The migration runner
@@ -118,6 +123,9 @@ src/
   routes/ready.ts      GET /health/ready (readiness: SELECT 1 with a 2 s timeout)
   modules/auth/        Firebase ID-token verifier (jose), authenticate / requireUser / requireRole
   modules/users/       POST /v1/me/bootstrap, GET /v1/me
+  modules/search/      GET /v1/search, the GeocoderProvider interface and the provider adapters
+  lib/rate-limit.ts    token buckets in PostgreSQL (rate_limit_buckets)
+  regions/defaults.ts  default search bias for the launch region
   scripts/set-role.ts  admin CLI: change a user's role (audited)
   modules/             more domain modules arrive with later prompts
 scripts/container-smoke.mjs  builds the image and smoke-tests it with local Docker (plain Node)
@@ -126,6 +134,7 @@ Dockerfile             one image for the API, the migration job and the admin jo
 drizzle/               generated SQL migrations (committed, never edited after merge)
 test/                  Vitest "unit" project (no network)
 test/db/               Vitest "db" project (Testcontainers PostGIS)
+test/search-eval/      search-quality fixture and the `pnpm search:eval` harness (not run in CI)
 ```
 
 ## HTTP conventions
@@ -154,6 +163,30 @@ test/db/               Vitest "db" project (Testcontainers PostGIS)
 - **`GET /health/ready`** (readiness): `200 {"status":"ready","checks":{"database":"ok"}}` or 503
   problem+json `db_unavailable` / `db_not_configured`. Both are outside `/v1` because they are
   operational, not part of the app contract.
+
+## Place search (since P011a)
+
+`GET /v1/search?q=…` forwards a search to a geocoding provider behind an adapter
+([ADR 0018](../docs/adr/0018-search-and-geocoding.md)). The provider is chosen by name with
+`GEOCODING_PROVIDER`; adding one means a file in `src/modules/search/providers/` and a name in
+`GEOCODING_PROVIDERS` (`src/config.ts`), nothing in the endpoint.
+
+- **Privacy:** the query, the coordinates and the results are never logged or stored. The log
+  has one line per provider call with `outcome`, `latency_ms` and `result_count`. `near` is
+  rounded to two decimals (about 1 km) on the server. The provider sees SafeRoute's server, not
+  the user's IP address or token. Nothing is cached on the server.
+- **Rate limits** (`SEARCH_LIMITS` in `src/modules/search/service.ts`, plus
+  `SEARCH_GLOBAL_DAILY_LIMIT`): 30 searches at once then 1 per second per user; 1000 per user per
+  day; a daily budget for all users together. To change a number, change it there, or set the
+  variable for the shared budget. **Revisit the shared budget whenever the provider or its plan
+  changes**: it must stay under the plan's daily quota, with room for the evaluation harness.
+- **Errors:** 429 `rate_limited` and 503 `search_unavailable` carry `Retry-After` (seconds)
+  when the wait is known. A key the provider refuses is logged as an error with
+  `alert: geocoder_key_rejected` and answered as 503, never as 401 or 403.
+- **Locally:** without `GEOCODING_API_KEY` the endpoint answers 503 `search_not_configured`. To
+  try it, put `GEOCODING_PROVIDER` and `GEOCODING_API_KEY` in `backend/.env` (git-ignored).
+- **Quality:** `pnpm search:eval` measures a provider against the committed fixture
+  ([`test/search-eval/README.md`](test/search-eval/README.md)).
 
 ## Change a user's role (admin)
 
@@ -186,13 +219,14 @@ node scripts/container-smoke.mjs      # builds the image and checks it end to en
 
 [`scripts/container-smoke.mjs`](scripts/container-smoke.mjs) needs only Node and Docker. It
 starts a throwaway PostGIS container, runs the migration command twice (the second run applies
-nothing), checks that production refuses a `demo-` Firebase project, runs the smoke checks below,
+nothing), checks that production refuses a `demo-` Firebase project and a missing geocoding key,
+runs the smoke checks below (plus `GET /v1/search` without a token → 401),
 and verifies non-root, JSON logs and a SIGTERM shutdown within 10 s. CI runs it on every pull
 request that touches `backend/` ([`container-ci`](../.github/workflows/container-ci.yml)).
 
 | Command in the image | Purpose | Needs |
 | --- | --- | --- |
-| `node dist/server.js` (default) | The API | `DATABASE_URL`, `FIREBASE_PROJECT_ID` |
+| `node dist/server.js` (default) | The API | `DATABASE_URL`, `FIREBASE_PROJECT_ID`, `GEOCODING_API_KEY`, `GEOCODING_PROVIDER` |
 | `node dist/db/migrate.js` | Apply migrations (Cloud Run Job) | `DATABASE_URL` |
 | `node dist/scripts/set-role.js …` | Change a user's role (Cloud Run Job) | `DATABASE_URL` |
 

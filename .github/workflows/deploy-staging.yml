@@ -13,6 +13,8 @@ name: deploy-staging
 #   - Project identifiers are environment SECRETS only so that GitHub masks them in public logs.
 #     Nothing here echoes secrets, dumps the environment or prints `gcloud config`.
 #   - The deploy identity cannot read the database secret or the database (runbook step 6).
+#   - The geocoding key (P011a, ADR 0018) is mounted from Secret Manager on the API revision only.
+#     It is never an env value, a log line or a summary line here; the migration job does not get it.
 #
 # The job is skipped unless the repository variable STAGING_DEPLOY_ENABLED is 'true'.
 # Setup: docs/runbooks/gcp-staging-setup.md. Rollback: docs/runbooks/rollback-staging.md.
@@ -34,6 +36,8 @@ concurrency:
 
 env:
   DATABASE_URL_SECRET: saferoute-staging-database-url
+  # Secret Manager secret mounted as GEOCODING_API_KEY (runbook step 5b). The name is not a secret.
+  GEOCODING_SECRET: saferoute-staging-geocoding-key
   # Connections per API instance. API_MAX_INSTANCES × DB_POOL_MAX must stay within the budget
   # below: the staging database tier allows 25 connections, some reserved, plus one per job.
   DB_POOL_MAX: "5"
@@ -65,6 +69,8 @@ jobs:
       MIGRATION_JOB: ${{ vars.MIGRATION_JOB }}
       API_MIN_INSTANCES: ${{ vars.API_MIN_INSTANCES }}
       API_MAX_INSTANCES: ${{ vars.API_MAX_INSTANCES }}
+      # Which geocoding adapter the key belongs to (geoapify or locationiq). Not a secret.
+      GEOCODING_PROVIDER: ${{ vars.GEOCODING_PROVIDER }}
       PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
       # Not used by a command. Referenced so the number is masked: service URLs contain it.
       PROJECT_NUMBER: ${{ secrets.GCP_PROJECT_NUMBER }}
@@ -83,7 +89,7 @@ jobs:
           set -u
           missing=0
           for name in REGION AR_REPOSITORY API_SERVICE MIGRATION_JOB API_MIN_INSTANCES API_MAX_INSTANCES \
-            PROJECT_ID RUNTIME_SA MIGRATION_SA CLOUD_SQL_CONNECTION_NAME FIREBASE_PROJECT_ID; do
+            GEOCODING_PROVIDER PROJECT_ID RUNTIME_SA MIGRATION_SA CLOUD_SQL_CONNECTION_NAME FIREBASE_PROJECT_ID; do
             if [ -z "${!name}" ]; then
               echo "::error::The staging environment has no value for ${name} (runbook step 9)."
               missing=1
@@ -194,6 +200,10 @@ jobs:
       # ── d) New revision, no traffic ───────────────────────────────────────────────────────
       # PORT is set by Cloud Run. Public access was granted once in the runbook; this identity
       # cannot change it, so --allow-unauthenticated is deliberately absent.
+      # --set-secrets replaces the revision's whole secret list ("All existing secrets will be
+      # removed first", gcloud run deploy --help), so every secret the API needs is named here.
+      # If the geocoding secret or its IAM binding is missing, this revision fails to start, the
+      # step fails, and traffic stays on the previous revision.
       - name: Deploy the candidate revision (no traffic)
         id: candidate
         env:
@@ -207,8 +217,8 @@ jobs:
             --no-traffic \
             --tag candidate \
             --set-cloudsql-instances "$CLOUD_SQL_CONNECTION_NAME" \
-            --set-secrets "DATABASE_URL=${DATABASE_URL_SECRET}:latest" \
-            --set-env-vars "NODE_ENV=production,SERVICE_NAME=saferoute-api,LOG_LEVEL=info,GIT_SHA=${GIT_SHA},APP_VERSION=${GIT_SHA},FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID},DB_POOL_MAX=${DB_POOL_MAX}" \
+            --set-secrets "DATABASE_URL=${DATABASE_URL_SECRET}:latest,GEOCODING_API_KEY=${GEOCODING_SECRET}:latest" \
+            --set-env-vars "NODE_ENV=production,SERVICE_NAME=saferoute-api,LOG_LEVEL=info,GIT_SHA=${GIT_SHA},APP_VERSION=${GIT_SHA},FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID},DB_POOL_MAX=${DB_POOL_MAX},GEOCODING_PROVIDER=${GEOCODING_PROVIDER}" \
             --cpu 1 \
             --memory 512Mi \
             --concurrency 80 \

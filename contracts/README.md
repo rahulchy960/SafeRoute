@@ -43,6 +43,12 @@ new ADR file under `docs/adr/`.
   per purpose; `PUT /v1/me/consents/{purpose}` records a new one. `purpose` is an open string
   checked against a server allowlist (`backend/src/modules/consents/purposes.ts`), so a new
   purpose is not a contract change.
+- Search (since P011a, [ADR 0018](../docs/adr/0018-search-and-geocoding.md)):
+  `GET /v1/search` takes `q`, optional `nearLatitude` + `nearLongitude` (a bias, both or
+  neither), `language` and `limit`, and returns `{ results: Place[], attribution }`. Show
+  `attribution` next to the results when it is not null. `Place.id` is opaque and `Place.kind` is
+  an open string. Plan v7 §6.3 wrote the bias as one `near` parameter; the contract uses explicit
+  `nearLatitude` / `nearLongitude` to follow the rule below. The contract names no provider.
 - Paste the file into any OpenAPI viewer (e.g. editor.swagger.io) to browse it. It is public data.
 
 ## API contract rules (summary of ADR 0004)
@@ -97,12 +103,14 @@ Currently defined codes:
 | `phone_already_registered` | 409 | Bootstrap: another account already holds this phone number |
 | `account_deletion_required` | 409 | `account_core` consent can't be withdrawn on its own; the user must delete the account |
 | `gone` | 410 | Existed but expired or ended (e.g. a finished share) |
-| `rate_limited` | 429 | Too many requests |
+| `rate_limited` | 429 | Too many requests. Wait for the `Retry-After` header (seconds) before trying again |
 | `http_error` | 4xx | Framework-level rejection (e.g. malformed JSON, unsupported media type) |
 | `internal_error` | 500 | Unexpected server error (details only in server logs) |
 | `db_unavailable` | 503 | Readiness: the database is not reachable |
 | `db_not_configured` | 503 | No database configured for this instance (readiness, `/v1` routes) |
 | `auth_unavailable` | 503 | Google's token-signing keys can't be fetched right now; retry with backoff (not a sign-out) |
 | `auth_not_configured` | 503 | This instance has no `FIREBASE_PROJECT_ID` (dev/test only) |
+| `search_unavailable` | 503 | Search can't be answered right now (the geocoding provider failed, or the shared daily budget is used up). Retry later; honour `Retry-After` when it is sent. Never a reason to sign out |
+| `search_not_configured` | 503 | This instance has no geocoding key (dev/test only) |
 
 Keep this table in sync with `PROBLEM_CODES` in `backend/src/contract/problem.ts`.
