@@ -4,4 +4,5 @@ export { auditLog } from './audit.js';
 export { consentRecords } from './consents.js';
 export { devices } from './devices.js';
 export { idempotencyKeys } from './idempotency.js';
+export { rateLimitBuckets } from './rate-limits.js';
 export { users } from './users.js';
