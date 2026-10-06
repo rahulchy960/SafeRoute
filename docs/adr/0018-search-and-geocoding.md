@@ -1,6 +1,6 @@
 # ADR 0018: Place search and geocoding
 
-- **Status:** Accepted (the provider choice between the two adapters is open until the evaluation is run)
+- **Status:** Accepted (provider chosen on 2026-10-07: Geoapify; see the note at the end)
 - **Date:** 2026-10-07
 - **Prompt:** P011a
 - **Plan refs:** Plan v7 §3.2 (F-03), §4, §6.2, §6.3, §12.2, §14.3; [addendum v7.2](../plan/addendum-v7.2.md) E; [addendum v7.3](../plan/addendum-v7.3.md) I; [ADR 0004](0004-api-contract-and-conventions.md), [ADR 0006](0006-authentication-and-roles.md), [ADR 0007](0007-gcp-staging-topology.md), [ADR 0013](0013-regions-and-expansion.md), [ADR 0015](0015-map-stack-and-location-policy.md), [ADR 0016](0016-statewide-coverage-layers.md)
@@ -199,7 +199,78 @@ for search. What remains true and is recorded here:
 
 ## Android behaviour
 
-To be added by P011b (debounce, cancellation, the coarse map area, no history).
+Added in P011b.
+
+- **Debounce.** The app waits 300 ms after the last keystroke before it searches, and needs at
+  least 2 code points. The keyboard's Search action searches at once.
+- **Only the newest answer counts.** Starting a new search cancels the one in flight, so a slow
+  answer to an older query can never replace a newer one. Leaving the screen cancels it too.
+  This is done with `collectLatest`, which is a stable coroutine API; `debounce` and
+  `flatMapLatest` would need an opt-in to experimental APIs, which ADR 0008 does not allow in
+  production code.
+- **Coarse area.** `near` is the centre of the map, rounded to two decimals on the phone as
+  well as on the server. No location permission is needed or asked for; the user's own position
+  is never sent for a search.
+- **Language** follows the app's language (`en` or `bn`); the limit is 6.
+- **No history.** The typed text lives in the screen's saved state (it survives a rotation) and
+  nowhere else: not in a file, a log or analytics. There are no recent searches or saved places.
+- **Selection.** A tapped result is held in memory for the Home screen, which moves the camera,
+  draws a pin through an overlay description (the map library stays inside `core/map`) and
+  shows a place card. Closing the card, or the back gesture, clears it.
+- **Attribution** from the API is shown under the results as text. Geoapify's free plan asks
+  for a link to its site; a link needs a field in the contract and is a follow-up.
+- **Errors** are shown calmly and never touch the session: no connection, "please wait a
+  moment" for 429, "temporarily unavailable" for 503. A 401 or 403 is left to the session
+  machine, as for every other call.
+
+## Note of 2026-10-07 (P011b): evaluation, provider and thresholds
+
+Rahul ran `pnpm search:eval` with the 74-query starter fixture and reported these aggregate
+top-3 name-match rates:
+
+| Provider | Overall | Bengali script | English | Transliteration |
+| --- | --- | --- | --- | --- |
+| Geoapify | 81% | 78% | 84% | 75% |
+| LocationIQ | 73% | 22% | 91% | 83% |
+
+Per-district rates and top-1 rates were not reported and are **not recorded**.
+
+- **Provider: Geoapify is the default**, in the API's configuration (`GEOCODING_PROVIDER`
+  defaults to `geoapify`) and in the deploy workflow. **LocationIQ stays as a spare adapter**,
+  selectable by name. It is better for English and transliterated queries in this run, and far
+  worse for Bengali script, which decides it for a Bengali and English app.
+- **Thresholds confirmed:** overall top-3 at least 80%; Bengali-script top-3 at least 70%; top-3
+  at least 60% **for each district that has at least 3 queries**, until the fixture grows. A
+  district with one or two queries is listed but not judged: one miss would decide it.
+- Geoapify meets the overall and the Bengali threshold in this run (81% and 78%).
+- **How much this proves: little.** The starter set is small (74 queries), was written by
+  Claude Code from memory and has not been checked against a map; a name match does not prove
+  the right place. The entries for Jalpaiguri and Malda are being reviewed, and failures in
+  Kolkata are to be looked at. The evaluation is repeated when the fixture reaches 100 reviewed
+  queries with at least 3 per district, and before each region is published.
+
+Geoapify's terms were read again in full for this decision (Terms and Conditions, version 5 of
+2 February 2024, and the pricing and Geocoding API pages), summarised in our own words:
+
+- **Attribution** (terms, "Attribution"): OpenStreetMap must always be credited; Geoapify's own
+  credit is mandatory on the free plan; single APIs may add requirements in their documentation.
+  The pricing FAQ asks for a link such as "Powered by Geoapify" near the map or the information
+  shown. Our adapter returns "Powered by Geoapify · © OpenStreetMap contributors" in the
+  response's `attribution` field, and the Android search screen shows it under the results. It
+  is text, not yet a link (follow-up).
+- **Caching and storage:** the terms do not mention it. The Geocoding API page says results may
+  be stored without restriction, provided the data-source attribution is kept with the stored
+  data or shown when it is reused. We store and cache nothing anyway.
+- **Safety-critical or high-risk use:** no such clause. The terms have general "as is"
+  disclaimers ("No Warranties", "Disclaimer") and a liability cap ("Limitation of liability").
+- **Rate limits:** the free plan allows up to 5 requests a second and 3,000 credits a day
+  (pricing page); one autocomplete request is one credit. The limits are described as soft:
+  they write before restricting an account that stays above its plan. "Rules and Conduct"
+  forbids unreasonable load and splitting requests across accounts to fit a cheaper plan.
+- **Commercial use:** the terms ("Plans and usage limits") allow the free plan in development
+  and "with some limitations" in production and ask to be contacted; the pricing FAQ says the
+  free plan may be used in production within its limits and with attribution. To be confirmed
+  in writing before commercial use (**to be verified by a lawyer**).
 
 ## References
 

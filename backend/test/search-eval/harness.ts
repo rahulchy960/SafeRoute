@@ -10,14 +10,21 @@ import { LAUNCH_REGION_CENTER } from '../../src/regions/defaults.js';
 import type { FixtureEntry, Script } from './fixture.js';
 
 /**
- * Proposed thresholds (addendum v7.2 section E, ADR 0018). The report says whether each is met;
- * nothing fails when one is not. Rahul confirms or changes them in the pull-request review.
+ * Thresholds confirmed by Rahul on 2026-10-07 (addendum v7.2 section E, ADR 0018). The report
+ * says whether each is met; nothing fails when one is not.
  */
 export const PROPOSED_THRESHOLDS = {
   overallTop3: 0.8,
   everyDistrictTop3: 0.6,
   bengaliScriptTop3: 0.7,
 } as const;
+
+/**
+ * The per-district rule looks only at districts with at least this many queries: with one or two
+ * queries a single miss decides the rate (ADR 0018, note of 2026-10-07). Smaller districts are
+ * still listed in the table.
+ */
+export const MIN_DISTRICT_QUERIES = 3;
 
 export interface QueryOutcome {
   id: string;
@@ -138,9 +145,11 @@ export function buildReport(provider: string, outcomes: QueryOutcome[]): Report 
         met: rate(overall.top3, overall) >= t.overallTop3,
       },
       {
-        name: 'every district top-3',
+        name: `every district with at least ${String(MIN_DISTRICT_QUERIES)} queries, top-3`,
         target: t.everyDistrictTop3,
-        met: byDistrict.every((score) => rate(score.top3, score) >= t.everyDistrictTop3),
+        met: byDistrict
+          .filter((score) => score.queries >= MIN_DISTRICT_QUERIES)
+          .every((score) => rate(score.top3, score) >= t.everyDistrictTop3),
       },
       {
         name: 'Bengali-script top-3',
@@ -172,7 +181,7 @@ export function formatReport(report: Report): string {
     ...table('Overall', [report.overall]),
     ...table('By script', report.byScript),
     ...table('By district', report.byDistrict),
-    '### Proposed thresholds (not a gate)',
+    '### Thresholds (not a gate)',
     '',
     '| Threshold | Target | Met |',
     '| --- | --- | --- |',

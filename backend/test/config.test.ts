@@ -31,6 +31,7 @@ describe('parseConfig', () => {
       DB_POOL_MAX: 5,
       DB_STATEMENT_TIMEOUT_MS: 10_000,
       DB_CONNECT_TIMEOUT_MS: 5_000,
+      GEOCODING_PROVIDER: 'geoapify',
       SEARCH_GLOBAL_DAILY_LIMIT: 2500,
       SEARCH_PROVIDER_TIMEOUT_MS: 3000,
     });
@@ -143,7 +144,6 @@ describe('parseConfig', () => {
       expect(parseJobConfig(JOB).FIREBASE_PROJECT_ID).toBeUndefined();
       expect(configError(JOB).issues).toEqual([
         'GEOCODING_API_KEY: required when NODE_ENV=production',
-        'GEOCODING_PROVIDER: required when NODE_ENV=production',
         'FIREBASE_PROJECT_ID: required when NODE_ENV=production',
       ]);
     });
@@ -175,36 +175,27 @@ describe('parseConfig', () => {
       FIREBASE_PROJECT_ID: 'example-staging-1',
     };
 
-    it('is optional in development and test', () => {
+    it('the key is optional in development and test', () => {
       for (const NODE_ENV of ['development', 'test']) {
-        const config = parseConfig({ NODE_ENV });
-        expect(config.GEOCODING_API_KEY).toBeUndefined();
-        expect(config.GEOCODING_PROVIDER).toBeUndefined();
+        expect(parseConfig({ NODE_ENV }).GEOCODING_API_KEY).toBeUndefined();
       }
       expect(parseConfig(GEOCODING)).toMatchObject(GEOCODING);
     });
 
-    it('requires the key and the provider name in production, by name only', () => {
+    it('requires the key in production, by name only', () => {
       expect(configError(PROD).issues).toEqual([
         'GEOCODING_API_KEY: required when NODE_ENV=production',
-        'GEOCODING_PROVIDER: required when NODE_ENV=production',
       ]);
       expect(parseConfig({ ...PROD, ...GEOCODING })).toMatchObject(GEOCODING);
     });
 
-    it('rejects a key without a provider and a provider without a key, in any environment', () => {
-      const secret = 'fake-geocoding-key-DO-NOT-LOG';
-      const keyOnly = configError({ GEOCODING_API_KEY: secret });
-      expect(keyOnly.issues).toEqual([
-        'GEOCODING_PROVIDER: required when GEOCODING_API_KEY is set',
-      ]);
-      expect(keyOnly.message).not.toContain(secret);
-      expect(configError({ GEOCODING_PROVIDER: 'geoapify' }).issues).toEqual([
-        'GEOCODING_API_KEY: required when GEOCODING_PROVIDER is set',
-      ]);
-      expect(configError({ ...PROD, GEOCODING_API_KEY: secret }).issues).toEqual([
-        'GEOCODING_PROVIDER: required when GEOCODING_API_KEY is set',
-      ]);
+    it('geoapify is the default provider; locationiq stays selectable', () => {
+      const key = { GEOCODING_API_KEY: 'fake-geocoding-key-for-tests' };
+      expect(parseConfig({}).GEOCODING_PROVIDER).toBe('geoapify');
+      expect(parseConfig({ ...PROD, ...key }).GEOCODING_PROVIDER).toBe('geoapify');
+      expect(
+        parseConfig({ ...PROD, ...key, GEOCODING_PROVIDER: 'locationiq' }).GEOCODING_PROVIDER,
+      ).toBe('locationiq');
     });
 
     it.each([
