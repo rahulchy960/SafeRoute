@@ -8,9 +8,15 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.saferoute.app.core.session.FakeSession
+import com.saferoute.app.core.session.Session
+import com.saferoute.app.core.session.SessionState
+import com.saferoute.app.core.session.di.SessionBindingModule
+import dagger.hilt.android.testing.BindValue
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import dagger.hilt.android.testing.HiltTestApplication
+import dagger.hilt.android.testing.UninstallModules
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -22,6 +28,7 @@ import org.robolectric.annotation.Config
  * promises the manifest makes.
  */
 @HiltAndroidTest
+@UninstallModules(SessionBindingModule::class)
 @RunWith(AndroidJUnit4::class)
 @Config(application = HiltTestApplication::class)
 class MainActivityTest {
@@ -33,8 +40,14 @@ class MainActivityTest {
     @get:Rule(order = 1)
     val compose = createAndroidComposeRule<MainActivity>()
 
+    // Signed in and ready: the app's own screens are shown. The fake replaces the real session,
+    // so the test needs no Firebase and never calls the server this machine's build points at.
+    @BindValue
+    @JvmField
+    val session: Session = FakeSession(SessionState.Ready)
+
     @Test
-    fun `launches into the home screen`() {
+    fun `a signed-in, ready user launches into the home screen`() {
         val activity = compose.activity
 
         compose.onNodeWithText(activity.getString(R.string.search_hint)).assertIsDisplayed()

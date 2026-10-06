@@ -66,4 +66,120 @@
     <string name="settings_source_code">Source code: github.com/rahulchy960/SafeRoute</string>
     <string name="settings_safety_notice_title">Safety notice</string>
     <string name="settings_safety_notice_body">In an emergency, call 112.</string>
+
+    <!-- Settings: account (P009c). %1$s is a masked phone number such as +91 ••••• ••123 -->
+    <string name="settings_account_title">Account</string>
+    <string name="settings_account_phone">Phone number</string>
+    <string name="settings_account_no_phone">No phone number on this account</string>
+    <string name="settings_account_loading">Loading your account…</string>
+    <string name="settings_account_unavailable">Your account details can’t be loaded right now.</string>
+    <string name="settings_account_retry">Try again</string>
+    <string name="settings_sign_out">Sign out</string>
+    <string name="settings_sign_out_dialog_title">Sign out?</string>
+    <string name="settings_sign_out_dialog_body">You will go through the first steps again and verify your phone number to come back. Your account is not deleted.</string>
+    <string name="settings_sign_out_cancel">Cancel</string>
+    <string name="settings_privacy_title">Privacy</string>
+    <string name="settings_privacy_granted">You have agreed to:</string>
+    <string name="settings_privacy_none">No consents on record.</string>
+    <string name="consent_purpose_account_core">Your account and phone number verification</string>
+    <string name="consent_purpose_sos_alerts">SOS alerts to your emergency contacts</string>
+    <string name="consent_purpose_live_sharing">Live location sharing</string>
+    <string name="consent_purpose_safety_reports">Safety reports</string>
+
+    <!-- Onboarding: shared -->
+    <string name="onboarding_continue">Continue</string>
+    <string name="onboarding_emergency_note">In an emergency, call 112.</string>
+    <string name="onboarding_working">One moment…</string>
+    <string name="onboarding_creating_account">Setting up your account…</string>
+    <string name="onboarding_problem_title">Something went wrong</string>
+    <string name="onboarding_problem_offline">SafeRoute couldn’t reach its server. Check your internet connection and try again.</string>
+    <string name="onboarding_problem_generic">SafeRoute couldn’t finish setting up. Please try again in a little while.</string>
+    <string name="onboarding_try_again">Try again</string>
+
+    <!-- Onboarding: welcome -->
+    <string name="welcome_title">Welcome to SafeRoute</string>
+    <string name="welcome_body">SafeRoute helps you find your way and share your journey with people you trust.</string>
+    <string name="welcome_safety_context">Safety information in the app is context to help you decide. It is never a guarantee that a route or a place is safe.</string>
+
+    <!-- Onboarding: age gate. Adults only (18+). -->
+    <string name="age_title">How old are you?</string>
+    <string name="age_body">SafeRoute is for people aged 18 or older. We don’t ask for your date of birth.</string>
+    <string name="age_adult">I am 18 or older</string>
+    <string name="age_minor">I am under 18</string>
+    <string name="age_minor_dialog_title">Are you under 18?</string>
+    <string name="age_minor_dialog_body">If you confirm, SafeRoute can’t be used on this phone. This choice can’t be changed in the app.</string>
+    <string name="age_minor_dialog_confirm">Yes, I am under 18</string>
+    <string name="age_minor_dialog_cancel">Go back</string>
+
+    <!-- Onboarding: blocked -->
+    <string name="blocked_minor_title">SafeRoute is for adults</string>
+    <string name="blocked_minor_body">Thank you for being honest. SafeRoute is only for people aged 18 or older, so it can’t be used on this phone. Nothing about you was sent or saved outside this phone.</string>
+    <string name="blocked_minor_mistake">Answered by mistake? Write to [grievance contact].</string>
+    <string name="blocked_deleted_title">This account was deleted</string>
+    <string name="blocked_deleted_body">The account for this phone number has been deleted, so you have been signed out. If you think this is a mistake, write to [grievance contact].</string>
+
+    <!-- Onboarding: consent notice. DRAFT text: needs a lawyer’s review before any release. -->
+    <string name="notice_title">Your privacy</string>
+    <string name="notice_draft_marker">DRAFT · not yet reviewed by a lawyer</string>
+    <!-- %1$s is the notice version -->
+    <string name="notice_version">Notice version %1$s</string>
+    <string name="notice_language_label">Language of this notice</string>
+    <string name="notice_language_english">English</string>
+    <string name="notice_language_bengali">বাংলা</string>
+    <string name="notice_intro">Please read this before you continue. It says what SafeRoute needs to create your account, and why.</string>
+    <string name="notice_s1_title">Who we are</string>
+    <string name="notice_s1_body">SafeRoute is operated by [operator name]. It is a navigation app with safety features. It is not an emergency service. In an emergency, call 112.</string>
+    <string name="notice_s2_title">What we need now, and why</string>
+    <string name="notice_s2_body">To create your account we will:\n• verify your phone number with a one-time code sent by SMS, and keep the number;\n• keep the language you use and basic account details;\n• record that you said you are 18 or older, and that you agreed to this notice, with the date.</string>
+    <string name="notice_s3_title">Your location</string>
+    <string name="notice_s3_body">When you use the map and navigation, SafeRoute uses your location to show where you are and to find routes. This starts only when you use those features and allow location access on your phone.</string>
+    <string name="notice_s4_title">Where your data is kept</string>
+    <string name="notice_s4_body">Your account details are kept on Google Cloud servers in India. Your phone number is verified by Google’s Firebase service, which receives the number and some information about your phone to prevent misuse.</string>
+    <string name="notice_s5_title">What will ask you separately</string>
+    <string name="notice_s5_body">Emergency contacts, SOS alerts, live location sharing and safety reports use more information. Each one will ask for your permission the first time you use it. You can use SafeRoute without them.</string>
+    <string name="notice_s6_title">Your rights</string>
+    <string name="notice_s6_body">You can ask to see your information, to have it corrected or erased, and you can raise a grievance. Contact: [grievance contact].</string>
+    <string name="notice_s7_title">Changing your mind</string>
+    <string name="notice_s7_body">You can withdraw your agreement at any time. Your account can’t work without it, so withdrawing means deleting your account. Deleting an account inside the app arrives in a later version; until then, write to [grievance contact].</string>
+    <string name="notice_s8_title">Age</string>
+    <string name="notice_s8_body">SafeRoute is for people aged 18 or older.</string>
+    <string name="notice_scroll_hint">Scroll to the end to continue.</string>
+    <string name="notice_agree">I agree</string>
+    <string name="notice_decline">I don’t agree</string>
+    <string name="notice_declined">SafeRoute can’t work without this agreement, because it needs your phone number to create an account. Nothing has been sent or saved. You can read the notice again and agree whenever you like.</string>
+
+    <!-- Onboarding: phone number. India only for now. -->
+    <string name="phone_title">Your mobile number</string>
+    <string name="phone_body">We’ll send a 6-digit code by SMS to check that the number is yours. SMS charges may apply.</string>
+    <string name="phone_country_code">+91</string>
+    <string name="phone_country_code_description">Country code: India, +91</string>
+    <string name="phone_field_label">Mobile number</string>
+    <string name="phone_india_only">SafeRoute currently supports Indian mobile numbers.</string>
+    <string name="phone_error_invalid">Enter a 10-digit Indian mobile number starting with 6, 7, 8 or 9.</string>
+    <string name="phone_send_code">Send code</string>
+    <string name="phone_sending">Sending the code…</string>
+
+    <!-- Onboarding: SMS code -->
+    <string name="code_title">Enter the code</string>
+    <string name="code_body">Enter the 6-digit code from the SMS. If your phone reads the SMS, this happens by itself.</string>
+    <string name="code_field_label">6-digit code</string>
+    <string name="code_verify">Verify</string>
+    <string name="code_verifying">Checking the code…</string>
+    <string name="code_resend">Send a new code</string>
+    <!-- %1$d is the number of seconds left -->
+    <plurals name="code_resend_wait">
+        <item quantity="one">You can ask for a new code in %1$d second.</item>
+        <item quantity="other">You can ask for a new code in %1$d seconds.</item>
+    </plurals>
+    <string name="code_change_number">Change number</string>
+
+    <!-- Sign-in errors. They never repeat the number or the code. -->
+    <string name="signin_error_invalid_phone">That number was not accepted. Check it and try again.</string>
+    <string name="signin_error_wrong_code">That code is not right. Check the SMS and try again.</string>
+    <string name="signin_error_code_expired">That code has expired. Ask for a new one.</string>
+    <string name="signin_error_too_many">Too many attempts. Please wait a while before trying again.</string>
+    <string name="signin_error_blocked">Sign-in is not available for this number right now. Please try again later.</string>
+    <string name="signin_error_network">No internet connection. Check your connection and try again.</string>
+    <string name="signin_error_app_not_verified">SafeRoute couldn’t confirm that this is the real app. Make sure Google Play services is up to date and try again.</string>
+    <string name="signin_error_unknown">Sign-in didn’t work. Please try again.</string>
 </resources>
