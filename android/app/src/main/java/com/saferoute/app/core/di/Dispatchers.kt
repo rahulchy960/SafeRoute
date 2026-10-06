@@ -20,3 +20,14 @@ annotation class IoDispatcher
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
 annotation class DefaultDispatcher
+
+/**
+ * A coroutine scope that lives as long as the app process.
+ *
+ * Use it for work that must finish even if the screen that started it goes away. A ViewModel's
+ * `viewModelScope` is cancelled the moment its screen leaves the back stack; work that changes
+ * which screen is shown must therefore not run in the scope of the screen it replaces (P009d).
+ */
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class ApplicationScope

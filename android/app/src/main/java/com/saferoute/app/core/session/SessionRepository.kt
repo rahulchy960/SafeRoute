@@ -2,6 +2,7 @@
 package com.saferoute.app.core.session
 
 import com.saferoute.app.core.auth.PhoneAuthGateway
+import com.saferoute.app.core.di.ApplicationScope
 import com.saferoute.app.core.network.errors.ApiFailure
 import com.saferoute.app.core.network.errors.ApiResult
 import com.saferoute.app.core.network.errors.ProblemCodes
@@ -14,14 +15,26 @@ import com.saferoute.app.core.network.generated.model.Consent
 import com.saferoute.app.core.network.generated.model.SetConsentRequest
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withTimeoutOrNull
 
 private const val STATUS_GRANTED = "granted"
+
+/**
+ * The longest one session check may take before the app stops waiting and shows the retry
+ * screen. A single request already gives up after 45 seconds (the HTTP client's call timeout);
+ * a check is up to four requests in a row.
+ */
+const val SESSION_CHECK_TIMEOUT_MILLIS = 60_000L
 
 /**
  * Decides the [SessionState]: a small state machine fed by three sources.
@@ -39,6 +52,16 @@ private const val STATUS_GRANTED = "granted"
  *
  * Every public function ends by publishing a new [state]. None of them throws for an expected
  * failure, and none logs.
+ *
+ * **Where the work runs (P009d).** Every change of state runs in [appScope], which lives as long
+ * as the app, and never in the scope of whoever asked for it. The caller only waits for the
+ * result. This matters because a state change replaces the screen on show: if the work ran in
+ * that screen's `viewModelScope`, replacing the screen would cancel the work half-way (it did:
+ * the first sign-in stopped after `GET /v1/me` and never created the account).
+ *
+ * **Always an answer.** A check that takes longer than [checkTimeoutMillis], or fails in a way
+ * nobody expected, ends in the retry screen ([SessionState.Error]), or stays on Home if the app
+ * was ready before. It never leaves the app on a spinner.
  */
 @Singleton
 class SessionRepository @Inject constructor(
@@ -46,6 +69,7 @@ class SessionRepository @Inject constructor(
     private val store: SessionStore,
     private val meApi: MeApi,
     private val appLocale: AppLocale,
+    @param:ApplicationScope private val appScope: CoroutineScope,
 ) : Session {
     private val _state = MutableStateFlow<SessionState>(SessionState.Loading)
 
@@ -56,40 +80,97 @@ class SessionRepository @Inject constructor(
     /** One check at a time: a second caller waits and then works on the newer flags. */
     private val mutex = Mutex()
 
-    override suspend fun refresh() = mutex.withLock { _state.value = resolve() }
+    /** See [SESSION_CHECK_TIMEOUT_MILLIS]. Tests shorten it. */
+    internal var checkTimeoutMillis: Long = SESSION_CHECK_TIMEOUT_MILLIS
 
-    override suspend fun markWelcomeSeen() = mutex.withLock {
-        store.update { it.copy(welcomeSeen = true) }
+    init {
+        // Sign-in can finish a moment after the code was accepted, or without any code at all
+        // (Android read the SMS). Whoever is waiting on the phone screen then must not depend on
+        // a screen to notice: when Firebase reports a user while the session still says
+        // "signed out", run the check. A repeated report changes nothing, because by then the
+        // state is no longer SignedOut.
+        appScope.launch {
+            try {
+                gateway.authState.collect { user ->
+                    if (user != null && _state.value == SessionState.SignedOut) onSignedIn()
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // Without the listener the app still works: the screens ask for a refresh.
+            }
+        }
     }
 
-    override suspend fun confirmAdult() = mutex.withLock {
+    /**
+     * Runs [block] in [appScope], one at a time, and publishes the state it returns. The caller
+     * waits for it; if the caller is cancelled (its screen went away), the work carries on.
+     */
+    private suspend fun change(block: suspend () -> SessionState) {
+        appScope.async {
+            mutex.withLock {
+                _state.value = try {
+                    withTimeoutOrNull(checkTimeoutMillis) { block() } ?: stalled(retryable = true)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    stalled(retryable = false)
+                }
+            }
+        }.await()
+    }
+
+    /**
+     * The check did not finish. If Home is already on show (the app was ready before), it
+     * stays; otherwise the person gets the retry screen instead of a spinner.
+     */
+    private fun stalled(retryable: Boolean): SessionState =
+        if (_state.value == SessionState.Ready) SessionState.Ready else SessionState.Error(retryable)
+
+    override suspend fun refresh() = change { resolve() }
+
+    /**
+     * Two things report a sign-in: the sign-in screen and Firebase's own listener (see `init`).
+     * The state is looked at again here, inside the one-at-a-time section, so whichever comes
+     * second finds the work done and adds nothing.
+     */
+    override suspend fun onSignedIn() = change {
+        if (_state.value == SessionState.SignedOut) resolve() else _state.value
+    }
+
+    override suspend fun markWelcomeSeen() = change {
+        store.update { it.copy(welcomeSeen = true) }
+        _state.value
+    }
+
+    override suspend fun confirmAdult() = change {
         store.update { it.copy(ageConfirmed = true, under18 = false) }
-        _state.value = resolve()
+        resolve()
     }
 
     /**
      * There is deliberately no way back from this in the app (ADR 0010, addendum): only clearing
      * the app's data or reinstalling removes the flag. The screen asks for confirmation first.
      */
-    override suspend fun declareUnder18() = mutex.withLock {
+    override suspend fun declareUnder18() = change {
         store.update { it.copy(under18 = true, ageConfirmed = false) }
-        _state.value = SessionState.Blocked(BlockReason.UNDER_18)
+        SessionState.Blocked(BlockReason.UNDER_18)
     }
 
-    override suspend fun acceptNotice(noticeLocale: String) = mutex.withLock {
+    override suspend fun acceptNotice(noticeLocale: String) = change {
         store.update {
             it.copy(
                 acceptedNoticeVersion = NOTICE_VERSION,
                 acceptedNoticeLocale = noticeLocale.toSupportedLocale(),
             )
         }
-        _state.value = resolve()
+        resolve()
     }
 
-    override suspend fun signOut() = mutex.withLock {
+    override suspend fun signOut() = change {
         gateway.signOut()
         store.clear()
-        _state.value = resolve()
+        resolve()
     }
 
     /**
@@ -125,15 +206,22 @@ class SessionRepository @Inject constructor(
         // Was ready before with this sign-in: show Home at once and check in the background, so
         // the app opens without waiting for the network (and without one at all).
         _state.value = if (flags.readyOnce) SessionState.Ready else SessionState.Loading
-        return when (val me = apiCall { meApi.getMe() }) {
+        return checkAccount(flags, mayBootstrap = true)
+    }
+
+    /**
+     * Does the account exist? If not, create it (once), then look again: after a bootstrap the
+     * account and its consent are read back from the server before the app says "ready".
+     */
+    private suspend fun checkAccount(flags: SessionFlags, mayBootstrap: Boolean): SessionState =
+        when (val me = apiCall { meApi.getMe() }) {
             is ApiResult.Success -> checkConsent(flags)
             is ApiResult.Failure -> when {
-                me.failure.hasCode(ProblemCodes.BOOTSTRAP_REQUIRED) ->
+                mayBootstrap && me.failure.hasCode(ProblemCodes.BOOTSTRAP_REQUIRED) ->
                     onboardingStep(flags) ?: bootstrap(flags)
                 else -> onFailure(me.failure, flags)
             }
         }
-    }
 
     /** The onboarding step still missing on this phone, or null when age and consent are done. */
     private fun onboardingStep(flags: SessionFlags): SessionState? = when {
@@ -192,7 +280,8 @@ class SessionRepository @Inject constructor(
             ),
         )
         return when (val result = apiCall { meApi.bootstrapMe(request) }) {
-            is ApiResult.Success -> ready()
+            // mayBootstrap = false: a second "no account" answer is an error, not a loop.
+            is ApiResult.Success -> checkAccount(flags, mayBootstrap = false)
             is ApiResult.Failure -> onFailure(result.failure, flags)
         }
     }

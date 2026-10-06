@@ -54,7 +54,9 @@ data class SignInUiState(
  * on the code screen, the user comes back to the phone screen and asks for a new code.
  *
  * When sign-in succeeds it only tells the [Session]; the session then decides what comes next
- * (create the account, show Home, ...), and navigation follows the session state.
+ * (create the account, show Home, ...), and navigation follows the session state. That work is
+ * NOT tied to this ViewModel's lifetime: `viewModelScope` is cancelled when navigation replaces
+ * the sign-in screen, which happens in the middle of it.
  */
 @HiltViewModel
 class SignInViewModel @Inject constructor(
@@ -153,7 +155,12 @@ class SignInViewModel @Inject constructor(
         phoneE164 = null
         verificationId = null
         _state.update { it.copy(phoneInput = "", codeInput = "", busy = true, error = null) }
-        session.refresh()
+        // The session does its work in its own scope: it finishes even though this screen, and
+        // with it this ViewModel, is replaced as soon as the session state changes (P009d).
+        session.onSignedIn()
+        // Still here: the session did not move on (sign-in was not complete yet, or it ended
+        // signed out). The screen must be usable again, not stuck on "checking".
+        _state.update { it.copy(step = SignInStep.PHONE, busy = false, resendInSeconds = 0) }
     }
 
     /** Counts down once a second. `delay` suspends without blocking; tests use virtual time. */

@@ -57,15 +57,16 @@ class SessionLoggingTest {
 
     @Test
     fun `sign-in and bootstrap write no token, phone number or code to the log`() = runTest {
-        api.on(GET_ME, unauthorizedResponse(), problemResponse(403, "bootstrap_required"))
+        api.on(GET_ME, unauthorizedResponse(), problemResponse(403, "bootstrap_required"), ok(ME_JSON))
             .on(POST_BOOTSTRAP, ok(ME_JSON, code = 201))
+            .on(GET_CONSENTS, ok(consentsJson(consentJson())))
         val gateway = FakePhoneAuthGateway(signedIn = false)
         val config = ApiConfig(server.url("/"), isConfigured = true, TEST_VERSION, debugLogging = true)
         // LogcatNetworkLog is the default: the lines go to android.util.Log.
         val client = newApiHttpClient(config, FirebaseIdTokenProvider(gateway), FIXED_CLOCK, RecordingSleeper())
         val meApi = newApiRetrofit(config) { client }.create(MeApi::class.java)
         val store = InMemorySessionStore(ONBOARDED)
-        val repository = SessionRepository(gateway, store, meApi) { LOCALE_ENGLISH }
+        val repository = SessionRepository(gateway, store, meApi, { LOCALE_ENGLISH }, immediateAppScope())
 
         val phone = normaliseIndianMobile("90000 00001")
         assertEquals("+919000000001", phone)

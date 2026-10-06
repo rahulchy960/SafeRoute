@@ -35,9 +35,13 @@ class AccountSummaryTest {
     private fun repository(signedIn: Boolean = true): SessionRepository {
         val tokens = FakeIdTokenProvider(token = FAKE_ID_TOKEN, refreshed = FAKE_ID_TOKEN)
         val meApi = TestApi(server, tokens).create<MeApi>()
-        return SessionRepository(FakePhoneAuthGateway(signedIn), InMemorySessionStore(ONBOARDED), meApi) {
-            LOCALE_ENGLISH
-        }
+        return SessionRepository(
+            FakePhoneAuthGateway(signedIn),
+            InMemorySessionStore(ONBOARDED),
+            meApi,
+            { LOCALE_ENGLISH },
+            immediateAppScope(),
+        )
     }
 
     @Test

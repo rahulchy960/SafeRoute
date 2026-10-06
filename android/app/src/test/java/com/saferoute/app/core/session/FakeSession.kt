@@ -30,7 +30,7 @@ class FakeSession(
     /** One entry per call, for example `refresh` or `acceptNotice(bn)`. */
     val calls = CopyOnWriteArrayList<String>()
 
-    /** What `refresh` sets the state to; null leaves it as it is. */
+    /** What `refresh` and `onSignedIn` set the state to; null leaves it as it is. */
     var afterRefresh: SessionState? = null
 
     var accountResult: AccountResult = AccountResult.Loaded(
@@ -54,6 +54,11 @@ class FakeSession(
 
     override suspend fun refresh() {
         calls += "refresh"
+        afterRefresh?.let { _state.value = it }
+    }
+
+    override suspend fun onSignedIn() {
+        calls += "onSignedIn"
         afterRefresh?.let { _state.value = it }
     }
 

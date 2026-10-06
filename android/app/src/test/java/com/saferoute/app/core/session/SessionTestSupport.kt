@@ -1,14 +1,21 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 package com.saferoute.app.core.session
 
+import com.saferoute.app.core.auth.PhoneAuthGateway
 import com.saferoute.app.core.network.TEST_REQUEST_ID
+import com.saferoute.app.core.network.generated.api.MeApi
 import com.saferoute.app.core.network.interceptor.REQUEST_ID_HEADER
 import com.saferoute.app.core.network.jsonResponse
 import com.saferoute.app.core.network.problemResponse
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import mockwebserver3.Dispatcher
 import mockwebserver3.MockResponse
 import mockwebserver3.RecordedRequest
@@ -106,3 +113,29 @@ fun htmlResponse(status: Int): MockResponse = MockResponse.Builder()
     .build()
 
 fun ok(json: String, code: Int = 200): MockResponse = jsonResponse(json, code)
+
+/**
+ * A [SessionRepository] on fakes, for tests that use virtual time. [scope] is the test's scope.
+ */
+fun newSessionRepository(
+    gateway: PhoneAuthGateway,
+    store: SessionStore,
+    api: MeApi,
+    scope: TestScope,
+): SessionRepository =
+    // An "app" scope on the test's virtual clock. It is deliberately not the test's
+    // backgroundScope: `advanceUntilIdle` does not wait for background work, and the session's
+    // work is exactly what these tests wait for.
+    SessionRepository(
+        gateway,
+        store,
+        api,
+        { LOCALE_ENGLISH },
+        CoroutineScope(SupervisorJob() + StandardTestDispatcher(scope.testScheduler)),
+    )
+
+/**
+ * An app scope for tests that talk to a local server in real time: work starts at once on the
+ * calling thread (`Unconfined`).
+ */
+fun immediateAppScope(): CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
