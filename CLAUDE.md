@@ -280,6 +280,17 @@ and [`android/README.md`](android/README.md):
   `Ready` or in the retry screen, within `SESSION_CHECK_TIMEOUT_MILLIS`. Any change to this flow
   needs a test with the REAL `SessionRepository` in which the calling screen is cleared mid-flow
   (`PostSignInFlowTest`, `SignInToHomeTest`); a `FakeSession` test alone cannot see such a bug.
+- The map follows [ADR 0015](docs/adr/0015-map-stack-and-location-policy.md) (since P010a):
+  only `core/map/MapLibreEngine.kt` imports MapLibre (`MapLibreBoundaryTest`); the rest of the
+  app uses `MapEngine`, `MapController` and the plain types in `MapTypes.kt`, and tests use
+  `FakeMapEngine`. Provider settings (style names, URL, credit, cache size) live in
+  `MapProviderConfig.kt` only. The map key comes from the Gradle property
+  `saferoute.mapTilerKey` and is never written in a tracked file, printed, logged, shown or
+  read from the user-level `gradle.properties` by Claude Code. Never give the API's OkHttp
+  client to the map (`setOkHttpClient`). The credit line stays visible whenever a map is
+  shown. A map failure must never affect the emergency button. Changing the map or tile
+  provider needs a superseding ADR and a parity test suite at `MapController`. Never weaken
+  `checkReleaseMapKey`.
 - `android/app/google-services.json` is never opened, printed or committed by Claude Code. CI and
   fresh clones use `android/scripts/write-dummy-google-services` (project `demo-saferoute`); a
   release build refuses the dummy or a missing file unless `-Psaferoute.allowDummyFirebase=true`
@@ -321,7 +332,7 @@ to go green.
 | Container | in `backend/`: `node scripts/container-smoke.mjs` (needs Docker; builds the image and runs the smoke checks, including `scripts/smoke.mjs` pass and fail paths) · actionlint for workflow changes (CI: `.github/workflows/container-ci.yml`) | Active (since P006a) |
 | Deploy workflow | actionlint + shellcheck clean · no `pull_request_target` · every action pinned by commit SHA · deploy job gated on `STAGING_DEPLOY_ENABLED` · no step prints secrets, the environment or `gcloud config` (CI: the `actionlint` job in `container-ci`; the deploy itself runs only on `main`) | Active (since P006b) |
 | Infra scripts | `infra/staging/tests/Invoke-InfraCheck.ps1` with Windows PowerShell 5.1 **and** PowerShell 7 where installed: PSScriptAnalyzer (0 findings) and Pester (mocked `gcloud`/`gh`; needs `node`, no cloud access). Scripts stay pure ASCII (CI: `.github/workflows/infra-ci.yml`, Linux and Windows) | Active (since P006c) |
-| Android | `./gradlew lint testDebugUnitTest assembleDebug` (run inside `android/`; lint errors fail, warnings don't; tests are JVM + Robolectric, no device; needs `app/google-services.json`, real or dummy) · `./gradlew assembleRelease -Psaferoute.apiBaseUrl=https://example.invalid/` when build files, `src/release` or `src/debug` change · actionlint for workflow changes (CI: `.github/workflows/android-ci.yml`, which also runs on `contracts/**`, scans the release APK, and since P009b writes the dummy Firebase file and proves the release guard) | Active (since P007a; release checks since P008b) |
+| Android | `./gradlew lint testDebugUnitTest assembleDebug` (run inside `android/`; lint errors fail, warnings don't; tests are JVM + Robolectric, no device; needs `app/google-services.json`, real or dummy) · `./gradlew assembleRelease -Psaferoute.apiBaseUrl=https://example.invalid/` (add `-Psaferoute.mapTilerKey=dummy-map-key-for-ci -Psaferoute.allowDummyMapKey=true` on a machine without a map key) when build files, `src/release` or `src/debug` change · actionlint for workflow changes (CI: `.github/workflows/android-ci.yml`, which also runs on `contracts/**`, scans the release APK, since P009b writes the dummy Firebase file and proves the release guard, and since P010a proves the map-key guard and checks 16 KB page alignment of the native libraries) | Active (since P007a; release checks since P008b) |
 | Moderation | typecheck · lint · test · build | Not yet applicable (from P018) |
 
 ## Documentation duties (every prompt)

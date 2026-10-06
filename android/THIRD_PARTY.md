@@ -45,6 +45,35 @@ No other Google or Apple logo, font or artwork is in the app.
 
 Apache-2.0 code may be combined into an AGPL-3.0 work.
 
+### Map (since P010a)
+
+Licence names as published in each POM, read on 2026-10-06
+([ADR 0015](../docs/adr/0015-map-stack-and-location-policy.md)):
+
+| Library | Licence |
+| --- | --- |
+| MapLibre Native for Android, `org.maplibre.gl:android-sdk-opengl` 13.6.1 (includes the native library `libmaplibre.so`) | BSD-2-Clause |
+| `org.maplibre.gl:maplibre-android-gestures` 0.0.4 | BSD-2-Clause |
+| `org.maplibre.gl:android-sdk-geojson` and `android-sdk-turf` 6.0.1 | Apache-2.0 |
+| Gson 2.10.1 (used by the GeoJSON library) | Apache-2.0 |
+| Timber 5.0.1 (MapLibre's logging dependency; the app does not call it) | Apache-2.0 |
+| AndroidX Fragment, Annotation, Interpolator (MapLibre dependencies) | Apache-2.0 |
+
+BSD-2-Clause code may be combined into an AGPL-3.0 work; its copyright notice must be kept
+(the in-app licences screen is a follow-up for P022). The project is at
+<https://github.com/maplibre/maplibre-native>.
+
+### Map tiles and map data (services, not code)
+
+| What | Provider | Terms |
+| --- | --- | --- |
+| Map styles and vector tiles, downloaded by the app at runtime | [MapTiler Cloud](https://www.maptiler.com/) | [MapTiler Cloud Terms](https://www.maptiler.com/terms/cloud/); credit required on screen: "© MapTiler" ([copyright page](https://www.maptiler.com/copyright/)) |
+| The map data inside the tiles | OpenStreetMap contributors | [Open Database License (ODbL) 1.0](https://opendatacommons.org/licenses/odbl/); credit required: "© OpenStreetMap contributors" ([copyright page](https://www.openstreetmap.org/copyright)) |
+
+Nothing from either is stored in this repository. The app shows both credits on the map at all
+times. The free MapTiler plan is for non-commercial use and research and development only: a
+public release needs a paid plan (Notion follow-up).
+
 ### Proprietary Google libraries (since P009b)
 
 Phone sign-in needs libraries that are **not open source**. Licence names as published in each
