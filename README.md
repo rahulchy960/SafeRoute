@@ -20,20 +20,28 @@ measured or verified in the field yet.
 | --- | --- | --- |
 | 1. Core safety tools | Device-first SOS by SMS, the 112 dialer, emergency contacts, live location sharing | Statewide, wherever there is cellular signal and GPS. Signal gaps in rural areas limit this layer. |
 | 2. Navigation | Map, search, routes | Map and search statewide, with search quality still to be measured per district. Routes statewide only if the routing measurements pass; otherwise a smaller recorded extent, and "Routes aren't available here yet" outside it. |
-| 3. Safety data | Community reports, official aggregates, the exposure metric | Only in **active regions**. |
+| 3. Safety data | Community reports, official aggregates, the exposure metric | Reports are **accepted** anywhere in West Bengal. They are **shown** only in **published regions**. |
 
-- **Active regions today: none.** The first planned one is the Kolkata metropolitan area (the
-  pilot); its boundary is not defined yet.
-- Outside active regions the map shows context only (police stations, hospitals, 24-hour
-  pharmacies where tagged) and the text "Community reports aren't available here yet".
-- **An area without reports is an area without data, not a safe area.** SafeRoute never labels a
-  place or a route "safe".
+Collecting a report and showing it are separate steps:
+
+- A report from any part of West Bengal is accepted and moderated. It appears on the map only
+  where enough reports exist (at least 3 distinct reporters in a map cell) **and** the region has
+  passed its publication gate: moderators able to review within 48 hours, a backlog under the
+  limit, and wording reviewed by a lawyer.
+- **Published regions today: none.** The first candidate is the Kolkata metropolitan area. A
+  report is not a promise of publication or of a police response.
+- Elsewhere the map shows context only (police stations, hospitals, 24-hour pharmacies where
+  tagged) and the text "No community data here yet".
+- **An area without data is unknown, not safe.** SafeRoute never gives a place or a route a
+  safety score, a ranking or a "safe" label.
 
 The design, product and technical plan is in
 [`docs/plan/SafeRoute_Plan_v7_MVP.pdf`](docs/plan/SafeRoute_Plan_v7_MVP.pdf) (Plan v7), amended by
-[addendum v7.1](docs/plan/addendum-v7.1.md) and [addendum v7.2](docs/plan/addendum-v7.2.md) (the
-coverage layers; decision in [ADR 0016](docs/adr/0016-statewide-coverage-layers.md)). Where they
-differ, the later document wins.
+[addendum v7.1](docs/plan/addendum-v7.1.md), [addendum v7.2](docs/plan/addendum-v7.2.md) (the
+coverage layers, [ADR 0016](docs/adr/0016-statewide-coverage-layers.md)) and
+[addendum v7.3](docs/plan/addendum-v7.3.md) (statewide collection with gated publication,
+[ADR 0017](docs/adr/0017-collect-statewide-publish-by-gate.md)). Where they differ, the later
+document wins.
 
 ## Public repository status
 
@@ -88,7 +96,7 @@ will be described in its privacy policy when it is published.
 | [`contracts/`](contracts/) | Generated `openapi.json` | P004 |
 | [`infra/`](infra/) | GCP / Cloud Run / WIF config | P006, P012, P020 |
 | [`tools/diagrams/`](tools/diagrams/) | JSON → Excalidraw/SVG/PNG diagram generator | P001 |
-| [`docs/plan/`](docs/plan/) | Plan v7 PDF and its addenda | P001, P009a, P010c |
+| [`docs/plan/`](docs/plan/) | Plan v7 PDF and its addenda | P001, P009a, P010c, P010d |
 | [`docs/adr/`](docs/adr/) | Architecture Decision Records | any prompt |
 | [`docs/diagrams/`](docs/diagrams/) | Diagram specs + exports | any prompt |
 | [`docs/prompt-logs/`](docs/prompt-logs/) | One log per prompt | every prompt |
