@@ -8,6 +8,7 @@ const ALL = [
   '0000_postgis',
   '0001_identity_support_tables',
   '0002_consent_records_adult_attestation',
+  '0003_rate_limit_buckets',
 ];
 
 async function query<T extends pg.QueryResultRow>(url: string, text: string): Promise<T[]> {
@@ -69,6 +70,7 @@ describe('runMigrations', () => {
       'consent_records',
       'devices',
       'idempotency_keys',
+      'rate_limit_buckets',
       'spatial_ref_sys',
       'users',
     ]);

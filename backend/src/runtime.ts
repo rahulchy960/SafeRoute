@@ -4,6 +4,7 @@ import type { Config } from './config.js';
 import { createDb, databaseReadiness, type DbHandle } from './db/client.js';
 import type { Logger } from './lib/logger.js';
 import { FirebaseIdTokenVerifier } from './modules/auth/firebase-verifier.js';
+import { createGeocoder } from './modules/search/providers/index.js';
 
 /**
  * Wires the app's real dependencies from validated config. Used by server.ts and by the
@@ -28,9 +29,22 @@ export function createRuntime(config: Config, logger: Logger) {
   if (verifier === undefined) {
     logger.warn('FIREBASE_PROJECT_ID is not set; protected routes will answer 503');
   }
+  // The key stays inside the adapter: it is not put on the app, the logger or any error.
+  const geocoder =
+    config.GEOCODING_API_KEY === undefined || config.GEOCODING_PROVIDER === undefined
+      ? undefined
+      : createGeocoder(config.GEOCODING_PROVIDER, config.GEOCODING_API_KEY, {
+          timeoutMs: config.SEARCH_PROVIDER_TIMEOUT_MS,
+        });
+  if (geocoder === undefined) {
+    logger.warn('GEOCODING_API_KEY is not set; search will answer 503');
+  } else {
+    logger.info({ geocoding_provider: geocoder.name }, 'geocoding provider configured');
+  }
   const app = createApp({
     config,
     logger,
+    ...(geocoder ? { geocoder } : {}),
     ...(database ? { readiness: databaseReadiness(database.db), db: database.db } : {}),
     ...(verifier ? { verifier } : {}),
   });

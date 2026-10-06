@@ -25,6 +25,8 @@ export const PROBLEM_CODES = [
   'db_not_configured',
   'auth_unavailable',
   'auth_not_configured',
+  'search_unavailable',
+  'search_not_configured',
   'http_error',
 ] as const;
 

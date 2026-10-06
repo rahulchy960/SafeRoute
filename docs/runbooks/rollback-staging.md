@@ -22,6 +22,7 @@ candidate revision and the previous revision (the rollback target).
 | --- | --- | --- |
 | Build, container smoke test or push | Nothing in the cloud changed | Fix the code, merge again |
 | Migration job | The database is unchanged: all pending migrations run in one transaction. No new API revision exists; the old one still serves | Read the job's log ([observability runbook](observability-staging.md), query 4). Fix forward (step 4), or retry (step 5) if the cause was outside the code |
+| Deploy of the candidate revision | **If a secret the API needs is missing, or the runtime identity cannot read it, the candidate fails to start and traffic never shifts.** The API also refuses to start in production without `GEOCODING_API_KEY` and names the variable in its log. The old revision still serves | Create the secret and its binding ([setup runbook, step 5b](gcp-staging-setup.md#step-5b-the-geocoding-key-in-secret-manager-since-p011a)), then run the workflow again. No rollback needed |
 | Smoke test on the candidate | The candidate exists with **no traffic**. The old revision still serves | Read the candidate's logs, fix forward. No rollback needed |
 | Smoke test on the live service | The workflow already sent all traffic back to the previous revision | Confirm with step 1, then fix forward |
 | Nothing: the run was green, but the new version misbehaves | The new revision serves all traffic | **Roll back by hand: steps 1 and 2** |
@@ -315,6 +316,7 @@ Details of the 2026-10-02 rehearsal:
 | `jobs execute` fails with `PERMISSION_DENIED … actAs` | Your account can't act as `sa-migration` | Run as the project owner |
 | The job starts and fails at once with a database connection error | Cloud SQL is stopped (setup runbook, step 11) or the job lacks `--set-cloudsql-instances` | Start the instance; rerun 6.1 |
 | `--args` is rejected or the script prints the usage text | Quotes or commas are wrong | One quoted `--args="a,b,c"` value, no spaces |
+| Search answers 503 `search_unavailable` for everyone, and the log has `alert: geocoder_key_rejected` | The geocoding provider refused the key (wrong, inactive, restricted or over its plan) | Check the key and the usage in the provider's dashboard; rotate it (setup runbook, step 5b). The rest of the API is unaffected |
 | `gh workflow run` answers `HTTP 422` or the run is skipped | Wrong ref, or `STAGING_DEPLOY_ENABLED` isn't `true` | `--ref main`; step 4.2 |
 
 ## How this runbook was checked

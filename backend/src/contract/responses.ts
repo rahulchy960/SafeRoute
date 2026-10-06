@@ -10,7 +10,7 @@ interface HeaderComponent {
 
 /** Header components; responses reference them instead of repeating the definitions. */
 export const HEADER_COMPONENTS: Record<
-  'RequestId' | 'CacheControlNoStore' | 'WwwAuthenticate',
+  'RequestId' | 'CacheControlNoStore' | 'WwwAuthenticate' | 'RetryAfter',
   HeaderComponent
 > = {
   RequestId: {
@@ -26,6 +26,12 @@ export const HEADER_COMPONENTS: Record<
   WwwAuthenticate: {
     description: 'Always `Bearer`: send a Firebase ID token as `Authorization: Bearer <token>`.',
     schema: { type: 'string', enum: ['Bearer'] },
+  },
+  RetryAfter: {
+    description:
+      'Whole seconds to wait before trying again. Present when the server knows how long ' +
+      '(a rate limit); absent otherwise.',
+    schema: { type: 'string' },
   },
 };
 
@@ -55,13 +61,17 @@ export const ERROR_RESPONSES = {
       '`account_deletion_required`).',
   },
   410: { name: 'Gone', description: 'The resource existed but has expired or ended (`gone`).' },
-  429: { name: 'TooManyRequests', description: 'Rate limit exceeded (`rate_limited`).' },
+  429: {
+    name: 'TooManyRequests',
+    description: 'Rate limit exceeded (`rate_limited`). Wait for `Retry-After` seconds.',
+  },
   500: { name: 'InternalError', description: 'Unexpected server error (`internal_error`).' },
   503: {
     name: 'ServiceUnavailable',
     description:
       'A dependency is unavailable (e.g. `db_unavailable`, `db_not_configured`, ' +
-      '`auth_unavailable`, `auth_not_configured`). Retry with backoff.',
+      '`auth_unavailable`, `auth_not_configured`, `search_unavailable`, ' +
+      '`search_not_configured`). Retry with backoff, or after `Retry-After` when it is sent.',
   },
 } as const;
 
@@ -77,6 +87,7 @@ export function problemResponseComponent(description: string, status?: ErrorStat
     headers: {
       'X-Request-Id': headerRef('RequestId'),
       ...(status === 401 ? { 'WWW-Authenticate': headerRef('WwwAuthenticate') } : {}),
+      ...(status === 429 || status === 503 ? { 'Retry-After': headerRef('RetryAfter') } : {}),
     },
     content: {
       [PROBLEM_MEDIA_TYPE]: { schema: { $ref: '#/components/schemas/ProblemDetails' } },

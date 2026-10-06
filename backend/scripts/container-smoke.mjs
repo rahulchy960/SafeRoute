@@ -8,8 +8,8 @@
  *
  * It starts a throwaway PostGIS container (the image pinned in docker-compose.yml) on a private
  * Docker network and checks, in order: image contents and metadata, the migration command (twice:
- * the second run is a no-op), the admin script, the production guard against `demo-` Firebase
- * projects, the HTTP smoke checks from README "Deployment smoke checks", non-root, JSON logs and
+ * the second run is a no-op), the admin script, the production guards (a `demo-` Firebase
+ * project, a missing geocoding key), the HTTP smoke checks from README "Deployment smoke checks", non-root, JSON logs and
  * a clean SIGTERM shutdown. Containers and the network are removed on success and on failure.
  *
  * Runs on Linux (CI), macOS and Windows: plain Node, no shell. Exit code 0 = all checks passed.
@@ -26,6 +26,12 @@ const BACKEND_DIR = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DB = { user: 'saferoute_smoke', password: 'smoke-only-password', name: 'saferoute_smoke' };
 // Syntactically valid, deliberately fake. Nothing here sends a token, so Google is never called.
 const FAKE_FIREBASE_PROJECT_ID = 'saferoute-ci-fake';
+// Obviously fake. The API must start with it and never call the provider: no search is made here.
+const FAKE_GEOCODING = {
+  GEOCODING_API_KEY: 'fake-geocoding-key-for-smoke-test',
+  GEOCODING_PROVIDER: 'geoapify',
+};
+const GEOCODING_GUARD_MESSAGE = 'GEOCODING_API_KEY: required when NODE_ENV=production';
 const DEMO_GUARD_MESSAGE = 'a demo- project ID is not allowed when NODE_ENV=production';
 const SHUTDOWN_LIMIT_MS = 10_000;
 
@@ -279,7 +285,10 @@ function checkVersionVariables() {
 }
 
 function checkProductionGuards() {
-  const demo = runInImage({ DATABASE_URL: databaseUrl, FIREBASE_PROJECT_ID: 'demo-saferoute' }, []);
+  const demo = runInImage(
+    { DATABASE_URL: databaseUrl, FIREBASE_PROJECT_ID: 'demo-saferoute', ...FAKE_GEOCODING },
+    [],
+  );
   check(
     'API refuses to start in production with a demo- Firebase project',
     demo.status === 1 &&
@@ -287,8 +296,20 @@ function checkProductionGuards() {
       !demo.stderr.includes(DB.password),
     `exit=${demo.status}`,
   );
-  const missing = runInImage({ DATABASE_URL: databaseUrl }, []);
+  const missing = runInImage({ DATABASE_URL: databaseUrl, ...FAKE_GEOCODING }, []);
   check('API refuses to start in production without FIREBASE_PROJECT_ID', missing.status === 1);
+  // What a deploy without the secret looks like: the candidate never starts (ADR 0018).
+  const noKey = runInImage(
+    { DATABASE_URL: databaseUrl, FIREBASE_PROJECT_ID: FAKE_FIREBASE_PROJECT_ID },
+    [],
+  );
+  check(
+    'API refuses to start in production without the geocoding key, naming the variable only',
+    noKey.status === 1 &&
+      noKey.stderr.includes(GEOCODING_GUARD_MESSAGE) &&
+      !noKey.stderr.includes(DB.password),
+    `exit=${noKey.status}`,
+  );
 }
 
 async function checkApi() {
@@ -306,6 +327,10 @@ async function checkApi() {
     `DATABASE_URL=${databaseUrl}`,
     '-e',
     `FIREBASE_PROJECT_ID=${FAKE_FIREBASE_PROJECT_ID}`,
+    '-e',
+    `GEOCODING_API_KEY=${FAKE_GEOCODING.GEOCODING_API_KEY}`,
+    '-e',
+    `GEOCODING_PROVIDER=${FAKE_GEOCODING.GEOCODING_PROVIDER}`,
     image,
   ]);
   const address = dockerOk(['port', apiContainer, '8080/tcp']).split('\n')[0].trim();
@@ -352,6 +377,14 @@ async function checkApi() {
   check('GET /v1/me without a token → 401', me.status === 401, `status=${me.status}`);
   check('401 carries WWW-Authenticate: Bearer', me.headers.get('www-authenticate') === 'Bearer');
   check('401 carries an X-Request-Id header', Boolean(requestId), `request id ${requestId}`);
+
+  // Search is behind sign-in: without a token it answers 401 and never reaches the provider.
+  const search = await fetch(`${base}/v1/search?q=station`);
+  check(
+    'GET /v1/search without a token → 401 with WWW-Authenticate: Bearer',
+    search.status === 401 && search.headers.get('www-authenticate') === 'Bearer',
+    `status=${search.status}`,
+  );
 
   // The deploy workflow's smoke script, run as a CLI against this container: it must pass here,
   // and must exit 1 when the deployed version is not the expected one.
@@ -412,8 +445,9 @@ async function checkApi() {
       lines.some((l) => l.request_id === requestId),
   );
   check(
-    'logs never contain the database password',
-    !`${logs.stdout}${logs.stderr}`.includes(DB.password),
+    'logs never contain the database password or the geocoding key',
+    !`${logs.stdout}${logs.stderr}`.includes(DB.password) &&
+      !`${logs.stdout}${logs.stderr}`.includes(FAKE_GEOCODING.GEOCODING_API_KEY),
   );
 }
 

@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "SafeRoute API",
-    "version": "0.3.0",
+    "version": "0.4.0",
     "description": "SafeRoute is a personal-safety navigation API. Safety information is context, never a guarantee that a route or area is safe. SafeRoute is not an emergency service; in an emergency call your local emergency number (112 in India).",
     "license": {
       "name": "AGPL-3.0-only",
@@ -22,6 +22,10 @@
     {
       "name": "me",
       "description": "The signed-in user's own account and consents. Every operation needs a Firebase ID token (phone sign-in)."
+    },
+    {
+      "name": "search",
+      "description": "Place search through a geocoding provider. Queries are rate-limited and are not stored or logged."
     }
   ],
   "components": {
@@ -48,6 +52,12 @@
           "enum": [
             "Bearer"
           ]
+        }
+      },
+      "RetryAfter": {
+        "description": "Whole seconds to wait before trying again. Present when the server knows how long (a rate limit); absent otherwise.",
+        "schema": {
+          "type": "string"
         }
       }
     },
@@ -146,10 +156,13 @@
         }
       },
       "TooManyRequests": {
-        "description": "Rate limit exceeded (`rate_limited`).",
+        "description": "Rate limit exceeded (`rate_limited`). Wait for `Retry-After` seconds.",
         "headers": {
           "X-Request-Id": {
             "$ref": "#/components/headers/RequestId"
+          },
+          "Retry-After": {
+            "$ref": "#/components/headers/RetryAfter"
           }
         },
         "content": {
@@ -176,10 +189,13 @@
         }
       },
       "ServiceUnavailable": {
-        "description": "A dependency is unavailable (e.g. `db_unavailable`, `db_not_configured`, `auth_unavailable`, `auth_not_configured`). Retry with backoff.",
+        "description": "A dependency is unavailable (e.g. `db_unavailable`, `db_not_configured`, `auth_unavailable`, `auth_not_configured`, `search_unavailable`, `search_not_configured`). Retry with backoff, or after `Retry-After` when it is sent.",
         "headers": {
           "X-Request-Id": {
             "$ref": "#/components/headers/RequestId"
+          },
+          "Retry-After": {
+            "$ref": "#/components/headers/RetryAfter"
           }
         },
         "content": {
@@ -233,7 +249,7 @@
           },
           "code": {
             "type": "string",
-            "description": "Stable, machine-readable error code; clients switch on this, not on `title` or `detail`. Open set: clients must tolerate unknown values. Currently defined: `validation_error`, `unauthorized`, `forbidden`, `bootstrap_required`, `account_deleted`, `consent_required`, `adult_required`, `not_found`, `conflict`, `phone_already_registered`, `account_deletion_required`, `gone`, `rate_limited`, `internal_error`, `db_unavailable`, `db_not_configured`, `auth_unavailable`, `auth_not_configured`, `http_error`.",
+            "description": "Stable, machine-readable error code; clients switch on this, not on `title` or `detail`. Open set: clients must tolerate unknown values. Currently defined: `validation_error`, `unauthorized`, `forbidden`, `bootstrap_required`, `account_deleted`, `consent_required`, `adult_required`, `not_found`, `conflict`, `phone_already_registered`, `account_deletion_required`, `gone`, `rate_limited`, `internal_error`, `db_unavailable`, `db_not_configured`, `auth_unavailable`, `auth_not_configured`, `search_unavailable`, `search_not_configured`, `http_error`.",
             "examples": [
               "not_found"
             ]
@@ -606,6 +622,92 @@
           "noticeLocale"
         ],
         "description": "The user's decision for the purpose in the path."
+      },
+      "SearchResults": {
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Place"
+            },
+            "maxItems": 10,
+            "description": "Best match first. Empty when nothing was found."
+          },
+          "attribution": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Credit line the app must show next to the results when it is not null (required by the terms of the geocoding provider and of the map data).",
+            "examples": [
+              "© OpenStreetMap contributors"
+            ]
+          }
+        },
+        "required": [
+          "results",
+          "attribution"
+        ],
+        "description": "Places that match a search."
+      },
+      "Place": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Opaque identifier from the geocoding provider. Do not parse or store it.",
+            "examples": [
+              "a1b2c3"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "description": "Short name of the place.",
+            "examples": [
+              "Main Station"
+            ]
+          },
+          "label": {
+            "type": "string",
+            "description": "Longer text that places the name (area, district, state). May be empty.",
+            "examples": [
+              "Station Road, Example District"
+            ]
+          },
+          "latitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90,
+            "examples": [
+              10.5
+            ]
+          },
+          "longitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180,
+            "examples": [
+              20.5
+            ]
+          },
+          "kind": {
+            "type": "string",
+            "description": "Kind of place. Open set: clients must tolerate unknown values.",
+            "examples": [
+              "amenity"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "label",
+          "latitude",
+          "longitude",
+          "kind"
+        ],
+        "description": "One search result."
       }
     },
     "parameters": {
@@ -936,6 +1038,145 @@
           },
           "409": {
             "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/v1/search": {
+      "get": {
+        "operationId": "searchPlaces",
+        "tags": [
+          "search"
+        ],
+        "summary": "Search for places by name",
+        "description": "Forwards the text to a geocoding provider and returns matching places, best match first. Results are biased towards `nearLatitude`/`nearLongitude` (or a default area) but not limited to it. Queries are not stored or logged. Errors: `rate_limited` (429) and `search_unavailable` (503) may carry a `Retry-After` header in seconds; `search_not_configured` (503) means this instance has no geocoding key.",
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 400,
+              "description": "What the user typed. After trimming, collapsing whitespace and Unicode NFC normalisation it must be 2 to 100 Unicode code points with no control characters. Any script is accepted.",
+              "examples": [
+                "railway station"
+              ]
+            },
+            "required": true,
+            "description": "What the user typed. After trimming, collapsing whitespace and Unicode NFC normalisation it must be 2 to 100 Unicode code points with no control characters. Any script is accepted.",
+            "name": "q",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": -90,
+              "maximum": 90,
+              "description": "Latitude of the area to prefer, WGS84 decimal degrees; send it together with `nearLongitude` or not at all. A bias, not a filter. The server rounds it to two decimals (about 1 km) before using it; send the map centre, not a precise position.",
+              "examples": [
+                10.5
+              ]
+            },
+            "required": false,
+            "description": "Latitude of the area to prefer, WGS84 decimal degrees; send it together with `nearLongitude` or not at all. A bias, not a filter. The server rounds it to two decimals (about 1 km) before using it; send the map centre, not a precise position.",
+            "name": "nearLatitude",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": -180,
+              "maximum": 180,
+              "description": "Longitude of the area to prefer; see `nearLatitude`.",
+              "examples": [
+                20.5
+              ]
+            },
+            "required": false,
+            "description": "Longitude of the area to prefer; see `nearLatitude`.",
+            "name": "nearLongitude",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "en",
+                "bn"
+              ],
+              "default": "en",
+              "description": "Preferred language of the result names.",
+              "examples": [
+                "en"
+              ]
+            },
+            "required": false,
+            "description": "Preferred language of the result names.",
+            "name": "language",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10,
+              "default": 6,
+              "description": "Maximum number of results.",
+              "examples": [
+                6
+              ]
+            },
+            "required": false,
+            "description": "Maximum number of results.",
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Matching places.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/CacheControlNoStore"
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResults"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"

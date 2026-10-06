@@ -415,6 +415,74 @@ gcloud secrets versions list $SECRET_NAME --format="value(name,state)"
 4. Check `/health/ready`, then disable the old version:
    `gcloud secrets versions disable <OLD_VERSION_NUMBER> --secret=$SECRET_NAME`.
 
+## Step 5b: the geocoding key in Secret Manager (since P011a)
+
+*Script: `bootstrap-staging.ps1` does not know this secret yet (follow-up). Do it by hand.*
+
+Place search ([ADR 0018](../adr/0018-search-and-geocoding.md)) needs the key of the geocoding
+provider. It is a **server-only** key: it is never put in the app, the repository, a workflow
+file, a log or a chat. The deploy mounts it on the API revision as `GEOCODING_API_KEY`, and the
+API refuses to start in production without it.
+
+**Do this before merging the pull request that adds search.** Otherwise the next deploy creates
+a candidate revision that cannot start; the deploy fails and traffic stays on the old revision.
+
+1. Create the secret. Type or paste the key at the prompt; it is not echoed and not written to
+   a file or to the shell history.
+
+   ```powershell
+   $GEOCODING_SECRET = "saferoute-staging-geocoding-key"
+   $key = Read-Host -AsSecureString "Geocoding API key"
+   $plain = [System.Net.NetworkCredential]::new("", $key).Password
+   Send-Exact $plain "gcloud secrets create $GEOCODING_SECRET --replication-policy=user-managed --locations=$REGION --data-file=-"
+   Remove-Variable plain, key
+   ```
+
+   `Send-Exact` is the helper from step 0: it sends the text without a trailing line break or a
+   byte-order mark, either of which would become part of the key.
+
+2. Let the API's runtime identity, and only it, read the secret. The deploy identity and the
+   migration identity get no access.
+
+   ```powershell
+   gcloud secrets add-iam-policy-binding $GEOCODING_SECRET `
+     --member="serviceAccount:$RUNTIME_SA" --role=roles/secretmanager.secretAccessor
+   ```
+
+3. Check that the key belongs to the provider named in the workflow: the line
+   `GEOCODING_PROVIDER: geoapify` near the top of
+   [`deploy-staging.yml`](../../.github/workflows/deploy-staging.yml). It is a constant in the
+   file, not a GitHub variable. If the key is for the other provider (`locationiq`), change that
+   line in a pull request; a key and a provider name that do not match make every search answer
+   503.
+
+**Verify:** one version, state `enabled`; one member on the secret. Never run
+`gcloud secrets versions access`: it prints the key.
+
+```powershell
+gcloud secrets versions list $GEOCODING_SECRET --format="value(name,state)"
+gcloud secrets get-iam-policy $GEOCODING_SECRET --format="value(bindings.members)"
+```
+
+These are the runbook's commands, written in the style of step 5. If you created the secret
+another way (the console, for example), check the three results above instead of repeating them.
+
+### Rotating or replacing the geocoding key
+
+1. Create the new key in the provider's dashboard. Keep the old one active for now.
+2. Add it as a new version (same prompt as above, with
+   `gcloud secrets versions add $GEOCODING_SECRET --data-file=-` in place of `create`).
+3. If the provider changed, change `GEOCODING_PROVIDER` in `deploy-staging.yml` in a pull
+   request and merge it: the merge starts the deploy. Add the new secret version just before
+   merging, because a revision started in between would pair the new key with the old provider.
+4. Otherwise run the `deploy-staging` workflow. A new revision reads the `latest` version when
+   it starts.
+5. Search once from the app, then disable the old version
+   (`gcloud secrets versions disable <OLD_VERSION_NUMBER> --secret=$GEOCODING_SECRET`) and
+   delete the old key in the provider's dashboard.
+
+A key that leaked is rotated the same way, without waiting between the steps.
+
 ## Step 6: IAM, least privilege
 
 *Script: `-Apply` adds the bindings that are missing. Roles beyond this table are reported as
