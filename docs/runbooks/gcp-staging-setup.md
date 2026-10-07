@@ -91,6 +91,7 @@ where yours differ:
 | The ten IAM bindings (eight in step 6, one each in steps 7 and 8) | The Workload Identity **pool** (step 7) |
 | The placeholder Cloud Run service with public access (step 8) | Any secret that already exists, including `db-app-password` |
 | Optionally, the registry cleanup policy (step 2) | The GitHub environment itself (step 9.1) |
+| For routing (since P012a2): the role-less account `sa-osrm-runtime`, its `serviceAccountUser` binding for `sa-deploy`, one request-log exclusion per OSRM service, and `run.invoker` for `sa-api-runtime` once a service exists ([routing runbook](routing-capacity-staging.md), section 5) | The OSRM services themselves (the `osrm-staging` workflow deploys them) and any public access to them |
 
 Nothing is ever deleted, renamed or removed, no key is created, and roles an account holds
 beyond the list are reported as `WRONG-EXTRA`, not removed. The Firebase Admin SDK account, the

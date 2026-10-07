@@ -1,0 +1,288 @@
+name: osrm-staging
+
+# Builds one routing image (one profile over the whole state) and deploys it as a PRIVATE Cloud Run
+# service on Google Cloud STAGING (P012a2, ADR 0020, ADR 0007):
+#
+#   build the image on the runner → smoke test (16 public place pairs, limits, user, log privacy)
+#   → keyless login → push to Artifact Registry → deploy the service, private → check that a call
+#   without credentials is refused
+#
+# Started by hand only (Actions → osrm-staging → Run workflow), once per profile. Never by a push.
+#
+# Security model:
+#   - Same keyless identity as deploy-staging: this repository + refs/heads/main + the `staging`
+#     environment, nothing else. Never `pull_request_target`.
+#   - The extract is downloaded and processed BEFORE the job logs in to Google Cloud. Its URL must
+#     start with a prefix listed in infra/osrm/config.json (checked by build-image.mjs).
+#   - The service is deployed with --no-allow-unauthenticated and runs as an account that holds no
+#     role. Only the API's account may call it; that binding is made by Rahul with
+#     infra/staging/bootstrap-staging.ps1, not here. This identity cannot change IAM policies.
+#   - OSRM takes coordinates in the URL path. The log exclusions for both services must exist
+#     BEFORE the first run (bootstrap-staging.ps1 -Apply; runbook routing-capacity-staging.md).
+#   - Nothing here echoes secrets, dumps the environment or prints `gcloud config`; the service
+#     URL is masked before it can reach a log line.
+#
+# The job is skipped unless the repository variable STAGING_DEPLOY_ENABLED is 'true'.
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: "Which service to build and deploy"
+        type: choice
+        required: true
+        options: [walking, driving]
+      extract_url:
+        description: "Dated OpenStreetMap extract (must match the allowlist in infra/osrm/config.json)"
+        type: string
+        required: true
+        default: "https://download.geofabrik.de/asia/india/eastern-zone-261006.osm.pbf"
+      extract_date:
+        description: "Date of that extract, YYYY-MM-DD (becomes part of the image tag)"
+        type: string
+        required: true
+        default: "2026-10-06"
+      min_instances:
+        description: "0 = scale to zero (ADR 0020). 1 = one warm instance, about US$19.71 a month"
+        type: choice
+        required: true
+        default: "0"
+        options: ["0", "1"]
+
+permissions: {}
+
+# One routing deploy at a time; a second run waits.
+concurrency:
+  group: osrm-staging
+  cancel-in-progress: false
+
+env:
+  # Names of the resources this workflow and bootstrap-staging.ps1 share. Not secrets. A Pester
+  # test compares them with the script's defaults.
+  OSRM_WALKING_SERVICE: saferoute-osrm-walking
+  OSRM_DRIVING_SERVICE: saferoute-osrm-driving
+  OSRM_RUNTIME_SA_NAME: sa-osrm-runtime
+  # Sizing from the measurements in ADR 0020: the driving graph needs 907 MB, 8 requests at once
+  # were measured, and a request that takes longer than 30 s is broken.
+  OSRM_CPU: "1"
+  OSRM_MEMORY: 2Gi
+  OSRM_CONCURRENCY: "8"
+  OSRM_TIMEOUT_SECONDS: "30"
+  OSRM_MAX_INSTANCES: "2"
+  # The gcloud version the commands below were checked against.
+  GCLOUD_VERSION: "587.0.0"
+  CLOUDSDK_CORE_SHOULD_PROMPT_TO_ENABLE_API: "false"
+  CLOUDSDK_CORE_DISABLE_PROMPTS: "1"
+
+jobs:
+  deploy:
+    name: osrm-staging
+    if: >-
+      github.repository == 'rahulchy960/SafeRoute'
+      && github.ref == 'refs/heads/main'
+      && vars.STAGING_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    environment: staging
+    permissions:
+      id-token: write # request the OIDC token for Workload Identity Federation
+      contents: read
+    env:
+      INPUT_PROFILE: ${{ inputs.profile }}
+      INPUT_EXTRACT_URL: ${{ inputs.extract_url }}
+      INPUT_EXTRACT_DATE: ${{ inputs.extract_date }}
+      INPUT_MIN_INSTANCES: ${{ inputs.min_instances }}
+      REGION: ${{ vars.GCP_REGION }}
+      AR_REPOSITORY: ${{ vars.AR_REPOSITORY }}
+      PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      # Not used by a command. Referenced so the number is masked: service URLs contain it.
+      PROJECT_NUMBER: ${{ secrets.GCP_PROJECT_NUMBER }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check the inputs and the configuration
+        id: plan
+        run: |
+          set -u
+          missing=0
+          for name in REGION AR_REPOSITORY PROJECT_ID; do
+            if [ -z "${!name}" ]; then
+              echo "::error::The staging environment has no value for ${name} (gcp-staging-setup runbook, step 9)."
+              missing=1
+            fi
+          done
+          [ "$missing" -eq 0 ] || exit 1
+          case "$INPUT_PROFILE" in
+            walking) osrm_profile=foot; service="$OSRM_WALKING_SERVICE" ;;
+            driving) osrm_profile=car; service="$OSRM_DRIVING_SERVICE" ;;
+            *) echo "::error::Unknown profile."; exit 1 ;;
+          esac
+          if ! printf '%s' "$INPUT_EXTRACT_DATE" | grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'; then
+            echo "::error::extract_date must be YYYY-MM-DD."
+            exit 1
+          fi
+          case "$INPUT_MIN_INSTANCES" in
+            0 | 1) ;;
+            *) echo "::error::min_instances must be 0 or 1."; exit 1 ;;
+          esac
+          {
+            echo "osrm_profile=${osrm_profile}"
+            echo "service=${service}"
+            echo "local_image=saferoute-osrm:${osrm_profile}-state"
+            echo "tag=osrm-${INPUT_PROFILE}-${INPUT_EXTRACT_DATE}"
+          } >> "$GITHUB_OUTPUT"
+          echo "Free memory and disk on the runner (the build needs about 4 GB and 5 GB):"
+          free -g | sed -n '1,2p'
+          df -h / | sed -n '2p'
+
+      - name: Set up Node (version from backend/.nvmrc)
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: backend/.nvmrc
+
+      # ── a) Build and test, before any cloud credential exists in this job ─────────────────
+      - name: Build the image (download, MD5 check, cut, extract, partition, customize)
+        env:
+          OSRM_PROFILE: ${{ steps.plan.outputs.osrm_profile }}
+          LOCAL_IMAGE: ${{ steps.plan.outputs.local_image }}
+        run: |
+          node infra/osrm/scripts/build-image.mjs --profile "$OSRM_PROFILE" --extent state \
+            --extract-url "$INPUT_EXTRACT_URL" --extract-date "$INPUT_EXTRACT_DATE" --tag "$LOCAL_IMAGE"
+
+      # The exact image that is about to be pushed: routes between public places, the limits, the
+      # unprivileged user, the labels, and no request path in the container log.
+      - name: Smoke test the image
+        env:
+          OSRM_PROFILE: ${{ steps.plan.outputs.osrm_profile }}
+          LOCAL_IMAGE: ${{ steps.plan.outputs.local_image }}
+        run: node infra/osrm/scripts/local-smoke.mjs --image "$LOCAL_IMAGE" --profile "$OSRM_PROFILE" --pairs state --memory 2g
+
+      # ── b) Google authentication, without keys ────────────────────────────────────────────
+      - name: Authenticate to Google Cloud (Workload Identity Federation)
+        id: auth
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SA }}
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          token_format: access_token
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+        with:
+          version: ${{ env.GCLOUD_VERSION }}
+
+      - name: Log in to Artifact Registry
+        env:
+          ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+        run: |
+          printf '%s' "$ACCESS_TOKEN" \
+            | docker login --username oauth2accesstoken --password-stdin "https://${REGION}-docker.pkg.dev"
+
+      # ── c) Push ───────────────────────────────────────────────────────────────────────────
+      - name: Push the image and record its digest
+        id: image
+        env:
+          LOCAL_IMAGE: ${{ steps.plan.outputs.local_image }}
+          TAG: ${{ steps.plan.outputs.tag }}
+        run: |
+          set -u
+          remote="${REGION}-docker.pkg.dev/${PROJECT_ID}/${AR_REPOSITORY}/saferoute-osrm"
+          docker tag "$LOCAL_IMAGE" "${remote}:${TAG}"
+          docker push --quiet "${remote}:${TAG}"
+          ref="$(docker image inspect --format '{{range .RepoDigests}}{{println .}}{{end}}' "${remote}:${TAG}" | grep -F "${remote}@" | head -n 1)"
+          digest="${ref##*@}"
+          if ! printf '%s' "$digest" | grep -Eq '^sha256:[0-9a-f]{64}$'; then
+            echo "::error::Could not determine the pushed image digest."
+            exit 1
+          fi
+          echo "Pushed image digest: ${digest}"
+          echo "ref=${ref}" >> "$GITHUB_OUTPUT"
+          echo "digest=${digest}" >> "$GITHUB_OUTPUT"
+
+      # ── d) Deploy, private ────────────────────────────────────────────────────────────────
+      # PORT is set by Cloud Run; the container listens on it. No secret, no database, no env
+      # value besides the thread count. If the runtime account or the deploy account's right to
+      # use it is missing (bootstrap-staging.ps1 -Apply), this step fails and nothing changes.
+      # A revision that does not start never receives traffic: the previous one keeps serving.
+      - name: Deploy the service (no public access)
+        id: deploy
+        env:
+          IMAGE_REF: ${{ steps.image.outputs.ref }}
+          SERVICE: ${{ steps.plan.outputs.service }}
+        run: |
+          set -u
+          gcloud run deploy "$SERVICE" \
+            --region "$REGION" \
+            --image "$IMAGE_REF" \
+            --service-account "${OSRM_RUNTIME_SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com" \
+            --no-allow-unauthenticated \
+            --set-env-vars "OSRM_THREADS=2" \
+            --cpu "$OSRM_CPU" \
+            --memory "$OSRM_MEMORY" \
+            --concurrency "$OSRM_CONCURRENCY" \
+            --timeout "$OSRM_TIMEOUT_SECONDS" \
+            --min-instances "$INPUT_MIN_INSTANCES" \
+            --max-instances "$OSRM_MAX_INSTANCES" \
+            --cpu-boost \
+            --quiet
+
+          gcloud run services describe "$SERVICE" --region "$REGION" --format=json > "$RUNNER_TEMP/osrm-service.json"
+          revision="$(jq -r '.status.latestReadyRevisionName // empty' "$RUNNER_TEMP/osrm-service.json")"
+          service_url="$(jq -r '.status.url // empty' "$RUNNER_TEMP/osrm-service.json")"
+          if [ -z "$revision" ] || [ -z "$service_url" ]; then
+            echo "::error::Could not read the revision or the URL of the service."
+            exit 1
+          fi
+          # The URL contains the project number: mask it before it reaches any later log line.
+          echo "::add-mask::${service_url}"
+          echo "Ready revision: ${revision}"
+          {
+            echo "revision=${revision}"
+            echo "service_url=${service_url}"
+          } >> "$GITHUB_OUTPUT"
+
+      # ── e) Prove that nobody without credentials gets in ──────────────────────────────────
+      # The request goes to "/" and carries no coordinate. Cloud Run answers 403 itself, before
+      # any container is involved, when the caller has no permission.
+      - name: A call without credentials is refused
+        id: private
+        env:
+          SERVICE_URL: ${{ steps.deploy.outputs.service_url }}
+        run: |
+          set -u
+          status="$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 20 "${SERVICE_URL}/" || true)"
+          echo "Status without credentials: ${status}"
+          if [ "$status" != "403" ]; then
+            echo "::error::Expected 403 without credentials, got ${status}. The service may be PUBLIC: check its permissions now (runbook routing-capacity-staging.md)."
+            exit 1
+          fi
+
+      # ── f) Summary (no project identifiers, no URLs) ──────────────────────────────────────
+      - name: Summary
+        if: always()
+        env:
+          SERVICE: ${{ steps.plan.outputs.service }}
+          TAG: ${{ steps.plan.outputs.tag }}
+          IMAGE_DIGEST: ${{ steps.image.outputs.digest }}
+          REVISION: ${{ steps.deploy.outputs.revision }}
+          PRIVATE_OUTCOME: ${{ steps.private.outcome }}
+        run: |
+          {
+            echo "## OSRM staging deploy"
+            echo
+            echo "| Item | Value |"
+            echo "| --- | --- |"
+            echo "| Service | \`${SERVICE:-unknown}\` |"
+            echo "| Image tag | \`${TAG:-unknown}\` |"
+            echo "| Image digest | \`${IMAGE_DIGEST:-not pushed}\` |"
+            echo "| Ready revision | \`${REVISION:-not deployed}\` |"
+            echo "| Minimum instances | ${INPUT_MIN_INSTANCES} |"
+            echo "| Refused without credentials (403) | ${PRIVATE_OUTCOME:-skipped} |"
+            echo
+            echo "Next: \`bootstrap-staging.ps1 -Apply\` (lets the API call the service), then the log-privacy check."
+            echo "Runbook: \`docs/runbooks/routing-capacity-staging.md\`."
+          } >> "$GITHUB_STEP_SUMMARY"

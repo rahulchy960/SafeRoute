@@ -173,6 +173,30 @@ later without rebuilding anything.
 - Revisit when staging measurements exist, when the exposure metric arrives (P019), before
   production sizing, and when OSRM or the extract is updated.
 
+## Implementation note of 2026-10-07 (P012a2)
+
+The decision above is unchanged. How it is carried out:
+
+- **Deploy path:** `.github/workflows/osrm-staging.yml`, started by hand, once per profile. It
+  builds and smoke-tests the image **before** it logs in to Google Cloud, pushes it as
+  `osrm-<profile>-<extract date>`, deploys with `--no-allow-unauthenticated` (1 vCPU, 2 GiB,
+  concurrency 8, timeout 30 s, at most 2 instances, minimum 0 unless 1 is chosen), and fails
+  unless a call without credentials gets 403.
+- **Setup:** `bootstrap-staging.ps1 -Apply` creates `sa-osrm-runtime` with no role (the one
+  account this script creates; existing accounts are still never changed), lets `sa-deploy`
+  use it, and lets `sa-api-runtime` invoke each service once it exists. A service that is
+  not deployed yet is reported as PENDING, which does not fail `-Verify`; a public OSRM
+  service is reported as WRONG and never touched.
+- **Log exclusion:** one per service on the `_Default` sink, for every entry that has a
+  request URL. Lines written by the container are kept, because the image writes no request
+  line and start-up errors are needed. The exclusions are created before the first deploy.
+  The filter is written without quotes so that it survives `gcloud` on Windows; whether Cloud
+  Logging accepts it is **not verified** until Rahul runs it (the runbook has the console form).
+- Service and account names are constants shared by the workflow and the script, not GitHub
+  variables; a test compares them.
+- Still open: whether a GitHub-hosted runner can build the state graph (the first run
+  decides), and every staging measurement.
+
 ## References
 
 - Plan v7 §13.1, §14.3; addendum v7.2 §D.
