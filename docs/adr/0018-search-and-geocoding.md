@@ -293,9 +293,96 @@ Geoapify's terms were read again in full for this decision (Terms and Conditions
   free plan may be used in production within its limits and with attribution. To be confirmed
   in writing before commercial use (**to be verified by a lawyer**).
 
+## Local ranking: note of 2026-10-08 (P011e)
+
+**Evidence.** On a phone against staging, in a small town in Uttar Dinajpur, a generic or chain
+name ("SBI Bank") returned a place in Darjeeling and no nearby one; a full address had to be
+typed. Many small-town places were not found at all. One report from one phone; no numbers.
+
+**Diagnosis** (read from the code; the provider's own ranking was not observed):
+
+- **What the app sent as `near`:** the centre of the map when it last came to rest, never the
+  user's position. The map opens on the default region centre and moves only when the user
+  pans it or taps "my location". A user who opened search without doing either sent the default
+  centre, or nothing (then the server used the same default, `LAUNCH_REGION_CENTER`).
+- **What the adapter did with it:** a proximity **bias** only (`bias=proximity:lon,lat`), plus
+  the country filter. Nothing limited results to an area.
+- **Re-ranking:** none. The provider's order was returned as it came.
+- So a search made far from the default centre was biased towards the wrong place, and even a
+  correct bias only nudges the provider's ranking: a generic name can still be won by a
+  well-known place elsewhere.
+
+**Decision.**
+
+1. **Two passes, when the request carries an area** (`src/modules/search/local-first.ts`):
+   - Pass 1: the provider is asked only for places within `SEARCH_NEARBY_RADIUS_KM` (default
+     50) of the coarse `near` point, with the proximity bias as before.
+   - If pass 1 returns fewer than `SEARCH_MIN_LOCAL_RESULTS` (default 3; never more than the
+     requested limit), pass 2 asks again without the area filter (bias only).
+   - Results: the nearby ones first in the provider's order, then the wide ones that are not
+     already there, cut to the requested limit. Two results are the same place when they share
+     an id, or a name and a position to four decimals.
+   - Without an area in the request there is one plain call, as before. The default centre is
+     a guess about where the user is: good enough for a bias, wrong for a filter.
+2. **Both passes count.** Each provider call takes a token from the user's burst and daily
+   buckets and from `SEARCH_GLOBAL_DAILY_LIMIT`, so the shared budget still caps provider
+   credits exactly. When a limit refuses the second call, or the provider fails on it, the
+   nearby results are returned alone; with no nearby results the search fails as it would have.
+3. **Distance.** Each result of a search with an area carries `distanceMeters`: the straight
+   line from the **coarse** `near` point (two decimals), rounded to 100 m. It is approximate by
+   about 1 km either way, and it never reveals more about the user than the coarse point the
+   provider already receives. Contract 0.7.0, additive and optional.
+4. **Provider-neutral.** The interface gains one optional field, `withinMeters`. Each adapter
+   turns it into its own parameter, and `local-first.ts` checks the distance itself, so a
+   provider that can only filter by a box, or ignores the filter, cannot put a far place first.
+5. **Logging.** Still one line per search: `outcome`, `latency_ms`, `result_count`, and now
+   `local_count`, `provider_calls` (1 or 2) and `wide_pass` (a fixed word). No query,
+   coordinate, distance or result. As before, this is about the API's own log lines.
+
+**Provider parameters, checked in the documentation on 2026-10-08:**
+
+| Provider | Page | What it says, in our words |
+| --- | --- | --- |
+| Geoapify | Address Autocomplete API | `filter` and `bias` are separate parameters; a bias changes ranking without excluding matches; results carry a `distance` to a proximity bias; for the filter syntax it points to the Forward Geocoding page |
+| Geoapify | Forward Geocoding API, "Location filters" and "Location bias" | A circle filter is `circle:lon,lat,radiusMeters`; a country filter is `countrycode:` with lower-case codes; several filters, one of each type, are joined with `\|` and all must hold; a proximity bias is `proximity:lon,lat`. An example uses a filter and a bias in one request |
+| LocationIQ | Autocomplete API reference | `viewbox` is the preferred area, longitude first; `bounded=1` restricts results to it |
+
+- Geoapify, pass 1: `filter=circle:<lon>,<lat>,<metres>|countrycode:in` and
+  `bias=proximity:<lon>,<lat>`.
+- LocationIQ, pass 1: the square around the circle as `viewbox`, with `bounded=1`.
+- We do not use Geoapify's own `distance` field: computing it ourselves keeps the contract the
+  same for every provider.
+- **Not verified:** that the live services behave as documented. Claude Code has no key. That
+  the autocomplete endpoint accepts the circle filter is taken from the Autocomplete page's
+  pointer to the Forward Geocoding page, not from an example on the Autocomplete page itself.
+
+**Cost.** A search with an area costs one provider credit when at least 3 places are found
+nearby and two when not. In areas with thin map data most searches will cost two. The shared
+budget (2500 a day by default, under the free plan's 3,000 credits) is then used up after fewer
+searches; how many is **not recorded** until it is measured on staging. The user's burst of 30
+is spent twice as fast in the same case.
+
+**What this does not fix.** A place that is missing from OpenStreetMap is still not found:
+ranking can only order what the provider has. The radius of 50 km and the minimum of 3 are
+first values, chosen without a measurement.
+
+**Evaluation.** The fixture gains local-intent entries (`near` and `intent`): a generic or
+named query asked from a town, a hit only when a top-3 result has the right name within 25 km.
+They have their own table and stay out of the earlier tables and thresholds. No threshold is
+set for them yet; the first run is the baseline. No local-intent hit rate is recorded here:
+none has been measured.
+
+**Android** (the next part, P011e2): the app will send the user's current position, rounded to
+two decimals, as `near` when the location permission is granted and the fix is recent, and the
+map centre otherwise, and will show the distance. That changes the "Android behaviour" section
+above ("never the user's position"), the location disclosure and the `CLAUDE.md` search rule,
+in that prompt (**the disclosure wording is to be verified by a lawyer**).
+
 ## References
 
 - Plan v7 §3.2, §4, §6.2, §6.3, §12.2; addendum v7.2 E.
+- Provider documentation as read on 2026-10-08 (parameters only): Geoapify Address
+  Autocomplete API and Forward Geocoding API pages; LocationIQ Autocomplete API reference.
 - Provider terms and documentation as read on 2026-10-07: MapTiler Cloud Special Terms, pricing
   and Geocoding API reference; OpenStreetMap Foundation Nominatim Usage Policy; Geoapify Terms
   and Conditions, pricing and Address Autocomplete API; LocationIQ Terms of Use, pricing,
