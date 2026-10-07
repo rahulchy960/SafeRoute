@@ -16,7 +16,7 @@ and deployed by [`.github/workflows/deploy-staging.yml`](../.github/workflows/de
 | --- | --- |
 | [`staging/bootstrap-staging.ps1`](staging/bootstrap-staging.ps1) | The setup script: `-Audit` (default, read-only), `-Apply`, `-SetGithubSecrets`, `-Verify`; `-Plan` prints every command and runs nothing ([flow](../docs/diagrams/006c-staging-setup-flow.svg)) |
 | [`staging/tests/`](staging/tests/) | Pester tests with a mocked `gcloud`/`gh`, and `Invoke-InfraCheck.ps1`, the quality gate (PSScriptAnalyzer + Pester; CI: [`infra-ci`](../.github/workflows/infra-ci.yml)) |
-| [`artifact-registry-cleanup-policy.json`](artifact-registry-cleanup-policy.json) | Runbook step 2: delete images older than 7 days, always keep the 10 most recent |
+| [`artifact-registry-cleanup-policy.json`](artifact-registry-cleanup-policy.json) | Runbook step 2: delete images older than 7 days, always keep the 10 most recent, and keep every routing image (tag prefix `osrm-`, since P012a3) |
 
 ```powershell
 .\infra\staging\bootstrap-staging.ps1            # audit: what exists, what is missing

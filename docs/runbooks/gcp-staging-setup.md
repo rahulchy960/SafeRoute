@@ -258,12 +258,16 @@ gcloud artifacts repositories set-cleanup-policies $AR_REPOSITORY --location=$RE
 ```
 
 The policy file ([`infra/artifact-registry-cleanup-policy.json`](../../infra/artifact-registry-cleanup-policy.json))
-deletes images older than 7 days but always keeps the 10 most recent. Tags are deliberately
+deletes images older than 7 days but always keeps the 10 most recent versions of each image and,
+since P012a3, **every image whose tag starts with `osrm-`** (the routing images; why:
+[routing runbook](routing-capacity-staging.md), section 4). If the repository still has the
+earlier two-rule policy, the audit shows a NOTE and `-Apply` offers to set the file again; a
+policy you made yourself is never replaced. Tags are deliberately
 **not** immutable in staging: Artifact Registry can't delete tagged images in an immutable
 repository, so the cleanup policy would do nothing, and re-running a deploy for the same commit
 would be rejected. Deploys use the image **digest**, which can't change (ADR 0007).
 
-**Verify:** the format is `DOCKER`, and both policies are listed.
+**Verify:** the format is `DOCKER`, and all three policies are listed.
 
 ```powershell
 gcloud artifacts repositories describe $AR_REPOSITORY --location=$REGION --format="value(format)"

@@ -98,8 +98,28 @@ free tiers not subtracted, tax not included:
 - Check: 2 628 000 s × (1 vCPU × US$0.0000025 + 2 GiB × US$0.0000025) = US$19.71 idle per
   warm service; US$0.000024 + 2 × US$0.0000025 = US$0.000029 per active second.
 - **Do not set both services to 1 warm instance without a new budget decision.**
-- The existing registry cleanup policy (if set) keeps the 10 newest versions of an image and
-  deletes older ones after 7 days: a rollback target older than that may be gone.
+- **Routing images are kept by the registry cleanup policy** (since P012a3). The policy
+  deletes images older than 7 days and keeps the 10 newest versions of each image; without
+  a third rule it would delete older routing images too.
+  - A revision that **serves** traffic is not affected either way: Cloud Run's documentation
+    says the image "is imported by Cloud Run when deployed", that Cloud Run "keeps this copy
+    of the container image as long as it is used by a serving revision", and that images
+    "are not pulled from their container repository when a new Cloud Run instance is started".
+  - The risk was the **rollback target**: a previous revision that no longer serves is not
+    covered by that sentence, and an old graph cannot be rebuilt once Geofabrik has removed
+    its dated extract.
+  - So `infra/artifact-registry-cleanup-policy.json` has the rule `keep-osrm-routing-images`:
+    keep every image whose tag starts with `osrm-`. The workflow tags every routing image
+    `osrm-<profile>-<extract date>`.
+  - `bootstrap-staging.ps1` reports "Registry cleanup keeps routing images (tag osrm-)". If
+    it is a NOTE, row 2 of section 5 (`-Apply`) offers to set the policy file again. Do this
+    before the first routing image is 7 days old.
+  - **Cost:** routing images are now never deleted automatically, about US$0.05 a month for
+    each one kept. Delete old ones by hand in the console (Artifact Registry → the
+    repository → `saferoute-osrm`) once no revision you might roll back to uses them.
+  - Not verified: how the cleanup job treats this rule on the real repository. After the
+    first deploy, `gcloud artifacts repositories list-cleanup-policies saferoute --location=asia-south1`
+    must list three policies.
 - The budget alert of the staging project
   ([setup runbook](gcp-staging-setup.md), step 11) covers these services too.
 
@@ -112,7 +132,7 @@ routing services use no database.
 | # | Command | What it does | Cost |
 | --- | --- | --- | --- |
 | 1 | `.\infra\staging\bootstrap-staging.ps1` | Audit, read-only. Expect four `Routing:` rows MISSING and four PENDING | none |
-| 2 | `.\infra\staging\bootstrap-staging.ps1 -Apply` | Asks before each step: creates `sa-osrm-runtime` (no roles), lets `sa-deploy` use it, adds one request-log exclusion per OSRM service. Prints `LATER:` for the two invoker bindings | none |
+| 2 | `.\infra\staging\bootstrap-staging.ps1 -Apply` | Asks before each step: creates `sa-osrm-runtime` (no roles), lets `sa-deploy` use it, adds one request-log exclusion per OSRM service. Prints `LATER:` for the two invoker bindings. If the registry has the earlier cleanup policy, also offers to set it again so that routing images are kept (section 4) | none |
 | 3 | `gh workflow run osrm-staging.yml --ref main -f profile=walking -f extract_url=https://download.geofabrik.de/asia/india/eastern-zone-261006.osm.pbf -f extract_date=2026-10-06 -f min_instances=0` | Builds, tests, pushes and deploys `saferoute-osrm-walking`, private. About 10 minutes | runner: none (public repository); image storage about US$0.05 a month; service: nothing while idle |
 | 4 | `gh run watch` | Follow the run; it must end green with "Refused without credentials (403): success" in the summary | none |
 | 5 | The command of row 3 with `-f profile=driving` | The same for `saferoute-osrm-driving` | as row 3 |
