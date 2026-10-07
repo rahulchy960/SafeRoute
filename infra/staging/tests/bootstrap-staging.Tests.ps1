@@ -44,7 +44,14 @@ BeforeAll {
             Apis = @('run.googleapis.com', 'artifactregistry.googleapis.com', 'sqladmin.googleapis.com',
                 'secretmanager.googleapis.com', 'iam.googleapis.com', 'iamcredentials.googleapis.com',
                 'sts.googleapis.com', 'cloudresourcemanager.googleapis.com', 'compute.googleapis.com')
-            ServiceAccounts = @('sa-deploy', 'sa-api-runtime', 'sa-migration', 'sa-worker-runtime', 'firebase-adminsdk-fake')
+            ServiceAccounts = @('sa-deploy', 'sa-api-runtime', 'sa-migration', 'sa-worker-runtime', 'firebase-adminsdk-fake', 'sa-osrm-runtime')
+            # Routing (P012a2): both OSRM services deployed, private, callable by the API, logs excluded.
+            OsrmServices = @('saferoute-osrm-walking', 'saferoute-osrm-driving')
+            Exclusions = @(
+                @{ name = 'exclude-saferoute-osrm-walking-requests'; filter = 'resource.type=cloud_run_revision AND resource.labels.service_name=saferoute-osrm-walking AND httpRequest.requestUrl:*' },
+                @{ name = 'exclude-saferoute-osrm-driving-requests'; filter = 'resource.type=cloud_run_revision AND resource.labels.service_name=saferoute-osrm-driving AND httpRequest.requestUrl:*' },
+                @{ name = 'exclude-search-request-urls'; filter = 'something else' }
+            )
             Pool = 'ACTIVE'
             Providers = @(@{ Id = 'github-saferoute'; State = 'ACTIVE'; Condition = $script:GoodCondition })
             ArRepo = @{ Format = 'DOCKER'; Cleanup = $true }
@@ -66,6 +73,9 @@ BeforeAll {
                 'secret:url' = @(@{ role = 'roles/secretmanager.secretAccessor'; members = @($runtime, $migration) })
                 'secret:password' = @()
                 'run' = @(@{ role = 'roles/run.invoker'; members = @('allUsers') })
+                'sa:osrm' = @(@{ role = 'roles/iam.serviceAccountUser'; members = @($deploy) })
+                'run:saferoute-osrm-walking' = @(@{ role = 'roles/run.invoker'; members = @($runtime) })
+                'run:saferoute-osrm-driving' = @(@{ role = 'roles/run.invoker'; members = @($runtime) })
             }
             PublicAfterDeploy = $true
             Github = @{
@@ -83,6 +93,9 @@ BeforeAll {
             # What Rahul's audit found: accounts, pool, registry, instance and the password secret exist;
             # no provider, no URL secret, no Cloud Run service, no bindings, almost nothing on GitHub.
             $scenario.Providers = @()
+            $scenario.ServiceAccounts = @('sa-deploy', 'sa-api-runtime', 'sa-migration', 'sa-worker-runtime', 'firebase-adminsdk-fake')
+            $scenario.OsrmServices = @()
+            $scenario.Exclusions = @()
             $scenario.ArRepo.Cleanup = $false
             $scenario.Secrets = @{ 'db-app-password' = 1 }
             $scenario.Service = $false
@@ -149,7 +162,31 @@ BeforeAll {
             '^iam service-accounts get-iam-policy (\S+)' {
                 $scope = 'sa:deploy'
                 if ($Matches[1] -match '^sa-api-runtime@') { $scope = 'sa:runtime' } elseif ($Matches[1] -match '^sa-migration@') { $scope = 'sa:migration' }
-                return & $answer (Get-FakePolicy $scope)
+                elseif ($Matches[1] -match '^sa-osrm-runtime@') { $scope = 'sa:osrm' }
+                $policy = Get-FakePolicy $scope
+                if ($null -eq $policy) { return & $answer (ConvertTo-FakeJson @{ etag = 'fake' }) }
+                return & $answer $policy
+            }
+            '^iam service-accounts create (\S+)' {
+                $s.ServiceAccounts = @($s.ServiceAccounts) + $Matches[1]
+                return & $answer ''
+            }
+            '^logging sinks describe _Default' {
+                return & $answer (ConvertTo-FakeJson @{ name = '_Default'; exclusions = @($s.Exclusions) })
+            }
+            '^logging sinks update _Default --add-exclusion=name=([^,]+),filter=(.+)$' {
+                $s.Exclusions = @($s.Exclusions) + @{ name = $Matches[1]; filter = $Matches[2] }
+                return & $answer ''
+            }
+            '^run services describe (saferoute-osrm-\w+)' {
+                if (@($s.OsrmServices) -notcontains $Matches[1]) { return $notFound }
+                return & $answer (ConvertTo-FakeJson @{ metadata = @{ name = $Matches[1] }; status = @{ url = 'https://fake-osrm.example.run.app' } })
+            }
+            '^run services get-iam-policy (saferoute-osrm-\w+)' {
+                if (@($s.OsrmServices) -notcontains $Matches[1]) { return $notFound }
+                $policy = Get-FakePolicy "run:$($Matches[1])"
+                if ($null -eq $policy) { return & $answer (ConvertTo-FakeJson @{ etag = 'fake' }) }
+                return & $answer $policy
             }
             '^iam workload-identity-pools describe' {
                 if (-not $s.Pool) { return $notFound }
@@ -414,6 +451,106 @@ Describe 'bootstrap-staging.ps1' {
         }
     }
 
+    Context 'routing: the private OSRM services (ADR 0020)' {
+        BeforeAll {
+            function Remove-OsrmSetup {
+                <# The state right after P012a2 is merged: nothing for routing exists yet. #>
+                $script:Scenario.ServiceAccounts = @($script:Scenario.ServiceAccounts | Where-Object { $_ -ne 'sa-osrm-runtime' })
+                $script:Scenario.OsrmServices = @()
+                $script:Scenario.Exclusions = @($script:Scenario.Exclusions | Where-Object { $_.name -notmatch 'osrm' })
+                $script:Scenario.Policies.Remove('sa:osrm')
+            }
+        }
+
+        It 'audit: reports account, binding and exclusions as MISSING, services and invoker as PENDING, and changes nothing' {
+            Start-Scenario 'full'; Remove-OsrmSetup; Invoke-Mode 'Audit'
+            (Get-Row '^Routing: service account for OSRM') | Should -Match 'not found\s+MISSING'
+            (Get-Row '^Routing: sa-deploy on account sa-osrm-runtime') | Should -Match 'MISSING'
+            (Get-Row '^Routing: request-log exclusion for .+MISSING$').Count | Should -Be 2
+            (Get-Row '^Routing: Cloud Run service .+PENDING$').Count | Should -Be 2
+            (Get-Row '^Routing: sa-api-runtime may call .+PENDING$').Count | Should -Be 2
+            $script:Output | Should -Match '\[PENDING\] Routing: Cloud Run service saferoute-osrm-walking: Run the osrm-staging workflow'
+            @(Get-MutatingCall).Count | Should -Be 0
+        }
+        It 'verify: services that are not deployed yet do not make the setup "not ready"' {
+            Start-Scenario 'full'; $script:Scenario.OsrmServices = @(); Invoke-Mode 'Verify'
+            $script:Output | Should -Match 'PENDING'
+            $script:Output | Should -Match 'VERIFY: OK'
+            $script:ExitCode | Should -Be 0
+        }
+        It 'apply: creates the account, the binding and both exclusions, in that order, and nothing else' {
+            Start-Scenario 'full'; Remove-OsrmSetup; Invoke-Mode 'Apply'
+            $calls = @(Get-MutatingCall | ForEach-Object { $_.Line })
+            $calls.Count | Should -Be 4
+            $calls[0] | Should -Match '^iam service-accounts create sa-osrm-runtime --display-name='
+            $calls[1] | Should -Be "iam service-accounts add-iam-policy-binding $(Get-FakeEmail 'sa-osrm-runtime') --member=serviceAccount:$(Get-FakeEmail 'sa-deploy') --role=roles/iam.serviceAccountUser"
+            $calls[2] | Should -Be 'logging sinks update _Default --add-exclusion=name=exclude-saferoute-osrm-walking-requests,filter=resource.type=cloud_run_revision AND resource.labels.service_name=saferoute-osrm-walking AND httpRequest.requestUrl:*'
+            $calls[3] | Should -Match 'name=exclude-saferoute-osrm-driving-requests,filter=.+service_name=saferoute-osrm-driving AND'
+            $script:Output | Should -Match 'LATER: invoker binding on saferoute-osrm-walking: the service does not exist yet'
+            $script:Output | Should -Not -Match 'NOT DONE, blocked'
+            $script:ExitCode | Should -Be 0
+        }
+        It 'apply: the OSRM account never gets a project role, and no command names allUsers' {
+            Start-Scenario 'full'; Remove-OsrmSetup; Invoke-Mode 'Apply'
+            @($script:Calls | Where-Object { $_.Line -match '^projects add-iam-policy-binding' }).Count | Should -Be 0
+            @($script:Calls | Where-Object { $_.Line -match 'allUsers|allAuthenticatedUsers|allow-unauthenticated' }).Count | Should -Be 0
+        }
+        It 'apply: once the services exist, lets only the API account call them' {
+            Start-Scenario 'full'
+            $script:Scenario.Policies['run:saferoute-osrm-walking'] = @(); $script:Scenario.Policies['run:saferoute-osrm-driving'] = @()
+            Invoke-Mode 'Apply'
+            $calls = @(Get-MutatingCall | ForEach-Object { $_.Line })
+            $calls.Count | Should -Be 2
+            $calls[0] | Should -Be "run services add-iam-policy-binding saferoute-osrm-walking --region=asia-south1 --member=serviceAccount:$(Get-FakeEmail 'sa-api-runtime') --role=roles/run.invoker"
+            $calls[1] | Should -Match '^run services add-iam-policy-binding saferoute-osrm-driving .+sa-api-runtime@.+--role=roles/run.invoker$'
+        }
+        It 'apply: a second run changes nothing (idempotent)' {
+            Start-Scenario 'full'; Remove-OsrmSetup; Invoke-Mode 'Apply'
+            $script:Scenario.Policies['sa:osrm'] = @(@{ role = 'roles/iam.serviceAccountUser'; members = @('serviceAccount:' + (Get-FakeEmail 'sa-deploy')) })
+            $script:Calls.Clear(); Invoke-Mode 'Apply'
+            @(Get-MutatingCall).Count | Should -Be 0
+        }
+        It 'flags a PUBLIC OSRM service as WRONG, fails -Verify, and never touches the service' {
+            Start-Scenario 'full'
+            $script:Scenario.Policies['run:saferoute-osrm-driving'] += @{ role = 'roles/run.invoker'; members = @('allUsers') }
+            Invoke-Mode 'Verify'
+            (Get-Row '^Routing: saferoute-osrm-driving is not public') | Should -Match 'PUBLIC.+WRONG'
+            (Get-Row '^Routing: saferoute-osrm-walking is not public') | Should -Match 'private\s+PRESENT'
+            $script:ExitCode | Should -Be 1
+            Start-Scenario 'full'
+            $script:Scenario.Policies['run:saferoute-osrm-driving'] += @{ role = 'roles/run.invoker'; members = @('allAuthenticatedUsers') }
+            Invoke-Mode 'Apply'
+            (Get-Row '^Routing: saferoute-osrm-driving is not public') | Should -Match 'WRONG'
+            @(Get-MutatingCall).Count | Should -Be 0
+        }
+        It 'reports a role held by the OSRM account as WRONG-EXTRA' {
+            Start-Scenario 'full'
+            $script:Scenario.Policies['project'] += @{ role = 'roles/logging.logWriter'; members = @('serviceAccount:' + (Get-FakeEmail 'sa-osrm-runtime')) }
+            Invoke-Mode 'Audit'
+            (Get-Row '^Routing: sa-osrm-runtime on project\s+no role\s+roles/logging.logWriter\s+WRONG-EXTRA').Count | Should -Be 1
+        }
+        It 'flags a disabled or rewritten exclusion as WRONG and does not change it' {
+            Start-Scenario 'full'; $script:Scenario.Exclusions[0].disabled = $true
+            $script:Scenario.Exclusions[1].filter = 'resource.type=cloud_run_revision'
+            Invoke-Mode 'Apply'
+            (Get-Row '^Routing: request-log exclusion for .+WRONG$').Count | Should -Be 2
+            @(Get-MutatingCall).Count | Should -Be 0
+        }
+        It 'builds a filter that survives gcloud and cmd.exe: no comma, double quote or percent sign' {
+            $exclusion = Get-RoutingExclusion 'saferoute-osrm-walking'
+            $exclusion.Filter | Should -Not -Match '[,"%]'
+            $exclusion.Filter | Should -Match 'requestUrl'
+            $exclusion.Name | Should -Match '^[a-z0-9-]+$'
+        }
+        It 'uses the service and account names of the osrm-staging workflow' {
+            $workflow = Get-Content -LiteralPath (Join-Path $script:RepoRoot '.github/workflows/osrm-staging.yml') -Raw
+            $config = New-BootstrapConfig -Bound @{} -Mode 'Audit'
+            $workflow | Should -Match "OSRM_WALKING_SERVICE: $($config.OsrmWalkingService)\s"
+            $workflow | Should -Match "OSRM_DRIVING_SERVICE: $($config.OsrmDrivingService)\s"
+            $workflow | Should -Match "OSRM_RUNTIME_SA_NAME: $($config.OsrmRuntimeSa)\s"
+        }
+    }
+
     Context 'apply' {
         It 'issues no command at all when everything is PRESENT (idempotent)' {
             Start-Scenario 'full'; Invoke-Mode 'Apply'
@@ -428,9 +565,12 @@ Describe 'bootstrap-staging.ps1' {
             $lines[0] | Should -Match '^iam workload-identity-pools providers create-oidc github-saferoute '
             $lines[1] | Should -Match '^secrets create saferoute-staging-database-url --replication-policy=user-managed --locations=asia-south1 --data-file=-$'
             $lines[2] | Should -Match '^run deploy saferoute-api --image=us-docker\.pkg\.dev/cloudrun/container/hello --region=asia-south1 --service-account=sa-api-runtime@.+ --allow-unauthenticated --max-instances=1$'
-            @($lines | Where-Object { $_ -match 'add-iam-policy-binding' }).Count | Should -Be 9
+            # Nine bindings of the API deploy, plus one for routing: the deploy account may use sa-osrm-runtime.
+            @($lines | Where-Object { $_ -match 'add-iam-policy-binding' }).Count | Should -Be 10
+            @($lines | Where-Object { $_ -match '^iam service-accounts create sa-osrm-runtime ' }).Count | Should -Be 1
+            @($lines | Where-Object { $_ -match '^logging sinks update _Default --add-exclusion=' }).Count | Should -Be 2
             $lines[-1] | Should -Match '^artifacts repositories set-cleanup-policies saferoute '
-            $lines.Count | Should -Be 13
+            $lines.Count | Should -Be 17
             @($lines | Where-Object { $_ -match 'services enable' }).Count | Should -Be 0
         }
         It 'creates the provider with the mapping and the restrictive condition' {
@@ -462,12 +602,12 @@ Describe 'bootstrap-staging.ps1' {
             @(Get-MutatingCall).Count | Should -Be 1
             @(Get-MutatingCall)[0].Line | Should -Be 'services enable iamcredentials.googleapis.com sts.googleapis.com'
         }
-        It 'never creates the pool, an account, the registry or anything in Cloud SQL' {
+        It 'never creates the pool, an account other than the role-less OSRM one, the registry or anything in Cloud SQL' {
             Start-Scenario 'nopool'
             $script:Scenario.ServiceAccounts = @('sa-deploy'); $script:Scenario.ArRepo = $null; $script:Scenario.Sql = $null
             Invoke-Mode 'Apply'
             $script:ExitCode | Should -Be 1
-            @(Get-MutatingCall | Where-Object { $_.Line -match 'workload-identity-pools create|service-accounts create|repositories create|^sql ' }).Count | Should -Be 0
+            @(Get-MutatingCall | Where-Object { $_.Line -match 'workload-identity-pools create|service-accounts create (?!sa-osrm-runtime )|repositories create|^sql ' }).Count | Should -Be 0
             @(Get-MutatingCall | Where-Object { $_.Line -match 'create-oidc|secrets create|run deploy' }).Count | Should -Be 0
             $script:Output | Should -Match 'NOT DONE, blocked: provider: the Workload Identity pool is missing'
         }

@@ -11,7 +11,8 @@ name: infra-ci
 # The two PowerShell modules are downloaded at pinned versions and checked against SHA-512 values
 # committed in infra/staging/tests/Invoke-InfraCheck.ps1.
 # deploy-staging.yml is in the path filter because a test reads the secret and variable names
-# from it. Not a required check in the ruleset: path-filtered checks would block unrelated PRs.
+# from it; osrm-staging.yml because a test compares its resource names with the script's defaults.
+# Not a required check in the ruleset: path-filtered checks would block unrelated PRs.
 
 on:
   pull_request:
@@ -19,12 +20,14 @@ on:
       - "infra/**"
       - ".github/workflows/infra-ci.yml"
       - ".github/workflows/deploy-staging.yml"
+      - ".github/workflows/osrm-staging.yml"
   push:
     branches: [main]
     paths:
       - "infra/**"
       - ".github/workflows/infra-ci.yml"
       - ".github/workflows/deploy-staging.yml"
+      - ".github/workflows/osrm-staging.yml"
 
 permissions:
   contents: read

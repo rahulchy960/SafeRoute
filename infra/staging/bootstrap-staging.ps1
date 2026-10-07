@@ -19,8 +19,14 @@
     Add -Plan to any mode to print every command without running anything.
 
     Never created or changed here: the Cloud SQL instance, its database and user, existing
-    secrets, service accounts, the Workload Identity pool and the Artifact Registry repository.
-    Nothing is ever deleted. No service-account key is ever created.
+    secrets, existing service accounts, the Workload Identity pool and the Artifact Registry
+    repository. Nothing is ever deleted. No service-account key is ever created.
+
+    Routing (P012a2, ADR 0020): -Apply creates one new account without any role for the OSRM
+    services (sa-osrm-runtime), lets the deploy account use it, adds a log exclusion per OSRM
+    service so that request URLs (they hold coordinates) are never stored, and lets the API's
+    account call the services once the osrm-staging workflow has created them. The services
+    themselves are never created, changed or made public here.
 
     Output hides the project ID, the project number, e-mail addresses and URLs unless -ShowIds is
     passed. Secret values are never printed. Design: docs/adr/0007-gcp-staging-topology.md.
@@ -61,7 +67,10 @@ param(
     [string]$UrlSecret = 'saferoute-staging-database-url',
     [string]$PasswordSecret = 'db-app-password',
     [string]$FirebaseProjectId = '',
-    [string]$WorkflowPath = ''
+    [string]$WorkflowPath = '',
+    [string]$OsrmRuntimeSa = 'sa-osrm-runtime',
+    [string]$OsrmWalkingService = 'saferoute-osrm-walking',
+    [string]$OsrmDrivingService = 'saferoute-osrm-driving'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -386,6 +395,7 @@ function Test-Api {
 function Test-ServiceAccount {
     param($State, $Config)
     $emails = Get-GcloudLine @('iam', 'service-accounts', 'list', '--format=value(email)')
+    $State.SaEmails = $emails
     foreach ($key in @('DeploySa', 'RuntimeSa', 'MigrationSa')) {
         $name = $Config[$key]
         $status = 'MISSING'
@@ -776,6 +786,158 @@ function Test-IamBinding {
     }
 }
 
+# --- Routing: the private OSRM services (ADR 0020) ---
+
+function Get-RoutingService {
+    param($Config)
+    return @(
+        @{ Key = 'walking'; Name = $Config.OsrmWalkingService },
+        @{ Key = 'driving'; Name = $Config.OsrmDrivingService }
+    )
+}
+
+function Get-RoutingExclusion {
+    <#
+        OSRM takes the origin and the destination in the URL path, and Cloud Run's request log
+        stores every URL. This exclusion keeps every entry that has a request URL out of the log
+        bucket for one service; lines the container writes (start-up errors) are kept.
+        No double quote, comma or percent sign: gcloud splits the flag at commas, and on Windows
+        the command passes through cmd.exe.
+    #>
+    param([string]$Service)
+    return @{
+        Name   = "exclude-$Service-requests"
+        Filter = "resource.type=cloud_run_revision AND resource.labels.service_name=$Service AND httpRequest.requestUrl:*"
+    }
+}
+
+function Test-Routing {
+    param($State, $Config)
+    $workflow = 'Run the osrm-staging workflow (Actions > osrm-staging > Run workflow), then -Apply again.'
+    $osrmEmail = Get-SaEmail $State $Config.OsrmRuntimeSa
+    $osrmMember = "serviceAccount:$osrmEmail"
+    $deploy = 'serviceAccount:' + (Get-SaEmail $State $Config.DeploySa)
+    $runtime = 'serviceAccount:' + (Get-SaEmail $State $Config.RuntimeSa)
+
+    $saStatus = 'MISSING'; $saFound = 'not found'
+    if ($null -eq $State.SaEmails) { $saStatus = 'UNKNOWN'; $saFound = 'could not list accounts' }
+    elseif ($State.SaEmails -contains $osrmEmail) { $saStatus = 'PRESENT'; $saFound = $Config.OsrmRuntimeSa }
+    Add-AuditItem $State 'osrm:sa' 'Routing: service account for OSRM (no roles)' $Config.OsrmRuntimeSa $saFound $saStatus `
+        'Run with -Apply (creates the account; it gets no role).'
+
+    $actStatus = 'MISSING'; $actFound = 'the account does not exist yet'
+    if ($saStatus -eq 'PRESENT') {
+        $policy = Invoke-GcloudJson @('iam', 'service-accounts', 'get-iam-policy', $osrmEmail)
+        $actFound = 'no such binding'
+        if ($policy.Status -ne 'ok') { $actStatus = Get-StatusOf $policy; $actFound = $policy.Message }
+        elseif (Test-PolicyMember @($policy.Data.bindings) $deploy 'roles/iam.serviceAccountUser') { $actStatus = 'PRESENT'; $actFound = 'bound' }
+    }
+    Add-AuditItem $State 'osrm:actas' "Routing: $($Config.DeploySa) on account $($Config.OsrmRuntimeSa)" 'roles/iam.serviceAccountUser' $actFound $actStatus `
+        'Run with -Apply (adds the binding).'
+
+    # The OSRM account must hold nothing: it only runs a container that reads its own files.
+    $extra = 0
+    foreach ($binding in @($State.Policies['project'])) {
+        if ($null -eq $binding -or @($binding.members) -notcontains $osrmMember) { continue }
+        $extra++
+        Add-AuditItem $State "osrm:extra:$extra" "Routing: $($Config.OsrmRuntimeSa) on project" 'no role' $binding.role 'WRONG-EXTRA' `
+            'The OSRM account needs no role. Reported only: remove it by hand.'
+    }
+
+    $sink = Invoke-GcloudJson @('logging', 'sinks', 'describe', '_Default')
+    foreach ($service in (Get-RoutingService $Config)) {
+        $name = $service.Name
+        $wanted = Get-RoutingExclusion $name
+        $logStatus = 'MISSING'; $logFound = 'no such exclusion'
+        $logNext = 'Run with -Apply (adds the exclusion). Do this BEFORE the first deploy of the service.'
+        if ($sink.Status -ne 'ok') { $logStatus = Get-StatusOf $sink; $logFound = $sink.Message; if ($sink.Status -eq 'notfound') { $logFound = 'the _Default sink was not found' } }
+        else {
+            $existing = @($sink.Data.exclusions | Where-Object { $null -ne $_ -and $_.name -eq $wanted.Name }) | Select-Object -First 1
+            if ($existing) {
+                $logStatus = 'PRESENT'; $logFound = 'set'
+                $filter = '' + $existing.filter
+                if ($existing.disabled -or -not $filter.Contains($name) -or -not $filter.Contains('requestUrl')) {
+                    $logStatus = 'WRONG'; $logFound = 'disabled, or its filter does not name this service and requestUrl'
+                    $logNext = "Not changed by this script. Fix it in the console (Logging > Log router > _Default), filter: $($wanted.Filter)"
+                }
+            }
+        }
+        Add-AuditItem $State "osrm:log:$($service.Key)" "Routing: request-log exclusion for $name" $wanted.Name $logFound $logStatus $logNext
+
+        $described = Invoke-GcloudJson @('run', 'services', 'describe', $name, "--region=$script:Region")
+        if ($described.Status -eq 'notfound') {
+            Add-AuditItem $State "osrm:service:$($service.Key)" "Routing: Cloud Run service $name" 'deployed by the workflow' 'not deployed yet' 'PENDING' $workflow
+            Add-AuditItem $State "osrm:invoker:$($service.Key)" "Routing: $($Config.RuntimeSa) may call $name" 'roles/run.invoker' 'the service does not exist yet' 'PENDING' $workflow
+            continue
+        }
+        $found = $described.Message
+        if ($described.Status -eq 'ok') { $found = 'exists' }
+        Add-AuditItem $State "osrm:service:$($service.Key)" "Routing: Cloud Run service $name" 'deployed by the workflow' $found (Get-StatusOf $described) $workflow
+        if ($described.Status -ne 'ok') { continue }
+
+        $policy = Invoke-GcloudJson @('run', 'services', 'get-iam-policy', $name, "--region=$script:Region")
+        if ($policy.Status -ne 'ok') {
+            Add-AuditItem $State "osrm:invoker:$($service.Key)" "Routing: $($Config.RuntimeSa) may call $name" 'roles/run.invoker' $policy.Message (Get-StatusOf $policy) 'Check your access to the service, then run -Audit again.'
+            continue
+        }
+        $bindings = @($policy.Data.bindings | Where-Object { $null -ne $_ })
+        $invStatus = 'MISSING'; $invFound = 'no such binding'
+        if (Test-PolicyMember $bindings $runtime 'roles/run.invoker') { $invStatus = 'PRESENT'; $invFound = 'bound' }
+        Add-AuditItem $State "osrm:invoker:$($service.Key)" "Routing: $($Config.RuntimeSa) may call $name" 'roles/run.invoker' $invFound $invStatus `
+            'Run with -Apply (adds the binding).'
+
+        $public = @($bindings | Where-Object { @($_.members) -contains 'allUsers' -or @($_.members) -contains 'allAuthenticatedUsers' })
+        $pubStatus = 'PRESENT'; $pubFound = 'private'
+        if ($public.Count -gt 0) { $pubStatus = 'WRONG'; $pubFound = 'PUBLIC: allUsers or allAuthenticatedUsers is bound' }
+        Add-AuditItem $State "osrm:private:$($service.Key)" "Routing: $name is not public" 'no allUsers, no allAuthenticatedUsers' $pubFound $pubStatus `
+            'Remove the public binding NOW in the console (Cloud Run > the service > Security). Not changed by this script.'
+    }
+}
+
+function Invoke-RoutingApply {
+    <# Creates only what Test-Routing found MISSING. Returns @{ Ran; Failed; Blocked }. #>
+    param($State, $Config, [scriptblock]$Todo, [bool]$Plan)
+    $result = @{ Ran = 0; Failed = $false; Blocked = (New-Object System.Collections.ArrayList) }
+    $osrmEmail = Get-SaEmail $State $Config.OsrmRuntimeSa
+    $steps = New-Object System.Collections.ArrayList
+    $saReady = ((Get-ItemStatus $State 'osrm:sa') -eq 'PRESENT')
+    if (& $Todo 'osrm:sa') {
+        [void]$steps.Add(@{ Title = "create the role-less service account $($Config.OsrmRuntimeSa)"; Creates = 'sa'
+                Arguments = @('iam', 'service-accounts', 'create', $Config.OsrmRuntimeSa, '--display-name=SafeRoute OSRM runtime (no roles)') })
+    }
+    if (& $Todo 'osrm:actas') {
+        [void]$steps.Add(@{ Title = "grant roles/iam.serviceAccountUser to $($Config.DeploySa) on account $($Config.OsrmRuntimeSa)"; Needs = 'sa'
+                Arguments = @('iam', 'service-accounts', 'add-iam-policy-binding', $osrmEmail,
+                    "--member=serviceAccount:$(Get-SaEmail $State $Config.DeploySa)", '--role=roles/iam.serviceAccountUser') })
+    }
+    foreach ($service in (Get-RoutingService $Config)) {
+        if (& $Todo "osrm:log:$($service.Key)") {
+            $exclusion = Get-RoutingExclusion $service.Name
+            [void]$steps.Add(@{ Title = "exclude request URLs of $($service.Name) from the log bucket"
+                    Arguments = @('logging', 'sinks', 'update', '_Default', "--add-exclusion=name=$($exclusion.Name),filter=$($exclusion.Filter)") })
+        }
+        $invoker = Get-ItemStatus $State "osrm:invoker:$($service.Key)"
+        if ($invoker -eq 'MISSING' -or ($Plan -and $invoker -eq 'NOT RUN')) {
+            [void]$steps.Add(@{ Title = "grant roles/run.invoker to $($Config.RuntimeSa) on service $($service.Name)"
+                    Arguments = @('run', 'services', 'add-iam-policy-binding', $service.Name, "--region=$script:Region",
+                        "--member=serviceAccount:$(Get-SaEmail $State $Config.RuntimeSa)", '--role=roles/run.invoker') })
+        }
+        elseif ($invoker -eq 'PENDING') {
+            [void]$result.Blocked.Add("invoker binding on $($service.Name): the service does not exist yet (run the osrm-staging workflow, then -Apply again)")
+        }
+    }
+    foreach ($step in $steps) {
+        if ($step.Needs -eq 'sa' -and -not $saReady -and -not $Plan) {
+            [void]$result.Blocked.Add("binding on account $($Config.OsrmRuntimeSa): the account does not exist")
+            continue
+        }
+        $outcome = Invoke-Step $step.Title $step.Arguments
+        if ($outcome -eq 'failed') { $result.Failed = $true; return $result }
+        if ($outcome -eq 'done') { $result.Ran++; if ($step.Creates -eq 'sa') { $saReady = $true } }
+    }
+    return $result
+}
+
 function Invoke-Audit {
     <# Read-only. Returns the state, or $null when the project could not be determined. #>
     param($Config)
@@ -794,6 +956,7 @@ function Invoke-Audit {
     Test-Secret $State $Config
     Test-CloudRun $State $Config
     Test-IamBinding $State $Config
+    Test-Routing $State $Config
     return $State
 }
 
@@ -1005,7 +1168,16 @@ function Invoke-Apply {
         if ($outcome -eq 'done') { $ran++ }
     }
 
-    # 6. Optional cleanup policy
+    # 6. Routing: OSRM account, bindings and log exclusions (ADR 0020)
+    $routing = Invoke-RoutingApply $State $Config $todo $plan
+    if ($routing.Failed) { return 1 }
+    $ran += $routing.Ran
+    $pending = New-Object System.Collections.ArrayList
+    foreach ($reason in $routing.Blocked) {
+        if ($reason -match 'does not exist yet') { [void]$pending.Add($reason) } else { [void]$blocked.Add($reason) }
+    }
+
+    # 7. Optional cleanup policy
     if ((Get-ItemStatus $State 'ar:cleanup') -eq 'NOTE' -or ($plan -and (Get-ItemStatus $State 'ar:cleanup') -eq 'NOT RUN')) {
         $policyFile = Join-Path (Split-Path -Parent $PSScriptRoot) 'artifact-registry-cleanup-policy.json'
         $outcome = Invoke-Step 'OPTIONAL: set the registry cleanup policy (keep 10 newest, delete after 7 days)' @(
@@ -1017,6 +1189,7 @@ function Invoke-Apply {
 
     Write-Line ''
     foreach ($reason in $blocked) { Write-Line "NOT DONE, blocked: $reason" }
+    foreach ($reason in $pending) { Write-Line "LATER: $reason" }
     if ($plan) { Write-Line 'Plan only: nothing was run. Steps above run only for items the audit finds MISSING.'; return 0 }
     if ($ran -eq 0 -and $blocked.Count -eq 0) { Write-Line 'Nothing was changed.' }
     Write-Line 'Next: run with -SetGithubSecrets, then -Verify.'
@@ -1252,6 +1425,8 @@ function New-BootstrapConfig {
         ArRepo = 'saferoute'; ApiService = 'saferoute-api'; MigrationJob = 'saferoute-migrate'
         UrlSecret = 'saferoute-staging-database-url'; PasswordSecret = 'db-app-password'
         FirebaseProjectId = ''; WorkflowPath = ''
+        OsrmRuntimeSa = 'sa-osrm-runtime'; OsrmWalkingService = 'saferoute-osrm-walking'
+        OsrmDrivingService = 'saferoute-osrm-driving'
     }
     foreach ($key in @($Bound.Keys)) {
         if ($config.ContainsKey($key)) {
