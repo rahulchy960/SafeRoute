@@ -6,10 +6,15 @@ export const SEARCH_DEFAULT_LIMIT = 6;
 export const SEARCH_MAX_LIMIT = 10;
 
 /**
- * Query parameters of GET /v1/search. `q` is checked through `normalizeQuery`; the handler
- * normalises again to get the value, so the schema stays a plain string in the contract.
+ * Body of POST /v1/search.
+ *
+ * A BODY, not query parameters, on purpose (ADR 0019): the platform's request log records every
+ * URL with its query string, and what a person searches for must not be stored there.
+ *
+ * `q` is checked through `normalizeQuery`; the handler normalises again to get the value, so the
+ * schema stays a plain string in the contract.
  */
-export const SearchQuerySchema = z
+export const SearchRequestSchema = z
   .object({
     q: z
       .string()
@@ -17,7 +22,6 @@ export const SearchQuerySchema = z
       .max(QUERY_MAX_CODE_POINTS * 4)
       .refine((value) => normalizeQuery(value) !== undefined, { message: 'invalid query' })
       .openapi({
-        param: { name: 'q', in: 'query', required: true },
         description:
           `What the user typed. After trimming, collapsing whitespace and Unicode NFC ` +
           `normalisation it must be ${String(QUERY_MIN_CODE_POINTS)} to ` +
@@ -25,54 +29,49 @@ export const SearchQuerySchema = z
           'Any script is accepted.',
         examples: ['railway station'],
       }),
-    nearLatitude: z.coerce
+    nearLatitude: z
       .number()
       .min(-90)
       .max(90)
       .optional()
       .openapi({
-        param: { name: 'nearLatitude', in: 'query' },
         description:
           'Latitude of the area to prefer, WGS84 decimal degrees; send it together with ' +
           '`nearLongitude` or not at all. A bias, not a filter. The server rounds it to two ' +
           'decimals (about 1 km) before using it; send the map centre, not a precise position.',
         examples: [10.5],
       }),
-    nearLongitude: z.coerce
+    nearLongitude: z
       .number()
       .min(-180)
       .max(180)
       .optional()
       .openapi({
-        param: { name: 'nearLongitude', in: 'query' },
         description: 'Longitude of the area to prefer; see `nearLatitude`.',
         examples: [20.5],
       }),
     language: z
       .enum(['en', 'bn'])
       .default('en')
-      .openapi({
-        param: { name: 'language', in: 'query' },
-        description: 'Preferred language of the result names.',
-        examples: ['en'],
-      }),
-    limit: z.coerce
+      .openapi({ description: 'Preferred language of the result names.', examples: ['en'] }),
+    limit: z
       .number()
       .int()
       .min(1)
       .max(SEARCH_MAX_LIMIT)
       .default(SEARCH_DEFAULT_LIMIT)
-      .openapi({
-        param: { name: 'limit', in: 'query' },
-        description: 'Maximum number of results.',
-        examples: [SEARCH_DEFAULT_LIMIT],
-      }),
+      .openapi({ description: 'Maximum number of results.', examples: [SEARCH_DEFAULT_LIMIT] }),
   })
   .superRefine((value, ctx) => {
     if ((value.nearLatitude === undefined) !== (value.nearLongitude === undefined)) {
       const missing = value.nearLatitude === undefined ? 'nearLatitude' : 'nearLongitude';
       ctx.addIssue({ code: 'custom', path: [missing], message: 'both or neither' });
     }
+  })
+  .openapi('SearchRequest', {
+    description:
+      'A place search. Sent as a request body so that the text and the area never appear in a ' +
+      'URL.',
   });
 
 export const PlaceSchema = z

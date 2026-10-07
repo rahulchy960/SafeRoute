@@ -223,6 +223,27 @@ Added in P011b.
   moment" for 429, "temporarily unavailable" for 503. A 401 or 403 is left to the session
   machine, as for every other call.
 
+## Logging: correction of 2026-10-07 (P011d)
+
+**Decisions 1, 10 and 14 above were wrong in one respect, and this section corrects them.**
+
+- Decision 10 says nothing about a search is logged. That was true of the API's own log lines
+  and **false for the platform**: Cloud Run's request log records the full URL of every
+  request, query string included. With `GET /v1/search?q=…&nearLatitude=…&nearLongitude=…`
+  the search text and the coarse area were written to Cloud Logging and kept for the log
+  bucket's retention.
+- The test named in decision 10 captured our log lines only. It could not see the platform's
+  log, and passed.
+- Only Rahul's own test queries were recorded. There are no real users.
+- **Correction:** search is now `POST /v1/search` with the same fields in a JSON body; the GET
+  is removed; the contract is 0.5.0. Decision 14's `nearLatitude` and `nearLongitude` are body
+  fields, not query parameters. Everything else in this ADR stands.
+- The general rule, its contract test and the log exclusion are in
+  [ADR 0019](0019-privacy-in-urls.md). Entries already written expire with retention.
+- What is now true: the API's log lines hold no query, coordinate, result or key (tested); the
+  platform's request log holds the URL `/v1/search` without a query; the request body is not
+  logged by either.
+
 ## Note of 2026-10-07 (P011b): evaluation, provider and thresholds
 
 Rahul ran `pnpm search:eval` with the 74-query starter fixture and reported these aggregate

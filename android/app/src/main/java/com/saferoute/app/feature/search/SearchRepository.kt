@@ -7,6 +7,7 @@ import com.saferoute.app.core.network.errors.ApiResult
 import com.saferoute.app.core.network.errors.ProblemCodes
 import com.saferoute.app.core.network.errors.apiCall
 import com.saferoute.app.core.network.generated.api.SearchApi
+import com.saferoute.app.core.network.generated.model.SearchRequest
 import com.saferoute.app.core.session.LOCALE_BENGALI
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -73,19 +74,16 @@ internal fun coarse(degrees: Double): BigDecimal = BigDecimal.valueOf(degrees).s
 class ApiSearchRepository @Inject constructor(private val api: SearchApi) : SearchRepository {
 
     override suspend fun search(query: String, near: LatLng?, language: String): SearchOutcome {
-        val result = apiCall {
-            api.searchPlaces(
-                q = query,
-                nearLatitude = near?.let { coarse(it.latitude) },
-                nearLongitude = near?.let { coarse(it.longitude) },
-                language = if (language == LOCALE_BENGALI) {
-                    SearchApi.LanguageSearchPlaces.bn
-                } else {
-                    SearchApi.LanguageSearchPlaces.en
-                },
-                limit = SEARCH_RESULT_LIMIT,
-            )
-        }
+        // A request BODY, never a URL: servers and platforms log URLs, and what a person
+        // searches for must not end up there (ADR 0019).
+        val request = SearchRequest(
+            q = query,
+            nearLatitude = near?.let { coarse(it.latitude) },
+            nearLongitude = near?.let { coarse(it.longitude) },
+            language = if (language == LOCALE_BENGALI) SearchRequest.Language.bn else SearchRequest.Language.en,
+            limit = SEARCH_RESULT_LIMIT,
+        )
+        val result = apiCall { api.searchPlaces(request) }
         return when (result) {
             is ApiResult.Success -> SearchOutcome.Found(
                 places = result.value.results.map {

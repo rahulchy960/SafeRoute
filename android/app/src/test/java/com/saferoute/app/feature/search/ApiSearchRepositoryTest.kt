@@ -3,6 +3,7 @@ package com.saferoute.app.feature.search
 
 import com.saferoute.app.core.map.LatLng
 import com.saferoute.app.core.network.generated.api.SearchApi
+import com.saferoute.app.core.network.generated.model.SearchRequest
 import com.saferoute.app.core.network.generated.model.SearchResults
 import com.saferoute.app.core.network.networkJson
 import java.io.IOException
@@ -25,24 +26,10 @@ import retrofit2.Response
 class ApiSearchRepositoryTest {
 
     private class FakeSearchApi(private val answer: () -> Response<SearchResults>) : SearchApi {
-        data class Sent(
-            val q: String,
-            val nearLatitude: BigDecimal?,
-            val nearLongitude: BigDecimal?,
-            val language: SearchApi.LanguageSearchPlaces?,
-            val limit: Int?,
-        )
+        val sent = mutableListOf<SearchRequest>()
 
-        val sent = mutableListOf<Sent>()
-
-        override suspend fun searchPlaces(
-            q: String,
-            nearLatitude: BigDecimal?,
-            nearLongitude: BigDecimal?,
-            language: SearchApi.LanguageSearchPlaces?,
-            limit: Int?,
-        ): Response<SearchResults> {
-            sent += Sent(q, nearLatitude, nearLongitude, language, limit)
+        override suspend fun searchPlaces(searchRequest: SearchRequest): Response<SearchResults> {
+            sent += searchRequest
             return answer()
         }
     }
@@ -110,14 +97,37 @@ class ApiSearchRepositoryTest {
 
         assertEquals(
             listOf(
-                FakeSearchApi.Sent("station", BigDecimal("10.12"), BigDecimal("20.99"), SearchApi.LanguageSearchPlaces.bn, 6),
-                FakeSearchApi.Sent("station", BigDecimal("-10.13"), BigDecimal("0.00"), SearchApi.LanguageSearchPlaces.en, 6),
-                FakeSearchApi.Sent("station", null, null, SearchApi.LanguageSearchPlaces.en, 6),
+                SearchRequest("station", BigDecimal("10.12"), BigDecimal("20.99"), SearchRequest.Language.bn, 6),
+                SearchRequest("station", BigDecimal("-10.13"), BigDecimal("0.00"), SearchRequest.Language.en, 6),
+                SearchRequest("station", null, null, SearchRequest.Language.en, 6),
             ),
             api.sent,
         )
-        // What goes on the wire has two decimals and nothing finer.
-        assertEquals(listOf("10.12", "20.99"), api.sent.first().let { listOf("${it.nearLatitude}", "${it.nearLongitude}") })
+    }
+
+    @Test
+    fun `the search goes in the request body as JSON, with numbers and nothing finer than two decimals`() = runTest {
+        val api = ok()
+        search(api, near = LatLng(10.123456, 20.987654), language = "bn")
+        search(api, near = null, language = "en")
+
+        fun wire(request: SearchRequest) = networkJson.encodeToString(SearchRequest.serializer(), request)
+        // Coordinates are JSON numbers (not text), rounded; the precise digits are not in the body.
+        assertEquals(
+            """{"q":"station","nearLatitude":10.12,"nearLongitude":20.99,"language":"bn"}""",
+            wire(api.sent[0]),
+        )
+        // No area known: none is sent. English and the limit of six are the server's defaults.
+        assertEquals("""{"q":"station"}""", wire(api.sent[1]))
+    }
+
+    @Test
+    fun `the generated call is a POST with a body and has no query parameters`() {
+        val method = SearchApi::class.java.declaredMethods.single { it.name == "searchPlaces" }
+        assertEquals("v1/search", method.getAnnotation(retrofit2.http.POST::class.java)?.value)
+        assertNull(method.getAnnotation(retrofit2.http.GET::class.java))
+        val parameterAnnotations = method.parameterAnnotations.flatMap { it.toList() }.map { it.annotationClass }
+        assertEquals(listOf(retrofit2.http.Body::class), parameterAnnotations)
     }
 
     @Test

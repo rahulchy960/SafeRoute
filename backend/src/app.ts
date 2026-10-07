@@ -30,7 +30,7 @@ export interface AppDeps {
   /** Database for the /v1 modules; omitted when no DATABASE_URL is configured. */
   db?: Db;
   /**
-   * Geocoding provider behind GET /v1/search. Omitted when GEOCODING_API_KEY is not set (dev/test
+   * Geocoding provider behind POST /v1/search. Omitted when GEOCODING_API_KEY is not set (dev/test
    * only): the route then answers 503 `search_not_configured`.
    */
   geocoder?: GeocoderProvider;

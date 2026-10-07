@@ -23,7 +23,7 @@
   "nodes": [
     {
       "id": "app",
-      "label": "App: GET /v1/search with q, a coarse map area and a Firebase ID token",
+      "label": "App: POST /v1/search with q and a coarse map area in the body (never in the URL), and a Firebase ID token",
       "role": "app",
       "group": "client",
       "rank": 0

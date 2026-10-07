@@ -44,8 +44,12 @@ new ADR file under `docs/adr/`.
   checked against a server allowlist (`backend/src/modules/consents/purposes.ts`), so a new
   purpose is not a contract change.
 - Search (since P011a, [ADR 0018](../docs/adr/0018-search-and-geocoding.md)):
-  `GET /v1/search` takes `q`, optional `nearLatitude` + `nearLongitude` (a bias, both or
-  neither), `language` and `limit`, and returns `{ results: Place[], attribution }`. Show
+  `POST /v1/search` takes a JSON body (`SearchRequest`) with `q`, optional `nearLatitude` +
+  `nearLongitude` (a bias, both or neither), `language` and `limit`, and returns
+  `{ results: Place[], attribution }`. It is a POST because the search must not be in a URL
+  (see "Privacy in URLs" below); it changes nothing and needs no `Idempotency-Key`. Until
+  0.4.0 it was a GET with query parameters; that operation was removed in 0.5.0
+  ([ADR 0019](../docs/adr/0019-privacy-in-urls.md)). Show
   `attribution` next to the results when it is not null. `Place.id` is opaque and `Place.kind` is
   an open string. Plan v7 §6.3 wrote the bias as one `near` parameter; the contract uses explicit
   `nearLatitude` / `nearLongitude` to follow the rule below. The contract names no provider.
@@ -61,6 +65,10 @@ new ADR file under `docs/adr/`.
 - Enums are strings. **Clients must tolerate unknown values.**
 - Retryable state-changing calls take an `Idempotency-Key` header. Protected routes use
   `firebaseBearer`.
+- **Privacy in URLs** ([ADR 0019](../docs/adr/0019-privacy-in-urls.md)): the hosting platform
+  logs every URL with its query string. No user-entered text, position, phone number, token or
+  key may be a path or query parameter; use a body or a header. A contract test fails on a
+  parameter name that looks like one of these unless its allowlist names an ADR.
 - **City-neutral** (ADR 0005): no city or place names in paths, operationIds, schema names, tags,
   descriptions or examples. Future scoping by region is an optional `regionCode` field (additive,
   not added yet; [ADR 0013](../docs/adr/0013-regions-and-expansion.md)).

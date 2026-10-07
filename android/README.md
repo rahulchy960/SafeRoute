@@ -539,7 +539,7 @@ are never logged; the types that hold them print "hidden".
 
 | File | What |
 | --- | --- |
-| `feature/search/SearchRepository.kt` | `SearchRepository`; `ApiSearchRepository` calls the generated `SearchApi` through `apiCall { }` |
+| `feature/search/SearchRepository.kt` | `SearchRepository`; `ApiSearchRepository` calls the generated `SearchApi` through `apiCall { }`. The search is sent as a POST body, never in the URL: servers and platforms log URLs ([ADR 0019](../docs/adr/0019-privacy-in-urls.md)) |
 | `feature/search/SearchViewModel.kt` | Debounce, "only the newest answer counts", the screen's states |
 | `feature/search/SearchScreen.kt` | `SearchRoute` (with the ViewModel) and the stateless `SearchScreen` |
 | `core/map/MapSelection.kt` | What Search and Home share: the chosen place and the map's centre |

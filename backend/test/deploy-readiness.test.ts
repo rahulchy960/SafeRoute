@@ -39,7 +39,11 @@ describe('production-mode startup (deploy readiness for P006)', () => {
       expect(me.headers.get('www-authenticate')).toBe('Bearer');
       expect(me.headers.get('x-request-id')).toBeTruthy();
 
-      const search = await app.request('/v1/search?q=station');
+      const search = await app.request('/v1/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ q: 'station' }),
+      });
       expect(search.status).toBe(401);
       expect(search.headers.get('www-authenticate')).toBe('Bearer');
 

@@ -201,10 +201,12 @@ describe('generated OpenAPI document', () => {
     expect(serialized).not.toMatch(/"(dateOfBirth|birthDate|birthday|dob|age)"\s*:/i);
   });
 
-  it('documents place search (P011a, ADR 0018)', () => {
-    expect((doc.info as Json).version).toBe('0.4.0');
+  it('documents place search as a POST with a body (P011a, P011d; ADR 0018, ADR 0019)', () => {
+    expect((doc.info as Json).version).toBe('0.5.0');
     const paths = doc.paths as Record<string, Record<string, Json>>;
-    const op = paths['/v1/search']?.get ?? {};
+    // The search travels in a request body. There is no GET: a URL would carry the text.
+    expect(Object.keys(paths['/v1/search'] ?? {})).toEqual(['post']);
+    const op = paths['/v1/search']?.post ?? {};
     expect(op.operationId).toBe('searchPlaces');
     expect(op.tags).toEqual(['search']);
     expect(Object.keys(op.responses as Json).sort()).toEqual([
@@ -216,18 +218,28 @@ describe('generated OpenAPI document', () => {
       '500',
       '503',
     ]);
-    const parameters = op.parameters as { name: string; in: string; required?: boolean }[];
-    expect(parameters.map((p) => `${p.in}:${p.name}`).sort()).toEqual([
-      'query:language',
-      'query:limit',
-      'query:nearLatitude',
-      'query:nearLongitude',
-      'query:q',
+    expect(op.parameters ?? []).toEqual([]);
+    const requestBody = op.requestBody as { required: boolean; content: Record<string, Json> };
+    expect(requestBody.required).toBe(true);
+    expect(requestBody.content['application/json']?.schema).toEqual({
+      $ref: '#/components/schemas/SearchRequest',
+    });
+    const request = components.schemas?.SearchRequest as {
+      properties: Record<string, Json>;
+      required: string[];
+    };
+    expect(Object.keys(request.properties).sort()).toEqual([
+      'language',
+      'limit',
+      'nearLatitude',
+      'nearLongitude',
+      'q',
     ]);
     // Only `q` is required: everything else has a default or is optional.
-    expect(parameters.filter((p) => p.required).map((p) => p.name)).toEqual(['q']);
-    // Explicit latitude/longitude, never a bare `near` pair (ADR 0004).
-    expect(parameters.map((p) => p.name)).not.toContain('near');
+    expect(request.required).toEqual(['q']);
+    // Coordinates are JSON numbers, explicit latitude and longitude (ADR 0004).
+    expect(request.properties.nearLatitude?.type).toBe('number');
+    expect(request.properties.nearLongitude?.type).toBe('number');
 
     const place = components.schemas?.Place as { properties: Record<string, Json> };
     expect(Object.keys(place.properties).sort()).toEqual([
@@ -254,6 +266,136 @@ describe('generated OpenAPI document', () => {
     }
     // No provider is named in the contract: swapping it is not a contract change.
     expect(serialized.toLowerCase()).not.toMatch(/geoapify|locationiq|maptiler|nominatim/);
+  });
+
+  describe('privacy in URLs (ADR 0019)', () => {
+    /**
+     * Platform request logs record every URL with its query string. So nothing a person typed,
+     * no position and no credential may be a path or query parameter. Such values go in a
+     * request body or a header. This test reads the committed contract and fails on a name that
+     * looks like one of them.
+     */
+    const DENIED = [
+      /^q$/i,
+      /^query$/i,
+      /^text$/i,
+      /^search/i,
+      /^lat$/i,
+      /^lng$/i,
+      /^lon$/i,
+      /latitude/i,
+      /longitude/i,
+      /^near/i,
+      /^bbox$/i,
+      /phone/i,
+      /token/i,
+      /^key$/i,
+      /apikey/i,
+      /password/i,
+      /secret/i,
+    ];
+
+    /**
+     * Exceptions. Each entry needs a reason and the ADR that accepts it. Empty today: add an
+     * entry only together with that ADR.
+     */
+    const ALLOWED: { operationId: string; parameter: string; adr: string; reason: string }[] = [];
+
+    interface UrlParameter {
+      operationId: string;
+      in: string;
+      name: string;
+    }
+
+    function urlParameters(document: Json): UrlParameter[] {
+      const found: UrlParameter[] = [];
+      const parameterComponents = (document.components as Record<string, Json> | undefined)
+        ?.parameters as Record<string, Json> | undefined;
+      const resolve = (parameter: Json): Json => {
+        const ref = parameter.$ref;
+        if (typeof ref !== 'string') return parameter;
+        return parameterComponents?.[ref.replace('#/components/parameters/', '')] ?? {};
+      };
+      for (const [path, item] of Object.entries(document.paths as Record<string, Json>)) {
+        const shared = (item.parameters as Json[] | undefined) ?? [];
+        for (const method of HTTP_METHODS.filter((name) => name in item)) {
+          const op = item[method] as Json;
+          const operationId = String(op.operationId);
+          const declared = [...shared, ...((op.parameters as Json[] | undefined) ?? [])].map(
+            resolve,
+          );
+          for (const parameter of declared) {
+            if (parameter.in === 'path' || parameter.in === 'query') {
+              found.push({ operationId, in: parameter.in, name: String(parameter.name) });
+            }
+          }
+          // A path variable that is not declared as a parameter is still part of the URL.
+          for (const match of path.matchAll(/\{([^}]+)\}/g)) {
+            const name = match[1] ?? '';
+            if (
+              !found.some(
+                (p) => p.operationId === operationId && p.in === 'path' && p.name === name,
+              )
+            ) {
+              found.push({ operationId, in: 'path', name });
+            }
+          }
+        }
+      }
+      return found;
+    }
+
+    const violations = (document: Json) =>
+      urlParameters(document)
+        .filter((p) => DENIED.some((pattern) => pattern.test(p.name)))
+        .filter(
+          (p) => !ALLOWED.some((a) => a.operationId === p.operationId && a.parameter === p.name),
+        )
+        .map((p) => `${p.operationId}: ${p.in} parameter "${p.name}"`);
+
+    it('the committed contract puts no user text, position or credential in a path or query', () => {
+      const committed = JSON.parse(readFileSync(DEFAULT_SPEC_PATH, 'utf8')) as Json;
+      expect(violations(committed)).toEqual([]);
+    });
+
+    it('every allowlist entry names an ADR and still matches a real parameter', () => {
+      const real = urlParameters(doc);
+      for (const entry of ALLOWED) {
+        expect(entry.adr, entry.parameter).toMatch(/^ADR \d{4}$/);
+        expect(entry.reason.length, entry.parameter).toBeGreaterThan(10);
+        expect(
+          real.some((p) => p.operationId === entry.operationId && p.name === entry.parameter),
+          `${entry.operationId} ${entry.parameter} no longer exists; remove the entry`,
+        ).toBe(true);
+      }
+    });
+
+    it('the check catches what it is meant to catch', () => {
+      const spec = (path: string, parameters: Json[]): Json => ({
+        paths: { [path]: { get: { operationId: 'fakeOperation', parameters } } },
+      });
+      const query = (name: string): Json => ({ name, in: 'query' });
+      // The old search endpoint, the planned cells query and a share link would all fail.
+      expect(violations(spec('/v1/search', [query('q'), query('nearLatitude')]))).toEqual([
+        'fakeOperation: query parameter "q"',
+        'fakeOperation: query parameter "nearLatitude"',
+      ]);
+      expect(violations(spec('/v1/safety/cells', [query('bbox')]))).toHaveLength(1);
+      expect(violations(spec('/v/{token}', []))).toEqual(['fakeOperation: path parameter "token"']);
+      expect(violations(spec('/v1/x', [query('phoneNumber'), query('apiKey')]))).toHaveLength(2);
+      // Headers and bodies are fine, and so are ordinary identifiers and paging.
+      expect(
+        violations(
+          spec('/v1/me/consents/{purpose}', [
+            { name: 'Idempotency-Key', in: 'header' },
+            { name: 'purpose', in: 'path' },
+            query('limit'),
+            query('cursor'),
+            query('language'),
+          ]),
+        ),
+      ).toEqual([]);
+    });
   });
 
   it('is city-neutral (ADR 0005)', () => {

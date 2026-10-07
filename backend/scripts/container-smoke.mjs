@@ -379,9 +379,14 @@ async function checkApi() {
   check('401 carries an X-Request-Id header', Boolean(requestId), `request id ${requestId}`);
 
   // Search is behind sign-in: without a token it answers 401 and never reaches the provider.
-  const search = await fetch(`${base}/v1/search?q=station`);
+  // POST with a body: search text never travels in a URL (ADR 0019).
+  const search = await fetch(`${base}/v1/search`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ q: 'station' }),
+  });
   check(
-    'GET /v1/search without a token → 401 with WWW-Authenticate: Bearer',
+    'POST /v1/search without a token → 401 with WWW-Authenticate: Bearer',
     search.status === 401 && search.headers.get('www-authenticate') === 'Bearer',
     `status=${search.status}`,
   );

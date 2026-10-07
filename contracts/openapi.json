@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "SafeRoute API",
-    "version": "0.4.0",
+    "version": "0.5.0",
     "description": "SafeRoute is a personal-safety navigation API. Safety information is context, never a guarantee that a route or area is safe. SafeRoute is not an emergency service; in an emergency call your local emergency number (112 in India).",
     "license": {
       "name": "AGPL-3.0-only",
@@ -708,6 +708,63 @@
           "kind"
         ],
         "description": "One search result."
+      },
+      "SearchRequest": {
+        "type": "object",
+        "properties": {
+          "q": {
+            "type": "string",
+            "maxLength": 400,
+            "description": "What the user typed. After trimming, collapsing whitespace and Unicode NFC normalisation it must be 2 to 100 Unicode code points with no control characters. Any script is accepted.",
+            "examples": [
+              "railway station"
+            ]
+          },
+          "nearLatitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90,
+            "description": "Latitude of the area to prefer, WGS84 decimal degrees; send it together with `nearLongitude` or not at all. A bias, not a filter. The server rounds it to two decimals (about 1 km) before using it; send the map centre, not a precise position.",
+            "examples": [
+              10.5
+            ]
+          },
+          "nearLongitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180,
+            "description": "Longitude of the area to prefer; see `nearLatitude`.",
+            "examples": [
+              20.5
+            ]
+          },
+          "language": {
+            "type": "string",
+            "enum": [
+              "en",
+              "bn"
+            ],
+            "default": "en",
+            "description": "Preferred language of the result names.",
+            "examples": [
+              "en"
+            ]
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10,
+            "default": 6,
+            "description": "Maximum number of results.",
+            "examples": [
+              6
+            ]
+          }
+        },
+        "required": [
+          "q"
+        ],
+        "description": "A place search. Sent as a request body so that the text and the area never appear in a URL."
       }
     },
     "parameters": {
@@ -1049,104 +1106,28 @@
       }
     },
     "/v1/search": {
-      "get": {
+      "post": {
         "operationId": "searchPlaces",
         "tags": [
           "search"
         ],
         "summary": "Search for places by name",
-        "description": "Forwards the text to a geocoding provider and returns matching places, best match first. Results are biased towards `nearLatitude`/`nearLongitude` (or a default area) but not limited to it. Queries are not stored or logged. Errors: `rate_limited` (429) and `search_unavailable` (503) may carry a `Retry-After` header in seconds; `search_not_configured` (503) means this instance has no geocoding key.",
+        "description": "Forwards the text to a geocoding provider and returns matching places, best match first. Results are biased towards `nearLatitude`/`nearLongitude` (or a default area) but not limited to it. The search travels in the request body, never in the URL, and is not stored or logged. Calling it again with the same body is safe (it changes nothing), so no `Idempotency-Key` is needed. Errors: `rate_limited` (429) and `search_unavailable` (503) may carry a `Retry-After` header in seconds; `search_not_configured` (503) means this instance has no geocoding key.",
         "security": [
           {
             "firebaseBearer": []
           }
         ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "maxLength": 400,
-              "description": "What the user typed. After trimming, collapsing whitespace and Unicode NFC normalisation it must be 2 to 100 Unicode code points with no control characters. Any script is accepted.",
-              "examples": [
-                "railway station"
-              ]
-            },
-            "required": true,
-            "description": "What the user typed. After trimming, collapsing whitespace and Unicode NFC normalisation it must be 2 to 100 Unicode code points with no control characters. Any script is accepted.",
-            "name": "q",
-            "in": "query"
-          },
-          {
-            "schema": {
-              "type": [
-                "number",
-                "null"
-              ],
-              "minimum": -90,
-              "maximum": 90,
-              "description": "Latitude of the area to prefer, WGS84 decimal degrees; send it together with `nearLongitude` or not at all. A bias, not a filter. The server rounds it to two decimals (about 1 km) before using it; send the map centre, not a precise position.",
-              "examples": [
-                10.5
-              ]
-            },
-            "required": false,
-            "description": "Latitude of the area to prefer, WGS84 decimal degrees; send it together with `nearLongitude` or not at all. A bias, not a filter. The server rounds it to two decimals (about 1 km) before using it; send the map centre, not a precise position.",
-            "name": "nearLatitude",
-            "in": "query"
-          },
-          {
-            "schema": {
-              "type": [
-                "number",
-                "null"
-              ],
-              "minimum": -180,
-              "maximum": 180,
-              "description": "Longitude of the area to prefer; see `nearLatitude`.",
-              "examples": [
-                20.5
-              ]
-            },
-            "required": false,
-            "description": "Longitude of the area to prefer; see `nearLatitude`.",
-            "name": "nearLongitude",
-            "in": "query"
-          },
-          {
-            "schema": {
-              "type": "string",
-              "enum": [
-                "en",
-                "bn"
-              ],
-              "default": "en",
-              "description": "Preferred language of the result names.",
-              "examples": [
-                "en"
-              ]
-            },
-            "required": false,
-            "description": "Preferred language of the result names.",
-            "name": "language",
-            "in": "query"
-          },
-          {
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 10,
-              "default": 6,
-              "description": "Maximum number of results.",
-              "examples": [
-                6
-              ]
-            },
-            "required": false,
-            "description": "Maximum number of results.",
-            "name": "limit",
-            "in": "query"
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchRequest"
+              }
+            }
           }
-        ],
+        },
         "responses": {
           "200": {
             "description": "Matching places.",

@@ -43,7 +43,7 @@ const PLACE: PlaceResult = {
   kind: 'station',
 };
 const BENGALI_QUERY = 'হাওড়া‌ স্টেশন';
-const NEAR = { nearLatitude: '10.123456', nearLongitude: '20.987654' };
+const NEAR = { nearLatitude: 10.123456, nearLongitude: 20.987654 };
 
 /** A geocoder that records what it was asked and answers from a script. */
 function fakeGeocoder(reply: PlaceResult[] | GeocoderError = [PLACE]) {
@@ -97,10 +97,15 @@ async function signUp(app: TestApp, n: number) {
   return { token, userId: ((await res.json()) as { id: string }).id };
 }
 
-async function search(app: TestApp, token: string | undefined, params: Record<string, string>) {
-  const query = new URLSearchParams(params).toString();
-  return await app.request(`/v1/search?${query}`, {
-    headers: token === undefined ? {} : { Authorization: `Bearer ${token}` },
+/** POST with a JSON body: nothing about a search is ever put in the URL (ADR 0019). */
+async function search(app: TestApp, token: string | undefined, body: Record<string, unknown>) {
+  return await app.request('/v1/search', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token === undefined ? {} : { Authorization: `Bearer ${token}` }),
+    },
+    body: JSON.stringify(body),
   });
 }
 
@@ -109,7 +114,7 @@ interface Problem {
   errors?: { path: string; code: string }[];
 }
 
-describe('GET /v1/search', () => {
+describe('POST /v1/search', () => {
   it('401 without a token, with WWW-Authenticate: Bearer, and the provider is not called', async () => {
     const { provider, calls } = fakeGeocoder();
     const { app } = setup(provider);
@@ -184,32 +189,32 @@ describe('GET /v1/search', () => {
   });
 
   it.each([
-    ['q of one code point', { q: 'a' }, 'query.q'],
-    ['q of 101 code points', { q: 'a'.repeat(101) }, 'query.q'],
-    ['q of whitespace only', { q: '      ' }, 'query.q'],
-    ['q with a control character', { q: 'sta\u0007tion' }, 'query.q'],
-    ['q with a newline', { q: 'sta\ntion' }, 'query.q'],
-    ['latitude without longitude', { q: 'station', nearLatitude: '10.5' }, 'query.nearLongitude'],
-    ['longitude without latitude', { q: 'station', nearLongitude: '20.5' }, 'query.nearLatitude'],
+    ['q of one code point', { q: 'a' }, 'body.q'],
+    ['q of 101 code points', { q: 'a'.repeat(101) }, 'body.q'],
+    ['q of whitespace only', { q: '      ' }, 'body.q'],
+    ['q with a control character', { q: 'sta\u0007tion' }, 'body.q'],
+    ['q with a newline', { q: 'sta\ntion' }, 'body.q'],
+    ['latitude without longitude', { q: 'station', nearLatitude: 10.5 }, 'body.nearLongitude'],
+    ['longitude without latitude', { q: 'station', nearLongitude: 20.5 }, 'body.nearLatitude'],
     [
       'latitude out of range',
-      { q: 'station', nearLatitude: '90.5', nearLongitude: '20.5' },
-      'query.nearLatitude',
+      { q: 'station', nearLatitude: 90.5, nearLongitude: 20.5 },
+      'body.nearLatitude',
     ],
     [
       'longitude out of range',
-      { q: 'station', nearLatitude: '10.5', nearLongitude: '-180.5' },
-      'query.nearLongitude',
+      { q: 'station', nearLatitude: 10.5, nearLongitude: -180.5 },
+      'body.nearLongitude',
     ],
     [
       'latitude that is not a number',
-      { q: 'station', nearLatitude: 'SECRETPLACE', nearLongitude: '20.5' },
-      'query.nearLatitude',
+      { q: 'station', nearLatitude: 'SECRETPLACE', nearLongitude: 20.5 },
+      'body.nearLatitude',
     ],
-    ['an unknown language', { q: 'station', language: 'fr' }, 'query.language'],
-    ['limit 0', { q: 'station', limit: '0' }, 'query.limit'],
-    ['limit 11', { q: 'station', limit: '11' }, 'query.limit'],
-    ['a fractional limit', { q: 'station', limit: '2.5' }, 'query.limit'],
+    ['an unknown language', { q: 'station', language: 'fr' }, 'body.language'],
+    ['limit 0', { q: 'station', limit: 0 }, 'body.limit'],
+    ['limit 11', { q: 'station', limit: 11 }, 'body.limit'],
+    ['a fractional limit', { q: 'station', limit: 2.5 }, 'body.limit'],
   ])('%s → 400 validation_error, no echo, provider not called', async (_name, params, path) => {
     const { provider, calls } = fakeGeocoder();
     const { app } = setup(provider);
@@ -222,8 +227,45 @@ describe('GET /v1/search', () => {
     expect(problem.code).toBe('validation_error');
     expect([...new Set(problem.errors?.map((error) => error.path))]).toEqual([path]);
     for (const value of Object.values(params)) {
-      if (value.trim().length > 3) expect(text).not.toContain(value);
+      if (String(value).trim().length > 3) expect(text).not.toContain(String(value));
     }
+    expect(calls).toHaveLength(0);
+  });
+
+  it('GET is gone, and a search in the query string is ignored and never logged', async () => {
+    const { provider, calls } = fakeGeocoder();
+    const { app, lines } = setup(provider);
+    const { token } = await signUp(app, 11);
+    const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+
+    // The old form of the endpoint no longer exists.
+    const get = await app.request('/v1/search?q=URLSECRET&nearLatitude=10.123456', { headers });
+    expect(get.status).toBe(404);
+    // A body-less POST is invalid even when the URL carries a query: the URL is not read.
+    const post = await app.request('/v1/search?q=URLSECRET', {
+      method: 'POST',
+      headers,
+      body: '{}',
+    });
+    expect(post.status).toBe(400);
+    expect(((await post.json()) as Problem).errors?.[0]?.path).toBe('body.q');
+
+    expect(calls).toHaveLength(0);
+    const raw = lines.join(' ');
+    for (const secret of ['URLSECRET', '10.123456', '?']) expect(raw).not.toContain(secret);
+  });
+
+  it('a body that is not JSON → 400, nothing echoed', async () => {
+    const { provider, calls } = fakeGeocoder();
+    const { app } = setup(provider);
+    const { token } = await signUp(app, 12);
+    const res = await app.request('/v1/search', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: '{"q": "BODYSECRET',
+    });
+    expect(res.status).toBe(400);
+    expect(await res.text()).not.toContain('BODYSECRET');
     expect(calls).toHaveLength(0);
   });
 
@@ -232,18 +274,15 @@ describe('GET /v1/search', () => {
     const { token } = await signUp(app, 8);
     const res = await search(app, token, {});
     expect(res.status).toBe(400);
-    expect(((await res.json()) as Problem).errors?.[0]?.path).toBe('query.q');
+    expect(((await res.json()) as Problem).errors?.[0]?.path).toBe('body.q');
   });
 
   it.each([
     ['q of exactly 2 code points', { q: 'ab' }],
     ['q of exactly 100 code points', { q: 'a'.repeat(100) }],
-    ['limit 1', { q: 'station', limit: '1' }],
-    ['limit 10', { q: 'station', limit: '10' }],
-    [
-      'the edge of the coordinate range',
-      { q: 'station', nearLatitude: '-90', nearLongitude: '180' },
-    ],
+    ['limit 1', { q: 'station', limit: 1 }],
+    ['limit 10', { q: 'station', limit: 10 }],
+    ['the edge of the coordinate range', { q: 'station', nearLatitude: -90, nearLongitude: 180 }],
   ])('%s is accepted', async (_name, params) => {
     const { app } = setup();
     const { token } = await signUp(app, 9);
@@ -260,7 +299,7 @@ describe('GET /v1/search', () => {
   });
 });
 
-describe('GET /v1/search: provider failures', () => {
+describe('POST /v1/search: provider failures', () => {
   const KINDS: GeocoderFailure[] = [
     'auth',
     'rate_limited',
@@ -301,7 +340,7 @@ describe('GET /v1/search: provider failures', () => {
   });
 });
 
-describe('GET /v1/search: rate limits', () => {
+describe('POST /v1/search: rate limits', () => {
   it('a user gets the burst, then 429 rate_limited with Retry-After; other users are unaffected', async () => {
     const { provider, calls } = fakeGeocoder();
     const { app } = setup(provider);
@@ -408,7 +447,9 @@ describe('GET /v1/search: rate limits', () => {
   });
 });
 
-describe('GET /v1/search: nothing about the search is logged', () => {
+// These tests see the API's OWN log lines. The platform's request log (the URL) is outside any
+// test here: that is why the search travels in a body (ADR 0019).
+describe("POST /v1/search: nothing about the search is in the API's log lines", () => {
   it('logs no query, coordinate, result or key, in any outcome', async () => {
     const outcomes: [PlaceResult[] | GeocoderError, number][] = [
       [[PLACE], 200],
@@ -425,7 +466,7 @@ describe('GET /v1/search: nothing about the search is logged', () => {
       const res = await search(app, token, { q: BENGALI_QUERY, language: 'bn', ...NEAR });
       expect(res.status).toBe(status);
       // A rejected request is logged too, and must not echo what was sent.
-      await search(app, token, { q: BENGALI_QUERY, nearLatitude: '10.123456' });
+      await search(app, token, { q: BENGALI_QUERY, nearLatitude: 10.123456 });
 
       const raw = lines.join('\n');
       for (const secret of [
