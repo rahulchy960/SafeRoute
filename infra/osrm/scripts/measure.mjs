@@ -122,6 +122,7 @@ async function main() {
       'snap-m': { type: 'string', default: '500' },
       concurrency: { type: 'string', default: '8' },
       label: { type: 'string', default: '' },
+      'wait-seconds': { type: 'string', default: '60' },
     },
   });
   const bbox = (values.bbox ?? '').split(',').map(Number);
@@ -148,6 +149,18 @@ async function main() {
     }
     return { ms, body, bytes: text.length };
   };
+
+  // 0. wait until the service answers (a fresh container is still loading its graph)
+  const waitUntil = Date.now() + Number(values['wait-seconds']) * 1000;
+  for (let up = false; !up; ) {
+    try {
+      await call(`/nearest/v1/p/${(bbox[0] + bbox[2]) / 2},${(bbox[1] + bbox[3]) / 2}?number=1`);
+      up = true;
+    } catch (err) {
+      if (Date.now() > waitUntil) throw new Error(`the service did not answer within ${values['wait-seconds']} s`, { cause: err });
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+  }
 
   // 1. random points, snapped to the network
   const points = [];

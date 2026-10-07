@@ -1,0 +1,48 @@
+{
+  "$schema": "../../tools/diagrams/diagram.schema.json",
+  "title": "Routing infrastructure: from OpenStreetMap to private OSRM services",
+  "subtitle": "Built and measured in P012a (left and middle); the staging services and their callers come in the next pull requests (right) (ADR 0020)",
+  "direction": "TB",
+  "layout": { "nodeWidth": 250, "rankGap": 50 },
+  "groups": [
+    { "id": "build", "label": "Data and image build (P012a)" },
+    { "id": "checks", "label": "Checks (P012a)" },
+    { "id": "staging", "label": "Google Cloud staging (planned: P012a part 2, P012b, P012c)" }
+  ],
+  "nodes": [
+    { "id": "osm", "label": "Geofabrik extract of OpenStreetMap (ODbL 1.0), dated, MD5 checked", "role": "external", "group": "build", "rank": 0 },
+    { "id": "script", "label": "build-image.mjs: allowlisted URL, metadata.json, image labels", "role": "infra", "group": "build", "rank": 1 },
+    { "id": "cut", "label": "Stage 1: osmium cuts the extent (state boundary relation, a box, or the sample)", "role": "service", "group": "build", "rank": 2 },
+    { "id": "graph", "label": "Stage 2: osrm-extract, osrm-partition, osrm-customize (MLD) for foot or car", "role": "service", "group": "build", "rank": 3 },
+    { "id": "image", "label": "Image saferoute-osrm: one profile, graph baked in, osrm-routed as non-root, log level WARNING", "role": "data", "group": "build", "rank": 4 },
+    { "id": "extent", "label": "state-extent.json: simplified outline for the API's inside/outside answer", "role": "data", "group": "build", "rank": 3 },
+    { "id": "ci", "label": "osrm-ci: the whole pipeline on a 79 KB sample fixture, both profiles", "role": "infra", "group": "checks", "rank": 3 },
+    { "id": "smoke", "label": "local-smoke.mjs: routes between public places, limits, user, labels, NO request path in the log", "role": "security", "group": "checks", "rank": 4 },
+    { "id": "measure", "label": "measure.mjs: p50/p95, NoRoute rate, memory (seeded random points)", "role": "infra", "group": "checks", "rank": 5 },
+    { "id": "registry", "label": "Artifact Registry: osrm-<profile>-<extract date>", "role": "data", "group": "staging", "rank": 5 },
+    { "id": "walking", "label": "Cloud Run saferoute-osrm-walking: private, role-less sa-osrm-runtime, scales to zero", "role": "service", "group": "staging", "rank": 6 },
+    { "id": "driving", "label": "Cloud Run saferoute-osrm-driving: private, role-less sa-osrm-runtime, scales to zero", "role": "service", "group": "staging", "rank": 6 },
+    { "id": "logs", "label": "Platform request logs of both services excluded: their URLs hold coordinates", "role": "security", "group": "staging", "rank": 7 },
+    { "id": "api", "label": "saferoute-api (sa-api-runtime): run.invoker + Google ID token, POST /v1/routes (P012b)", "role": "service", "group": "staging", "rank": 7 },
+    { "id": "app", "label": "Android app: directions (P012c). It never calls OSRM", "role": "app", "group": "staging", "rank": 8 }
+  ],
+  "edges": [
+    { "from": "osm", "to": "script", "label": "download" },
+    { "from": "script", "to": "cut" },
+    { "from": "cut", "to": "graph" },
+    { "from": "graph", "to": "image" },
+    { "from": "cut", "to": "extent" },
+    { "from": "ci", "to": "smoke" },
+    { "from": "image", "to": "smoke" },
+    { "from": "image", "to": "measure" },
+    { "from": "image", "to": "registry", "label": "push (manual workflow)" },
+    { "from": "registry", "to": "walking" },
+    { "from": "registry", "to": "driving" },
+    { "from": "walking", "to": "logs" },
+    { "from": "driving", "to": "logs" },
+    { "from": "api", "to": "walking", "label": "IAM, coordinates in the URL path" },
+    { "from": "api", "to": "driving" },
+    { "from": "extent", "to": "api", "label": "outside covered area" },
+    { "from": "app", "to": "api", "label": "coordinates in the POST body" }
+  ]
+}
