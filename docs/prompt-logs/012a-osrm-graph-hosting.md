@@ -105,7 +105,7 @@ script → cut → graph → image, the checks, and the planned private services
 | `node --test infra/osrm/scripts/scripts.test.mjs` | 6 tests, 0 failures |
 | hadolint 2.15.1 · shellcheck · actionlint 1.7.12 (all workflows) | clean |
 | `pnpm generate` · `pnpm check` in `tools/diagrams` | 17 diagrams, up to date |
-| markdownlint-cli2 · JSON validity · gitleaks | see the pull request (run in `/ship-prompt`) |
+| markdownlint-cli2 · JSON validity · gitleaks 8.30.1 | 85 files, 0 errors · 54 files valid · no leaks |
 | `git ls-files` for `.pbf` / `.osrm` | only `infra/osrm/sample/sample.osm.pbf` |
 
 Measurements: the table in [ADR 0020](../adr/0020-routing-osrm.md). The short version, state
