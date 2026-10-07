@@ -7,12 +7,12 @@ import { LAUNCH_REGION_CENTER } from '../../regions/defaults.js';
 import type { AppEnv } from '../../types.js';
 import { requireUser, type AuthDeps } from '../auth/middleware.js';
 import { coarsen, normalizeQuery } from './normalize.js';
-import { SearchQuerySchema, SearchResultsSchema } from './schema.js';
+import { SearchRequestSchema, SearchResultsSchema } from './schema.js';
 import { SearchLimitError, searchPlaces } from './service.js';
 import type { GeocoderProvider } from './types.js';
 
 export const searchPlacesRoute = createRoute({
-  method: 'get',
+  method: 'post',
   path: '/v1/search',
   operationId: 'searchPlaces',
   tags: ['search'],
@@ -20,11 +20,15 @@ export const searchPlacesRoute = createRoute({
   description:
     'Forwards the text to a geocoding provider and returns matching places, best match first. ' +
     'Results are biased towards `nearLatitude`/`nearLongitude` (or a default area) but not ' +
-    'limited to it. Queries are not stored or logged. Errors: `rate_limited` (429) and ' +
+    'limited to it. The search travels in the request body, never in the URL, and is not ' +
+    'stored or logged. Calling it again with the same body is safe (it changes nothing), so ' +
+    'no `Idempotency-Key` is needed. Errors: `rate_limited` (429) and ' +
     '`search_unavailable` (503) may carry a `Retry-After` header in seconds; ' +
     '`search_not_configured` (503) means this instance has no geocoding key.',
   security: [{ firebaseBearer: [] }],
-  request: { query: SearchQuerySchema },
+  request: {
+    body: { required: true, content: { 'application/json': { schema: SearchRequestSchema } } },
+  },
   responses: {
     200: {
       description: 'Matching places.',
@@ -72,7 +76,7 @@ export function searchRoutes(deps: SearchRouteDeps) {
         );
       }
 
-      const input = c.req.valid('query');
+      const input = c.req.valid('json');
       // The schema already accepted `q`; normalising again yields the value to send on.
       const query = normalizeQuery(input.q) ?? '';
       const near =
