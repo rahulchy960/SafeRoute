@@ -26,6 +26,7 @@ Copy [`template.md`](template.md) to `NNNN-short-title.md`, and add a row to the
 | [0018](0018-search-and-geocoding.md) | Place search and geocoding (server-side proxy, provider adapters, rate limits, evaluation) | Accepted |
 | [0019](0019-privacy-in-urls.md) | Privacy in URLs: no user text, position or credential in a path or query; search becomes POST | Accepted |
 | [0020](0020-routing-osrm.md) | Routing on self-hosted OSRM (West Bengal extent, MLD, private Cloud Run services that scale to zero, log privacy) | Accepted |
+| [0021](0021-post-mvp-product-direction.md) | Post-MVP product direction: sequence, journey engine and guardrails for future features | Accepted |
 
 A breaking API change, new infrastructure, a new data store or the Android package name each need
 an ADR.
