@@ -33,6 +33,19 @@ internal object OverlayKind {
     const val DOT = "dot"
     const val PIN = "pin"
     const val HEADING = "heading"
+
+    /** The light edge under a route line. */
+    const val ROUTE_CASING = "route-casing"
+    const val ROUTE = "route"
+}
+
+/** Line widths of a route, in density-independent pixels. */
+internal object RouteWidth {
+    const val SELECTED = 6.0
+    const val ALTERNATIVE = 4.0
+
+    /** How much wider the casing is than the line on it. */
+    const val CASING_EXTRA = 3.0
 }
 
 private const val EARTH_RADIUS_METERS = 6_371_008.8
@@ -72,6 +85,25 @@ internal fun overlaysToGeoJson(overlays: List<MapOverlay>, palette: OverlayPalet
                     opacity = 0.15,
                 ),
             )
+            is MapOverlay.Route -> {
+                val line = """{"type":"LineString","coordinates":${coordinates(overlay.points)}}"""
+                val width = if (overlay.selected) RouteWidth.SELECTED else RouteWidth.ALTERNATIVE
+                listOf(
+                    feature(
+                        geometry = line,
+                        kind = OverlayKind.ROUTE_CASING,
+                        color = palette.halo,
+                        width = width + RouteWidth.CASING_EXTRA,
+                    ),
+                    feature(
+                        geometry = line,
+                        kind = OverlayKind.ROUTE,
+                        // Selected: the strong line colour. Alternative: grey, and thinner.
+                        color = if (overlay.selected) palette.line else palette.stale,
+                        width = width,
+                    ),
+                )
+            }
             is MapOverlay.Marker -> if (overlay.style == MarkerStyle.Place) {
                 // Its own kind: drawn larger than the location dot, so size as well as colour
                 // tells the two apart.
@@ -89,8 +121,8 @@ internal fun overlaysToGeoJson(overlays: List<MapOverlay>, palette: OverlayPalet
                     kind = OverlayKind.DOT,
                     color = overlay.style.color(palette),
                     // Approximate: a ring, not a dot. Shape, not only colour, says "roughly here".
-                    opacity = if (overlay.style == MarkerStyle.Approximate) 0.0 else 1.0,
-                    stroke = if (overlay.style == MarkerStyle.Approximate) palette.location else palette.halo,
+                    opacity = if (overlay.style.isRing) 0.0 else 1.0,
+                    stroke = if (overlay.style.isRing) overlay.style.color(palette) else palette.halo,
                 ),
                 overlay.headingDegrees?.takeIf { overlay.style == MarkerStyle.Default }?.let {
                     feature(
@@ -125,7 +157,13 @@ private fun MarkerStyle.color(palette: OverlayPalette): String = when (this) {
     MarkerStyle.Stale -> palette.stale
     MarkerStyle.Place -> palette.place
     MarkerStyle.Default, MarkerStyle.Approximate -> palette.location
+    // The same strong colour as the selected route it starts.
+    MarkerStyle.RouteStart -> palette.line
 }
+
+/** Drawn as an empty ring instead of a filled dot. */
+private val MarkerStyle.isRing: Boolean
+    get() = this == MarkerStyle.Approximate || this == MarkerStyle.RouteStart
 
 private fun feature(
     geometry: String,
@@ -134,10 +172,13 @@ private fun feature(
     opacity: Double = 1.0,
     stroke: String = color,
     heading: Double? = null,
+    width: Double? = null,
 ): String {
     val headingProperty = heading?.let { ""","heading":${number(it)}""" }.orEmpty()
+    val widthProperty = width?.let { ""","width":${number(it)}""" }.orEmpty()
     val properties =
-        """{"kind":"$kind","color":"$color","opacity":${number(opacity)},"stroke":"$stroke"$headingProperty}"""
+        """{"kind":"$kind","color":"$color","opacity":${number(opacity)},"stroke":"$stroke"""" +
+            """$headingProperty$widthProperty}"""
     return """{"type":"Feature","geometry":$geometry,"properties":$properties}"""
 }
 

@@ -47,6 +47,12 @@ internal class FakeMapRenderer : MapRenderer {
         cameraMoves += camera to animate
     }
 
+    val fits = mutableListOf<LatLngBounds>()
+
+    override fun fitBounds(bounds: LatLngBounds, animate: Boolean) {
+        fits += bounds
+    }
+
     override fun setOverlays(overlays: List<MapOverlay>) {
         lastOverlays = overlays
     }
@@ -79,6 +85,12 @@ class FakeMapController(initialCamera: CameraState) : MapController {
     override fun moveCamera(camera: CameraState, animate: Boolean) {
         cameraMoves += camera
         this.camera.value = camera
+    }
+
+    val fits = mutableListOf<LatLngBounds>()
+
+    override fun fitBounds(bounds: LatLngBounds, animate: Boolean) {
+        fits += bounds
     }
 
     override fun setOverlays(overlays: List<MapOverlay>) {

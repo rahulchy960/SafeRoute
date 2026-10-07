@@ -82,6 +82,11 @@ import com.saferoute.app.core.map.MapLoadState
 import com.saferoute.app.core.map.MapPadding
 import com.saferoute.app.core.map.MapStyleVariant
 import com.saferoute.app.core.map.SelectedPlace
+import com.saferoute.app.feature.directions.DirectionsActions
+import com.saferoute.app.feature.directions.DirectionsSheet
+import com.saferoute.app.feature.directions.DirectionsUiState
+import com.saferoute.app.feature.directions.DirectionsViewModel
+import com.saferoute.app.feature.directions.RouteIntroDialog
 import kotlin.math.roundToInt
 
 /**
@@ -111,7 +116,9 @@ fun HomeRoute(
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel(),
     permissionViewModel: LocationPermissionViewModel = hiltViewModel(),
+    directionsViewModel: DirectionsViewModel = hiltViewModel(),
 ) {
+    val directions by directionsViewModel.state.collectAsStateWithLifecycle()
     val emergencyDialog by viewModel.emergencyDialog.collectAsStateWithLifecycle()
     val mapState by viewModel.map.loadState.collectAsStateWithLifecycle()
     val myLocation by viewModel.myLocation.collectAsStateWithLifecycle()
@@ -214,6 +221,15 @@ fun HomeRoute(
         onLocationNoticeDismiss = permissionViewModel::onNoticeDismiss,
         selectedPlace = selectedPlace,
         onPlaceDismiss = viewModel::onPlaceDismiss,
+        directions = directions,
+        directionsActions = DirectionsActions(
+            onOpen = directionsViewModel::onDirectionsClick,
+            onIntroContinue = directionsViewModel::onIntroContinue,
+            onModeChange = directionsViewModel::onModeChange,
+            onRouteSelect = directionsViewModel::onRouteSelect,
+            onRetry = directionsViewModel::onRetry,
+            onClose = directionsViewModel::onClose,
+        ),
         onSearchClick = onOpenSearch,
         onSettingsClick = onOpenSettings,
         onEmergencyClick = viewModel::onEmergencyClick,
@@ -285,10 +301,22 @@ fun HomeScreen(
     onLocationNoticeDismiss: () -> Unit = {},
     selectedPlace: SelectedPlace? = null,
     onPlaceDismiss: () -> Unit = {},
+    directions: DirectionsUiState = DirectionsUiState.Closed,
+    directionsActions: DirectionsActions = DirectionsActions(),
 ) {
     // Back with a place on the map takes the place away first; the next back leaves the app as
     // before. BackHandler is only active while there is a place, so normal back is untouched.
     BackHandler(enabled = selectedPlace != null, onBack = onPlaceDismiss)
+    // Declared after it, so it wins while directions show: back closes the routes first and
+    // leaves the place card.
+    BackHandler(enabled = directions != DirectionsUiState.Closed, onBack = directionsActions.onClose)
+
+    // Directions need room: a sheet that only peeks is raised to half once when they open. The
+    // user can still pull it down again; it is not forced back up.
+    val directionsOpen = directions is DirectionsUiState.Open
+    LaunchedEffect(directionsOpen) {
+        if (directionsOpen && sheetState.currentDetent == SheetDetent.Peek) sheetState.animateTo(SheetDetent.Half)
+    }
 
     val spacing = SafeRouteTheme.spacing
     // Keeps floating controls clear of display cut-outs and the gesture areas at the sides.
@@ -429,10 +457,19 @@ fun HomeScreen(
             },
             state = sheetState,
         ) {
-            if (selectedPlace != null) {
-                PlaceCard(place = selectedPlace, onClose = onPlaceDismiss)
-            } else {
-                HomeSheetContent()
+            when {
+                directions is DirectionsUiState.Open -> DirectionsSheet(
+                    state = directions,
+                    actions = directionsActions,
+                    // "Use my location" is the same button as on the map: one permission flow.
+                    onUseMyLocation = onMyLocationClick,
+                )
+                selectedPlace != null -> PlaceCard(
+                    place = selectedPlace,
+                    onClose = onPlaceDismiss,
+                    onDirections = directionsActions.onOpen,
+                )
+                else -> HomeSheetContent()
             }
         }
 
@@ -455,6 +492,10 @@ fun HomeScreen(
             onContinue = onLocationDisclosureContinue,
             onNotNow = onLocationDisclosureNotNow,
         )
+    }
+
+    if (directions is DirectionsUiState.Intro) {
+        RouteIntroDialog(onContinue = directionsActions.onIntroContinue, onNotNow = directionsActions.onClose)
     }
 
     if (showMapCredits) {

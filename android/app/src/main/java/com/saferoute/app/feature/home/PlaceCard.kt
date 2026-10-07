@@ -18,7 +18,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import com.saferoute.app.R
@@ -29,13 +28,15 @@ import com.saferoute.app.core.map.SelectedPlace
 
 /**
  * What the sheet shows for a place chosen in search: its name, where it is, a way to close it,
- * and a Directions button that does nothing yet.
- *
- * The button is disabled, and its description says in words that directions come later: a
- * greyed-out button alone would be a colour-only signal. Routes arrive with P012.
+ * and a Directions button that asks for routes from the user's position to this place.
  */
 @Composable
-internal fun PlaceCard(place: SelectedPlace, onClose: () -> Unit, modifier: Modifier = Modifier) {
+internal fun PlaceCard(
+    place: SelectedPlace,
+    onClose: () -> Unit,
+    modifier: Modifier = Modifier,
+    onDirections: () -> Unit = {},
+) {
     val spacing = SafeRouteTheme.spacing
     Column(
         modifier = modifier
@@ -79,19 +80,10 @@ internal fun PlaceCard(place: SelectedPlace, onClose: () -> Unit, modifier: Modi
                 )
             }
         }
-        val directionsLater = stringResource(R.string.place_card_directions_unavailable)
-        FilledTonalButton(
-            onClick = {},
-            enabled = false,
-            modifier = Modifier.semantics { contentDescription = directionsLater },
-        ) {
+        // A Material button is at least 48 dp tall with its touch area.
+        FilledTonalButton(onClick = onDirections) {
             Text(text = stringResource(R.string.place_card_directions))
         }
-        Text(
-            text = stringResource(R.string.coming_later),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 

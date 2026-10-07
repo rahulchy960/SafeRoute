@@ -74,6 +74,13 @@ object ProblemCodes {
     const val SEARCH_UNAVAILABLE = "search_unavailable"
     const val SEARCH_NOT_CONFIGURED = "search_not_configured"
     const val HTTP_ERROR = "http_error"
+
+    // Routes (contract 0.6.0).
+    const val OUTSIDE_COVERED_AREA = "outside_covered_area"
+    const val ROUTE_TOO_LONG = "route_too_long"
+    const val LOCATION_NOT_ROUTABLE = "location_not_routable"
+    const val NO_ROUTE_FOUND = "no_route_found"
+    const val ROUTING_UNAVAILABLE = "routing_unavailable"
 }
 
 private const val HTTP_FORBIDDEN = 403

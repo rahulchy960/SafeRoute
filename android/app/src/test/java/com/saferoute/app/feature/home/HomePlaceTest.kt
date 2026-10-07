@@ -2,7 +2,7 @@
 package com.saferoute.app.feature.home
 
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -19,11 +19,13 @@ import com.saferoute.app.core.map.FakeMapEngine
 import com.saferoute.app.core.map.LatLng
 import com.saferoute.app.core.map.MapOverlay
 import com.saferoute.app.core.map.MapSelection
+import com.saferoute.app.core.map.RouteDisplay
 import com.saferoute.app.core.map.MarkerStyle
 import com.saferoute.app.core.map.OverlayKind
 import com.saferoute.app.core.map.OverlayPalette
 import com.saferoute.app.core.map.SelectedPlace
 import com.saferoute.app.core.map.overlaysToGeoJson
+import com.saferoute.app.feature.directions.DirectionsActions
 import com.saferoute.app.testing.assertMinTouchTarget
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -67,7 +69,7 @@ class HomePlaceTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
-        viewModel = HomeViewModel(savedState, mapEngine, location, selection)
+        viewModel = HomeViewModel(savedState, mapEngine, location, selection, RouteDisplay())
     }
 
     @After
@@ -156,7 +158,7 @@ class HomePlaceTest {
         // Process death: everything is new except what Android saved.
         val newEngine = FakeMapEngine()
         val newSelection = MapSelection()
-        val restored = HomeViewModel(savedState, newEngine, location, newSelection)
+        val restored = HomeViewModel(savedState, newEngine, location, newSelection, RouteDisplay())
 
         assertEquals(place, restored.selectedPlace.value)
         assertEquals(listOf<MapOverlay>(pin), newEngine.controller.overlays)
@@ -164,7 +166,7 @@ class HomePlaceTest {
         assertEquals(0, newEngine.controller.cameraMoves.size)
 
         restored.onPlaceDismiss()
-        val afterClose = HomeViewModel(savedState, FakeMapEngine(), location, MapSelection())
+        val afterClose = HomeViewModel(savedState, FakeMapEngine(), location, MapSelection(), RouteDisplay())
         assertNull(afterClose.selectedPlace.value)
     }
 
@@ -184,6 +186,7 @@ class HomePlaceTest {
     private var closes = 0
     private var emergencies = 0
     private var searchOpens = 0
+    private var directionsOpens = 0
 
     private fun setHome(selected: SelectedPlace?) {
         compose.setContent {
@@ -197,23 +200,28 @@ class HomePlaceTest {
                     onDismissEmergencyDialog = {},
                     selectedPlace = selected,
                     onPlaceDismiss = { closes++ },
+                    directionsActions = DirectionsActions(onOpen = { directionsOpens++ }),
                 )
             }
         }
     }
 
     @Test
-    fun `the sheet shows the place card with a close button and a disabled Directions button`() {
+    fun `the sheet shows the place card with a close button and a Directions button`() {
         setHome(place)
 
         compose.onNodeWithText("Main Station").assertIsDisplayed()
         compose.onNodeWithText("Station Road, Example District").assertIsDisplayed()
         // The usual sheet content makes way for the card.
         compose.onNodeWithText(string(R.string.home_sheet_title)).assertDoesNotExist()
-        // Disabled, and its description says why in words.
-        compose.onNodeWithContentDescription(string(R.string.place_card_directions_unavailable))
+        // Directions asks for routes to this place (P012c1). Nothing says "coming later" any more.
+        compose.onNodeWithText(string(R.string.place_card_directions))
             .assertIsDisplayed()
-            .assertIsNotEnabled()
+            .assertIsEnabled()
+            .assertMinTouchTarget()
+            .performClick()
+        assertEquals(1, directionsOpens)
+        compose.onNodeWithText(string(R.string.coming_later)).assertDoesNotExist()
 
         compose.onNodeWithContentDescription(string(R.string.place_card_close))
             .assertMinTouchTarget()

@@ -208,7 +208,7 @@
     <string name="my_location_unavailable">অবস্থান পাওয়া যাচ্ছে না। কারণ জানুন</string>
     <string name="location_disclosure_title">মানচিত্রে আপনার অবস্থান দেখাবেন?</string>
     <string name="location_disclosure_what">অ্যাপ খোলা থাকাকালীন SafeRoute আপনার ফোনের অবস্থান পড়বে।</string>
-    <string name="location_disclosure_why">মানচিত্রে আপনি কোথায় আছেন তা দেখাতে এটি ব্যবহার হয়। পরের ফিচারগুলিতে পথের জন্য, এবং আপনি নিজে শুরু করলে SOS ও লাইভ শেয়ারিংয়ের জন্যও এটি ব্যবহার হবে।</string>
+    <string name="location_disclosure_why">মানচিত্রে আপনি কোথায় আছেন তা দেখাতে, এবং আপনি পথনির্দেশ চাইলে পথের শুরু হিসেবে এটি ব্যবহার হয় (প্রথম অনুরোধের আগে কী পাঠানো হয় তা আপনাকে জানানো হয়)। পরের ফিচারগুলিতে, আপনি নিজে শুরু করলে SOS ও লাইভ শেয়ারিংয়ের জন্যও এটি ব্যবহার হবে।</string>
     <string name="location_disclosure_not">SafeRoute ব্যাকগ্রাউন্ডে আপনার অবস্থান পড়ে না। এই ফিচারের জন্য SafeRoute-এর সার্ভারে কিছুই পাঠানো হয় না। আপনি SOS বা লাইভ শেয়ারিং শুরু করলে তবেই আপনার অবস্থান অন্যদের সঙ্গে শেয়ার হয়।</string>
     <string name="location_disclosure_stop">আপনি যে কোনো সময় ফোনের সেটিংসে, অ্যাপ, SafeRoute, অনুমতি থেকে এটি বন্ধ করতে পারেন।</string>
     <string name="location_disclosure_continue">এগিয়ে যান</string>
@@ -249,5 +249,41 @@
     <string name="search_retry">আবার চেষ্টা করুন</string>
     <string name="place_card_close">এই জায়গাটি বন্ধ করুন</string>
     <string name="place_card_directions">পথনির্দেশ</string>
-    <string name="place_card_directions_unavailable">পথনির্দেশ, পরের সংস্করণে আসবে</string>
+
+    <!-- পথনির্দেশ (P012c1)। খসড়া অনুবাদ: প্রকাশের আগে একজন মানুষের পর্যালোচনা দরকার। -->
+    <string name="route_title_to">গন্তব্য: %1$s</string>
+    <string name="route_from_my_location">আপনার অবস্থান থেকে</string>
+    <string name="route_close">পথনির্দেশ বন্ধ করুন</string>
+    <string name="route_mode_walking">হেঁটে</string>
+    <string name="route_mode_driving">গাড়িতে</string>
+    <string name="route_loading">পথ খোঁজা হচ্ছে…</string>
+    <string name="route_starting">পথ খোঁজার পরিষেবা চালু হচ্ছে, একটু সময় লাগতে পারে</string>
+    <string name="route_fastest">দ্রুততম</string>
+    <string name="route_duration_minutes">%1$d মিনিট</string>
+    <string name="route_duration_hours_minutes">%1$d ঘণ্টা %2$d মিনিট</string>
+    <string name="route_distance_meters">%1$d মি</string>
+    <string name="route_distance_km">%1$s কিমি</string>
+    <string name="route_try_again">আবার চেষ্টা করুন</string>
+    <string name="route_error_outside">এখানে এখনও পথনির্দেশ পাওয়া যায় না</string>
+    <string name="route_error_no_route">এই দুটি জায়গার মধ্যে কোনো পথ পাওয়া যায়নি।</string>
+    <string name="route_error_not_routable">একটি জায়গা কোনো রাস্তা বা পথের কাছে নেই। কাছাকাছি অন্য জায়গা বেছে নিন।</string>
+    <string name="route_error_too_long">এইভাবে যাওয়ার জন্য জায়গা দুটি খুব দূরে।</string>
+    <string name="route_error_rate_limited">অনেকবার পথ চাওয়া হয়েছে। একটু অপেক্ষা করুন।</string>
+    <plurals name="route_error_rate_limited_seconds">
+        <item quantity="one">অনেকবার পথ চাওয়া হয়েছে। প্রায় %d সেকেন্ড পরে আবার চেষ্টা করুন।</item>
+        <item quantity="other">অনেকবার পথ চাওয়া হয়েছে। প্রায় %d সেকেন্ড পরে আবার চেষ্টা করুন।</item>
+    </plurals>
+    <string name="route_error_still_starting">পথ খোঁজার পরিষেবা এখনও চালু হচ্ছে। আবার চেষ্টা করুন।</string>
+    <string name="route_error_unavailable">এই মুহূর্তে পথনির্দেশ পাওয়া যাচ্ছে না। পরে আবার চেষ্টা করুন।</string>
+    <string name="route_error_offline">আপনি অফলাইনে আছেন। সংযোগ দেখে আবার চেষ্টা করুন।</string>
+    <string name="route_origin_no_permission">পথ শুরু করতে SafeRoute-এর আপনার অবস্থান দরকার।</string>
+    <string name="route_origin_searching">আপনার অবস্থান খোঁজা হচ্ছে…</string>
+    <string name="route_origin_unavailable">আপনার অবস্থান পাওয়া যাচ্ছে না। লোকেশন চালু আছে কি না দেখুন।</string>
+    <string name="route_use_my_location">আমার অবস্থান ব্যবহার করুন</string>
+    <string name="route_intro_title">পথনির্দেশ কীভাবে কাজ করে</string>
+    <string name="route_intro_sent">পথ খুঁজতে আপনার শুরুর জায়গা ও গন্তব্য SafeRoute এবং তার পথ খোঁজার পরিষেবায় পাঠানো হয়।</string>
+    <string name="route_intro_not_stored">এগুলি শুধু পথ বের করতে ব্যবহার হয় এবং সংরক্ষণ করা হয় না।</string>
+    <string name="route_intro_estimate">সময় ও দূরত্ব আনুমানিক।</string>
+    <string name="route_intro_continue">এগিয়ে যান</string>
+    <string name="route_intro_not_now">এখন নয়</string>
 </resources>
