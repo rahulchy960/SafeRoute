@@ -53,6 +53,16 @@ new ADR file under `docs/adr/`.
   `attribution` next to the results when it is not null. `Place.id` is opaque and `Place.kind` is
   an open string. Plan v7 §6.3 wrote the bias as one `near` parameter; the contract uses explicit
   `nearLatitude` / `nearLongitude` to follow the rule below. The contract names no provider.
+- Routes (since P012b, [ADR 0020](../docs/adr/0020-routing-osrm.md)): `POST /v1/routes` takes a
+  JSON body (`RouteRequest`) with `origin`, `destination`, `mode` (`walking` or `driving`) and
+  an optional `departAt` (validated, not used yet), and returns
+  `{ routes: Route[1..3], attribution }`, fastest first. A `Route` has an opaque `id`,
+  `distanceMeters`, `durationSeconds`, `geometry` (`encoding: "polyline6"`, `value`) and `bbox`
+  (`[minLongitude, minLatitude, maxLongitude, maxLatitude]`). It is a POST because positions
+  must not be in a URL; it changes nothing and needs no `Idempotency-Key`. Always show
+  `attribution`. **The routing service can be asleep:** the first request after a quiet period
+  may get 503 `routing_unavailable` with `Retry-After`; retry after that many seconds. Routes
+  carry no safety information.
 - Paste the file into any OpenAPI viewer (e.g. editor.swagger.io) to browse it. It is public data.
 
 ## API contract rules (summary of ADR 0004)
@@ -120,5 +130,11 @@ Currently defined codes:
 | `auth_not_configured` | 503 | This instance has no `FIREBASE_PROJECT_ID` (dev/test only) |
 | `search_unavailable` | 503 | Search can't be answered right now (the geocoding provider failed, or the shared daily budget is used up). Retry later; honour `Retry-After` when it is sent. Never a reason to sign out |
 | `search_not_configured` | 503 | This instance has no geocoding key (dev/test only) |
+| `outside_covered_area` | 422 | A point lies outside the area routes exist for. Not a failure: show "Routes aren't available here yet" |
+| `route_too_long` | 422 | The two points are too far apart for this mode (walking: 30 km in a straight line) |
+| `location_not_routable` | 422 | A point is not near a road or path. Move the pin or pick another place |
+| `no_route_found` | 404 | Both points are on the network, but no way connects them |
+| `routing_unavailable` | 503 | Routes can't be computed right now: the routing service is starting or failed, the request timed out, or the shared daily budget is used up. Always sent with `Retry-After` (seconds); retry then. Never a reason to sign out |
+| `routing_not_configured` | 503 | This instance has no routing service (dev/test only) |
 
 Keep this table in sync with `PROBLEM_CODES` in `backend/src/contract/problem.ts`.

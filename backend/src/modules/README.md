@@ -14,7 +14,7 @@ own service later only if measurements justify it (Plan v7 §14.6).
 | `consents` | `/v1/me/consents`: per-purpose consent history and the purpose allowlist (ADR 0010) | P009a |
 | `contacts` | emergency contacts, contact opt-out | P013 |
 | `search` | `POST /v1/search` (a body, never a query string: ADR 0019): place search behind the `GeocoderProvider` adapter, query normalisation, search rate limits (ADR 0018) | P011a |
-| `routing` | route alternatives behind the OSRM adapter | P012 |
+| `routing` | `POST /v1/routes` (a body, never a query string): walking and driving routes behind the `RoutingProvider` adapter (OSRM), ID tokens for the private services, the covered-area check, route rate limits (ADR 0020) | P012b |
 | `safety` | H3 safety cells, areas and the route exposure metric | P019 |
 | `reports` | community reports and their lifecycle | P017 |
 | `sos` | server-side SOS sessions, actions and the SOS job queue | P015 |

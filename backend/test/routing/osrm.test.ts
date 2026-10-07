@@ -230,11 +230,11 @@ describe('service-to-service ID token', () => {
 
 describe('OSRM base URL (the secret value format)', () => {
   it('accepts what Cloud Run reports and removes a trailing slash', () => {
-    expect(parseOsrmBaseUrl('https://saferoute-osrm-walking-abc123-el.a.run.app')).toBe(
-      'https://saferoute-osrm-walking-abc123-el.a.run.app',
+    expect(parseOsrmBaseUrl('https://osrm-walking-abc123.example.invalid')).toBe(
+      'https://osrm-walking-abc123.example.invalid',
     );
-    expect(parseOsrmBaseUrl('https://saferoute-osrm-walking-abc123-el.a.run.app/')).toBe(
-      'https://saferoute-osrm-walking-abc123-el.a.run.app',
+    expect(parseOsrmBaseUrl('https://osrm-walking-abc123.example.invalid/')).toBe(
+      'https://osrm-walking-abc123.example.invalid',
     );
     expect(parseOsrmBaseUrl('http://localhost:5000')).toBe('http://localhost:5000');
     expect(parseOsrmBaseUrl('http://127.0.0.1:5000/')).toBe('http://127.0.0.1:5000');
