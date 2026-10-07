@@ -10,6 +10,8 @@ import kotlinx.serialization.SerializationException
 import retrofit2.Response
 
 private const val HTTP_UNAUTHORIZED = 401
+private const val RETRY_AFTER_HEADER = "Retry-After"
+private const val MAX_RETRY_AFTER_SECONDS = 86_400
 
 /** A problem body is a few hundred bytes. Anything far bigger is not one and is not parsed. */
 internal const val MAX_PROBLEM_BYTES = 64L * 1024
@@ -62,6 +64,9 @@ internal fun Response<*>.toApiFailure(): ApiFailure {
         detail = problem.detail,
         requestId = problem.requestId.ifBlank { headerRequestId },
         fieldErrors = problem.errors.orEmpty().map { FieldError(it.path, it.code) },
+        // Only the "seconds" form, and only a sensible value; anything else counts as absent.
+        retryAfterSeconds = headers()[RETRY_AFTER_HEADER]?.trim()?.toIntOrNull()
+            ?.takeIf { it in 1..MAX_RETRY_AFTER_SECONDS },
     )
 }
 

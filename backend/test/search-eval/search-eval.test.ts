@@ -233,7 +233,7 @@ describe('runEvaluation and the report', () => {
     expect(report.byScript.map((score) => score.group)).toEqual(['bn', 'en', 'translit']);
     expect(report.thresholds.map((threshold) => [threshold.name, threshold.met])).toEqual([
       ['overall top-3', false],
-      ['every district top-3', false],
+      ['every district with at least 3 queries, top-3', true],
       ['Bengali-script top-3', true],
     ]);
 
@@ -263,7 +263,6 @@ describe('pnpm search:eval settings', () => {
   it('refuses to run without a provider name or a key, naming what is missing only', async () => {
     for (const env of [
       {},
-      { GEOCODING_API_KEY: FAKE_KEY },
       { GEOCODING_PROVIDER: 'not-a-provider', GEOCODING_API_KEY: FAKE_KEY },
       { GEOCODING_PROVIDER: 'geoapify' },
       { GEOCODING_PROVIDER: 'geoapify', GEOCODING_API_KEY: '   ' },
@@ -296,5 +295,10 @@ describe('pnpm search:eval settings', () => {
         SEARCH_EVAL_RPS: '3',
       }),
     ).toMatchObject({ ok: true, rps: 3 });
+    // No provider named: the default.
+    expect(readSettings({ GEOCODING_API_KEY: FAKE_KEY })).toMatchObject({
+      ok: true,
+      provider: 'geoapify',
+    });
   });
 });

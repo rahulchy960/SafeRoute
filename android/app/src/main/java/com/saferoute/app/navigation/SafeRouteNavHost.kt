@@ -9,7 +9,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.saferoute.app.BuildConfig
 import com.saferoute.app.feature.home.HomeRoute
-import com.saferoute.app.feature.search.SearchScreen
+import com.saferoute.app.feature.search.SearchRoute
 import com.saferoute.app.feature.settings.SettingsRoute
 
 /**
@@ -45,7 +45,11 @@ fun SafeRouteNavHost(
             )
         }
         composable<SearchDestination> {
-            SearchScreen(onBack = { navController.popBackStack() })
+            SearchRoute(
+                onBack = { navController.popBackStack() },
+                // The chosen place is already with the map (MapSelection); Home shows it.
+                onPlaceChosen = { navController.popBackStack(HomeDestination, inclusive = false) },
+            )
         }
         composable<SettingsDestination> {
             SettingsRoute(

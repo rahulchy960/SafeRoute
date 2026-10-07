@@ -348,3 +348,23 @@ P011b.
   to combine. Deleting them, as naive "clean-up" code does, changes the spelling.
 - **Coarsening.** Rounding a position to two decimals keeps "roughly which part of town" and
   drops "which building". The geocoder needs only the first.
+
+## Revision 2026-10-07 (P011b): evaluation run, provider chosen, thresholds confirmed
+
+Added after the merge (PR #26, `5b34014`). Sections 1–12 above are unchanged and describe what
+was known when the pull request was opened.
+
+- The two `deploy-staging` runs for `5b34014` (the push and one manual run) show
+  `conclusion: success` in `gh run list`. Claude Code cannot call staging; that
+  `/v1/search` answers 401 there without a token is Rahul's check.
+- Rahul ran `pnpm search:eval` with the 74 starter queries. Aggregate top-3 rates as he
+  reported them: **Geoapify** overall 81%, Bengali script 78%, English 84%, transliteration 75%;
+  **LocationIQ** overall 73%, Bengali script 22%, English 91%, transliteration 83%. Per-district
+  and top-1 figures were not reported.
+- Both adapters therefore work against the live services (they returned scoreable results).
+- **Provider: Geoapify**, the default in config and in the workflow; LocationIQ stays a spare.
+- **Thresholds:** overall top-3 ≥ 80%, Bengali script ≥ 70%, and ≥ 60% per district only for
+  districts with at least 3 queries, until the fixture grows.
+- **Caveat:** the starter set is small, was written by Claude Code from memory and is not
+  checked against a map; Jalpaiguri and Malda are being reviewed.
+- Recorded in ADR 0018 (note of 2026-10-07) with a full reading of Geoapify's terms.

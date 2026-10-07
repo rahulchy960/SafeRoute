@@ -31,7 +31,8 @@ export type Settings =
 
 /** Names what is missing; never echoes a value. */
 export function readSettings(env: CliEnv): Settings {
-  const provider = env.GEOCODING_PROVIDER;
+  // Geoapify is the default, as in the API's config; name another adapter to compare it.
+  const provider = env.GEOCODING_PROVIDER ?? 'geoapify';
   if (!GEOCODING_PROVIDERS.includes(provider as GeocodingProviderName)) {
     return {
       ok: false,

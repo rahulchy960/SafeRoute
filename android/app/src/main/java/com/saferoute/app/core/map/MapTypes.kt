@@ -86,8 +86,11 @@ sealed interface MapOverlay {
     data class Polygons(override val id: String, val rings: List<List<LatLng>>) : MapOverlay
 }
 
-/** How a marker or its circle looks. Colours come from the design system, never from here. */
-enum class MarkerStyle { Default, Approximate, Stale }
+/**
+ * How a marker or its circle looks. Colours come from the design system, never from here.
+ * [Place] is a pin for a place the user chose (a search result), not a position of the user.
+ */
+enum class MarkerStyle { Default, Approximate, Stale, Place }
 
 /**
  * What a screen can ask of the map and read from it. The only door between the app and the map

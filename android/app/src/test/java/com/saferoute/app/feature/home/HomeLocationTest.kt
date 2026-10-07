@@ -9,6 +9,7 @@ import com.saferoute.app.core.location.fakeFix
 import com.saferoute.app.core.map.CameraState
 import com.saferoute.app.core.map.FakeMapEngine
 import com.saferoute.app.core.map.LatLng
+import com.saferoute.app.core.map.MapSelection
 import com.saferoute.app.core.map.MapOverlay
 import com.saferoute.app.core.map.MarkerStyle
 import com.saferoute.app.core.map.OverlayPalette
@@ -45,12 +46,12 @@ class HomeLocationTest {
     private lateinit var viewModel: HomeViewModel
     private val map get() = mapEngine.controller
 
-    private val palette = OverlayPalette(location = "#0000FF", stale = "#888888", halo = "#FFFFFF", line = "#0000FF")
+    private val palette = OverlayPalette(place = "#800080", location = "#0000FF", stale = "#888888", halo = "#FFFFFF", line = "#0000FF")
 
     @Before
     fun setUp() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
-        viewModel = HomeViewModel(SavedStateHandle(), mapEngine, location)
+        viewModel = HomeViewModel(SavedStateHandle(), mapEngine, location, MapSelection())
     }
 
     @After
@@ -330,7 +331,7 @@ class HomeLocationTest {
     fun `positions are not put in the saved state`() {
         val savedState = SavedStateHandle()
         val engine = FakeMapEngine()
-        val vm = HomeViewModel(savedState, engine, location)
+        val vm = HomeViewModel(savedState, engine, location, MapSelection())
         vm.onLocationAvailable(userAsked = false)
 
         location.state.value = fix(LatLng(12.345678, 98.765432))

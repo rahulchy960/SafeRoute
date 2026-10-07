@@ -21,7 +21,8 @@ Measures how well a geocoding provider finds real places across West Bengal, bef
    GEOCODING_API_KEY=<the key for that provider>
    ```
 
-   `GEOCODING_PROVIDER` is `geoapify` or `locationiq`. The key must belong to that provider.
+   `GEOCODING_PROVIDER` is `geoapify` (the default when the line is absent) or `locationiq`.
+   The key must belong to that provider.
 
 2. In `backend/`:
 
@@ -49,9 +50,10 @@ minute. One run of the starter fixture uses 74 of the day's requests.
 - A provider error (timeout, rate limit, refused key) is counted in its own column and left out
   of the hit rate.
 
-Proposed thresholds, to be confirmed by Rahul in the pull-request review: overall top-3 at least
-80%, no district under 60%, Bengali-script queries at least 70%. Below them, compare another
-provider behind the adapter before launch.
+Thresholds, confirmed by Rahul on 2026-10-07 (ADR 0018): overall top-3 at least 80%;
+Bengali-script queries at least 70%; at least 60% for every district that has at least 3
+queries (smaller districts are listed, not judged, until the fixture grows). Below them, compare
+another provider behind the adapter before launch.
 
 **A name match is a weak test.** It says the provider returned a place with the right name, not
 that it is the right place: a locality name can exist in more than one district. Coordinates

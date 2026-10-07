@@ -46,6 +46,8 @@ data class SafeRouteColors(
     val location: Color,
     /** An old position. */
     val locationStale: Color,
+    /** The pin of a place the user chose on the map. Not the location blue, not the SOS red. */
+    val place: Color,
     val scrim: Color,
     val onScrim: Color,
 )
@@ -68,6 +70,7 @@ internal val LightSafeRouteColors = SafeRouteColors(
     mapOverlayVariant = Color(0xFF40484B),
     location = Color(0xFF0B57D0),
     locationStale = Color(0xFF6F7578),
+    place = Color(0xFF6A1B9A),
     scrim = Color(0x52000000),
     onScrim = Color(0xFFFFFFFF),
 )
@@ -90,6 +93,7 @@ internal val DarkSafeRouteColors = SafeRouteColors(
     mapOverlayVariant = Color(0xFFC0C8CB),
     location = Color(0xFF8AB4F8),
     locationStale = Color(0xFF9DA3A6),
+    place = Color(0xFFCE93D8),
     scrim = Color(0x99000000),
     onScrim = Color(0xFFFFFFFF),
 )

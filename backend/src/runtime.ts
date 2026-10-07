@@ -31,7 +31,7 @@ export function createRuntime(config: Config, logger: Logger) {
   }
   // The key stays inside the adapter: it is not put on the app, the logger or any error.
   const geocoder =
-    config.GEOCODING_API_KEY === undefined || config.GEOCODING_PROVIDER === undefined
+    config.GEOCODING_API_KEY === undefined
       ? undefined
       : createGeocoder(config.GEOCODING_PROVIDER, config.GEOCODING_API_KEY, {
           timeoutMs: config.SEARCH_PROVIDER_TIMEOUT_MS,

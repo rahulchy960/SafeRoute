@@ -507,6 +507,57 @@ buckets (`Precise · on · fix <10 s`). It never shows coordinates.
 - Hilt tests get `FakeLocationRepository` and `FakeLocationEnvironment` automatically
   (`FakeLocationModule`).
 
+## Search
+
+Place search (since P011b, [ADR 0018](../docs/adr/0018-search-and-geocoding.md)).
+
+**The flow.** The search pill on Home opens the search screen. Typing waits 300 ms after the
+last keystroke and then searches (at least two characters); the keyboard's Search key searches
+at once. Tapping a result returns to Home: the map moves to the place, a pin marks it, and the
+sheet shows a card with its name. The card's close button, or the back gesture, removes the pin
+and the card; the next back is the normal one.
+
+**What is sent, and to whom.**
+
+| Sent to the SafeRoute API | Not sent |
+| --- | --- |
+| The text you typed | Your own position (search needs no location permission and asks for none) |
+| The centre of the map, rounded to two decimals (about 1 km) | The exact map position, your phone number, your contacts |
+| The app language (`en` or `bn`) | Anything to the geocoding provider directly: the app never talks to it |
+
+The SafeRoute API forwards the text and the coarse area to the geocoding provider (Geoapify)
+with its own server key. The provider sees SafeRoute's server, not your phone. There is no
+geocoding key in the app.
+
+**What is not stored.** Nothing. The typed text lives in the screen's saved state, so it
+survives a rotation, and is gone when the screen closes. There are no recent searches and no
+saved places. The chosen place is kept in memory (and in Android's saved state, so that it
+survives the system stopping the app) until you close its card. Queries, results and positions
+are never logged; the types that hold them print "hidden".
+
+**Where the code is.**
+
+| File | What |
+| --- | --- |
+| `feature/search/SearchRepository.kt` | `SearchRepository`; `ApiSearchRepository` calls the generated `SearchApi` through `apiCall { }` |
+| `feature/search/SearchViewModel.kt` | Debounce, "only the newest answer counts", the screen's states |
+| `feature/search/SearchScreen.kt` | `SearchRoute` (with the ViewModel) and the stateless `SearchScreen` |
+| `core/map/MapSelection.kt` | What Search and Home share: the chosen place and the map's centre |
+| `feature/home/PlaceCard.kt` | The card in the sheet |
+
+- Tests use `FakeSearchRepository`; `FakeSearchModule` replaces the real one in every Hilt
+  test, so no test calls a server.
+- The pin is an overlay description (`MapOverlay.Marker` with `MarkerStyle.Place`); only
+  `core/map/MapLibreEngine.kt` turns it into a map layer.
+- The credit line under the results comes from the API (`attribution`) and must stay visible
+  whenever results are shown.
+- `debounce` and `flatMapLatest` are experimental coroutine APIs and are not used;
+  `collectLatest` with a `delay` does both jobs with stable APIs.
+
+**Not built yet:** directions (the card's button is disabled until P012), recent searches and
+saved places (they need a consent purpose and a retention rule first), the attribution as a
+link.
+
 ## Design tokens
 
 Everything visual comes from `core/designsystem/theme/`:

@@ -77,6 +77,7 @@ class MapLibreEngine @Inject constructor(
             stale = colors.locationStale.toHex(),
             halo = Color.White.toHex(),
             line = colors.location.toHex(),
+            place = colors.place.toHex(),
         )
 
         // One map view for as long as this composable is on screen. After a rotation a new one
@@ -282,6 +283,15 @@ private class MapLibreRenderer(
                 PropertyFactory.circleStrokeWidth(DOT_STROKE),
             ).apply { setFilter(kindIs(OverlayKind.DOT)) },
         )
+        // The pin of a chosen place, on top of everything else.
+        style.addLayer(
+            CircleLayer("$OVERLAY_SOURCE-pin", OVERLAY_SOURCE).withProperties(
+                PropertyFactory.circleRadius(PIN_RADIUS),
+                PropertyFactory.circleColor(color),
+                PropertyFactory.circleStrokeColor(Expression.toColor(Expression.get("stroke"))),
+                PropertyFactory.circleStrokeWidth(PIN_STROKE),
+            ).apply { setFilter(kindIs(OverlayKind.PIN)) },
+        )
     }
 
     private fun kindIs(kind: String) = Expression.eq(Expression.get("kind"), kind)
@@ -292,6 +302,8 @@ private class MapLibreRenderer(
         const val HEADING_IMAGE = "saferoute-heading"
         const val DOT_RADIUS = 7f
         const val DOT_STROKE = 2.5f
+        const val PIN_RADIUS = 10f
+        const val PIN_STROKE = 3.5f
     }
 }
 

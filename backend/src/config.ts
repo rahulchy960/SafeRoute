@@ -72,8 +72,9 @@ const BaseSchema = z.object({
     .string()
     .regex(/^[\x21-\x7e]{8,200}$/, { message: 'must be 8-200 printable characters' })
     .optional(),
-  // Which adapter the key belongs to. Not a secret.
-  GEOCODING_PROVIDER: z.enum(GEOCODING_PROVIDERS).optional(),
+  // Which adapter the key belongs to. Not a secret. Geoapify is the default since the first
+  // evaluation (ADR 0018, note of 2026-10-07); `locationiq` stays selectable as a spare.
+  GEOCODING_PROVIDER: z.enum(GEOCODING_PROVIDERS).default('geoapify'),
   // Provider calls per day across all users and instances. Keep it under the provider plan's
   // daily quota; revisit whenever the plan or the provider changes (ADR 0018).
   SEARCH_GLOBAL_DAILY_LIMIT: z.coerce.number().int().min(1).max(10_000_000).default(2500),
@@ -82,28 +83,15 @@ const BaseSchema = z.object({
 
 /** What the API additionally needs before it may serve requests in production. */
 const ConfigSchema = BaseSchema.superRefine((config, ctx) => {
-  // A key without a provider name (or the reverse) is a mistake in any environment.
-  if (config.GEOCODING_API_KEY !== undefined && config.GEOCODING_PROVIDER === undefined) {
-    ctx.addIssue({
-      code: 'custom',
-      path: ['GEOCODING_PROVIDER'],
-      message: 'required when GEOCODING_API_KEY is set',
-    });
-  }
-  if (config.GEOCODING_PROVIDER !== undefined && config.GEOCODING_API_KEY === undefined) {
-    ctx.addIssue({
-      code: 'custom',
-      path: ['GEOCODING_API_KEY'],
-      message: 'required when GEOCODING_PROVIDER is set',
-    });
-  }
   if (config.NODE_ENV !== 'production') return;
   // Without the key a production revision must not start: the deploy then fails at the candidate
   // stage and traffic never shifts (docs/runbooks/rollback-staging.md).
-  if (config.GEOCODING_API_KEY === undefined && config.GEOCODING_PROVIDER === undefined) {
-    for (const name of ['GEOCODING_API_KEY', 'GEOCODING_PROVIDER'] as const) {
-      ctx.addIssue({ code: 'custom', path: [name], message: 'required when NODE_ENV=production' });
-    }
+  if (config.GEOCODING_API_KEY === undefined) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['GEOCODING_API_KEY'],
+      message: 'required when NODE_ENV=production',
+    });
   }
   if (config.DATABASE_URL === undefined) {
     ctx.addIssue({
