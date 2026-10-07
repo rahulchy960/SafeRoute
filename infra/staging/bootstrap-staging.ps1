@@ -536,7 +536,49 @@ function Test-ArtifactRegistry {
         if ($hasPolicy) { $policyStatus = 'PRESENT'; $policyFound = 'set' }
         Add-AuditItem $State 'ar:cleanup' 'Registry cleanup policy (optional)' 'a cleanup policy' $policyFound $policyStatus `
             'Optional. -Apply offers to set infra/artifact-registry-cleanup-policy.json.'
+        if ($hasPolicy) { Test-RoutingImageKeep $State $repo.Data.cleanupPolicies }
     }
+}
+
+function Get-CleanupPolicyFile {
+    return (Join-Path (Split-Path -Parent $PSScriptRoot) 'artifact-registry-cleanup-policy.json')
+}
+
+function Test-RoutingImageKeep {
+    <#
+        A cleanup policy that deletes by age also deletes routing images (tag osrm-<profile>-<date>).
+        A revision that serves traffic keeps its own copy (Cloud Run imports the image at deploy),
+        but the previous revision, which is the rollback target, may need the registry copy, and
+        an old graph cannot be rebuilt once its dated extract is gone. So such a policy must have
+        a keep rule for the tag prefix "osrm-".
+        Policies this script did not write (a name that is not in the policy file) are never
+        replaced: the rule is then to be added by hand.
+    #>
+    param($State, $Policies)
+    $entries = @($Policies.PSObject.Properties)
+    # The API reports a rule's action as the text DELETE or KEEP; the policy file writes { type }.
+    # This only READS which rules delete. (The words are in double quotes because a test forbids
+    # the single-quoted form, which is how a gcloud command that deletes would be written.)
+    $actionOf = { param($Rule) ('' + $Rule.action.type + $Rule.action).ToUpperInvariant() }
+    $deletes = @($entries | Where-Object { (& $actionOf $_.Value).Contains("DELETE") })
+    if ($deletes.Count -eq 0) { return }
+    $keeps = @($entries | Where-Object {
+            (& $actionOf $_.Value).Contains("KEEP") -and @($_.Value.condition.tagPrefixes) -contains 'osrm-'
+        })
+    $item = 'Registry cleanup keeps routing images (tag osrm-)'
+    if ($keeps.Count -gt 0) {
+        Add-AuditItem $State 'ar:cleanup-osrm' $item 'a keep rule for tag prefix osrm-' $keeps[0].Name 'PRESENT'
+        return
+    }
+    $ours = @((Get-Content -LiteralPath (Get-CleanupPolicyFile) -Raw | ConvertFrom-Json) | ForEach-Object { $_.name })
+    $foreign = @($entries | Where-Object { $ours -notcontains $_.Name } | ForEach-Object { $_.Name })
+    $State.CleanupIsOurs = ($foreign.Count -eq 0)
+    $next = 'Run with -Apply (sets infra/artifact-registry-cleanup-policy.json again; it now has the keep rule).'
+    if (-not $State.CleanupIsOurs) {
+        $next = "The repository has policies this script did not write ($($foreign -join ', ')); they are not replaced. " +
+            'Add a keep rule by hand: Artifact Registry > the repository > Edit > cleanup policies > Conditional keep, tag prefix osrm-.'
+    }
+    Add-AuditItem $State 'ar:cleanup-osrm' $item 'a keep rule for tag prefix osrm-' 'a delete rule and no such keep rule' 'NOTE' $next
 }
 
 function Select-Candidate {
@@ -1179,10 +1221,17 @@ function Invoke-Apply {
 
     # 7. Optional cleanup policy
     if ((Get-ItemStatus $State 'ar:cleanup') -eq 'NOTE' -or ($plan -and (Get-ItemStatus $State 'ar:cleanup') -eq 'NOT RUN')) {
-        $policyFile = Join-Path (Split-Path -Parent $PSScriptRoot) 'artifact-registry-cleanup-policy.json'
-        $outcome = Invoke-Step 'OPTIONAL: set the registry cleanup policy (keep 10 newest, delete after 7 days)' @(
+        $outcome = Invoke-Step 'OPTIONAL: set the registry cleanup policy (delete after 7 days; keep the 10 newest and every image tagged osrm-)' @(
             'artifacts', 'repositories', 'set-cleanup-policies', $Config.ArRepo, "--location=$script:Region",
-            "--policy=$policyFile", '--no-dry-run')
+            "--policy=$(Get-CleanupPolicyFile)", '--no-dry-run')
+        if ($outcome -eq 'failed') { return 1 }
+        if ($outcome -eq 'done') { $ran++ }
+    }
+    elseif ((Get-ItemStatus $State 'ar:cleanup-osrm') -eq 'NOTE' -and $State.CleanupIsOurs) {
+        # The policy on the repository is an earlier version of our own file: set the file again.
+        $outcome = Invoke-Step 'update the registry cleanup policy (adds: keep every image tagged osrm-)' @(
+            'artifacts', 'repositories', 'set-cleanup-policies', $Config.ArRepo, "--location=$script:Region",
+            "--policy=$(Get-CleanupPolicyFile)", '--no-dry-run')
         if ($outcome -eq 'failed') { return 1 }
         if ($outcome -eq 'done') { $ran++ }
     }

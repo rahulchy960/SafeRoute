@@ -8,5 +8,10 @@
     "name": "keep-10-most-recent-images",
     "action": { "type": "Keep" },
     "mostRecentVersions": { "keepCount": 10 }
+  },
+  {
+    "name": "keep-osrm-routing-images",
+    "action": { "type": "Keep" },
+    "condition": { "tagState": "tagged", "tagPrefixes": ["osrm-"] }
   }
 ]

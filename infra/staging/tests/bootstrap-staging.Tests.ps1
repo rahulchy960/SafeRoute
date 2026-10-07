@@ -206,7 +206,15 @@ BeforeAll {
             '^artifacts repositories describe' {
                 if (-not $s.ArRepo) { return $notFound }
                 $repo = @{ name = 'fake'; format = $s.ArRepo.Format }
-                if ($s.ArRepo.Cleanup) { $repo.cleanupPolicies = @{ 'keep-recent' = @{ action = 'KEEP' } } }
+                # Cleanup: $true = the committed policy file as the API returns it; a hashtable = that exact map.
+                if ($s.ArRepo.Cleanup -is [hashtable]) { $repo.cleanupPolicies = $s.ArRepo.Cleanup }
+                elseif ($s.ArRepo.Cleanup) {
+                    $repo.cleanupPolicies = @{
+                        'delete-images-older-than-7-days' = @{ id = 'delete-images-older-than-7-days'; action = 'DELETE'; condition = @{ tagState = 'ANY'; olderThan = '604800s' } }
+                        'keep-10-most-recent-images' = @{ id = 'keep-10-most-recent-images'; action = 'KEEP'; mostRecentVersions = @{ keepCount = 10 } }
+                        'keep-osrm-routing-images' = @{ id = 'keep-osrm-routing-images'; action = 'KEEP'; condition = @{ tagState = 'TAGGED'; tagPrefixes = @('osrm-') } }
+                    }
+                }
                 return & $answer (ConvertTo-FakeJson $repo)
             }
             '^artifacts repositories get-iam-policy' { return & $answer (Get-FakePolicy 'repo') }
@@ -548,6 +556,69 @@ Describe 'bootstrap-staging.ps1' {
             $workflow | Should -Match "OSRM_WALKING_SERVICE: $($config.OsrmWalkingService)\s"
             $workflow | Should -Match "OSRM_DRIVING_SERVICE: $($config.OsrmDrivingService)\s"
             $workflow | Should -Match "OSRM_RUNTIME_SA_NAME: $($config.OsrmRuntimeSa)\s"
+        }
+    }
+
+    Context 'registry cleanup and routing images (tag osrm-)' {
+        BeforeAll {
+            $script:OldPolicy = @{
+                'delete-images-older-than-7-days' = @{ action = 'DELETE'; condition = @{ tagState = 'ANY'; olderThan = '604800s' } }
+                'keep-10-most-recent-images' = @{ action = 'KEEP'; mostRecentVersions = @{ keepCount = 10 } }
+            }
+        }
+
+        It 'the policy file deletes by age, keeps the 10 newest, and keeps every image tagged osrm-' {
+            $policy = Get-Content -LiteralPath (Join-Path $script:RepoRoot 'infra/artifact-registry-cleanup-policy.json') -Raw | ConvertFrom-Json
+            $keep = @($policy | Where-Object { $_.action.type -eq 'Keep' -and $_.condition })
+            $keep.Count | Should -Be 1
+            $keep[0].condition.tagState | Should -Be 'tagged'
+            @($keep[0].condition.tagPrefixes) | Should -Be @('osrm-')
+            $keep[0].condition.PSObject.Properties.Name | Should -Not -Contain 'olderThan'
+            @($policy | Where-Object { $_.action.type -eq 'Delete' }).Count | Should -Be 1
+            @($policy | Where-Object { $_.mostRecentVersions.keepCount -eq 10 }).Count | Should -Be 1
+        }
+        It 'the workflow tags routing images with the prefix the keep rule matches' {
+            $workflow = Get-Content -LiteralPath (Join-Path $script:RepoRoot '.github/workflows/osrm-staging.yml') -Raw
+            $workflow.Contains('echo "tag=osrm-$' + '{INPUT_PROFILE}-$' + '{INPUT_EXTRACT_DATE}"') | Should -BeTrue
+        }
+        It 'audit: the current policy is PRESENT for routing images' {
+            Start-Scenario 'full'; Invoke-Mode 'Audit'
+            (Get-Row '^Registry cleanup keeps routing images') | Should -Match 'keep-osrm-routing-images\s+PRESENT'
+        }
+        It 'audit: the earlier policy (no keep rule for osrm-) is a NOTE that does not fail -Verify' {
+            Start-Scenario 'full'; $script:Scenario.ArRepo.Cleanup = $script:OldPolicy; Invoke-Mode 'Verify'
+            (Get-Row '^Registry cleanup keeps routing images') | Should -Match 'a delete rule and no such keep rule\s+NOTE'
+            $script:Output | Should -Match '\[NOTE\] Registry cleanup keeps routing images \(tag osrm-\): Run with -Apply'
+            $script:ExitCode | Should -Be 0
+        }
+        It 'apply: sets the policy file again when the repository has the earlier version of it, and only that' {
+            Start-Scenario 'full'; $script:Scenario.ArRepo.Cleanup = $script:OldPolicy; Invoke-Mode 'Apply'
+            $calls = @(Get-MutatingCall | ForEach-Object { $_.Line })
+            $calls.Count | Should -Be 1
+            $calls[0] | Should -Match '^artifacts repositories set-cleanup-policies saferoute --location=asia-south1 --policy=.+artifact-registry-cleanup-policy\.json --no-dry-run$'
+            $script:Output | Should -Match 'adds: keep every image tagged osrm-'
+        }
+        It 'apply: never replaces a policy it did not write, and says how to add the rule by hand' {
+            Start-Scenario 'full'
+            $script:Scenario.ArRepo.Cleanup = @{ 'my-own-rule' = @{ action = 'DELETE'; condition = @{ tagState = 'ANY'; olderThan = '2592000s' } } }
+            Invoke-Mode 'Apply'
+            @(Get-MutatingCall).Count | Should -Be 0
+            $script:Output | Should -Match 'policies this script did not write \(my-own-rule\); they are not replaced'
+            $script:Output | Should -Match 'Conditional keep, tag prefix osrm-'
+        }
+        It 'audit: a hand-made keep rule for osrm- under any name counts' {
+            Start-Scenario 'full'
+            $script:Scenario.ArRepo.Cleanup = @{
+                'my-own-rule' = @{ action = 'DELETE'; condition = @{ tagState = 'ANY'; olderThan = '2592000s' } }
+                'my-keep' = @{ action = 'KEEP'; condition = @{ tagState = 'TAGGED'; tagPrefixes = @('release', 'osrm-') } }
+            }
+            Invoke-Mode 'Audit'
+            (Get-Row '^Registry cleanup keeps routing images') | Should -Match 'my-keep\s+PRESENT'
+        }
+        It 'audit: a policy without a delete rule needs no keep rule' {
+            Start-Scenario 'full'; $script:Scenario.ArRepo.Cleanup = @{ 'keep-recent' = @{ action = 'KEEP'; mostRecentVersions = @{ keepCount = 5 } } }
+            Invoke-Mode 'Audit'
+            @(Get-Row '^Registry cleanup keeps routing images').Count | Should -Be 0
         }
     }
 
