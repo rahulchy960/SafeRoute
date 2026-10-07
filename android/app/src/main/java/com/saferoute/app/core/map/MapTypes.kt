@@ -19,6 +19,14 @@ data class LatLng(val latitude: Double, val longitude: Double) {
 }
 
 /**
+ * A box on the map: its south-west and north-east corners. Used to show a whole route at once.
+ */
+data class LatLngBounds(val southWest: LatLng, val northEast: LatLng) {
+    // A route's box says roughly where a person is going: keep it out of logs too.
+    override fun toString(): String = "LatLngBounds(hidden)"
+}
+
+/**
  * Where the map is looking.
  *
  * @property zoom 0 shows the whole world; about 12 a city; about 16 a few streets.
@@ -84,13 +92,34 @@ sealed interface MapOverlay {
     data class Polyline(override val id: String, val points: List<LatLng>) : MapOverlay
 
     data class Polygons(override val id: String, val rings: List<List<LatLng>>) : MapOverlay
+
+    /**
+     * One route. The [selected] one is drawn strong; the others are muted, so that the choice
+     * shows in width and colour, not in colour alone. Every route has a light edge ("casing")
+     * that keeps it readable on any map. List the selected route last: it is drawn on top.
+     */
+    data class Route(
+        override val id: String,
+        val points: List<LatLng>,
+        val selected: Boolean,
+    ) : MapOverlay {
+        override fun toString(): String = "Route(hidden)"
+    }
 }
 
 /**
  * How a marker or its circle looks. Colours come from the design system, never from here.
  * [Place] is a pin for a place the user chose (a search result), not a position of the user.
  */
-enum class MarkerStyle { Default, Approximate, Stale, Place }
+enum class MarkerStyle {
+    Default,
+    Approximate,
+    Stale,
+    Place,
+
+    /** Where a route begins: a ring, so that it differs in shape from the destination pin. */
+    RouteStart,
+}
 
 /**
  * What a screen can ask of the map and read from it. The only door between the app and the map
@@ -110,6 +139,12 @@ interface MapController {
     fun retry()
 
     fun moveCamera(camera: CameraState, animate: Boolean = true)
+
+    /**
+     * Moves and zooms so that all of [bounds] is visible in the part of the map that is not
+     * covered (see [setPadding]), with a small margin. Used to show a whole route.
+     */
+    fun fitBounds(bounds: LatLngBounds, animate: Boolean = true)
 
     fun setOverlays(overlays: List<MapOverlay>)
 }

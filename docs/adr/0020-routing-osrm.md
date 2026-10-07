@@ -224,6 +224,22 @@ The decision above is unchanged. How the API uses the services:
   `location_not_routable`; everything else → 503. An authentication failure is logged with
   `alert: routing_auth_failed` and never shown as 401 or 403.
 
+## Implementation note of 2026-10-08 (P012c1): the app
+
+- The app calls `POST /v1/routes` only, never a routing service, and shows the credit line the
+  API returns with the routes.
+- **Cold start, on the phone:** one request at a time. If it takes more than 5 seconds, or is
+  answered 503 with `Retry-After`, the app says "Starting the routing service, this can take a
+  moment", waits (at most 15 seconds each time) and asks again by itself at most twice; then it
+  stops with a Try again button. The numbers are a first choice, to be revisited with the
+  staging cold-start measurement.
+- **No safety wording:** route cards show a duration, a distance and "Fastest". A test fails if
+  a route string mentions safety, risk, danger or traffic, in English or Bengali.
+- **Before the first request ever** the user reads what is sent (the start and the
+  destination) and that it is not stored. The wording is a draft until a lawyer has reviewed
+  it; the location disclosure of P010b now names directions.
+- Nothing is stored on the phone but the walking/driving choice and a "note read" flag.
+
 ## References
 
 - Plan v7 §13.1, §14.3; addendum v7.2 §D.

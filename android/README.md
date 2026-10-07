@@ -93,6 +93,7 @@ android/
       feature/home/                Home screen, HomeViewModel, map status card and credit,
                                    location permission flow and "my location", 112 dialog
       feature/search/              Search screen (layout only until P011)
+      feature/directions/          routes to a chosen place: repository, states, sheet (P012c1)
       feature/settings/            Settings: account, privacy, About
       feature/onboarding/          welcome, age gate, consent notice, phone and code, blocked
       core/designsystem/theme/     colours, type, shapes, spacing: the design tokens
@@ -557,6 +558,64 @@ are never logged; the types that hold them print "hidden".
 **Not built yet:** directions (the card's button is disabled until P012), recent searches and
 saved places (they need a consent purpose and a retention rule first), the attribution as a
 link.
+
+## Directions
+
+Routes from your position to a chosen place (since P012c1,
+[ADR 0020](../docs/adr/0020-routing-osrm.md);
+[flow](../docs/diagrams/012c-directions-flow.svg)).
+
+**The flow.** The place card has a Directions button. The first time ever, a short note says
+what is sent; after "Continue" the app asks the SafeRoute API for routes from where the
+location dot is to the place. The sheet rises and shows up to three cards (time, distance, and
+"Fastest" on the first) with the map credit; the routes are drawn on the map, the chosen one
+strong and the others grey, and the map shows the chosen one whole. Tapping a card chooses
+another route. Walking or driving is a toggle, and the app remembers the choice. Back closes
+directions first, then the place.
+
+**When there are no routes.** Each reason has its own sentence: routes aren't available here
+yet (outside the covered area), no route found, a place not near a road, too far for this way
+of travelling, too many requests, offline, temporarily unavailable.
+
+**"Starting the routing service".** The routing service on the server sleeps when nobody uses
+it. The first request after a quiet time can be slow, or be answered "ask again in N seconds".
+The app then says "Starting the routing service, this can take a moment", waits (at most 15
+seconds at a time) and asks again by itself at most twice. After that it stops and shows a Try
+again button. A spinner never runs for ever.
+
+**What is sent, and to whom.**
+
+| Sent to the SafeRoute API | Not sent |
+| --- | --- |
+| Your position when you ask (the start), to six decimals | Anything before you continued past the note; anything while directions are closed |
+| The chosen place's position (the destination) | The place's name, your phone number, your contacts |
+| Walking or driving | Anything to a routing or map provider directly: the app talks to the SafeRoute API only |
+
+**What is stored.** On the phone: the walking/driving choice and "the note was read", in the
+app's DataStore file. Nothing else: no origin, destination, route or history, on the phone or
+on the server. Routes live in memory until directions are closed, and are never logged; the
+types that hold them print "hidden".
+
+**What it deliberately does not do.** No label, colour or score about safety, risk or traffic
+on a route: a card is a time, a distance and "Fastest". No automatic rerouting. No turn-by-turn
+instructions. Following the route as you move, choosing a route by tapping the map and choosing
+another start arrive with P012c2.
+
+**Where the code is.**
+
+| File | What |
+| --- | --- |
+| `feature/directions/RouteRepository.kt` | `RouteRepository`; `ApiRouteRepository` calls the generated `RoutingApi` through `apiCall { }` (a POST body, never a URL) and maps every problem code |
+| `feature/directions/Polyline6.kt` | Decodes the route line the server sends; runs off the main thread |
+| `feature/directions/DirectionsViewModel.kt` | The states, one request at a time, the bounded wait |
+| `feature/directions/DirectionsSheet.kt` | The panel in Home's sheet and the one-time note |
+| `feature/directions/RoutePreferences.kt` | The two remembered settings |
+| `core/map/RouteDisplay.kt` | What Directions and Home share: the routes to draw. Home draws them as `MapOverlay.Route`; MapLibre types stay in `MapLibreEngine.kt` |
+
+- Tests use `FakeRouteRepository` and `FakeRoutePreferences`; `FakeDirectionsModule` replaces
+  the real ones in every Hilt test, so no test asks a server for a route.
+- Not checked without a phone: how the route lines, their light edge and the start ring look
+  on the real map; the camera fit with the sheet half open; TalkBack reading the cards.
 
 ## Design tokens
 

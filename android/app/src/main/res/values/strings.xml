@@ -215,7 +215,7 @@
     <string name="my_location_unavailable">Location unavailable. Find out why</string>
     <string name="location_disclosure_title">Show your location on the map?</string>
     <string name="location_disclosure_what">SafeRoute will read your phone’s location while the app is open.</string>
-    <string name="location_disclosure_why">It is used to show where you are on the map. Later features will also use it for routes, and for SOS and live sharing when you start them yourself.</string>
+    <string name="location_disclosure_why">It is used to show where you are on the map and, when you ask for directions, as the start of the route (you are told what is sent before the first request). Later features will also use it for SOS and live sharing when you start them yourself.</string>
     <string name="location_disclosure_not">SafeRoute does not read your location in the background. For this feature nothing is sent to SafeRoute’s servers. Your location is shared with others only if you start SOS or live sharing.</string>
     <string name="location_disclosure_stop">You can stop this at any time in your phone’s Settings, under Apps, SafeRoute, Permissions.</string>
     <string name="location_disclosure_continue">Continue</string>
@@ -256,5 +256,41 @@
     <string name="search_retry">Try again</string>
     <string name="place_card_close">Close this place</string>
     <string name="place_card_directions">Directions</string>
-    <string name="place_card_directions_unavailable">Directions, coming in a later version</string>
+
+    <!-- Directions (P012c1). No wording about safety, risk or traffic anywhere in this block. -->
+    <string name="route_title_to">To %1$s</string>
+    <string name="route_from_my_location">From your location</string>
+    <string name="route_close">Close directions</string>
+    <string name="route_mode_walking">Walking</string>
+    <string name="route_mode_driving">Driving</string>
+    <string name="route_loading">Finding routes…</string>
+    <string name="route_starting">Starting the routing service, this can take a moment</string>
+    <string name="route_fastest">Fastest</string>
+    <string name="route_duration_minutes">%1$d min</string>
+    <string name="route_duration_hours_minutes">%1$d h %2$d min</string>
+    <string name="route_distance_meters">%1$d m</string>
+    <string name="route_distance_km">%1$s km</string>
+    <string name="route_try_again">Try again</string>
+    <string name="route_error_outside">Routes aren’t available here yet</string>
+    <string name="route_error_no_route">No route was found between these two places.</string>
+    <string name="route_error_not_routable">One of the places is not near a road or path. Pick another place nearby.</string>
+    <string name="route_error_too_long">These places are too far apart for this way of travelling.</string>
+    <string name="route_error_rate_limited">Too many route requests. Please wait a moment.</string>
+    <plurals name="route_error_rate_limited_seconds">
+        <item quantity="one">Too many route requests. Try again in about %d second.</item>
+        <item quantity="other">Too many route requests. Try again in about %d seconds.</item>
+    </plurals>
+    <string name="route_error_still_starting">The routing service is still starting. Please try again.</string>
+    <string name="route_error_unavailable">Routes are temporarily unavailable. Please try again later.</string>
+    <string name="route_error_offline">You are offline. Check your connection and try again.</string>
+    <string name="route_origin_no_permission">SafeRoute needs your location to start the route.</string>
+    <string name="route_origin_searching">Finding your location…</string>
+    <string name="route_origin_unavailable">Your location isn’t available. Check that Location is switched on.</string>
+    <string name="route_use_my_location">Use my location</string>
+    <string name="route_intro_title">How routes work</string>
+    <string name="route_intro_sent">To find routes, your start and your destination are sent to SafeRoute and its routing service.</string>
+    <string name="route_intro_not_stored">They are used to work out the routes and are not stored.</string>
+    <string name="route_intro_estimate">Times and distances are estimates.</string>
+    <string name="route_intro_continue">Continue</string>
+    <string name="route_intro_not_now">Not now</string>
 </resources>

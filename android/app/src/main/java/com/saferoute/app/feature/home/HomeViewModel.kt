@@ -13,7 +13,10 @@ import com.saferoute.app.core.map.MapEngine
 import com.saferoute.app.core.map.MapOverlay
 import com.saferoute.app.core.map.MapSelection
 import com.saferoute.app.core.map.MarkerStyle
+import com.saferoute.app.core.map.RouteDisplay
 import com.saferoute.app.core.map.SelectedPlace
+import com.saferoute.app.core.map.boundsOf
+import com.saferoute.app.core.map.routeOverlays
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -69,6 +72,7 @@ class HomeViewModel @Inject constructor(
     val mapEngine: MapEngine,
     private val location: LocationRepository,
     private val selection: MapSelection,
+    private val routes: RouteDisplay,
 ) : ViewModel() {
 
     /** The map's state. It survives rotation with this ViewModel; the map view does not. */
@@ -137,6 +141,23 @@ class HomeViewModel @Inject constructor(
             }
         }
         viewModelScope.launch { location.state.collect(::onLocationState) }
+        viewModelScope.launch {
+            var fitted: Int? = null
+            routes.routes.collect { shown ->
+                drawOverlays()
+                // New routes: show the selected one whole, once. Choosing an alternative or
+                // turning the phone leaves the map where the user put it.
+                if (shown != null && shown.fitToken != fitted) {
+                    fitted = shown.fitToken
+                    val line = shown.lines.firstOrNull { it.id == shown.selectedId }
+                    boundsOf(line?.points.orEmpty())?.let {
+                        following.value = false
+                        recentreOnNextFix = false
+                        map.fitBounds(it)
+                    }
+                }
+            }
+        }
     }
 
     /** Home is visible and location is permitted: start updates (the repository checks again). */
@@ -169,12 +190,16 @@ class HomeViewModel @Inject constructor(
         selection.clear()
     }
 
-    /** One list for the map: the user's dot (if any) and the chosen place's pin (if any). */
+    /**
+     * One list for the map, bottom to top: the routes (if any), the user's dot (if any) and the
+     * chosen place's pin (if any), which is also a route's destination.
+     */
     private fun drawOverlays() {
         val pin = selection.selected.value?.let {
             MapOverlay.Marker(id = PLACE_PIN_ID, position = it.position, style = MarkerStyle.Place)
         }
-        map.setOverlays(locationShapes + listOfNotNull(pin))
+        val lines = routes.routes.value?.let(::routeOverlays).orEmpty()
+        map.setOverlays(lines + locationShapes + listOfNotNull(pin))
     }
 
     private fun savePlace(place: SelectedPlace?) {

@@ -224,6 +224,19 @@ private class MapLibreRenderer(
         if (animate) map?.animateCamera(update) else map?.moveCamera(update)
     }
 
+    override fun fitBounds(bounds: LatLngBounds, animate: Boolean) {
+        val map = map ?: return
+        val box = org.maplibre.android.geometry.LatLngBounds.Builder()
+            .include(bounds.southWest.let { org.maplibre.android.geometry.LatLng(it.latitude, it.longitude) })
+            .include(bounds.northEast.let { org.maplibre.android.geometry.LatLng(it.latitude, it.longitude) })
+            .build()
+        // The margin is added inside the map's own padding (pill at the top, sheet at the
+        // bottom), so the route ends up in the part of the map the user can see.
+        val margin = (FIT_MARGIN_DP * mapView.resources.displayMetrics.density).toInt()
+        val update = CameraUpdateFactory.newLatLngBounds(box, margin)
+        if (animate) map.animateCamera(update) else map.moveCamera(update)
+    }
+
     override fun setOverlays(overlays: List<MapOverlay>) {
         this.overlays = overlays
         drawOverlays()
@@ -264,6 +277,20 @@ private class MapLibreRenderer(
                 PropertyFactory.lineWidth(4f),
             ).apply { setFilter(kindIs(OverlayKind.LINE)) },
         )
+        // Routes: a light edge first, the coloured line on it. Width and colour come from the
+        // feature, so the selected route and the alternatives share these two layers. Round
+        // ends and corners keep a bent line from showing gaps.
+        val width = Expression.toNumber(Expression.get("width"))
+        for (kind in listOf(OverlayKind.ROUTE_CASING, OverlayKind.ROUTE)) {
+            style.addLayer(
+                LineLayer("$OVERLAY_SOURCE-$kind", OVERLAY_SOURCE).withProperties(
+                    PropertyFactory.lineColor(color),
+                    PropertyFactory.lineWidth(width),
+                    PropertyFactory.lineCap("round"),
+                    PropertyFactory.lineJoin("round"),
+                ).apply { setFilter(kindIs(kind)) },
+            )
+        }
         style.addLayer(
             SymbolLayer("$OVERLAY_SOURCE-heading", OVERLAY_SOURCE).withProperties(
                 PropertyFactory.iconImage(HEADING_IMAGE),
@@ -304,6 +331,9 @@ private class MapLibreRenderer(
         const val DOT_STROKE = 2.5f
         const val PIN_RADIUS = 10f
         const val PIN_STROKE = 3.5f
+
+        /** Room left around a route that is fitted into view. */
+        const val FIT_MARGIN_DP = 48
     }
 }
 

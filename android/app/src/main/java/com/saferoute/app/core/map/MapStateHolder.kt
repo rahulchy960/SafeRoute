@@ -17,6 +17,7 @@ internal interface MapRenderer {
     fun loadStyle(url: MapStyleUrl)
     fun setPadding(padding: MapPadding)
     fun moveCamera(camera: CameraState, animate: Boolean)
+    fun fitBounds(bounds: LatLngBounds, animate: Boolean)
     fun setOverlays(overlays: List<MapOverlay>)
 }
 
@@ -149,6 +150,11 @@ internal class MapStateHolder(
     override fun moveCamera(camera: CameraState, animate: Boolean) {
         _camera.value = camera
         renderer?.moveCamera(camera, animate)
+    }
+
+    // The camera that results is reported back through onCameraIdle, like any other move.
+    override fun fitBounds(bounds: LatLngBounds, animate: Boolean) {
+        renderer?.fitBounds(bounds, animate)
     }
 
     override fun setOverlays(overlays: List<MapOverlay>) {
