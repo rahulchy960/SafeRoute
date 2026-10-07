@@ -10,6 +10,10 @@ import com.saferoute.app.core.map.CameraState
 import com.saferoute.app.core.map.LatLng
 import com.saferoute.app.core.map.MapController
 import com.saferoute.app.core.map.MapEngine
+import com.saferoute.app.core.map.MapOverlay
+import com.saferoute.app.core.map.MapSelection
+import com.saferoute.app.core.map.MarkerStyle
+import com.saferoute.app.core.map.SelectedPlace
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -49,6 +53,10 @@ enum class EmergencyDialogState {
  * Location here is display only: positions go from [LocationRepository] to the map as overlays
  * and to the camera. They are not saved, logged or sent anywhere.
  *
+ * A place chosen in search arrives through [MapSelection]: the camera flies to it once, a pin
+ * is drawn, and the sheet shows a card until the user closes it. It is kept across a rotation
+ * and across process death (in [savedState], like the camera), and nowhere else.
+ *
  * There is no SOS logic here. P014 replaces the dialog with the real device-first SOS flow.
  *
  * @param savedState a small key-value store that Android keeps even when it kills the app's
@@ -60,6 +68,7 @@ class HomeViewModel @Inject constructor(
     private val savedState: SavedStateHandle,
     val mapEngine: MapEngine,
     private val location: LocationRepository,
+    private val selection: MapSelection,
 ) : ViewModel() {
 
     /** The map's state. It survives rotation with this ViewModel; the map view does not. */
@@ -80,13 +89,42 @@ class HomeViewModel @Inject constructor(
 
     val locationState: StateFlow<LocationState> = location.state
 
+    /** The place shown on the map and in the sheet's card, or null. */
+    val selectedPlace: StateFlow<SelectedPlace?> = selection.selected
+
+    /** The location dot and its circle, kept so that the pin can be drawn together with them. */
+    private var locationShapes: List<MapOverlay> = emptyList()
+
     val myLocation: StateFlow<MyLocationControl> =
         combine(locationActive, location.state, following, ::myLocationControl)
             .stateIn(viewModelScope, SharingStarted.Eagerly, MyLocationControl.Off)
 
     init {
+        // After process death the selection object is new and empty: put the saved place back.
+        if (selection.selected.value == null) savedPlace()?.let(selection::select)
+        viewModelScope.launch {
+            var first = true
+            selection.selected.collect { place ->
+                savePlace(place)
+                drawOverlays()
+                // Fly to a place that was just chosen. Not on the first value: that one is a
+                // place already on screen (rotation, restore), and the camera is where the user
+                // left it.
+                if (place != null && !first) {
+                    following.value = false
+                    recentreOnNextFix = false
+                    val camera = map.camera.value
+                    map.moveCamera(
+                        camera.copy(target = place.position, zoom = maxOf(camera.zoom, PLACE_ZOOM)),
+                    )
+                }
+                first = false
+            }
+        }
         viewModelScope.launch {
             map.camera.collect { camera ->
+                // The coarse area a search prefers: where the map looks, never where the user is.
+                selection.viewCentre = camera.target
                 savedState[KEY_CAMERA] = doubleArrayOf(
                     camera.target.latitude,
                     camera.target.longitude,
@@ -121,8 +159,40 @@ class HomeViewModel @Inject constructor(
             locationActive.value = false
             following.value = false
             recentreOnNextFix = false
-            map.setOverlays(emptyList())
+            locationShapes = emptyList()
+            drawOverlays()
         }
+    }
+
+    /** The place card was closed, or back was pressed while it showed. */
+    fun onPlaceDismiss() {
+        selection.clear()
+    }
+
+    /** One list for the map: the user's dot (if any) and the chosen place's pin (if any). */
+    private fun drawOverlays() {
+        val pin = selection.selected.value?.let {
+            MapOverlay.Marker(id = PLACE_PIN_ID, position = it.position, style = MarkerStyle.Place)
+        }
+        map.setOverlays(locationShapes + listOfNotNull(pin))
+    }
+
+    private fun savePlace(place: SelectedPlace?) {
+        if (place == null) {
+            // Nothing chosen: nothing is kept, not even an empty entry.
+            savedState.remove<Array<String>>(KEY_PLACE_TEXT)
+            savedState.remove<DoubleArray>(KEY_PLACE_POSITION)
+        } else {
+            savedState[KEY_PLACE_TEXT] = arrayOf(place.name, place.label)
+            savedState[KEY_PLACE_POSITION] = doubleArrayOf(place.position.latitude, place.position.longitude)
+        }
+    }
+
+    private fun savedPlace(): SelectedPlace? {
+        val text = savedState.get<Array<String>>(KEY_PLACE_TEXT)?.takeIf { it.size == 2 } ?: return null
+        val position =
+            savedState.get<DoubleArray>(KEY_PLACE_POSITION)?.takeIf { it.size == 2 } ?: return null
+        return SelectedPlace(name = text[0], label = text[1], position = LatLng(position[0], position[1]))
     }
 
     /**
@@ -151,7 +221,8 @@ class HomeViewModel @Inject constructor(
 
     private fun onLocationState(state: LocationState) {
         if (!locationActive.value) return
-        map.setOverlays(locationOverlays(state))
+        locationShapes = locationOverlays(state)
+        drawOverlays()
         val fix = (state as? LocationState.Fix)?.fix ?: return
         when {
             recentreOnNextFix -> {
@@ -199,5 +270,11 @@ class HomeViewModel @Inject constructor(
 
     private companion object {
         const val KEY_CAMERA = "map_camera"
+        const val KEY_PLACE_TEXT = "selected_place_text"
+        const val KEY_PLACE_POSITION = "selected_place_position"
+        const val PLACE_PIN_ID = "selected-place"
+
+        /** Close enough to see the streets around a chosen place. */
+        const val PLACE_ZOOM = 15.0
     }
 }

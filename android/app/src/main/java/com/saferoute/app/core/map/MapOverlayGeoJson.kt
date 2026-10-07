@@ -23,12 +23,15 @@ data class OverlayPalette(
     /** The ring around the dot, so that it stands out on any map. */
     val halo: String,
     val line: String,
+    /** A place the user chose. Not the location blue, never the SOS red or a "safe" green. */
+    val place: String,
 )
 
 internal object OverlayKind {
     const val FILL = "fill"
     const val LINE = "line"
     const val DOT = "dot"
+    const val PIN = "pin"
     const val HEADING = "heading"
 }
 
@@ -69,7 +72,18 @@ internal fun overlaysToGeoJson(overlays: List<MapOverlay>, palette: OverlayPalet
                     opacity = 0.15,
                 ),
             )
-            is MapOverlay.Marker -> listOfNotNull(
+            is MapOverlay.Marker -> if (overlay.style == MarkerStyle.Place) {
+                // Its own kind: drawn larger than the location dot, so size as well as colour
+                // tells the two apart.
+                listOf(
+                    feature(
+                        geometry = point(overlay.position),
+                        kind = OverlayKind.PIN,
+                        color = palette.place,
+                        stroke = palette.halo,
+                    ),
+                )
+            } else listOfNotNull(
                 feature(
                     geometry = point(overlay.position),
                     kind = OverlayKind.DOT,
@@ -107,8 +121,11 @@ internal fun overlaysToGeoJson(overlays: List<MapOverlay>, palette: OverlayPalet
     return """{"type":"FeatureCollection","features":[${features.joinToString(",")}]}"""
 }
 
-private fun MarkerStyle.color(palette: OverlayPalette): String =
-    if (this == MarkerStyle.Stale) palette.stale else palette.location
+private fun MarkerStyle.color(palette: OverlayPalette): String = when (this) {
+    MarkerStyle.Stale -> palette.stale
+    MarkerStyle.Place -> palette.place
+    MarkerStyle.Default, MarkerStyle.Approximate -> palette.location
+}
 
 private fun feature(
     geometry: String,

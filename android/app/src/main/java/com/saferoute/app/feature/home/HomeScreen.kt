@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -80,6 +81,7 @@ import com.saferoute.app.core.location.LocationState
 import com.saferoute.app.core.map.MapLoadState
 import com.saferoute.app.core.map.MapPadding
 import com.saferoute.app.core.map.MapStyleVariant
+import com.saferoute.app.core.map.SelectedPlace
 import kotlin.math.roundToInt
 
 /**
@@ -115,6 +117,7 @@ fun HomeRoute(
     val myLocation by viewModel.myLocation.collectAsStateWithLifecycle()
     val locationState by viewModel.locationState.collectAsStateWithLifecycle()
     val permission by permissionViewModel.state.collectAsStateWithLifecycle()
+    val selectedPlace by viewModel.selectedPlace.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
 
@@ -209,6 +212,8 @@ fun HomeRoute(
             }
         },
         onLocationNoticeDismiss = permissionViewModel::onNoticeDismiss,
+        selectedPlace = selectedPlace,
+        onPlaceDismiss = viewModel::onPlaceDismiss,
         onSearchClick = onOpenSearch,
         onSettingsClick = onOpenSettings,
         onEmergencyClick = viewModel::onEmergencyClick,
@@ -278,7 +283,13 @@ fun HomeScreen(
     locationNotice: LocationNotice? = null,
     onLocationNoticeAction: (LocationNotice) -> Unit = {},
     onLocationNoticeDismiss: () -> Unit = {},
+    selectedPlace: SelectedPlace? = null,
+    onPlaceDismiss: () -> Unit = {},
 ) {
+    // Back with a place on the map takes the place away first; the next back leaves the app as
+    // before. BackHandler is only active while there is a place, so normal back is untouched.
+    BackHandler(enabled = selectedPlace != null, onBack = onPlaceDismiss)
+
     val spacing = SafeRouteTheme.spacing
     // Keeps floating controls clear of display cut-outs and the gesture areas at the sides.
     val sideInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)
@@ -418,7 +429,11 @@ fun HomeScreen(
             },
             state = sheetState,
         ) {
-            HomeSheetContent()
+            if (selectedPlace != null) {
+                PlaceCard(place = selectedPlace, onClose = onPlaceDismiss)
+            } else {
+                HomeSheetContent()
+            }
         }
 
         EmergencyButton(
