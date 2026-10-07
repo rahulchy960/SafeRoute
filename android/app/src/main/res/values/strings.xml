@@ -71,8 +71,8 @@
     <string name="emergency_dialog_close">Close</string>
 
     <!-- Search -->
-    <string name="search_empty_title">Search is not available yet</string>
-    <string name="search_empty_body">Place search arrives in a later version.</string>
+    <string name="search_empty_title">Find a place</string>
+    <string name="search_empty_body">Type the name of a place, a station, a market or an area. You can type in English or Bengali.</string>
 
     <!-- Settings -->
     <string name="settings_title">Settings</string>
@@ -235,4 +235,26 @@
     <string name="location_notice_no_fix_title">Can’t find your location</string>
     <string name="location_notice_no_fix_body">Your phone has no position yet. Try again near a window or outdoors.</string>
     <string name="location_notice_close">Close</string>
+    <!-- Place search (P011b) -->
+    <string name="search_clear">Clear search</string>
+    <string name="search_too_short">Type at least two letters</string>
+    <string name="search_loading">Searching</string>
+    <plurals name="search_result_count">
+        <item quantity="one">%d place found</item>
+        <item quantity="other">%d places found</item>
+    </plurals>
+    <string name="search_no_results_title">No places found</string>
+    <string name="search_no_results_body">Try another spelling, or the name of a nearby landmark or area.</string>
+    <string name="search_error_offline">You are offline. Check your connection and try again.</string>
+    <string name="search_error_rate_limited">Too many searches. Please wait a moment.</string>
+    <plurals name="search_error_rate_limited_seconds">
+        <item quantity="one">Too many searches. Please wait about %d second.</item>
+        <item quantity="other">Too many searches. Please wait about %d seconds.</item>
+    </plurals>
+    <string name="search_error_unavailable">Search is temporarily unavailable. Please try again later.</string>
+    <string name="search_error_unexpected">Something went wrong. Please try again.</string>
+    <string name="search_retry">Try again</string>
+    <string name="place_card_close">Close this place</string>
+    <string name="place_card_directions">Directions</string>
+    <string name="place_card_directions_unavailable">Directions, coming in a later version</string>
 </resources>

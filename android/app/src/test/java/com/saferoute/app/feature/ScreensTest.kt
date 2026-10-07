@@ -4,6 +4,10 @@ package com.saferoute.app.feature
 import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -28,6 +32,7 @@ import com.saferoute.app.core.designsystem.theme.SafeRouteTheme
 import com.saferoute.app.core.session.AccountSummary
 import com.saferoute.app.core.session.maskPhone
 import com.saferoute.app.feature.search.SearchScreen
+import com.saferoute.app.feature.search.SearchUiState
 import com.saferoute.app.feature.settings.AccountUiState
 import com.saferoute.app.feature.settings.SettingsScreen
 import com.saferoute.app.testing.assertMinTouchTarget
@@ -67,7 +72,19 @@ class ScreensTest {
 
     @Test
     fun `search has a focused text field, an empty state and a back button`() {
-        compose.setContent { Themed { SearchScreen(onBack = { backPresses++ }) } }
+        compose.setContent {
+            Themed {
+                var query by remember { mutableStateOf("") }
+                SearchScreen(
+                    query = query,
+                    state = SearchUiState.Idle,
+                    onQueryChange = { query = it },
+                    onSearch = {},
+                    onPlaceClick = {},
+                    onBack = { backPresses++ },
+                )
+            }
+        }
 
         val field = compose.onNode(hasSetTextAction())
         field.assertIsDisplayed().assertIsFocused()

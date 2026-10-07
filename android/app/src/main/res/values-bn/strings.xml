@@ -68,8 +68,8 @@
     <string name="emergency_dialog_close">বন্ধ করুন</string>
 
     <!-- Search -->
-    <string name="search_empty_title">খোঁজার সুবিধা এখনও নেই</string>
-    <string name="search_empty_body">জায়গা খোঁজার সুবিধা পরের সংস্করণে আসবে।</string>
+    <string name="search_empty_title">একটি জায়গা খুঁজুন</string>
+    <string name="search_empty_body">জায়গা, স্টেশন, বাজার বা এলাকার নাম লিখুন। ইংরেজি বা বাংলায় লিখতে পারেন।</string>
 
     <!-- Settings -->
     <string name="settings_title">সেটিংস</string>
@@ -228,4 +228,26 @@
     <string name="location_notice_no_fix_title">আপনার অবস্থান খুঁজে পাওয়া যাচ্ছে না</string>
     <string name="location_notice_no_fix_body">আপনার ফোনে এখনও কোনো অবস্থান নেই। জানালার কাছে বা বাইরে গিয়ে আবার চেষ্টা করুন।</string>
     <string name="location_notice_close">বন্ধ করুন</string>
+    <!-- Place search (P011b) -->
+    <string name="search_clear">লেখা মুছুন</string>
+    <string name="search_too_short">অন্তত দুটি অক্ষর লিখুন</string>
+    <string name="search_loading">খোঁজা হচ্ছে</string>
+    <plurals name="search_result_count">
+        <item quantity="one">%dটি জায়গা পাওয়া গেছে</item>
+        <item quantity="other">%dটি জায়গা পাওয়া গেছে</item>
+    </plurals>
+    <string name="search_no_results_title">কোনো জায়গা পাওয়া যায়নি</string>
+    <string name="search_no_results_body">অন্য বানানে লিখে দেখুন, অথবা কাছের কোনো পরিচিত জায়গা বা এলাকার নাম লিখুন।</string>
+    <string name="search_error_offline">আপনি অফলাইনে আছেন। ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।</string>
+    <string name="search_error_rate_limited">অনেকবার খোঁজা হয়েছে। একটু অপেক্ষা করুন।</string>
+    <plurals name="search_error_rate_limited_seconds">
+        <item quantity="one">অনেকবার খোঁজা হয়েছে। প্রায় %d সেকেন্ড অপেক্ষা করুন।</item>
+        <item quantity="other">অনেকবার খোঁজা হয়েছে। প্রায় %d সেকেন্ড অপেক্ষা করুন।</item>
+    </plurals>
+    <string name="search_error_unavailable">খোঁজার সুবিধা সাময়িকভাবে বন্ধ আছে। পরে আবার চেষ্টা করুন।</string>
+    <string name="search_error_unexpected">কিছু একটা ভুল হয়েছে। আবার চেষ্টা করুন।</string>
+    <string name="search_retry">আবার চেষ্টা করুন</string>
+    <string name="place_card_close">এই জায়গাটি বন্ধ করুন</string>
+    <string name="place_card_directions">পথনির্দেশ</string>
+    <string name="place_card_directions_unavailable">পথনির্দেশ, পরের সংস্করণে আসবে</string>
 </resources>
