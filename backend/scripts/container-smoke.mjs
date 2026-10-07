@@ -31,6 +31,13 @@ const FAKE_GEOCODING = {
   GEOCODING_API_KEY: 'fake-geocoding-key-for-smoke-test',
   GEOCODING_PROVIDER: 'geoapify',
 };
+// Obviously fake (hosts under .invalid never resolve). The API must start with them and never
+// call them: no route is requested here, and no ID token is fetched.
+const FAKE_ROUTING = {
+  OSRM_WALKING_URL: 'https://osrm-walking-smoke.example.invalid',
+  OSRM_DRIVING_URL: 'https://osrm-driving-smoke.example.invalid',
+};
+const ROUTING_GUARD_MESSAGE = 'OSRM_DRIVING_URL: required when NODE_ENV=production';
 const GEOCODING_GUARD_MESSAGE = 'GEOCODING_API_KEY: required when NODE_ENV=production';
 const DEMO_GUARD_MESSAGE = 'a demo- project ID is not allowed when NODE_ENV=production';
 const SHUTDOWN_LIMIT_MS = 10_000;
@@ -286,7 +293,12 @@ function checkVersionVariables() {
 
 function checkProductionGuards() {
   const demo = runInImage(
-    { DATABASE_URL: databaseUrl, FIREBASE_PROJECT_ID: 'demo-saferoute', ...FAKE_GEOCODING },
+    {
+      DATABASE_URL: databaseUrl,
+      FIREBASE_PROJECT_ID: 'demo-saferoute',
+      ...FAKE_GEOCODING,
+      ...FAKE_ROUTING,
+    },
     [],
   );
   check(
@@ -296,11 +308,11 @@ function checkProductionGuards() {
       !demo.stderr.includes(DB.password),
     `exit=${demo.status}`,
   );
-  const missing = runInImage({ DATABASE_URL: databaseUrl, ...FAKE_GEOCODING }, []);
+  const missing = runInImage({ DATABASE_URL: databaseUrl, ...FAKE_GEOCODING, ...FAKE_ROUTING }, []);
   check('API refuses to start in production without FIREBASE_PROJECT_ID', missing.status === 1);
   // What a deploy without the secret looks like: the candidate never starts (ADR 0018).
   const noKey = runInImage(
-    { DATABASE_URL: databaseUrl, FIREBASE_PROJECT_ID: FAKE_FIREBASE_PROJECT_ID },
+    { DATABASE_URL: databaseUrl, FIREBASE_PROJECT_ID: FAKE_FIREBASE_PROJECT_ID, ...FAKE_ROUTING },
     [],
   );
   check(
@@ -309,6 +321,40 @@ function checkProductionGuards() {
       noKey.stderr.includes(GEOCODING_GUARD_MESSAGE) &&
       !noKey.stderr.includes(DB.password),
     `exit=${noKey.status}`,
+  );
+  // What a deploy without an OSRM secret looks like: GitHub passes an empty value, and the
+  // candidate never starts (ADR 0020). The other URL must not appear in the message.
+  const noOsrm = runInImage(
+    {
+      DATABASE_URL: databaseUrl,
+      FIREBASE_PROJECT_ID: FAKE_FIREBASE_PROJECT_ID,
+      ...FAKE_GEOCODING,
+      OSRM_WALKING_URL: FAKE_ROUTING.OSRM_WALKING_URL,
+      OSRM_DRIVING_URL: '',
+    },
+    [],
+  );
+  check(
+    'API refuses to start in production without an OSRM service URL, naming the variable only',
+    noOsrm.status === 1 &&
+      noOsrm.stderr.includes(ROUTING_GUARD_MESSAGE) &&
+      !noOsrm.stderr.includes('example.invalid'),
+    `exit=${noOsrm.status}`,
+  );
+  const noAuth = runInImage(
+    {
+      DATABASE_URL: databaseUrl,
+      FIREBASE_PROJECT_ID: FAKE_FIREBASE_PROJECT_ID,
+      ...FAKE_GEOCODING,
+      ...FAKE_ROUTING,
+      ROUTING_AUTH: 'none',
+    },
+    [],
+  );
+  check(
+    'API refuses to start in production with ROUTING_AUTH=none',
+    noAuth.status === 1 && noAuth.stderr.includes('ROUTING_AUTH: none is not allowed'),
+    `exit=${noAuth.status}`,
   );
 }
 
@@ -331,6 +377,10 @@ async function checkApi() {
     `GEOCODING_API_KEY=${FAKE_GEOCODING.GEOCODING_API_KEY}`,
     '-e',
     `GEOCODING_PROVIDER=${FAKE_GEOCODING.GEOCODING_PROVIDER}`,
+    '-e',
+    `OSRM_WALKING_URL=${FAKE_ROUTING.OSRM_WALKING_URL}`,
+    '-e',
+    `OSRM_DRIVING_URL=${FAKE_ROUTING.OSRM_DRIVING_URL}`,
     image,
   ]);
   const address = dockerOk(['port', apiContainer, '8080/tcp']).split('\n')[0].trim();
@@ -389,6 +439,19 @@ async function checkApi() {
     'POST /v1/search without a token → 401 with WWW-Authenticate: Bearer',
     search.status === 401 && search.headers.get('www-authenticate') === 'Bearer',
     `status=${search.status}`,
+  );
+
+  // Routes are behind sign-in too: 401 before any limit, extent check or OSRM call. The body
+  // holds no position: nothing about a place is sent by a smoke test.
+  const routes = await fetch(`${base}/v1/routes`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ mode: 'walking' }),
+  });
+  check(
+    'POST /v1/routes without a token → 401 with WWW-Authenticate: Bearer',
+    routes.status === 401 && routes.headers.get('www-authenticate') === 'Bearer',
+    `status=${routes.status}`,
   );
 
   // The deploy workflow's smoke script, run as a CLI against this container: it must pass here,
@@ -450,9 +513,10 @@ async function checkApi() {
       lines.some((l) => l.request_id === requestId),
   );
   check(
-    'logs never contain the database password or the geocoding key',
+    'logs never contain the database password, the geocoding key or an OSRM service URL',
     !`${logs.stdout}${logs.stderr}`.includes(DB.password) &&
-      !`${logs.stdout}${logs.stderr}`.includes(FAKE_GEOCODING.GEOCODING_API_KEY),
+      !`${logs.stdout}${logs.stderr}`.includes(FAKE_GEOCODING.GEOCODING_API_KEY) &&
+      !`${logs.stdout}${logs.stderr}`.includes('example.invalid'),
   );
 }
 
