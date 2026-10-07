@@ -3,8 +3,9 @@
 Claude Code loads this file at the start of every session. Read it fully before doing anything.
 The full design lives in [`docs/plan/SafeRoute_Plan_v7_MVP.pdf`](docs/plan/SafeRoute_Plan_v7_MVP.pdf)
 (cited as "Plan v7 §N"), amended by [`docs/plan/addendum-v7.1.md`](docs/plan/addendum-v7.1.md),
-[`docs/plan/addendum-v7.2.md`](docs/plan/addendum-v7.2.md) and
-[`docs/plan/addendum-v7.3.md`](docs/plan/addendum-v7.3.md) (see "Plan addendum" below).
+[`docs/plan/addendum-v7.2.md`](docs/plan/addendum-v7.2.md),
+[`docs/plan/addendum-v7.3.md`](docs/plan/addendum-v7.3.md) and
+[`docs/plan/addendum-v7.4.md`](docs/plan/addendum-v7.4.md) (see "Plan addendum" below).
 
 ## Plan addendum (since P009a)
 
@@ -15,13 +16,17 @@ Circle principles), the section edits to v7, the roadmap order and new risks. Th
 never edited; a full v8 comes after the MVP.
 
 Then read [`docs/plan/addendum-v7.2.md`](docs/plan/addendum-v7.2.md) (since P010c) and
-[`docs/plan/addendum-v7.3.md`](docs/plan/addendum-v7.3.md) (since P010d). **Reading order: PDF →
-v7.1 → v7.2 → v7.3; where they differ, the later document wins.** v7.2 records the launch
+[`docs/plan/addendum-v7.3.md`](docs/plan/addendum-v7.3.md) (since P010d), then
+[`docs/plan/addendum-v7.4.md`](docs/plan/addendum-v7.4.md) (since P012d). **Reading order: PDF →
+v7.1 → v7.2 → v7.3 → v7.4; where they differ, the later document wins.** v7.2 records the launch
 geography (West Bengal, with Kolkata as the first pilot area for community safety data), the
 three coverage layers, the region model, the changed scopes of P011, P012, P017 and P019, and the
 claims rule (see "Coverage claims" below). v7.3 replaces v7.2's "reports only in active regions":
 reports are accepted anywhere inside West Bengal, and publication is gated region by region
 (statuses `context_only`, `collecting`, `published`); it changes the scopes of P017, P018 and P019.
+v7.4 records the post-MVP product direction (the order of features after the MVP, the journey
+engine) and the guardrails for every future feature (see "Product guardrails" below); it changes
+no MVP scope.
 
 ## Project summary
 
@@ -59,7 +64,7 @@ moderation/     Moderator web app (P018)
 contracts/      openapi.json, generated, never hand-edited (from P004)
 infra/          GCP / Cloud Run / WIF configuration (from P006)
 tools/diagrams/ JSON → Excalidraw + SVG + PNG diagram generator
-docs/plan/      Plan v7 PDF (source of truth for design) + addenda v7.1, v7.2, v7.3 (the later one wins)
+docs/plan/      Plan v7 PDF (source of truth for design) + addenda v7.1 to v7.4 (the later one wins)
 docs/adr/       Architecture Decision Records (template.md, NNNN-title.md)
 docs/diagrams/  Diagram JSON specs + generated .excalidraw/.svg/.png
 docs/prompt-logs/ One log per prompt (NNN-core-work.md)
@@ -298,6 +303,31 @@ works: UI strings, docs, the README, PR text, pitch material, the website and th
   regions and their statuses is server-side configuration, never an identifier.
 - Never show an unverified police number; unknown jurisdiction means 112 only.
 - Legal wording about coverage and advertising is a draft marked "to be verified by a lawyer".
+
+## Product guardrails (since P012d, ADR 0021)
+
+Follow [ADR 0021](docs/adr/0021-post-mvp-product-direction.md) and
+[addendum v7.4](docs/plan/addendum-v7.4.md), section D, in every future feature, UI string and
+public text. The MVP prompts (P013–P022) keep their scope; v7.4 builds nothing.
+
+- No safety score, risk label ("Low risk", "High risk"), ranking or "safe" claim about a place,
+  a route or a neighbourhood. Show counts and facts with their period and source.
+- No traffic claims without a licensed data source.
+- No ads or promotions in any safety flow (SOS, 112, live sharing, check-ins, journeys, alerts,
+  reports, the safety layer). No targeting by location history. No selling or sharing of
+  personal data.
+- Never paywall SOS, 112, basic live sharing or basic check-ins.
+- City-neutral naming (ADR 0005), adults only (ADR 0010), and SafeCircle (the Trusted Circle)
+  follows [ADR 0011](docs/adr/0011-trusted-circle-principles.md): no code before its lawyer review.
+- Journeys: only the traveller starts one; nobody else can start or force it; no continuous
+  background tracking beyond a user-started journey; saved places stay on the device until a
+  prompt brings the consent purpose, encryption and retention design. A missed arrival prompts
+  the traveller first, and the wording is "check in", never "alarm".
+- No user-generated content (posts, reviews, ratings, photos, comments) before every
+  community-feed gate in addendum v7.4, section F is met. Posts never become safety facts.
+- A places or events data source needs a terms check recorded in an ADR before its adapter.
+- No revenue claim in public materials until measured.
+- A feature that can't fit these rules needs a new ADR first.
 
 ## Search and geocoding rules (since P011a, ADR 0018)
 

@@ -1,5 +1,11 @@
 # ADR 0011: Trusted Circle principles
 
+> **Note of 2026-10-08 (P012d).** The product idea document calls this feature "SafeCircle".
+> Journeys shared with a circle use the journey engine recorded in
+> [ADR 0021](0021-post-mvp-product-direction.md) and
+> [addendum v7.4](../plan/addendum-v7.4.md), sections B and C. The text below is unchanged and
+> still governs the feature; this ADR stays Proposed until the lawyer review.
+
 - **Status:** Proposed
 - **Date:** 2026-10-06
 - **Prompt:** P009a
