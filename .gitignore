@@ -69,3 +69,6 @@ backend/test/search-eval/out/
 *.log
 tmp/
 .tmp/
+
+# ── Routing data (P012a): downloaded OpenStreetMap extracts and build inputs, never committed ──
+infra/osrm/data/

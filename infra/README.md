@@ -30,7 +30,8 @@ The script is additive and staging-only: it refuses a project whose ID contains 
 Cloud SQL, service accounts, the Workload Identity pool, the registry or an existing secret. Its
 output hides project ID, project number, e-mail addresses and URLs unless `-ShowIds` is passed.
 
-Later prompts add the OSRM image (P012) and backup exports (P020).
+The routing engine images (OSRM over OpenStreetMap data, since P012a) are in [`osrm/`](osrm/README.md);
+their staging services are deployed by a later pull request. Backup exports follow in P020.
 
 **Rules:** no service-account JSON keys, ever. Claude Code never receives production credentials
 and never runs commands that change cloud resources. Rahul runs any `gcloud` setup that needs

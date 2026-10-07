@@ -1,0 +1,29 @@
+{
+  "description": "Routing data sources and extents for the saferoute-osrm images (P012a, ADR 0020). Read by infra/osrm/scripts/build-image.mjs. Place names here are data, not identifiers.",
+  "allowedExtractUrlPrefixes": ["https://download.geofabrik.de/asia/india/"],
+  "data": {
+    "provider": "Geofabrik GmbH download server, extracts of OpenStreetMap",
+    "licence": "ODbL-1.0",
+    "licenceUrl": "https://opendatacommons.org/licenses/odbl/1-0/",
+    "attribution": "© OpenStreetMap contributors",
+    "attributionUrl": "https://www.openstreetmap.org/copyright"
+  },
+  "profiles": ["foot", "car"],
+  "extents": {
+    "state": {
+      "kind": "relation",
+      "value": "1960177",
+      "description": "West Bengal: OpenStreetMap administrative boundary relation 1960177 (admin_level 4, ISO3166-2 IN-WB), assembled from the extract and used unsimplified"
+    },
+    "metro": {
+      "kind": "bbox",
+      "value": "88.00,22.25,88.70,23.05",
+      "description": "Kolkata metropolitan comparison box (a rectangle chosen in P012a for the measurements; not an official boundary)"
+    },
+    "sample": {
+      "kind": "none",
+      "value": "",
+      "description": "The committed test fixture infra/osrm/sample/sample.osm.pbf, used as it is"
+    }
+  }
+}
