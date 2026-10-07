@@ -12,14 +12,24 @@ export interface PlaceResult {
   longitude: number;
   /** What kind of place it is, in the provider's words. Open string. */
   kind: string;
+  /**
+   * Metres from the coarse `near` point of the search, rounded to 100 m. Set by
+   * `searchLocalFirst`, never by an adapter; absent when the client sent no area.
+   */
+  distanceMeters?: number;
 }
 
 export interface GeocoderQuery {
   /** Already normalised (src/modules/search/normalize.ts). */
   query: string;
-  /** Proximity bias, already coarsened. A bias, never a filter. */
+  /** Proximity bias, already coarsened. On its own a bias, never a filter. */
   nearLatitude: number;
   nearLongitude: number;
+  /**
+   * When set: only places within this many metres of the `near` point (a FILTER, on top of the
+   * bias). An adapter whose provider has no circle asks for the box around it.
+   */
+  withinMeters?: number;
   language: 'en' | 'bn';
   limit: number;
 }

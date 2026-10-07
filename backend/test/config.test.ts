@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { LOCAL_SEARCH_DEFAULTS } from '../src/modules/search/local-first.js';
 import { ConfigError, parseConfig, parseJobConfig } from '../src/config.js';
 
 /** Obviously fake; a production config needs both. */
@@ -40,6 +41,8 @@ describe('parseConfig', () => {
       GEOCODING_PROVIDER: 'geoapify',
       SEARCH_GLOBAL_DAILY_LIMIT: 2500,
       SEARCH_PROVIDER_TIMEOUT_MS: 3000,
+      SEARCH_NEARBY_RADIUS_KM: 50,
+      SEARCH_MIN_LOCAL_RESULTS: 3,
       ROUTING_AUTH: 'google_id_token',
       ROUTING_TIMEOUT_MS: 25_000,
       ROUTING_ALTERNATIVES: 2,
@@ -221,6 +224,10 @@ describe('parseConfig', () => {
       ['SEARCH_GLOBAL_DAILY_LIMIT', '0'],
       ['SEARCH_GLOBAL_DAILY_LIMIT', 'many'],
       ['SEARCH_PROVIDER_TIMEOUT_MS', '50'],
+      ['SEARCH_NEARBY_RADIUS_KM', '0'],
+      ['SEARCH_NEARBY_RADIUS_KM', '501'],
+      ['SEARCH_MIN_LOCAL_RESULTS', '0'],
+      ['SEARCH_MIN_LOCAL_RESULTS', '2.5'],
     ])('rejects an invalid %s without echoing it', (name, value) => {
       const err = configError({ ...GEOCODING, [name]: value });
       expect(err.issues).toHaveLength(1);
@@ -232,6 +239,17 @@ describe('parseConfig', () => {
       expect(
         parseConfig({ SEARCH_GLOBAL_DAILY_LIMIT: '4000', SEARCH_PROVIDER_TIMEOUT_MS: '1500' }),
       ).toMatchObject({ SEARCH_GLOBAL_DAILY_LIMIT: 4000, SEARCH_PROVIDER_TIMEOUT_MS: 1500 });
+    });
+
+    it('local-first search: 50 km and 3 results by default, both settable', () => {
+      expect(parseConfig({})).toMatchObject({
+        SEARCH_NEARBY_RADIUS_KM: LOCAL_SEARCH_DEFAULTS.radiusKm,
+        SEARCH_MIN_LOCAL_RESULTS: LOCAL_SEARCH_DEFAULTS.minLocalResults,
+      });
+      expect(LOCAL_SEARCH_DEFAULTS).toEqual({ radiusKm: 50, minLocalResults: 3 });
+      expect(
+        parseConfig({ SEARCH_NEARBY_RADIUS_KM: '12.5', SEARCH_MIN_LOCAL_RESULTS: '5' }),
+      ).toMatchObject({ SEARCH_NEARBY_RADIUS_KM: 12.5, SEARCH_MIN_LOCAL_RESULTS: 5 });
     });
 
     it('the migration job needs no geocoding key', () => {

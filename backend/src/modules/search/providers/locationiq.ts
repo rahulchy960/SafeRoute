@@ -8,6 +8,7 @@ const ENDPOINT = 'https://api.locationiq.com/v1/autocomplete';
 
 /** Half-width of the preferred box around the bias point, in degrees (about 55 km). */
 const VIEWBOX_HALF_DEGREES = 0.5;
+const METERS_PER_DEGREE = 111_320;
 
 /** LocationIQ sends coordinates as strings. */
 const coordinate = (limit: number) =>
@@ -36,8 +37,9 @@ const ResponseSchema = z
  * request credit. "Nothing found" is a 404 here, not an empty list.
  *
  * The API has no proximity point, only a preferred box (`viewbox`, not `bounded`): a box around
- * the bias point is the nearest equivalent. Its documented result languages do not include
- * Bengali, so `bn` asks for native-language names.
+ * the bias point is the nearest equivalent. With `withinMeters` the box is the square around
+ * that circle and `bounded=1` restricts results to it (the caller drops the corners). Its
+ * documented result languages do not include Bengali, so `bn` asks for native-language names.
  */
 export function createLocationIqGeocoder(
   apiKey: string,
@@ -47,7 +49,12 @@ export function createLocationIqGeocoder(
     name: 'locationiq',
     // Pricing page: the free plan asks for this credit; the data is OpenStreetMap's.
     attribution: 'Search by LocationIQ.com · © OpenStreetMap contributors',
-    async search({ query, nearLatitude, nearLongitude, language, limit }) {
+    async search({ query, nearLatitude, nearLongitude, withinMeters, language, limit }) {
+      const halfLat =
+        withinMeters === undefined ? VIEWBOX_HALF_DEGREES : withinMeters / METERS_PER_DEGREE;
+      // A degree of longitude shrinks towards the poles; never divide by (almost) zero.
+      const shrink = Math.max(Math.cos((nearLatitude * Math.PI) / 180), 0.01);
+      const halfLon = withinMeters === undefined ? VIEWBOX_HALF_DEGREES : halfLat / shrink;
       const url = new URL(ENDPOINT);
       url.searchParams.set('q', query);
       url.searchParams.set('limit', String(limit));
@@ -55,12 +62,13 @@ export function createLocationIqGeocoder(
       url.searchParams.set('dedupe', '1');
       url.searchParams.set('accept-language', language === 'bn' ? 'native' : 'en');
       const box = [
-        nearLongitude - VIEWBOX_HALF_DEGREES,
-        nearLatitude - VIEWBOX_HALF_DEGREES,
-        nearLongitude + VIEWBOX_HALF_DEGREES,
-        nearLatitude + VIEWBOX_HALF_DEGREES,
+        nearLongitude - halfLon,
+        nearLatitude - halfLat,
+        nearLongitude + halfLon,
+        nearLatitude + halfLat,
       ];
       url.searchParams.set('viewbox', box.map((value) => value.toFixed(2)).join(','));
+      if (withinMeters !== undefined) url.searchParams.set('bounded', '1');
       url.searchParams.set('key', apiKey);
 
       const { status, json } = await providerGet(url, http);

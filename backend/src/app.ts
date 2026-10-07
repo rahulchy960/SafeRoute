@@ -69,7 +69,16 @@ export function createApp({ config, logger, readiness, verifier, db, geocoder, r
   app.route('/', consentRoutes({ verifier, db }));
   app.route(
     '/',
-    searchRoutes({ verifier, db, geocoder, globalDailyLimit: config.SEARCH_GLOBAL_DAILY_LIMIT }),
+    searchRoutes({
+      verifier,
+      db,
+      geocoder,
+      globalDailyLimit: config.SEARCH_GLOBAL_DAILY_LIMIT,
+      localFirst: {
+        radiusMeters: config.SEARCH_NEARBY_RADIUS_KM * 1000,
+        minLocalResults: config.SEARCH_MIN_LOCAL_RESULTS,
+      },
+    }),
   );
   app.route(
     '/',

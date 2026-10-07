@@ -122,6 +122,12 @@ const BaseSchema = z.object({
   // daily quota; revisit whenever the plan or the provider changes (ADR 0018).
   SEARCH_GLOBAL_DAILY_LIMIT: z.coerce.number().int().min(1).max(10_000_000).default(2500),
   SEARCH_PROVIDER_TIMEOUT_MS: z.coerce.number().int().min(200).max(20_000).default(3000),
+  // Local-first search (ADR 0018, "Local ranking"): the nearby pass looks this far around the
+  // area the app sent; with fewer nearby results than the minimum, a second, wide provider call
+  // follows. Both calls spend the rate limits and SEARCH_GLOBAL_DAILY_LIMIT. Defaults:
+  // LOCAL_SEARCH_DEFAULTS (src/modules/search/local-first.ts).
+  SEARCH_NEARBY_RADIUS_KM: z.coerce.number().min(1).max(500).default(50),
+  SEARCH_MIN_LOCAL_RESULTS: z.coerce.number().int().min(1).max(10).default(3),
   // Base URLs of the two private OSRM services (ADR 0020). Treated as SECRETS: never logged,
   // never in an error or in /health. Optional outside production: routing then answers 503.
   OSRM_WALKING_URL: osrmBaseUrl.optional(),

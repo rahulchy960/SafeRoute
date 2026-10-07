@@ -124,6 +124,22 @@ describe.each(GEOCODING_PROVIDERS)('%s adapter', (name) => {
     }
   });
 
+  it('with withinMeters, adds an area filter around the same point and keeps the bias', async () => {
+    const { provider, urls } = geocoder(name, json(OK_BODY[name]));
+    await provider.search({ ...QUERY, withinMeters: 50_000 });
+    const params = (urls[0] ?? new URL('https://missing.invalid')).searchParams;
+    if (name === 'geoapify') {
+      // circle:lon,lat,radiusMeters, joined to the country filter with a pipe (both must hold).
+      expect(params.get('filter')).toBe('circle:20.34,10.12,50000|countrycode:in');
+      expect(params.get('bias')).toBe('proximity:20.34,10.12');
+    } else {
+      // The square around the circle: 50 km is 0.45 degrees of latitude, 0.46 of longitude here.
+      expect(params.get('viewbox')).toBe('19.88,9.67,20.80,10.57');
+      expect(params.get('bounded')).toBe('1');
+      expect(params.get('countrycodes')).toBe('in');
+    }
+  });
+
   it('returns at most `limit` results even when the provider sends more', async () => {
     const many =
       name === 'geoapify'
