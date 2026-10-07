@@ -376,6 +376,19 @@ and [`android/README.md`](android/README.md):
   `FakeLocationEnvironment`. Tests use round fixture coordinates, never a real place of a
   person. The disclosure wording is a draft until a lawyer has reviewed it; changing what
   location is used for means changing the disclosure in the same prompt.
+- Search follows [ADR 0018](docs/adr/0018-search-and-geocoding.md) (since P011b): the app calls
+  only the SafeRoute API for search, never a geocoding provider, and holds no geocoding key.
+  Only `feature/search/SearchRepository.kt` uses `SearchApi`; tests use `FakeSearchRepository`
+  (`FakeSearchModule` replaces the real one in every Hilt test). The typed text, the results
+  and the chosen place are never logged, stored or sent anywhere else; the types that hold
+  them hide them in `toString()`. The search area is the map's centre rounded to two decimals,
+  never the user's position, and search asks for no permission. No recent searches or saved
+  places without a prompt that brings the consent purpose. A newer answer must never be
+  replaced by an older one (`collectLatest`; `SearchViewModelTest` proves it), and no
+  experimental coroutine API (`debounce`, `flatMapLatest`) is used. The credit line from the
+  API stays visible with the results. Search screens and Home talk through
+  `core/map/MapSelection`, and a chosen place is drawn as an overlay description, so MapLibre
+  types stay in `MapLibreEngine.kt`.
 - `android/app/google-services.json` is never opened, printed or committed by Claude Code. CI and
   fresh clones use `android/scripts/write-dummy-google-services` (project `demo-saferoute`); a
   release build refuses the dummy or a missing file unless `-Psaferoute.allowDummyFirebase=true`
