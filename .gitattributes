@@ -37,3 +37,4 @@ contracts/openapi.json text eol=lf linguist-generated=true
 *.jar binary
 *.ttf binary
 *.woff2 binary
+*.pbf binary

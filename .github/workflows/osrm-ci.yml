@@ -1,0 +1,88 @@
+name: osrm-ci
+
+# Checks the routing images (P012a, ADR 0020) on a tiny committed OpenStreetMap fixture:
+#
+#   lint and unit tests   shellcheck, hadolint, `node --test` for the scripts
+#   sample pipeline       for foot and car: build the image from infra/osrm/sample/sample.osm.pbf
+#                         (cut → extract → partition → customize), start it, request a route between
+#                         two public places and run every check of scripts/local-smoke.mjs,
+#                         including "the container log holds no request path".
+#
+# The statewide graph is never built here: that takes a 250 MB download and about 4 GB of memory
+# and is done by hand (docs/runbooks/routing-capacity-staging.md).
+# No push, no cloud login, no secrets: it behaves the same for pull requests from forks.
+# Not a required check in the ruleset: path-filtered checks would block unrelated PRs.
+
+on:
+  pull_request:
+    paths:
+      - "infra/osrm/**"
+      - ".github/workflows/osrm-ci.yml"
+  push:
+    branches: [main]
+    paths:
+      - "infra/osrm/**"
+      - ".github/workflows/osrm-ci.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: osrm-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  HADOLINT_VERSION: 2.15.1
+  # sha256 of hadolint-linux-x86_64 from that release, computed on 2026-10-07 (the release
+  # publishes no checksum file).
+  HADOLINT_SHA256: c7187db94eeeeca956519a6af171adc31453941a1e777961f6e680f697c8c507
+
+jobs:
+  osrm-ci:
+    name: osrm-ci
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node (version from backend/.nvmrc)
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: backend/.nvmrc
+
+      # shellcheck is preinstalled on the runner.
+      - name: Lint the shell scripts
+        run: shellcheck infra/osrm/scripts/*.sh
+
+      - name: Lint the Dockerfile (hadolint, pinned and checksum verified)
+        run: |
+          curl -sSLf -o "${RUNNER_TEMP}/hadolint" \
+            "https://github.com/hadolint/hadolint/releases/download/v${HADOLINT_VERSION}/hadolint-linux-x86_64"
+          echo "${HADOLINT_SHA256}  ${RUNNER_TEMP}/hadolint" | sha256sum --check --strict
+          chmod +x "${RUNNER_TEMP}/hadolint"
+          "${RUNNER_TEMP}/hadolint" infra/osrm/Dockerfile
+
+      - name: Unit tests for the scripts
+        run: node --test infra/osrm/scripts/scripts.test.mjs
+
+      - name: No extract or graph data is tracked besides the fixture
+        run: |
+          tracked="$(git ls-files | grep -E '\.(pbf|osrm)(\.|$)' | grep -vx 'infra/osrm/sample/sample.osm.pbf' || true)"
+          if [ -n "$tracked" ]; then
+            echo "::error::Routing data must not be committed: ${tracked}"
+            exit 1
+          fi
+
+      # One build at a time: both use infra/osrm/data/ as the build input.
+      - name: Build and smoke test the walking image (sample extent)
+        run: |
+          node infra/osrm/scripts/build-image.mjs --profile foot --extent sample --tag saferoute-osrm:ci-foot
+          node infra/osrm/scripts/local-smoke.mjs --image saferoute-osrm:ci-foot --profile foot
+
+      - name: Build and smoke test the driving image (sample extent)
+        run: |
+          node infra/osrm/scripts/build-image.mjs --profile car --extent sample --tag saferoute-osrm:ci-car
+          node infra/osrm/scripts/local-smoke.mjs --image saferoute-osrm:ci-car --profile car

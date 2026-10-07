@@ -1,0 +1,24 @@
+{
+  "description": "Pairs of PUBLIC places for infra/osrm/scripts/local-smoke.mjs (P012a). Coordinates are [longitude, latitude] of stations, monuments and an airport as mapped in OpenStreetMap (© OpenStreetMap contributors, ODbL 1.0), read from the extract of 2026-10-06. No private address, no person's location. 'sample' fits the committed fixture; 'state' needs an image built with --extent state.",
+  "sample": [
+    { "name": "Victoria Memorial Hall to Maidan metro area", "from": [88.34264, 22.54508], "to": [88.35110, 22.55790], "modes": ["foot", "car"] }
+  ],
+  "state": [
+    { "name": "Howrah Junction to Victoria Memorial Hall", "districts": "Howrah, Kolkata", "from": [88.34281, 22.58287], "to": [88.34264, 22.54508], "modes": ["foot", "car"] },
+    { "name": "Sealdah station to Victoria Memorial Hall", "districts": "Kolkata", "from": [88.37102, 22.56738], "to": [88.34264, 22.54508], "modes": ["foot", "car"] },
+    { "name": "Dakshineswar temple to Howrah Junction", "districts": "North 24 Parganas, Howrah", "from": [88.35716, 22.65537], "to": [88.34281, 22.58287], "modes": ["foot", "car"] },
+    { "name": "Kolkata airport to Sealdah station", "districts": "North 24 Parganas, Kolkata", "from": [88.44164, 22.63302], "to": [88.37102, 22.56738], "modes": ["foot", "car"] },
+    { "name": "Sealdah station to Diamond Harbour station", "districts": "Kolkata, South 24 Parganas", "from": [88.37102, 22.56738], "to": [88.19111, 22.19258], "modes": ["car"] },
+    { "name": "Howrah Junction to Bandel Junction", "districts": "Howrah, Hooghly", "from": [88.34281, 22.58287], "to": [88.37829, 22.92367], "modes": ["car"] },
+    { "name": "Bandel Junction to Barddhaman Junction", "districts": "Hooghly, Purba Bardhaman", "from": [88.37829, 22.92367], "to": [87.86984, 23.24991], "modes": ["car"] },
+    { "name": "Barddhaman Junction to Asansol Junction", "districts": "Purba Bardhaman, Paschim Bardhaman", "from": [87.86984, 23.24991], "to": [86.97479, 23.69131], "modes": ["car"] },
+    { "name": "Barddhaman Junction to Bolpur Shantiniketan station", "districts": "Purba Bardhaman, Birbhum", "from": [87.86984, 23.24991], "to": [87.69883, 23.65804], "modes": ["car"] },
+    { "name": "Howrah Junction to Kharagpur Junction", "districts": "Howrah, Paschim Medinipur", "from": [88.34281, 22.58287], "to": [87.32500, 22.33994], "modes": ["car"] },
+    { "name": "Kharagpur Junction to Digha station", "districts": "Paschim Medinipur, Purba Medinipur", "from": [87.32500, 22.33994], "to": [87.50825, 21.62308], "modes": ["car"] },
+    { "name": "Krishnanagar City Junction to Hazarduari", "districts": "Nadia, Murshidabad", "from": [88.49353, 23.38867], "to": [88.26929, 24.18739], "modes": ["car"] },
+    { "name": "Hazarduari to Malda Town station", "districts": "Murshidabad, Malda", "from": [88.26929, 24.18739], "to": [88.13058, 25.01596], "modes": ["car"] },
+    { "name": "New Jalpaiguri Junction to Darjeeling station", "districts": "Jalpaiguri, Darjeeling", "from": [88.44248, 26.68286], "to": [88.26306, 27.03811], "modes": ["car"] },
+    { "name": "Siliguri Junction to New Jalpaiguri Junction", "districts": "Darjeeling, Jalpaiguri", "from": [88.41371, 26.72379], "to": [88.44248, 26.68286], "modes": ["foot", "car"] },
+    { "name": "Sealdah station to New Jalpaiguri Junction", "districts": "Kolkata, Jalpaiguri", "from": [88.37102, 22.56738], "to": [88.44248, 26.68286], "modes": ["car"] }
+  ]
+}
