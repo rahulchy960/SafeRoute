@@ -120,14 +120,7 @@ jobs:
 
           # ":/" anchors the path at the repository root: this step runs in backend/, where a
           # plain "docs/adr/" would mean backend/docs/adr/ and never match (found in P011d).
-          new_adrs=$(git diff --name-only --diff-filter=A "origin/${BASE_REF}...HEAD" -- ':/docs/adr/' | grep -v '^docs/adr/README.md
-          if [ "$HAS_LABEL" = "true" ] && [ -n "$new_adrs" ]; then
-            echo "::warning::Breaking API change approved: label breaking-api-change + new ADR(s): ${new_adrs}"
-            exit 0
-          fi
-          echo "::error::Breaking API change (see above). Plan v7 §6.2: old app versions stay installed for months, so a breaking change needs a new path version (e.g. /v2) or a coordinated app release, documented in a new ADR under docs/adr/, and the PR label 'breaking-api-change'. Label present: ${HAS_LABEL}. New ADR files: ${new_adrs:-none}."
-          exit 1
- || true)
+          new_adrs=$(git diff --name-only --diff-filter=A "origin/${BASE_REF}...HEAD" -- ':/docs/adr/' | grep -v '^docs/adr/README.md$' || true)
           if [ "$HAS_LABEL" = "true" ] && [ -n "$new_adrs" ]; then
             echo "::warning::Breaking API change approved: label breaking-api-change + new ADR(s): ${new_adrs}"
             exit 0
