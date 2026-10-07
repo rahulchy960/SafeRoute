@@ -50,8 +50,30 @@ describe('the committed fixture', () => {
   it('is valid, with unique ids and queries', () => {
     const ids = fixture.entries.map((item) => item.id);
     expect(new Set(ids).size).toBe(ids.length);
-    const queries = fixture.entries.map((item) => item.query.normalize('NFC'));
+    // The same generic query ("bank") may be asked from different towns, never twice from one.
+    const queries = fixture.entries.map(
+      (item) =>
+        item.query.normalize('NFC') +
+        (item.near === undefined
+          ? ''
+          : ` @ ${String(item.near.latitude)},${String(item.near.longitude)}`),
+    );
     expect(new Set(queries).size).toBe(queries.length);
+  });
+
+  it('has at least 15 local-intent entries in at least 6 districts, all for Rahul to review', () => {
+    const local = fixture.entries.filter((item) => item.near !== undefined);
+    expect(local.length).toBeGreaterThanOrEqual(15);
+    expect(new Set(local.map((item) => item.district)).size).toBeGreaterThanOrEqual(6);
+    expect(local.some((item) => item.intent === 'generic')).toBe(true);
+    expect(local.some((item) => item.intent === 'named')).toBe(true);
+    for (const item of local) {
+      // Inside the box around West Bengal, and coarse: a town, never a spot.
+      expect(item.near?.latitude, item.id).toBeGreaterThan(21.4);
+      expect(item.near?.latitude, item.id).toBeLessThan(27.3);
+      expect(item.near?.longitude, item.id).toBeGreaterThan(85.8);
+      expect(item.near?.longitude, item.id).toBeLessThan(89.9);
+    }
   });
 
   it('has at least 40 entries in at least 10 districts, in all three scripts', () => {
@@ -92,11 +114,23 @@ describe('the committed fixture', () => {
       { ...entry(), addedBy: 'someone' },
       { ...entry(), homeAddress: 'not allowed' },
       { ...entry(), expected: { latitude: 10, longitude: 20, toleranceMeters: 500 } },
+      // A local-intent entry needs both fields, and a coarse point.
+      { ...entry(), near: { latitude: 10.12, longitude: 20.34 } },
+      { ...entry(), intent: 'generic' },
+      { ...entry(), intent: 'generic', near: { latitude: 10.123, longitude: 20.34 } },
+      { ...entry(), intent: 'nearby', near: { latitude: 10.12, longitude: 20.34 } },
     ];
     for (const candidate of bad) {
       expect(FixtureEntrySchema.safeParse(candidate).success).toBe(false);
     }
     expect(FixtureEntrySchema.safeParse(entry()).success).toBe(true);
+    expect(
+      FixtureEntrySchema.safeParse({
+        ...entry(),
+        intent: 'generic',
+        near: { latitude: 10.12, longitude: 20.3 },
+      }).success,
+    ).toBe(true);
   });
 });
 
@@ -254,6 +288,95 @@ describe('runEvaluation and the report', () => {
     expect(buildReport('fake', perfect).thresholds.every((threshold) => threshold.met)).toBe(true);
     const failed = buildReport('fake', [{ ...scoreQuery(entry(), []), error: 'auth' }]);
     expect(rate(failed.overall.top3, failed.overall)).toBe(0);
+  });
+});
+
+describe('local-intent queries', () => {
+  const NEAR = { latitude: 10, longitude: 20 };
+  const local = (id: string, query: string, intent: 'generic' | 'named') =>
+    entry({ id, query, intent, near: NEAR, expectedNameContains: ['Bank'] });
+  // 0.1 degrees north is 11 km (nearby); 2 degrees is 222 km (not nearby).
+  const bank = (north: number) => place(`Town Bank ${String(north)}`, '', 10 + north, 20);
+
+  it("searches local-first from the entry's point and scores a nearby name match only", async () => {
+    const calls: GeocoderQuery[] = [];
+    const provider: GeocoderProvider = {
+      name: 'fake',
+      attribution: null,
+      search: (query) => {
+        calls.push(query);
+        const nearbyPass = query.withinMeters !== undefined;
+        if (query.query === 'bank') {
+          return Promise.resolve(nearbyPass ? [bank(0.1), bank(0.2), bank(0.3)] : []);
+        }
+        if (query.query === 'far bank') return Promise.resolve(nearbyPass ? [] : [bank(2)]);
+        if (query.query === 'slow bank') return Promise.reject(new GeocoderError('timeout'));
+        return Promise.resolve([place('Main Station')]);
+      },
+    };
+    const pauses: number[] = [];
+    const outcomes = await runEvaluation({
+      provider,
+      entries: [
+        local('l1', 'bank', 'generic'),
+        local('l2', 'far bank', 'generic'),
+        local('l3', 'slow bank', 'named'),
+        entry({ id: 's1' }),
+      ],
+      requestsPerSecond: 1,
+      sleep: (ms) => {
+        pauses.push(ms);
+        return Promise.resolve();
+      },
+    });
+
+    // The entry's own point, with the default radius; the wide pass only when needed, and
+    // paced like any other call (three waits between entries, one before the wide pass).
+    expect(calls.map((call) => [call.query, call.nearLatitude, call.withinMeters])).toEqual([
+      ['bank', 10, 50_000],
+      ['far bank', 10, 50_000],
+      ['far bank', 10, undefined],
+      ['slow bank', 10, 50_000],
+      ['Main Station', 22.57, undefined],
+    ]);
+    expect(pauses).toHaveLength(4);
+    expect(
+      outcomes.map(({ id, intent, top3, nearbyTop3, providerCalls, error }) => ({
+        id,
+        intent,
+        top3,
+        nearbyTop3,
+        providerCalls,
+        error,
+      })),
+    ).toEqual([
+      { id: 'l1', intent: 'generic', top3: true, nearbyTop3: true, providerCalls: 1 },
+      // The right name, 222 km away: a name hit, but not what a person nearby wanted.
+      { id: 'l2', intent: 'generic', top3: true, nearbyTop3: false, providerCalls: 2 },
+      { id: 'l3', intent: 'named', top3: false, nearbyTop3: false, error: 'timeout' },
+      { id: 's1', top3: true },
+    ]);
+
+    const report = buildReport('fake', outcomes);
+    // Local-intent queries stay out of the tables that earlier runs are compared with.
+    expect(report.overall).toMatchObject({ queries: 1, top3: 1 });
+    expect(report.byDistrict).toHaveLength(1);
+    expect(report.localIntent).toEqual([
+      { group: 'generic', queries: 2, errors: 0, nearbyTop3: 1, widePasses: 1 },
+      { group: 'named', queries: 1, errors: 1, nearbyTop3: 0, widePasses: 0 },
+      { group: 'all local intent', queries: 3, errors: 1, nearbyTop3: 1, widePasses: 1 },
+    ]);
+    const text = formatReport(report);
+    expect(text).toContain('### Local intent (top-3 within 25 km of where the search is made)');
+    expect(text).toContain('| generic | 2 | 0 | 50% | 1 |');
+    expect(text).toContain('| named | 1 | 1 | 0% | 0 |');
+    for (const secret of ['Town Bank', 'far bank', '10,20']) expect(text).not.toContain(secret);
+  });
+
+  it('prints no local table for a fixture without local-intent entries', () => {
+    const report = buildReport('fake', [scoreQuery(entry(), [place('Main Station')])]);
+    expect(report.localIntent).toEqual([]);
+    expect(formatReport(report)).not.toContain('Local intent');
   });
 });
 
