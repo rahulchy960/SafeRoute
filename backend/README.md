@@ -123,7 +123,7 @@ src/
   routes/ready.ts      GET /health/ready (readiness: SELECT 1 with a 2 s timeout)
   modules/auth/        Firebase ID-token verifier (jose), authenticate / requireUser / requireRole
   modules/users/       POST /v1/me/bootstrap, GET /v1/me
-  modules/search/      GET /v1/search, the GeocoderProvider interface and the provider adapters
+  modules/search/      POST /v1/search, the GeocoderProvider interface and the provider adapters
   lib/rate-limit.ts    token buckets in PostgreSQL (rate_limit_buckets)
   regions/defaults.ts  default search bias for the launch region
   scripts/set-role.ts  admin CLI: change a user's role (audited)
@@ -166,11 +166,17 @@ test/search-eval/      search-quality fixture and the `pnpm search:eval` harness
 
 ## Place search (since P011a)
 
-`GET /v1/search?q=…` forwards a search to a geocoding provider behind an adapter
+`POST /v1/search` (a JSON body: `q`, optional `nearLatitude` + `nearLongitude`, `language`,
+`limit`) forwards a search to a geocoding provider behind an adapter
 ([ADR 0018](../docs/adr/0018-search-and-geocoding.md)). The provider is chosen by name with
 `GEOCODING_PROVIDER`; adding one means a file in `src/modules/search/providers/` and a name in
 `GEOCODING_PROVIDERS` (`src/config.ts`), nothing in the endpoint.
 
+- **Why POST:** Cloud Run's own request log records every URL with its query string. A search
+  in the URL would be stored there, so the search travels in the body
+  ([ADR 0019](../docs/adr/0019-privacy-in-urls.md)). The same rule holds for every endpoint: no
+  user text, position, phone number or credential in a path or query; a contract test checks
+  the parameter names.
 - **Privacy:** the query, the coordinates and the results are never logged or stored. The log
   has one line per provider call with `outcome`, `latency_ms` and `result_count`. `near` is
   rounded to two decimals (about 1 km) on the server. The provider sees SafeRoute's server, not
@@ -220,7 +226,7 @@ node scripts/container-smoke.mjs      # builds the image and checks it end to en
 [`scripts/container-smoke.mjs`](scripts/container-smoke.mjs) needs only Node and Docker. It
 starts a throwaway PostGIS container, runs the migration command twice (the second run applies
 nothing), checks that production refuses a `demo-` Firebase project and a missing geocoding key,
-runs the smoke checks below (plus `GET /v1/search` without a token → 401),
+runs the smoke checks below (plus `POST /v1/search` without a token → 401),
 and verifies non-root, JSON logs and a SIGTERM shutdown within 10 s. CI runs it on every pull
 request that touches `backend/` ([`container-ci`](../.github/workflows/container-ci.yml)).
 

@@ -8,7 +8,7 @@ Cloud Logging, and the handful of metrics that make up the first capacity dashbo
 | --- | --- |
 | **Who runs it** | Rahul, signed in to `gcloud` as the project owner, or in the Cloud console. Claude Code never runs these commands and has no Google credentials. |
 | **When** | A deploy failed, a request failed, or as the weekly look at staging. |
-| **Scope** | The **staging** project only. All commands here only read. |
+| **Scope** | The **staging** project only. All commands here only read, except the one-time log exclusion in "Request URLs in the platform log", which changes the `_Default` log sink. |
 
 ## What the API writes
 
@@ -146,6 +146,77 @@ gcloud logging read "resource.type=cloud_run_revision AND resource.labels.servic
 
 Don't add `httpRequest.requestUrl` to the columns when you intend to share the output.
 
+## Request URLs in the platform log (since P011d)
+
+**Cloud Run keeps its own log of every request**, separate from what the API writes: the log
+`run.googleapis.com/requests`, used by query 6. Each entry's `httpRequest.requestUrl` is the
+**full URL, query string included**. The API cannot change that.
+
+- Until P011d, search was `GET /v1/search?q=…&nearLatitude=…&nearLongitude=…`, so search text
+  and a coarse map area were stored in this log. Only Rahul's own test searches are in it.
+- Since P011d search is `POST /v1/search` with a body; the URL carries nothing
+  ([ADR 0019](../adr/0019-privacy-in-urls.md)).
+- The exclusion below stops request-log entries for search URLs from being stored at all. It
+  is a second line of defence: it also covers an old app build or a mistyped request.
+- **Old entries are not removed by an exclusion.** They disappear when the log bucket's
+  retention ends (step 3 shows the number of days).
+- What you lose: query 6 no longer sees search requests. The API's own `request completed`
+  line for `/v1/search` (queries 1 and 2) still does, with the status and no URL.
+
+The commands are written for **Windows PowerShell 5.1**, where `\"` inside a single-quoted
+string reaches `gcloud` as a plain `"`. In PowerShell 7 type the filter with plain `"` inside
+the single quotes instead. If in doubt, use the console (step 1, alternative).
+
+1. **Add the exclusion** to the `_Default` sink (run once per project, after the P011d merge):
+
+   ```powershell
+   $SearchUrls = 'resource.type=\"cloud_run_revision\" AND logName:\"run.googleapis.com%2Frequests\" AND httpRequest.requestUrl:\"/v1/search\"'
+   gcloud logging sinks update _Default "--add-exclusion=name=exclude-search-request-urls,filter=$SearchUrls"
+   ```
+
+   The filter contains no comma on purpose: `gcloud` splits the flag's value at commas.
+
+   *Alternative, in the console:* Logging → Log router → `_Default` → Edit sink → "Choose logs
+   to filter out of sink" → Add exclusion, name `exclude-search-request-urls`, filter:
+
+   ```text
+   resource.type="cloud_run_revision" AND logName:"run.googleapis.com%2Frequests" AND httpRequest.requestUrl:"/v1/search"
+   ```
+
+2. **Verify the sink** shows the exclusion with exactly that filter:
+
+   ```powershell
+   gcloud logging sinks describe _Default --format="yaml(exclusions)"
+   ```
+
+3. **Read the retention** of the bucket that holds the old entries (`retentionDays`):
+
+   ```powershell
+   gcloud logging buckets describe _Default --location=global --format="value(retentionDays)"
+   ```
+
+4. **Verification query.** Search once from the app (or call `/v1/search` without a token),
+   wait a minute, then run this. It prints **timestamps and status codes only, never a URL**:
+
+   ```powershell
+   gcloud logging read $SearchUrls --freshness=10m --limit=20 --format="table(timestamp, httpRequest.status)"
+   ```
+
+   - **Expected: no rows** for requests made after step 1.
+   - With `--freshness=30d` the same command lists the old entries, again without their URLs.
+     Their number should not grow, and should fall to zero once the retention has passed.
+   - To check that the API still records the request itself:
+
+     ```powershell
+     gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=$API_SERVICE AND jsonPayload.path=/v1/search" --freshness=10m --limit=5 --format=$Columns
+     ```
+
+**Never print `httpRequest.requestUrl` for search entries**, and never paste such output
+anywhere: the old entries contain what was searched for.
+
+To remove the exclusion again:
+`gcloud logging sinks update _Default --remove-exclusions=exclude-search-request-urls`.
+
 ## Confirm once that severity is mapped
 
 Do this after the first deploy, then record the result on the Notion P006b page.
@@ -206,6 +277,18 @@ against the Cloud Run logging and Cloud Logging agent documentation; filter synt
 names against the Google Cloud metrics list and the Cloud SQL metrics page. The field names
 were read from the backend source, and the PowerShell quoting was run locally against a
 stand-in for `gcloud` with fake values.
+
+For "Request URLs in the platform log" (P011d): **verified** were the flags and keys of
+`gcloud logging sinks update` (`--add-exclusion` with `name` and `filter`,
+`--remove-exclusions`), the synopsis of `gcloud logging sinks describe` and
+`gcloud logging buckets describe … --location`, and `--freshness` and `--limit` of
+`gcloud logging read`, all from the local `gcloud` 587.0.0 `--help` pages; the request log's
+name and resource type from the Cloud Run logging documentation; that exclusion filters apply
+after an entry is received, from the Cloud Logging routing overview; and that the PowerShell
+5.1 quoting delivers the filter with its quotes, by running the two commands against a stand-in
+program. **Not verified:** that `gcloud` accepts this filter inside `--add-exclusion` (the
+command was not executed), that `requestUrl:"/v1/search"` matches as a substring on staging,
+the `--format` paths, the bucket's retention value, and the console's menu names.
 
 **Not verified** until Rahul runs them on staging:
 

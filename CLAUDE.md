@@ -144,6 +144,27 @@ appears in `contracts/openapi.json`); product endpoints under `/v1`; camelCase J
 problem+json errors with an open-string `code`; `Idempotency-Key` for retryable writes;
 `firebaseBearer` on protected routes; bump `info.version` in the PR that changes the spec.
 
+## Privacy in URLs (since P011d, ADR 0019)
+
+Follow [ADR 0019](docs/adr/0019-privacy-in-urls.md). **The platform logs every URL.** Cloud
+Run's request log records the full URL with its query string, and our code cannot change that.
+
+- Never put search text, coordinates or areas, phone numbers, tokens, keys or any text a user
+  entered in a path or a query string of our API. Use a request body (POST) or a header.
+- A URL may carry opaque server-made ids (UUIDs), fixed names (a consent purpose), paging and
+  display options. Nothing else.
+- `backend/test/contract.test.ts` ("privacy in URLs") fails on a path or query parameter whose
+  name looks sensitive. An exception needs an allowlist entry there **and** an ADR that accepts
+  it. Never rename a parameter to get past the test: the rule is about the value.
+- A "nothing is logged" test must say which logs it sees. Capturing the API's own log lines
+  proves nothing about the platform's request log; say so in the prompt log.
+- Still to be decided, each with its own ADR before it is built: the safety cells area
+  (`bbox`), the share viewer's token (`/v/{token}`, `/v1/public/shares/{token}/latest`), and the
+  routing engine's request URLs.
+- A new environment needs its log exclusion
+  ([`docs/runbooks/observability-staging.md`](docs/runbooks/observability-staging.md)) before it
+  serves users.
+
 ## Auth rules (since P005, ADR 0006)
 
 Follow [ADR 0006](docs/adr/0006-authentication-and-roles.md):
@@ -292,6 +313,8 @@ Follow [ADR 0018](docs/adr/0018-search-and-geocoding.md):
   attribution, safety clauses) and record them in the ADR in your own words. MapTiler geocoding,
   Stadia Maps and the public Nominatim service failed that check; don't add them back without a
   new finding.
+- Search is `POST /v1/search` with a JSON body; never a GET with query parameters ("Privacy in
+  URLs").
 - Search queries, coordinates and results are never logged, stored or cached on the server. The
   adapter's errors carry a kind only (the key travels in the request URL). `near` is coarsened to
   two decimals on the server.

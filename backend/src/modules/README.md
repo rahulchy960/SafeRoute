@@ -13,7 +13,7 @@ own service later only if measurements justify it (Plan v7 §14.6).
 | `users` | `/v1/me` bootstrap (with the age declaration) and profile; deletion and export | P005b, P009a, P020 |
 | `consents` | `/v1/me/consents`: per-purpose consent history and the purpose allowlist (ADR 0010) | P009a |
 | `contacts` | emergency contacts, contact opt-out | P013 |
-| `search` | `GET /v1/search`: place search behind the `GeocoderProvider` adapter, query normalisation, search rate limits (ADR 0018) | P011a |
+| `search` | `POST /v1/search` (a body, never a query string: ADR 0019): place search behind the `GeocoderProvider` adapter, query normalisation, search rate limits (ADR 0018) | P011a |
 | `routing` | route alternatives behind the OSRM adapter | P012 |
 | `safety` | H3 safety cells, areas and the route exposure metric | P019 |
 | `reports` | community reports and their lifecycle | P017 |

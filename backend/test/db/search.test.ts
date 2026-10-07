@@ -114,7 +114,7 @@ interface Problem {
   errors?: { path: string; code: string }[];
 }
 
-describe('GET /v1/search', () => {
+describe('POST /v1/search', () => {
   it('401 without a token, with WWW-Authenticate: Bearer, and the provider is not called', async () => {
     const { provider, calls } = fakeGeocoder();
     const { app } = setup(provider);
@@ -299,7 +299,7 @@ describe('GET /v1/search', () => {
   });
 });
 
-describe('GET /v1/search: provider failures', () => {
+describe('POST /v1/search: provider failures', () => {
   const KINDS: GeocoderFailure[] = [
     'auth',
     'rate_limited',
@@ -340,7 +340,7 @@ describe('GET /v1/search: provider failures', () => {
   });
 });
 
-describe('GET /v1/search: rate limits', () => {
+describe('POST /v1/search: rate limits', () => {
   it('a user gets the burst, then 429 rate_limited with Retry-After; other users are unaffected', async () => {
     const { provider, calls } = fakeGeocoder();
     const { app } = setup(provider);
@@ -447,7 +447,9 @@ describe('GET /v1/search: rate limits', () => {
   });
 });
 
-describe('GET /v1/search: nothing about the search is logged', () => {
+// These tests see the API's OWN log lines. The platform's request log (the URL) is outside any
+// test here: that is why the search travels in a body (ADR 0019).
+describe("POST /v1/search: nothing about the search is in the API's log lines", () => {
   it('logs no query, coordinate, result or key, in any outcome', async () => {
     const outcomes: [PlaceResult[] | GeocoderError, number][] = [
       [[PLACE], 200],
