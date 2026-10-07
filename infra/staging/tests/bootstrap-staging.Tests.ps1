@@ -81,7 +81,7 @@ BeforeAll {
             Github = @{
                 Environment = $true
                 EnvSecrets = @('GCP_PROJECT_ID', 'GCP_PROJECT_NUMBER', 'GCP_WIF_PROVIDER', 'GCP_DEPLOY_SA', 'GCP_RUNTIME_SA',
-                    'GCP_MIGRATION_SA', 'CLOUD_SQL_CONNECTION_NAME', 'FIREBASE_PROJECT_ID')
+                    'GCP_MIGRATION_SA', 'CLOUD_SQL_CONNECTION_NAME', 'FIREBASE_PROJECT_ID', 'OSRM_WALKING_URL', 'OSRM_DRIVING_URL')
                 EnvVars = [ordered]@{ GCP_REGION = 'asia-south1'; AR_REPOSITORY = 'saferoute'; API_SERVICE = 'saferoute-api'
                     MIGRATION_JOB = 'saferoute-migrate'; API_MIN_INSTANCES = '0'; API_MAX_INSTANCES = '3' }
                 RepoSecrets = @()
@@ -826,8 +826,8 @@ Describe 'bootstrap-staging.ps1' {
             $workflow = Join-Path (Join-Path (Join-Path $script:RepoRoot '.github') 'workflows') 'deploy-staging.yml'
             $reference = Get-WorkflowReference $workflow
             ($reference.Secrets | Sort-Object) | Should -Be @('CLOUD_SQL_CONNECTION_NAME', 'FIREBASE_PROJECT_ID', 'GCP_DEPLOY_SA',
-                'GCP_MIGRATION_SA', 'GCP_PROJECT_ID', 'GCP_PROJECT_NUMBER', 'GCP_RUNTIME_SA', 'GCP_WIF_PROVIDER')
-            ($reference.Variables | Sort-Object) | Should -Be @('API_MAX_INSTANCES', 'API_MIN_INSTANCES', 'API_SERVICE', 'AR_REPOSITORY', 'GCP_REGION', 'MIGRATION_JOB')
+                'GCP_MIGRATION_SA', 'GCP_PROJECT_ID', 'GCP_PROJECT_NUMBER', 'GCP_RUNTIME_SA', 'GCP_WIF_PROVIDER', 'OSRM_DRIVING_URL', 'OSRM_WALKING_URL')
+            ($reference.Variables | Sort-Object) | Should -Be @('API_MAX_INSTANCES', 'API_MIN_INSTANCES', 'API_SERVICE', 'AR_REPOSITORY', 'GCP_REGION', 'MIGRATION_JOB', 'ROUTING_TIMEOUT_MS')
             $reference.RepositoryVariables | Should -Be @('STAGING_DEPLOY_ENABLED')
             $reference.UrlSecret | Should -Be 'saferoute-staging-database-url'
             $known = (Get-GithubValue @{ ProjectId = 'x' } (New-BootstrapConfig -Bound @{} -Mode 'Audit')).Keys
@@ -839,7 +839,7 @@ Describe 'bootstrap-staging.ps1' {
         It 'refuses while something it needs is still missing in Google Cloud' {
             Start-Scenario 'real'; Invoke-Mode 'SetGithubSecrets'
             $script:ExitCode | Should -Be 1
-            $script:Output | Should -Match 'No value yet for: GCP_WIF_PROVIDER'
+            $script:Output | Should -Match 'No value yet for: OSRM_WALKING_URL, OSRM_DRIVING_URL, GCP_WIF_PROVIDER\.'
             @(Get-MutatingCall | Where-Object { $_.Line -match 'GCP_WIF_PROVIDER' }).Count | Should -Be 0
         }
         It 'sets only the missing names and keeps existing ones' {
@@ -849,7 +849,7 @@ Describe 'bootstrap-staging.ps1' {
             Invoke-Mode 'SetGithubSecrets'
             $script:ExitCode | Should -Be 0
             $set = @(Get-MutatingCall | ForEach-Object { $_.Line })
-            $set.Count | Should -Be 12
+            $set.Count | Should -Be 14
             @($set | Where-Object { $_ -match ' (GCP_PROJECT_ID|GCP_REGION) ' }).Count | Should -Be 0
             $script:Output | Should -Match 'Already set, kept \(use -Force to overwrite\): GCP_PROJECT_ID, GCP_REGION'
         }
@@ -868,7 +868,45 @@ Describe 'bootstrap-staging.ps1' {
             Start-Scenario 'full'; Invoke-Mode 'SetGithubSecrets'
             @(Get-MutatingCall).Count | Should -Be 0
             Start-Scenario 'full'; Invoke-Mode 'SetGithubSecrets' -Extra @{ Force = $true }
-            @(Get-MutatingCall).Count | Should -Be 14
+            @(Get-MutatingCall).Count | Should -Be 16
+        }
+        It 'sets the OSRM service URLs from what Cloud Run reports, on standard input, and never shows them' {
+            Start-Scenario 'full'
+            $script:Scenario.Github.EnvSecrets = @($script:Scenario.Github.EnvSecrets | Where-Object { $_ -notmatch '^OSRM_' })
+            Invoke-Mode 'SetGithubSecrets'
+            $script:ExitCode | Should -Be 0
+            $calls = @(Get-MutatingCall)
+            ($calls | ForEach-Object { $_.Line }) | Should -Be @(
+                'secret set OSRM_WALKING_URL --env staging --repo rahulchy960/SafeRoute',
+                'secret set OSRM_DRIVING_URL --env staging --repo rahulchy960/SafeRoute')
+            # No trailing slash and no line break: the value is also the ID-token audience.
+            [System.Text.Encoding]::UTF8.GetString($calls[0].Stdin) | Should -BeExactly 'https://fake-osrm.example.run.app'
+            $script:Output | Should -Not -Match 'fake-osrm'
+            @($script:Calls | Where-Object { $_.Line -match 'fake-osrm|--body' }).Count | Should -Be 0
+        }
+        It 'has no value for the OSRM secrets while the services are not deployed' {
+            Start-Scenario 'full'; $script:Scenario.OsrmServices = @()
+            $script:Scenario.Github.EnvSecrets = @($script:Scenario.Github.EnvSecrets | Where-Object { $_ -notmatch '^OSRM_' })
+            Invoke-Mode 'SetGithubSecrets'
+            $script:ExitCode | Should -Be 1
+            $script:Output | Should -Match 'No value yet for: OSRM_WALKING_URL, OSRM_DRIVING_URL'
+            @(Get-MutatingCall).Count | Should -Be 0
+        }
+        It 'never sets the optional ROUTING_TIMEOUT_MS, and -Verify treats it as a NOTE' {
+            Start-Scenario 'full'; Invoke-Mode 'SetGithubSecrets' -Extra @{ Force = $true }
+            @(Get-MutatingCall | Where-Object { $_.Line -match 'ROUTING_TIMEOUT_MS' }).Count | Should -Be 0
+            Start-Scenario 'full'; Invoke-Mode 'Verify'
+            (Get-Row '^GitHub variable ROUTING_TIMEOUT_MS') | Should -Match 'not set \(the default applies\)\s+NOTE'
+            $script:ExitCode | Should -Be 0
+            Start-Scenario 'full'; $script:Scenario.Github.EnvVars['ROUTING_TIMEOUT_MS'] = '12000'; Invoke-Mode 'Verify'
+            (Get-Row '^GitHub variable ROUTING_TIMEOUT_MS') | Should -Match '= 12000\s+PRESENT'
+        }
+        It 'verify: a missing OSRM secret means "not ready" (the API candidate would fail to start)' {
+            Start-Scenario 'full'
+            $script:Scenario.Github.EnvSecrets = @($script:Scenario.Github.EnvSecrets | Where-Object { $_ -ne 'OSRM_DRIVING_URL' })
+            Invoke-Mode 'Verify'
+            (Get-Row '^GitHub secret OSRM_DRIVING_URL') | Should -Match 'MISSING'
+            $script:ExitCode | Should -Be 1
         }
         It 'uses -FirebaseProjectId when it is passed, and asks when it is not' {
             Start-Scenario 'full'; $script:Scenario.Github.EnvSecrets = @(); Invoke-Mode 'SetGithubSecrets' -Extra @{ FirebaseProjectId = 'example-firebase-000' }
@@ -901,7 +939,8 @@ Describe 'bootstrap-staging.ps1' {
         It 'exits 1 and lists the missing names for the real findings' {
             Start-Scenario 'real'; Invoke-Mode 'Verify'
             $script:ExitCode | Should -Be 1
-            (Get-Row '^GitHub secret \S+\s+environment secret\s+not set\s+MISSING').Count | Should -Be 8
+            # Eight secrets of the API deploy plus the two OSRM service URLs (P012b).
+            (Get-Row '^GitHub secret \S+\s+environment secret\s+not set\s+MISSING').Count | Should -Be 10
             (Get-Row '^GitHub variable \S+\s+environment variable\s+not set\s+MISSING').Count | Should -Be 5
             (Get-Row '^GitHub variable GCP_REGION') | Should -Match 'PRESENT'
             (Get-Row '^GitHub repository variable STAGING_DEPLOY_ENABLED') | Should -Match '= true while the setup is incomplete\s+WRONG'

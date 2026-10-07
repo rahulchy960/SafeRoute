@@ -668,6 +668,11 @@ can't drift from what the deploy reads.*
    gh variable set STAGING_DEPLOY_ENABLED --repo $GITHUB_REPO --body "false"
    ```
 
+5. Routing (since P012b): two more environment secrets, `OSRM_WALKING_URL` and
+   `OSRM_DRIVING_URL`, and the optional environment variable `ROUTING_TIMEOUT_MS`. They exist
+   only after the OSRM services are deployed; `-SetGithubSecrets` fills the two secrets from
+   what Cloud Run reports. See the [routing runbook](routing-capacity-staging.md), section 9.
+
 **Environment variables and repository variables are not interchangeable.** GitHub decides
 whether a job runs (its job-level `if:`) *before* the job enters its environment, so that
 condition can read **repository** variables only. A switch created on the `staging` environment
@@ -693,7 +698,8 @@ gh variable list --repo $GITHUB_REPO
 
 - `{"custom_branch_policies":true,"protected_branches":false}`, then the protection rule types
   (`branch_policy` only, no `required_reviewers`), then `main`.
-- Eight secrets (names only; values are never shown), six environment variables, and
+- Eight secrets (ten with routing; names only, values are never shown), six environment
+  variables (seven if `ROUTING_TIMEOUT_MS` is set), and
   `STAGING_DEPLOY_ENABLED  false`.
 
 ## Step 10: pre-flight, then enable deploys

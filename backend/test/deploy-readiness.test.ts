@@ -25,6 +25,9 @@ describe('production-mode startup (deploy readiness for P006)', () => {
       FIREBASE_PROJECT_ID: 'example-staging-1',
       GEOCODING_API_KEY: 'fake-geocoding-key-for-tests',
       GEOCODING_PROVIDER: 'geoapify',
+      // Hosts under .invalid never resolve: a call would fail, and none may be made.
+      OSRM_WALKING_URL: 'https://osrm-walking.example.invalid',
+      OSRM_DRIVING_URL: 'https://osrm-driving.example.invalid',
     });
     const logger = createLogger(config, { write: () => undefined });
     const { app, database } = createRuntime(config, logger);
@@ -46,6 +49,15 @@ describe('production-mode startup (deploy readiness for P006)', () => {
       });
       expect(search.status).toBe(401);
       expect(search.headers.get('www-authenticate')).toBe('Bearer');
+
+      // Routing: no ID token is fetched and no OSRM service is called before a real request.
+      const routes = await app.request('/v1/routes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: 'walking' }),
+      });
+      expect(routes.status).toBe(401);
+      expect(routes.headers.get('www-authenticate')).toBe('Bearer');
 
       expect(fetchSpy).not.toHaveBeenCalled();
       expect(database?.pool.totalCount).toBe(0);

@@ -20,6 +20,7 @@ const DOCUMENTED_PATHS = [
   '/v1/me/consents',
   '/v1/me/consents/{purpose}',
   '/v1/search',
+  '/v1/routes',
 ];
 
 /** Operations that are public by design; every other operation must require firebaseBearer. */
@@ -202,7 +203,6 @@ describe('generated OpenAPI document', () => {
   });
 
   it('documents place search as a POST with a body (P011a, P011d; ADR 0018, ADR 0019)', () => {
-    expect((doc.info as Json).version).toBe('0.5.0');
     const paths = doc.paths as Record<string, Record<string, Json>>;
     // The search travels in a request body. There is no GET: a URL would carry the text.
     expect(Object.keys(paths['/v1/search'] ?? {})).toEqual(['post']);
@@ -396,6 +396,86 @@ describe('generated OpenAPI document', () => {
         ),
       ).toEqual([]);
     });
+  });
+
+  it('documents routes as a POST with a body and the routing problem codes (P012b, ADR 0020)', () => {
+    expect((doc.info as Json).version).toBe('0.6.0');
+    const paths = doc.paths as Record<string, Record<string, Json>>;
+    // Origin and destination travel in a request body. No GET, no parameters (ADR 0019).
+    expect(Object.keys(paths['/v1/routes'] ?? {})).toEqual(['post']);
+    const op = paths['/v1/routes']?.post ?? {};
+    expect(op.operationId).toBe('createRoutes');
+    expect(op.tags).toEqual(['routing']);
+    expect(op.security).toEqual([{ firebaseBearer: [] }]);
+    expect(op.parameters ?? []).toEqual([]);
+    expect(Object.keys(op.responses as Json).sort()).toEqual([
+      '200',
+      '400',
+      '401',
+      '403',
+      '404',
+      '422',
+      '429',
+      '500',
+      '503',
+    ]);
+    const requestBody = op.requestBody as { required: boolean; content: Record<string, Json> };
+    expect(requestBody.required).toBe(true);
+    expect(requestBody.content['application/json']?.schema).toEqual({
+      $ref: '#/components/schemas/RouteRequest',
+    });
+    const request = components.schemas?.RouteRequest as {
+      properties: Record<string, Json>;
+      required: string[];
+    };
+    expect(Object.keys(request.properties).sort()).toEqual([
+      'departAt',
+      'destination',
+      'mode',
+      'origin',
+    ]);
+    expect(request.required.sort()).toEqual(['destination', 'mode', 'origin']);
+    expect(request.properties.mode).toMatchObject({ enum: ['walking', 'driving'] });
+    const route = components.schemas?.Route as {
+      properties: Record<string, Json>;
+      required: string[];
+    };
+    expect(route.required.sort()).toEqual([
+      'bbox',
+      'distanceMeters',
+      'durationSeconds',
+      'geometry',
+      'id',
+    ]);
+    expect(route.properties.geometry).toMatchObject({
+      properties: { encoding: { enum: ['polyline6'] } },
+    });
+    expect((components.schemas?.Routes as { required: string[] }).required.sort()).toEqual([
+      'attribution',
+      'routes',
+    ]);
+
+    // The codes the app switches on are all named in the description, and 503 and 429 carry
+    // Retry-After: the first request after a quiet period may get 503 while the service starts.
+    for (const code of [
+      'outside_covered_area',
+      'route_too_long',
+      'location_not_routable',
+      'no_route_found',
+      'routing_unavailable',
+      'rate_limited',
+    ]) {
+      expect(op.description as string).toContain(`\`${code}\``);
+      expect(serialized).toContain(code);
+    }
+    expect(op.description as string).toContain('Retry-After');
+    const unavailable = components.responses?.ServiceUnavailable as { headers: Json };
+    expect(unavailable.headers).toHaveProperty('Retry-After');
+    expect(components.responses).toHaveProperty('UnprocessableContent');
+    // A route never claims safety.
+    expect(JSON.stringify(components.schemas?.Route).toLowerCase()).not.toMatch(
+      /safe(st|r)? route|safety score/,
+    );
   });
 
   it('is city-neutral (ADR 0005)', () => {

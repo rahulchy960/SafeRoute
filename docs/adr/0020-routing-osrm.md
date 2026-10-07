@@ -197,6 +197,33 @@ The decision above is unchanged. How it is carried out:
 - Still open: whether a GitHub-hosted runner can build the state graph (the first run
   decides), and every staging measurement.
 
+## Implementation note of 2026-10-08 (P012b)
+
+The decision above is unchanged. How the API uses the services:
+
+- **Endpoint:** `POST /v1/routes`, positions in the body (ADR 0019), contract 0.6.0.
+- **Service-to-service authentication without a library:** the API asks the metadata server
+  for an ID token of its own service account with **audience = the service URL exactly as
+  Cloud Run reports it** (no trailing slash, no path), and caches it until five minutes before
+  it expires. The two URLs reach the API as GitHub environment secrets (masked in logs)
+  turned into env vars; a missing one makes the candidate revision fail to start.
+- **Cold start (decision 6):** one attempt per request, no retry in the API. A timeout or any
+  failure of the service is `503 routing_unavailable` with `Retry-After: 10`; the app retries.
+- **Timeout: 25 s, not measured.** Staging measurements are still pending, so the default is
+  chosen from one fact only: the API's own Cloud Run request timeout is 60 s. It is read from
+  the optional GitHub environment variable `ROUTING_TIMEOUT_MS`, to be tuned from the
+  runbook's measurements without a code change (follow-up).
+- **Covered area:** the outline from P012a, copied into the API image. A point up to 500 m
+  outside the simplified outline counts as inside, because the simplification can lie about
+  220 m inside the real line; the routing engine then has the last word.
+- **Distance limits:** walking 30 km in a straight line (from the failure rates above);
+  driving 1 000 km, which only bounds nonsense.
+- **`Connection: close` on every call**, because `osrm-routed` drops idle connections after
+  five seconds (found in P012a).
+- **Mapping:** OSRM `NoRoute` → 404 `no_route_found`; `NoSegment` → 422
+  `location_not_routable`; everything else → 503. An authentication failure is logged with
+  `alert: routing_auth_failed` and never shown as 401 or 403.
+
 ## References
 
 - Plan v7 §13.1, §14.3; addendum v7.2 §D.

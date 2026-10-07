@@ -15,6 +15,10 @@ name: deploy-staging
 #   - The deploy identity cannot read the database secret or the database (runbook step 6).
 #   - The geocoding key (P011a, ADR 0018) is mounted from Secret Manager on the API revision only.
 #     It is never an env value, a log line or a summary line here; the migration job does not get it.
+#   - The URLs of the two private OSRM services (P012b, ADR 0020) are environment SECRETS, only so
+#     that GitHub masks them (a Cloud Run URL contains the project number). They become plain env
+#     vars of the API revision. If one is missing, GitHub passes an empty value, the API refuses
+#     to start (backend/src/config.ts), the candidate step fails and traffic never shifts.
 #
 # The job is skipped unless the repository variable STAGING_DEPLOY_ENABLED is 'true'.
 # Setup: docs/runbooks/gcp-staging-setup.md. Rollback: docs/runbooks/rollback-staging.md.
@@ -80,6 +84,13 @@ jobs:
       MIGRATION_SA: ${{ secrets.GCP_MIGRATION_SA }}
       CLOUD_SQL_CONNECTION_NAME: ${{ secrets.CLOUD_SQL_CONNECTION_NAME }}
       FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+      # Exactly what `gcloud run services describe <service> --format="value(status.url)"` prints:
+      # https://<host>, no trailing slash, no path. Also the audience of the API's ID token.
+      OSRM_WALKING_URL: ${{ secrets.OSRM_WALKING_URL }}
+      OSRM_DRIVING_URL: ${{ secrets.OSRM_DRIVING_URL }}
+      # Optional environment VARIABLE, in milliseconds. Empty = the API's default (25000). Tune it
+      # from the measurements in docs/runbooks/routing-capacity-staging.md, without a code change.
+      ROUTING_TIMEOUT_MS: ${{ vars.ROUTING_TIMEOUT_MS }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -212,6 +223,13 @@ jobs:
           IMAGE_REF: ${{ steps.image.outputs.ref }}
         run: |
           set -u
+          # Routing (ADR 0020). The API authenticates to the private OSRM services with an ID token
+          # of its own service account. An unset secret arrives here as an empty value on purpose:
+          # the revision then fails its production config check and never becomes ready.
+          routing_env="ROUTING_AUTH=google_id_token,OSRM_WALKING_URL=${OSRM_WALKING_URL},OSRM_DRIVING_URL=${OSRM_DRIVING_URL}"
+          if [ -n "$ROUTING_TIMEOUT_MS" ]; then
+            routing_env="${routing_env},ROUTING_TIMEOUT_MS=${ROUTING_TIMEOUT_MS}"
+          fi
           gcloud run deploy "$API_SERVICE" \
             --region "$REGION" \
             --image "$IMAGE_REF" \
@@ -220,7 +238,7 @@ jobs:
             --tag candidate \
             --set-cloudsql-instances "$CLOUD_SQL_CONNECTION_NAME" \
             --set-secrets "DATABASE_URL=${DATABASE_URL_SECRET}:latest,GEOCODING_API_KEY=${GEOCODING_SECRET}:latest" \
-            --set-env-vars "NODE_ENV=production,SERVICE_NAME=saferoute-api,LOG_LEVEL=info,GIT_SHA=${GIT_SHA},APP_VERSION=${GIT_SHA},FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID},DB_POOL_MAX=${DB_POOL_MAX},GEOCODING_PROVIDER=${GEOCODING_PROVIDER}" \
+            --set-env-vars "NODE_ENV=production,SERVICE_NAME=saferoute-api,LOG_LEVEL=info,GIT_SHA=${GIT_SHA},APP_VERSION=${GIT_SHA},FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID},DB_POOL_MAX=${DB_POOL_MAX},GEOCODING_PROVIDER=${GEOCODING_PROVIDER},${routing_env}" \
             --cpu 1 \
             --memory 512Mi \
             --concurrency 80 \

@@ -90,12 +90,20 @@ variable (never its value). Empty values count as unset. See [`.env.example`](.e
 | `GEOCODING_PROVIDER` | no / no / no | no | `geoapify` | A constant in `deploy-staging.yml` → Cloud Run env var. `geoapify` (chosen, ADR 0018) or `locationiq` (spare). Must match the key |
 | `SEARCH_GLOBAL_DAILY_LIMIT` | no / no / no | no | `2500` (1–10000000) | Cloud Run env var. Provider calls per day for all users together; keep it under the provider plan's daily quota |
 | `SEARCH_PROVIDER_TIMEOUT_MS` | no / no / no | no | `3000` (200–20000) | Cloud Run env var |
+| `OSRM_WALKING_URL`, `OSRM_DRIVING_URL` | no / no / **yes** (https) | treated as one (a Cloud Run URL contains the project number; never logged, never in an error) | none (routes then answer 503 `routing_not_configured`) | GitHub environment **secrets** of the same names → Cloud Run env vars |
+| `ROUTING_AUTH` | no / no / no (`none` is refused in production) | no | `google_id_token` | A constant in `deploy-staging.yml`. `none` only for a local OSRM |
+| `ROUTING_TIMEOUT_MS` | no / no / no | no | `25000` (500–55000) | Optional GitHub environment **variable** of the same name → Cloud Run env var. Not measured yet: see "Routes" below |
+| `ROUTING_ALTERNATIVES` | no / no / no | no | `2` (0–2) | Cloud Run env var. Routes besides the best one |
+| `ROUTING_GLOBAL_DAILY_LIMIT` | no / no / no | no | `20000` (1–10000000) | Cloud Run env var. Route requests per day for all users together |
 
 Other allowed values: `NODE_ENV` ∈ `development`, `test`, `production`; `LOG_LEVEL` ∈ `debug`,
 `info`, `warn`, `error`; `DATABASE_URL` is a `postgres://` or `postgresql://` URL, either with a
 host or in the Cloud SQL unix-socket form `postgresql://<user>:<password>@/<db>?host=/cloudsql/<connection name>`
 (URL-encode the password); `FIREBASE_PROJECT_ID` matches `^[a-z][a-z0-9-]{4,28}[a-z0-9]$`;
-`GEOCODING_API_KEY` is 8–200 printable characters without spaces.
+`GEOCODING_API_KEY` is 8–200 printable characters without spaces; an OSRM URL is
+`https://<host>` exactly as `gcloud run services describe <service> --format="value(status.url)"`
+prints it: no path, no query, and no trailing slash (one is removed). `http://localhost` and
+`http://127.0.0.1` are accepted outside production.
 
 The container image sets `NODE_ENV=production` and bakes `GIT_SHA` and `APP_VERSION` from the
 `GIT_SHA` build argument; runtime values override them. The migration runner
@@ -194,6 +202,43 @@ test/search-eval/      search-quality fixture and the `pnpm search:eval` harness
 - **Quality:** `pnpm search:eval` measures a provider against the committed fixture
   ([`test/search-eval/README.md`](test/search-eval/README.md)).
 
+## Routes (since P012b)
+
+`POST /v1/routes` (a JSON body: `origin`, `destination`, `mode` = `walking` or `driving`,
+optional `departAt`) returns the fastest route and up to two alternatives from the private OSRM
+services ([ADR 0020](../docs/adr/0020-routing-osrm.md)), behind the `RoutingProvider` interface
+in `src/modules/routing/`.
+
+- **Order of checks:** validation (400) → sign-in (401, 403) → rate limits (429) → covered
+  area and distance (422) → one call to OSRM.
+- **Covered area:** `src/regions/routing-extent.json`, a copy of
+  `infra/osrm/extents/state-extent.json` (a test compares them). A point outside it gets 422
+  `outside_covered_area`; a point up to 500 m outside the simplified outline still counts as
+  inside. Walking is limited to 30 km in a straight line (422 `route_too_long`).
+- **Authentication to OSRM:** an ID token of the API's own service account from the metadata
+  server, with **audience = the service URL** (no trailing slash), cached until five minutes
+  before it expires. No library, no key.
+- **Timeout and cold start:** one attempt per request, no retry inside the API. The OSRM
+  services scale to zero, so the first request after a quiet period can time out: the answer
+  is 503 `routing_unavailable` with `Retry-After: 10`, and the app tries again.
+  `ROUTING_TIMEOUT_MS` is **25 000 by default and not measured**: it is chosen to stay well
+  under the API's own 60 s Cloud Run request timeout. Tune it from the staging measurements
+  ([runbook](../docs/runbooks/routing-capacity-staging.md), section 9) by setting the GitHub
+  environment variable; no code change is needed.
+- **Privacy:** origins, destinations, geometries and routes are never logged, stored or
+  cached. The log has one line per engine call with `outcome`, `latency_ms`, `route_count`
+  and `mode`. The service URLs and the token never appear in a log or an error.
+- **Rate limits** (`ROUTING_LIMITS` in `src/modules/routing/service.ts`, plus
+  `ROUTING_GLOBAL_DAILY_LIMIT`): 10 requests at once then one every 10 seconds per user; 300
+  per user per day; a daily budget for all users together.
+- **Errors:** 404 `no_route_found`; 422 `outside_covered_area`, `route_too_long`,
+  `location_not_routable`; 429 `rate_limited` and 503 `routing_unavailable` with
+  `Retry-After`. A token or permission problem is logged as an error with
+  `alert: routing_auth_failed` and answered as 503, never as 401 or 403.
+- **Locally:** without the two URLs the endpoint answers 503 `routing_not_configured`. To try
+  it, start an image from `infra/osrm/` and set `OSRM_WALKING_URL=http://localhost:5000`,
+  `OSRM_DRIVING_URL=http://localhost:5001` and `ROUTING_AUTH=none` in `backend/.env`.
+
 ## Change a user's role (admin)
 
 Roles (`user`, `moderator`, `admin`) are stored in `users.role` and checked on every request, so a
@@ -225,14 +270,15 @@ node scripts/container-smoke.mjs      # builds the image and checks it end to en
 
 [`scripts/container-smoke.mjs`](scripts/container-smoke.mjs) needs only Node and Docker. It
 starts a throwaway PostGIS container, runs the migration command twice (the second run applies
-nothing), checks that production refuses a `demo-` Firebase project and a missing geocoding key,
-runs the smoke checks below (plus `POST /v1/search` without a token → 401),
+nothing), checks that production refuses a `demo-` Firebase project, a missing geocoding key,
+a missing OSRM service URL and `ROUTING_AUTH=none`, runs the smoke checks below (plus
+`POST /v1/search` and `POST /v1/routes` without a token → 401),
 and verifies non-root, JSON logs and a SIGTERM shutdown within 10 s. CI runs it on every pull
 request that touches `backend/` ([`container-ci`](../.github/workflows/container-ci.yml)).
 
 | Command in the image | Purpose | Needs |
 | --- | --- | --- |
-| `node dist/server.js` (default) | The API | `DATABASE_URL`, `FIREBASE_PROJECT_ID`, `GEOCODING_API_KEY`, `GEOCODING_PROVIDER` |
+| `node dist/server.js` (default) | The API | `DATABASE_URL`, `FIREBASE_PROJECT_ID`, `GEOCODING_API_KEY`, `GEOCODING_PROVIDER`, `OSRM_WALKING_URL`, `OSRM_DRIVING_URL` |
 | `node dist/db/migrate.js` | Apply migrations (Cloud Run Job) | `DATABASE_URL` |
 | `node dist/scripts/set-role.js …` | Change a user's role (Cloud Run Job) | `DATABASE_URL` |
 

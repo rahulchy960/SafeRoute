@@ -1,0 +1,43 @@
+{
+  "$schema": "../../tools/diagrams/diagram.schema.json",
+  "title": "Route request flow",
+  "subtitle": "Positions travel in request bodies on our API and are never logged or stored. One attempt per request: a sleeping routing service answers 503 with Retry-After and the app tries again (P012b, ADR 0020)",
+  "direction": "TB",
+  "layout": { "nodeWidth": 240, "rankGap": 46 },
+  "groups": [
+    { "id": "client", "label": "Phone" },
+    { "id": "api", "label": "SafeRoute API (Cloud Run, sa-api-runtime)" },
+    { "id": "cloud", "label": "Google Cloud, private" }
+  ],
+  "nodes": [
+    { "id": "app", "label": "App: POST /v1/routes with origin, destination and mode in the body, and a Firebase ID token", "role": "app", "group": "client", "rank": 0 },
+    { "id": "answer", "label": "App shows 1 to 3 routes with the map credit, or a calm message; on 503 it waits Retry-After and asks again (P012c)", "role": "app", "group": "client", "rank": 8 },
+    { "id": "validate", "label": "Validation: ranges, mode, points at least 20 m apart (400)", "role": "service", "group": "api", "rank": 1 },
+    { "id": "auth", "label": "requireUser: Firebase token, account, consent (401, 403)", "role": "security", "group": "api", "rank": 2 },
+    { "id": "limits", "label": "Rate limiter: burst 10, 300 per day, global budget (429, 503)", "role": "security", "group": "api", "rank": 3 },
+    { "id": "extent", "label": "Extent check: both points inside the covered area, straight-line limit per mode (422 outside_covered_area, route_too_long)", "role": "service", "group": "api", "rank": 4 },
+    { "id": "token", "label": "ID token of the API's own account, audience = the service URL, cached until 5 min before expiry", "role": "security", "group": "api", "rank": 5 },
+    { "id": "adapter", "label": "OSRM adapter: one GET, timeout 25 s (not measured yet), no retry, answer size-limited and parsed", "role": "service", "group": "api", "rank": 6 },
+    { "id": "map", "label": "Mapped answer: 200 routes with bbox, 404 no_route_found, 422 location_not_routable, 503 routing_unavailable + Retry-After 10", "role": "service", "group": "api", "rank": 7 },
+    { "id": "log", "label": "One log line: outcome, latency, route count, mode. Never a position, a geometry or a URL", "role": "security", "group": "api", "rank": 8 },
+    { "id": "buckets", "label": "PostgreSQL: rate_limit_buckets (keys hold no position)", "role": "data", "group": "cloud", "rank": 3 },
+    { "id": "metadata", "label": "Metadata server (no key, no library)", "role": "external", "group": "cloud", "rank": 5 },
+    { "id": "osrm", "label": "OSRM service for the mode: private, IAM invoker = the API only, may be asleep (scale to zero)", "role": "service", "group": "cloud", "rank": 6 },
+    { "id": "excluded", "label": "Its request log is excluded: OSRM takes coordinates in the URL path", "role": "security", "group": "cloud", "rank": 7 }
+  ],
+  "edges": [
+    { "from": "app", "to": "validate" },
+    { "from": "validate", "to": "auth" },
+    { "from": "auth", "to": "limits" },
+    { "from": "limits", "to": "buckets", "label": "take a token" },
+    { "from": "limits", "to": "extent" },
+    { "from": "extent", "to": "token" },
+    { "from": "token", "to": "metadata", "label": "when not cached" },
+    { "from": "token", "to": "adapter" },
+    { "from": "adapter", "to": "osrm", "label": "Bearer ID token" },
+    { "from": "osrm", "to": "excluded" },
+    { "from": "adapter", "to": "map" },
+    { "from": "map", "to": "log" },
+    { "from": "map", "to": "answer", "label": "no-store" }
+  ]
+}

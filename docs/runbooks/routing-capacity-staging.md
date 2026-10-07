@@ -240,6 +240,63 @@ URLs. Two protections, both checked after the first test routes (section 6 sends
 - **A new graph:** run the workflow with a newer extract; the image tag is
   `osrm-<profile>-<extract date>`.
 
+## 9. The API side: service URLs and the timeout (since P012b)
+
+The API deploy (`deploy-staging`) reads two environment **secrets** and one optional
+environment **variable**:
+
+| Name | Kind | Value |
+| --- | --- | --- |
+| `OSRM_WALKING_URL` | secret | The URL of `saferoute-osrm-walking`, exactly as Cloud Run reports it: `https://<host>`, no trailing slash, no path |
+| `OSRM_DRIVING_URL` | secret | The same for `saferoute-osrm-driving` |
+| `ROUTING_TIMEOUT_MS` | variable, optional | Milliseconds, 500 to 55000. Unset = 25000 |
+
+They are secrets only so that GitHub masks them: a Cloud Run URL contains the project number.
+The value is also the audience of the ID token the API sends, which is why its exact form
+matters. **Both secrets must exist before a pull request that touches `backend/` is merged**:
+without them the new revision refuses to start, the deploy fails at the candidate step, and
+the previous revision keeps serving.
+
+Set them without typing or printing a URL, either way:
+
+- `.\infra\staging\bootstrap-staging.ps1 -SetGithubSecrets` (reads the URLs from Cloud Run and
+  passes them on standard input), or
+- by hand:
+
+  ```powershell
+  $Repo = 'rahulchy960/SafeRoute'
+  foreach ($pair in @(@('OSRM_WALKING_URL', 'saferoute-osrm-walking'), @('OSRM_DRIVING_URL', 'saferoute-osrm-driving'))) {
+      $url = ('' + (gcloud run services describe $pair[1] --region asia-south1 --format="value(status.url)")).Trim()
+      if ($url -notmatch '^https://[a-z0-9.-]+$') { throw "No URL for $($pair[1]): is the service deployed?" }
+      gh secret set $pair[0] --env staging --repo $Repo --body $url
+      if ($LASTEXITCODE -ne 0) { throw "gh secret set failed for $($pair[0])" }
+  }
+  Remove-Variable url
+  gh secret list --env staging --repo $Repo
+  ```
+
+  The last command lists names and dates only. Cost: none.
+
+**The timeout.** The API makes one attempt per route request and does not retry; a request
+that takes longer than `ROUTING_TIMEOUT_MS` is answered with 503 `routing_unavailable` and
+`Retry-After: 10`, and the app tries again.
+
+- **25 000 ms is a placeholder, not a measurement.** It comes from one fact: the API's own
+  Cloud Run request timeout is 60 s, and the answer must leave before that.
+- Once section 6 has the cold start: if a cold start is clearly shorter than 25 s, a lower
+  value (cold start plus a few seconds) makes failures show sooner; if it is longer, either
+  accept that the first request fails and the retry succeeds, or keep one instance warm
+  (section 8, and its cost in section 4).
+- Set it, then deploy the API again (Actions → deploy-staging → Run workflow):
+
+  ```powershell
+  gh variable set ROUTING_TIMEOUT_MS --env staging --repo rahulchy960/SafeRoute --body 12000
+  ```
+
+- After the API deploy, without a token: `POST /v1/routes` must answer 401. With the app
+  (P012c) or a signed-in call, the API's own log shows one `routing call` line per request
+  with `outcome`, `latency_ms`, `route_count` and `mode`, and never a coordinate.
+
 ## How this runbook was checked
 
 - Sections 2 and 3: every command was run on 2026-10-07 on Windows with Docker Desktop.
@@ -257,6 +314,8 @@ URLs. Two protections, both checked after the first test routes (section 6 sends
   deploy account's rights (it cannot change IAM policies; the workflow's 403 check judges
   the result either way); that a GitHub runner has the memory and disk for the state graph;
   `gcloud auth print-identity-token`; the queries in section 7; cold start on Cloud Run.
+- Section 9: the snippet's PowerShell was not run (it calls `gcloud` and `gh secret set`);
+  `-SetGithubSecrets` is covered by Pester tests with mocked tools.
 - Sections 6 to 8: written, not run. `run services update --min-instances`,
   `run revisions list --service --region --limit` and `logging read --freshness --limit`
   were checked against local help.

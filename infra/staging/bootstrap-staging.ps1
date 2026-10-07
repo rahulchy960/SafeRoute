@@ -87,6 +87,9 @@ $script:RequiredApis = @(
     'sts.googleapis.com', 'cloudresourcemanager.googleapis.com'
 )
 $script:Runbook = 'docs/runbooks/gcp-staging-setup.md'
+# Environment variables the deploy workflow reads but does not need: unset means "use the API's
+# default". They are reported as a NOTE, never set by this script, and never fail -Verify.
+$script:OptionalVariables = @('ROUTING_TIMEOUT_MS')
 $script:Session = @{ ShowIds = $false; Plan = $false; Masks = @(); Secrets = @(); Lines = @() }
 
 # --- Output: everything printed goes through Write-Line, which masks identifiers ---
@@ -860,6 +863,8 @@ function Test-Routing {
     $osrmMember = "serviceAccount:$osrmEmail"
     $deploy = 'serviceAccount:' + (Get-SaEmail $State $Config.DeploySa)
     $runtime = 'serviceAccount:' + (Get-SaEmail $State $Config.RuntimeSa)
+    # The URL of each deployed OSRM service, for the GitHub secrets the API deploy reads (P012b).
+    $State.OsrmUrls = @{}
 
     $saStatus = 'MISSING'; $saFound = 'not found'
     if ($null -eq $State.SaEmails) { $saStatus = 'UNKNOWN'; $saFound = 'could not list accounts' }
@@ -916,6 +921,8 @@ function Test-Routing {
         if ($described.Status -eq 'ok') { $found = 'exists' }
         Add-AuditItem $State "osrm:service:$($service.Key)" "Routing: Cloud Run service $name" 'deployed by the workflow' $found (Get-StatusOf $described) $workflow
         if ($described.Status -ne 'ok') { continue }
+        # Exactly as Cloud Run reports it (no trailing slash): it is also the ID-token audience.
+        $State.OsrmUrls[$service.Key] = ('' + $described.Data.status.url).TrimEnd('/')
 
         $policy = Invoke-GcloudJson @('run', 'services', 'get-iam-policy', $name, "--region=$script:Region")
         if ($policy.Status -ne 'ok') {
@@ -1327,6 +1334,11 @@ function Get-GithubValue {
         MIGRATION_JOB             = $Config.MigrationJob
         API_MIN_INSTANCES         = '0'
         API_MAX_INSTANCES         = '3'
+        # Empty until the osrm-staging workflow has deployed the service.
+        OSRM_WALKING_URL          = '' + $State.OsrmUrls.walking
+        OSRM_DRIVING_URL          = '' + $State.OsrmUrls.driving
+        # Optional (see $script:OptionalVariables): never set here.
+        ROUTING_TIMEOUT_MS        = ''
     }
 }
 
@@ -1381,6 +1393,10 @@ function Test-GithubSetup {
             $status = 'WRONG'; $found = 'stored as a SECRET'
             $next = "The workflow reads vars.$name. Delete the secret, then run -SetGithubSecrets."
         }
+        elseif ($script:OptionalVariables -contains $name) {
+            $status = 'NOTE'; $found = 'not set (the default applies)'
+            $next = "Optional. To set it: gh variable set $name --env $script:GithubEnvironment --repo $script:Repo --body <value>"
+        }
         Add-AuditItem $State "gh:variable:$name" "GitHub variable $name" 'environment variable' $found $status $next
     }
     foreach ($name in $Reference.RepositoryVariables) {
@@ -1425,6 +1441,7 @@ function Invoke-GithubSetup {
         $existing = @($Github.EnvironmentVariables | ForEach-Object { $_.name })
         if ($kind -eq 'secret') { $wanted = $Reference.Secrets; $existing = @($Github.EnvironmentSecrets | ForEach-Object { $_.name }) }
         foreach ($name in $wanted) {
+            if ($kind -eq 'variable' -and $script:OptionalVariables -contains $name) { continue }
             if (-not $values.ContainsKey($name)) { $unknown += "$kind $name"; continue }
             if (-not $plan -and -not $values[$name]) { $empty += $name; continue }
             if ($existing -contains $name -and -not $Force) { $kept += $name; continue }

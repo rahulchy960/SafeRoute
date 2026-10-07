@@ -53,7 +53,11 @@ export const ERROR_RESPONSES = {
       'Authenticated but not allowed: `forbidden`, `bootstrap_required`, `account_deleted`, ' +
       '`consent_required` or `adult_required`. Final: retrying the same request does not help.',
   },
-  404: { name: 'NotFound', description: 'No such route or resource (`not_found`).' },
+  404: {
+    name: 'NotFound',
+    description:
+      'No such route or resource (`not_found`), or no way between two places (`no_route_found`).',
+  },
   409: {
     name: 'Conflict',
     description:
@@ -61,6 +65,12 @@ export const ERROR_RESPONSES = {
       '`account_deletion_required`).',
   },
   410: { name: 'Gone', description: 'The resource existed but has expired or ended (`gone`).' },
+  422: {
+    name: 'UnprocessableContent',
+    description:
+      'The input is well-formed but cannot be served: `outside_covered_area`, `route_too_long` ' +
+      'or `location_not_routable`. Final for this input: change it instead of retrying.',
+  },
   429: {
     name: 'TooManyRequests',
     description: 'Rate limit exceeded (`rate_limited`). Wait for `Retry-After` seconds.',
@@ -71,7 +81,8 @@ export const ERROR_RESPONSES = {
     description:
       'A dependency is unavailable (e.g. `db_unavailable`, `db_not_configured`, ' +
       '`auth_unavailable`, `auth_not_configured`, `search_unavailable`, ' +
-      '`search_not_configured`). Retry with backoff, or after `Retry-After` when it is sent.',
+      '`search_not_configured`, `routing_unavailable`, `routing_not_configured`). Retry with ' +
+      'backoff, or after `Retry-After` when it is sent.',
   },
 } as const;
 

@@ -7,7 +7,7 @@
  * build number. Bump it in the same PR that changes the spec: minor for additive changes, and a
  * breaking change also needs an ADR plus a new path version or a coordinated app release.
  */
-export const CONTRACT_VERSION = '0.5.0';
+export const CONTRACT_VERSION = '0.6.0';
 
 export const OPENAPI_VERSION = '3.1.0';
 
@@ -33,6 +33,13 @@ export const TAGS = [
     description:
       'Place search through a geocoding provider. Queries are rate-limited and are not stored ' +
       'or logged.',
+  },
+  {
+    name: 'routing',
+    description:
+      'Walking and driving routes between two points, computed from OpenStreetMap data. ' +
+      'Origins, destinations and routes are not stored or logged. A route is a way to travel, ' +
+      'never a statement that it is safe.',
   },
 ];
 
