@@ -27,6 +27,12 @@ export const PROBLEM_CODES = [
   'auth_not_configured',
   'search_unavailable',
   'search_not_configured',
+  'outside_covered_area',
+  'route_too_long',
+  'location_not_routable',
+  'no_route_found',
+  'routing_unavailable',
+  'routing_not_configured',
   'http_error',
 ] as const;
 

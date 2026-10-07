@@ -4,6 +4,8 @@ import type { Config } from './config.js';
 import { createDb, databaseReadiness, type DbHandle } from './db/client.js';
 import type { Logger } from './lib/logger.js';
 import { FirebaseIdTokenVerifier } from './modules/auth/firebase-verifier.js';
+import { createMetadataIdTokenSource } from './modules/routing/providers/id-token.js';
+import { createOsrmRoutingProvider } from './modules/routing/providers/osrm.js';
 import { createGeocoder } from './modules/search/providers/index.js';
 
 /**
@@ -41,10 +43,31 @@ export function createRuntime(config: Config, logger: Logger) {
   } else {
     logger.info({ geocoding_provider: geocoder.name }, 'geocoding provider configured');
   }
+  // The service URLs stay inside the adapter: never on the logger, in an error or in /health.
+  // Building it calls nothing: the first ID token is fetched with the first route request.
+  const routing =
+    config.OSRM_WALKING_URL === undefined || config.OSRM_DRIVING_URL === undefined
+      ? undefined
+      : createOsrmRoutingProvider({
+          baseUrls: { walking: config.OSRM_WALKING_URL, driving: config.OSRM_DRIVING_URL },
+          idTokens:
+            config.ROUTING_AUTH === 'google_id_token' ? createMetadataIdTokenSource() : undefined,
+          timeoutMs: config.ROUTING_TIMEOUT_MS,
+          alternatives: config.ROUTING_ALTERNATIVES,
+        });
+  if (routing === undefined) {
+    logger.warn('OSRM_WALKING_URL or OSRM_DRIVING_URL is not set; routing will answer 503');
+  } else {
+    logger.info(
+      { routing_auth: config.ROUTING_AUTH, routing_timeout_ms: config.ROUTING_TIMEOUT_MS },
+      'routing configured',
+    );
+  }
   const app = createApp({
     config,
     logger,
     ...(geocoder ? { geocoder } : {}),
+    ...(routing ? { routing } : {}),
     ...(database ? { readiness: databaseReadiness(database.db), db: database.db } : {}),
     ...(verifier ? { verifier } : {}),
   });

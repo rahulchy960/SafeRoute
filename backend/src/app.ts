@@ -10,6 +10,8 @@ import { accessLog } from './middleware/access-log.js';
 import { requestId } from './middleware/request-id.js';
 import type { TokenVerifier } from './modules/auth/verifier.js';
 import { consentRoutes } from './modules/consents/routes.js';
+import { routingRoutes } from './modules/routing/routes.js';
+import type { RoutingProvider } from './modules/routing/types.js';
 import { searchRoutes } from './modules/search/routes.js';
 import type { GeocoderProvider } from './modules/search/types.js';
 import { userRoutes } from './modules/users/routes.js';
@@ -34,6 +36,11 @@ export interface AppDeps {
    * only): the route then answers 503 `search_not_configured`.
    */
   geocoder?: GeocoderProvider;
+  /**
+   * Routing engine behind POST /v1/routes. Omitted when the OSRM URLs are not set (dev/test
+   * only): the route then answers 503 `routing_not_configured`.
+   */
+  routing?: RoutingProvider;
 }
 
 /**
@@ -49,7 +56,7 @@ export interface AppDeps {
  * applies to all routers mounted below, because OpenAPIHono resolves the default hook through
  * the parent app.
  */
-export function createApp({ config, logger, readiness, verifier, db, geocoder }: AppDeps) {
+export function createApp({ config, logger, readiness, verifier, db, geocoder, routing }: AppDeps) {
   const app = new OpenAPIHono<AppEnv>({ defaultHook: validationHook });
   registerContractComponents(app);
 
@@ -63,6 +70,15 @@ export function createApp({ config, logger, readiness, verifier, db, geocoder }:
   app.route(
     '/',
     searchRoutes({ verifier, db, geocoder, globalDailyLimit: config.SEARCH_GLOBAL_DAILY_LIMIT }),
+  );
+  app.route(
+    '/',
+    routingRoutes({
+      verifier,
+      db,
+      routing,
+      globalDailyLimit: config.ROUTING_GLOBAL_DAILY_LIMIT,
+    }),
   );
 
   app.notFound((c) => {

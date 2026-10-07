@@ -46,6 +46,49 @@ export const FIREBASE_PROJECT_ID_PATTERN = /^[a-z][a-z0-9-]{4,28}[a-z0-9]$/;
 export const GEOCODING_PROVIDERS = ['geoapify', 'locationiq'] as const;
 export type GeocodingProviderName = (typeof GEOCODING_PROVIDERS)[number];
 
+/** How the API proves who it is to the routing services (ADR 0020). */
+export const ROUTING_AUTH_MODES = ['google_id_token', 'none'] as const;
+
+/**
+ * Base URL of one OSRM service, or undefined when the value is not usable.
+ *
+ * The value Cloud Run reports for a service: scheme and host, nothing else. A trailing slash is
+ * accepted and removed, because the result is also the AUDIENCE of the ID token the API sends,
+ * and Cloud Run compares that with the service URL without a trailing slash.
+ * http is accepted for a local OSRM only. Never throws: the value is treated as a secret (a Cloud
+ * Run URL contains the project number), so no message may quote it.
+ */
+export function parseOsrmBaseUrl(value: string): string | undefined {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return undefined;
+  }
+  const local = ['localhost', '127.0.0.1'].includes(url.hostname);
+  if (url.protocol !== 'https:' && !(url.protocol === 'http:' && local)) return undefined;
+  if (url.username !== '' || url.password !== '' || url.search !== '' || url.hash !== '') {
+    return undefined;
+  }
+  if (url.pathname !== '/' && url.pathname !== '') return undefined;
+  return url.origin;
+}
+
+const osrmBaseUrl = z
+  .string()
+  .max(300)
+  .transform((value, ctx) => {
+    const url = parseOsrmBaseUrl(value);
+    if (url === undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'must be https://<host> with no path (http only for localhost)',
+      });
+      return z.NEVER;
+    }
+    return url;
+  });
+
 const BaseSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().min(1).max(65535).default(8080),
@@ -79,6 +122,21 @@ const BaseSchema = z.object({
   // daily quota; revisit whenever the plan or the provider changes (ADR 0018).
   SEARCH_GLOBAL_DAILY_LIMIT: z.coerce.number().int().min(1).max(10_000_000).default(2500),
   SEARCH_PROVIDER_TIMEOUT_MS: z.coerce.number().int().min(200).max(20_000).default(3000),
+  // Base URLs of the two private OSRM services (ADR 0020). Treated as SECRETS: never logged,
+  // never in an error or in /health. Optional outside production: routing then answers 503.
+  OSRM_WALKING_URL: osrmBaseUrl.optional(),
+  OSRM_DRIVING_URL: osrmBaseUrl.optional(),
+  // `google_id_token`: an ID token from the metadata server, audience = the service URL.
+  // `none`: no Authorization header, for a local OSRM only; refused in production.
+  ROUTING_AUTH: z.enum(ROUTING_AUTH_MODES).default('google_id_token'),
+  // One attempt per request, including a cold start of a scaled-to-zero service. NOT measured on
+  // staging yet (P012b): 25 s stays under the API's own 60 s Cloud Run timeout. Tune it from
+  // docs/runbooks/routing-capacity-staging.md through the GitHub variable of the same name.
+  ROUTING_TIMEOUT_MS: z.coerce.number().int().min(500).max(55_000).default(25_000),
+  // Alternatives asked of OSRM besides the best route: 2 gives up to 3 routes.
+  ROUTING_ALTERNATIVES: z.coerce.number().int().min(0).max(2).default(2),
+  // Route requests per day across all users and instances: a cost guard for the OSRM services.
+  ROUTING_GLOBAL_DAILY_LIMIT: z.coerce.number().int().min(1).max(10_000_000).default(20_000),
 });
 
 /** What the API additionally needs before it may serve requests in production. */
@@ -91,6 +149,21 @@ const ConfigSchema = BaseSchema.superRefine((config, ctx) => {
       code: 'custom',
       path: ['GEOCODING_API_KEY'],
       message: 'required when NODE_ENV=production',
+    });
+  }
+  // Same reasoning for routing: a revision without its OSRM services must not take traffic.
+  for (const name of ['OSRM_WALKING_URL', 'OSRM_DRIVING_URL'] as const) {
+    if (config[name] === undefined) {
+      ctx.addIssue({ code: 'custom', path: [name], message: 'required when NODE_ENV=production' });
+    } else if (!config[name].startsWith('https://')) {
+      ctx.addIssue({ code: 'custom', path: [name], message: 'must be https in production' });
+    }
+  }
+  if (config.ROUTING_AUTH === 'none') {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['ROUTING_AUTH'],
+      message: 'none is not allowed when NODE_ENV=production',
     });
   }
   if (config.DATABASE_URL === undefined) {

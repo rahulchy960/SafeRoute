@@ -14,7 +14,7 @@ export type LogLine = Record<string, unknown>;
 export function buildTestApp(
   overrides: Partial<Record<keyof Config, string>> = {},
   readiness?: ReadinessCheck,
-  deps: Pick<AppDeps, 'verifier' | 'db' | 'geocoder'> = {},
+  deps: Pick<AppDeps, 'verifier' | 'db' | 'geocoder' | 'routing'> = {},
 ) {
   const lines: string[] = [];
   const config = parseConfig({ NODE_ENV: 'test', LOG_LEVEL: 'debug', ...overrides });

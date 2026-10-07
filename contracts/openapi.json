@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "SafeRoute API",
-    "version": "0.5.0",
+    "version": "0.6.0",
     "description": "SafeRoute is a personal-safety navigation API. Safety information is context, never a guarantee that a route or area is safe. SafeRoute is not an emergency service; in an emergency call your local emergency number (112 in India).",
     "license": {
       "name": "AGPL-3.0-only",
@@ -26,6 +26,10 @@
     {
       "name": "search",
       "description": "Place search through a geocoding provider. Queries are rate-limited and are not stored or logged."
+    },
+    {
+      "name": "routing",
+      "description": "Walking and driving routes between two points, computed from OpenStreetMap data. Origins, destinations and routes are not stored or logged. A route is a way to travel, never a statement that it is safe."
     }
   ],
   "components": {
@@ -111,7 +115,7 @@
         }
       },
       "NotFound": {
-        "description": "No such route or resource (`not_found`).",
+        "description": "No such route or resource (`not_found`), or no way between two places (`no_route_found`).",
         "headers": {
           "X-Request-Id": {
             "$ref": "#/components/headers/RequestId"
@@ -142,6 +146,21 @@
       },
       "Gone": {
         "description": "The resource existed but has expired or ended (`gone`).",
+        "headers": {
+          "X-Request-Id": {
+            "$ref": "#/components/headers/RequestId"
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
+      },
+      "UnprocessableContent": {
+        "description": "The input is well-formed but cannot be served: `outside_covered_area`, `route_too_long` or `location_not_routable`. Final for this input: change it instead of retrying.",
         "headers": {
           "X-Request-Id": {
             "$ref": "#/components/headers/RequestId"
@@ -189,7 +208,7 @@
         }
       },
       "ServiceUnavailable": {
-        "description": "A dependency is unavailable (e.g. `db_unavailable`, `db_not_configured`, `auth_unavailable`, `auth_not_configured`, `search_unavailable`, `search_not_configured`). Retry with backoff, or after `Retry-After` when it is sent.",
+        "description": "A dependency is unavailable (e.g. `db_unavailable`, `db_not_configured`, `auth_unavailable`, `auth_not_configured`, `search_unavailable`, `search_not_configured`, `routing_unavailable`, `routing_not_configured`). Retry with backoff, or after `Retry-After` when it is sent.",
         "headers": {
           "X-Request-Id": {
             "$ref": "#/components/headers/RequestId"
@@ -249,7 +268,7 @@
           },
           "code": {
             "type": "string",
-            "description": "Stable, machine-readable error code; clients switch on this, not on `title` or `detail`. Open set: clients must tolerate unknown values. Currently defined: `validation_error`, `unauthorized`, `forbidden`, `bootstrap_required`, `account_deleted`, `consent_required`, `adult_required`, `not_found`, `conflict`, `phone_already_registered`, `account_deletion_required`, `gone`, `rate_limited`, `internal_error`, `db_unavailable`, `db_not_configured`, `auth_unavailable`, `auth_not_configured`, `search_unavailable`, `search_not_configured`, `http_error`.",
+            "description": "Stable, machine-readable error code; clients switch on this, not on `title` or `detail`. Open set: clients must tolerate unknown values. Currently defined: `validation_error`, `unauthorized`, `forbidden`, `bootstrap_required`, `account_deleted`, `consent_required`, `adult_required`, `not_found`, `conflict`, `phone_already_registered`, `account_deletion_required`, `gone`, `rate_limited`, `internal_error`, `db_unavailable`, `db_not_configured`, `auth_unavailable`, `auth_not_configured`, `search_unavailable`, `search_not_configured`, `outside_covered_area`, `route_too_long`, `location_not_routable`, `no_route_found`, `routing_unavailable`, `routing_not_configured`, `http_error`.",
             "examples": [
               "not_found"
             ]
@@ -765,6 +784,169 @@
           "q"
         ],
         "description": "A place search. Sent as a request body so that the text and the area never appear in a URL."
+      },
+      "Routes": {
+        "type": "object",
+        "properties": {
+          "routes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Route"
+            },
+            "minItems": 1,
+            "maxItems": 3,
+            "description": "Fastest first, then up to two alternatives."
+          },
+          "attribution": {
+            "type": "string",
+            "description": "Credit line the app must show with the routes (required by the map data).",
+            "examples": [
+              "© OpenStreetMap contributors"
+            ]
+          }
+        },
+        "required": [
+          "routes",
+          "attribution"
+        ],
+        "description": "Routes between two points."
+      },
+      "Route": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Opaque identifier of this route within this response, for selecting it in the app. It means nothing to the server afterwards: routes are not stored.",
+            "examples": [
+              "5d2f0c1e-3b7a-4c8d-9e1f-2a6b4c8d0e1f"
+            ]
+          },
+          "distanceMeters": {
+            "type": "integer",
+            "minimum": 0,
+            "examples": [
+              2100
+            ]
+          },
+          "durationSeconds": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Estimated travel time without traffic. An estimate, not a promise.",
+            "examples": [
+              1560
+            ]
+          },
+          "geometry": {
+            "type": "object",
+            "properties": {
+              "encoding": {
+                "type": "string",
+                "enum": [
+                  "polyline6"
+                ],
+                "description": "Encoded polyline with six decimals: latitude then longitude, as differences."
+              },
+              "value": {
+                "type": "string",
+                "examples": [
+                  "_izlhA~rlgdF_{geC~ywl@"
+                ]
+              }
+            },
+            "required": [
+              "encoding",
+              "value"
+            ],
+            "description": "The whole line of the route."
+          },
+          "bbox": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "description": "Box around the route: [minLongitude, minLatitude, maxLongitude, maxLatitude].",
+            "examples": [
+              [
+                20.5,
+                10.5,
+                20.6,
+                10.6
+              ]
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "distanceMeters",
+          "durationSeconds",
+          "geometry",
+          "bbox"
+        ],
+        "description": "One way to travel between the two points. Says nothing about safety."
+      },
+      "RouteRequest": {
+        "type": "object",
+        "properties": {
+          "origin": {
+            "$ref": "#/components/schemas/RoutePoint"
+          },
+          "destination": {
+            "$ref": "#/components/schemas/RoutePoint"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "walking",
+              "driving"
+            ],
+            "description": "How the person travels. Driving means a car on roads open to cars.",
+            "examples": [
+              "walking"
+            ]
+          },
+          "departAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the trip starts, RFC 3339 with an offset. Validated and otherwise ignored for now: routes do not depend on the time of day yet.",
+            "examples": [
+              "2026-01-01T18:30:00+05:30"
+            ]
+          }
+        },
+        "required": [
+          "origin",
+          "destination",
+          "mode"
+        ],
+        "description": "A request for routes between two points. Sent as a request body so that no position ever appears in a URL. The two points must be at least 20 m apart."
+      },
+      "RoutePoint": {
+        "type": "object",
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90,
+            "description": "WGS84 decimal degrees.",
+            "examples": [
+              10.5
+            ]
+          },
+          "longitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180,
+            "description": "WGS84 decimal degrees.",
+            "examples": [
+              20.5
+            ]
+          }
+        },
+        "required": [
+          "latitude",
+          "longitude"
+        ],
+        "description": "A position on the map."
       }
     },
     "parameters": {
@@ -1155,6 +1337,75 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/v1/routes": {
+      "post": {
+        "operationId": "createRoutes",
+        "tags": [
+          "routing"
+        ],
+        "summary": "Find routes between two points",
+        "description": "Returns the fastest route and up to two alternatives for walking or driving. The points travel in the request body, never in the URL, and neither they nor the routes are stored or logged. Calling it again with the same body is safe (it changes nothing), so no `Idempotency-Key` is needed. Routes carry no safety information.\n\nAnswers that are not failures of the service: `outside_covered_area` (422) when a point lies outside the area routes exist for; `route_too_long` (422) when the points are too far apart for the mode; `location_not_routable` (422) when a point is not near a road or path; `no_route_found` (404) when no way connects them.\n\n`routing_unavailable` (503) comes with `Retry-After`. The routing service can be asleep: the first request after a quiet period may get this answer while it starts, and the same request succeeds a little later. The server makes one attempt and does not retry; the client does. `rate_limited` (429) also carries `Retry-After`. `routing_not_configured` (503) means this instance has no routing service.",
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RouteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "One to three routes, fastest first.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/CacheControlNoStore"
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Routes"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableContent"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"

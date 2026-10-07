@@ -9,6 +9,12 @@ const GEOCODING = {
   GEOCODING_PROVIDER: 'geoapify',
 };
 
+/** Obviously fake; a production config needs both. Hosts under .invalid never resolve. */
+const ROUTING = {
+  OSRM_WALKING_URL: 'https://osrm-walking.example.invalid',
+  OSRM_DRIVING_URL: 'https://osrm-driving.example.invalid',
+};
+
 function configError(env: Record<string, string>): ConfigError {
   try {
     parseConfig(env);
@@ -34,6 +40,10 @@ describe('parseConfig', () => {
       GEOCODING_PROVIDER: 'geoapify',
       SEARCH_GLOBAL_DAILY_LIMIT: 2500,
       SEARCH_PROVIDER_TIMEOUT_MS: 3000,
+      ROUTING_AUTH: 'google_id_token',
+      ROUTING_TIMEOUT_MS: 25_000,
+      ROUTING_ALTERNATIVES: 2,
+      ROUTING_GLOBAL_DAILY_LIMIT: 20_000,
     });
   });
 
@@ -47,6 +57,7 @@ describe('parseConfig', () => {
       DATABASE_URL: 'postgres://fake-user:fake-pw@127.0.0.1:5433/fake_db',
       FIREBASE_PROJECT_ID: 'example-staging-1',
       ...GEOCODING,
+      ...ROUTING,
       PATH: '/usr/bin',
     });
     expect(config).toMatchObject({ NODE_ENV: 'production', PORT: 3000, LOG_LEVEL: 'warn' });
@@ -101,6 +112,7 @@ describe('parseConfig', () => {
         NODE_ENV: 'production',
         FIREBASE_PROJECT_ID: 'example-staging-1',
         ...GEOCODING,
+        ...ROUTING,
       });
       expect(err.issues).toEqual(['DATABASE_URL: required when NODE_ENV=production']);
       expect(
@@ -109,6 +121,7 @@ describe('parseConfig', () => {
           DATABASE_URL: URL_WITH_SECRET,
           FIREBASE_PROJECT_ID: 'example-staging-1',
           ...GEOCODING,
+          ...ROUTING,
         }).DATABASE_URL,
       ).toBe(URL_WITH_SECRET);
     });
@@ -144,6 +157,8 @@ describe('parseConfig', () => {
       expect(parseJobConfig(JOB).FIREBASE_PROJECT_ID).toBeUndefined();
       expect(configError(JOB).issues).toEqual([
         'GEOCODING_API_KEY: required when NODE_ENV=production',
+        'OSRM_WALKING_URL: required when NODE_ENV=production',
+        'OSRM_DRIVING_URL: required when NODE_ENV=production',
         'FIREBASE_PROJECT_ID: required when NODE_ENV=production',
       ]);
     });
@@ -173,6 +188,7 @@ describe('parseConfig', () => {
       NODE_ENV: 'production',
       DATABASE_URL: 'postgres://u:p@127.0.0.1:5433/db',
       FIREBASE_PROJECT_ID: 'example-staging-1',
+      ...ROUTING,
     };
 
     it('the key is optional in development and test', () => {
@@ -228,6 +244,7 @@ describe('parseConfig', () => {
       NODE_ENV: 'production',
       DATABASE_URL: 'postgres://u:p@127.0.0.1:5433/db',
       ...GEOCODING,
+      ...ROUTING,
     };
 
     it('is optional in development and test, and demo- IDs are allowed there', () => {
@@ -279,8 +296,11 @@ describe('parseConfig', () => {
         FIREBASE_JWKS_URL: 'http://127.0.0.1/keys',
         AUTH_BYPASS: 'true',
       });
+      // ROUTING_AUTH is not about who may call the API: it says how the API proves itself to the
+      // private OSRM services, and `none` is refused in production (see the routing tests below).
       expect(Object.keys(config).filter((key) => /FIREBASE|AUTH|JWK/.test(key))).toEqual([
         'FIREBASE_PROJECT_ID',
+        'ROUTING_AUTH',
       ]);
     });
 
@@ -292,6 +312,90 @@ describe('parseConfig', () => {
       for (const file of files(join(import.meta.dirname, '../src'))) {
         expect(readFileSync(file, 'utf8'), file).not.toMatch(/EMULATOR_HOST|AUTH_BYPASS/);
       }
+    });
+  });
+
+  describe('routing settings (ADR 0020)', () => {
+    const PROD = {
+      NODE_ENV: 'production',
+      DATABASE_URL: 'postgres://u:p@127.0.0.1:5433/db',
+      FIREBASE_PROJECT_ID: 'example-staging-1',
+      ...GEOCODING,
+    };
+
+    it('the service URLs are optional in development and test, and local http is allowed there', () => {
+      expect(parseConfig({ NODE_ENV: 'test' }).OSRM_WALKING_URL).toBeUndefined();
+      expect(
+        parseConfig({ OSRM_WALKING_URL: 'http://localhost:5000', ROUTING_AUTH: 'none' }),
+      ).toMatchObject({ OSRM_WALKING_URL: 'http://localhost:5000', ROUTING_AUTH: 'none' });
+    });
+
+    it('requires both URLs in production, by name only: a revision without them never starts', () => {
+      expect(configError(PROD).issues).toEqual([
+        'OSRM_WALKING_URL: required when NODE_ENV=production',
+        'OSRM_DRIVING_URL: required when NODE_ENV=production',
+      ]);
+      expect(configError({ ...PROD, OSRM_WALKING_URL: ROUTING.OSRM_WALKING_URL }).issues).toEqual([
+        'OSRM_DRIVING_URL: required when NODE_ENV=production',
+      ]);
+      // An empty value (a GitHub secret that was never set) counts as missing.
+      expect(configError({ ...PROD, ...ROUTING, OSRM_DRIVING_URL: '' }).issues).toEqual([
+        'OSRM_DRIVING_URL: required when NODE_ENV=production',
+      ]);
+      expect(parseConfig({ ...PROD, ...ROUTING })).toMatchObject(ROUTING);
+    });
+
+    it('removes a trailing slash, so the value is also the exact ID-token audience', () => {
+      const config = parseConfig({
+        ...PROD,
+        ...ROUTING,
+        OSRM_WALKING_URL: 'https://osrm-walking.example.invalid/',
+      });
+      expect(config.OSRM_WALKING_URL).toBe('https://osrm-walking.example.invalid');
+    });
+
+    it('refuses http and ROUTING_AUTH=none in production', () => {
+      expect(
+        configError({ ...PROD, ...ROUTING, OSRM_DRIVING_URL: 'http://localhost:5000' }).issues,
+      ).toEqual(['OSRM_DRIVING_URL: must be https in production']);
+      expect(configError({ ...PROD, ...ROUTING, ROUTING_AUTH: 'none' }).issues).toEqual([
+        'ROUTING_AUTH: none is not allowed when NODE_ENV=production',
+      ]);
+    });
+
+    it.each([
+      ['OSRM_WALKING_URL', 'http://osrm-FAKEHOST.example.invalid'],
+      ['OSRM_DRIVING_URL', 'https://osrm-FAKEHOST.example.invalid/route/v1'],
+      ['OSRM_DRIVING_URL', 'https://user:FAKEPW@osrm-FAKEHOST.example.invalid'],
+      ['ROUTING_AUTH', 'bearer'],
+      ['ROUTING_TIMEOUT_MS', '100'],
+      ['ROUTING_TIMEOUT_MS', '60000'],
+      ['ROUTING_ALTERNATIVES', '3'],
+      ['ROUTING_GLOBAL_DAILY_LIMIT', '0'],
+    ])('rejects an invalid %s without echoing it', (name, value) => {
+      const err = configError({ [name]: value });
+      expect(err.issues).toHaveLength(1);
+      expect(err.issues[0]).toMatch(new RegExp('^' + name + ': '));
+      expect(err.message).not.toContain(value);
+      expect(err.message).not.toContain('FAKEHOST');
+    });
+
+    it('reads the timeout, the alternatives and the daily limit', () => {
+      expect(
+        parseConfig({
+          ROUTING_TIMEOUT_MS: '8000',
+          ROUTING_ALTERNATIVES: '0',
+          ROUTING_GLOBAL_DAILY_LIMIT: '500',
+        }),
+      ).toMatchObject({
+        ROUTING_TIMEOUT_MS: 8000,
+        ROUTING_ALTERNATIVES: 0,
+        ROUTING_GLOBAL_DAILY_LIMIT: 500,
+      });
+    });
+
+    it('the migration job needs no routing service', () => {
+      expect(parseJobConfig(PROD).OSRM_WALKING_URL).toBeUndefined();
     });
   });
 });
