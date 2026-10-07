@@ -162,7 +162,8 @@ private fun Waiting(text: String) {
 @Composable
 private fun RouteList(results: DirectionsStatus.Results, onSelect: (String) -> Unit) {
     val spacing = SafeRouteTheme.spacing
-    val locale = ConfigurationCompat.getLocales(LocalConfiguration.current)[0] ?: Locale.getDefault()
+    // Read from the configuration, so the numbers change with the app language at once.
+    val locale = ConfigurationCompat.getLocales(LocalConfiguration.current)[0] ?: Locale.ROOT
     Column(
         modifier = Modifier.selectableGroup(),
         verticalArrangement = Arrangement.spacedBy(spacing.sm),

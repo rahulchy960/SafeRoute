@@ -1,0 +1,151 @@
+{
+  "$schema": "../../tools/diagrams/diagram.schema.json",
+  "title": "Directions flow (states)",
+  "subtitle": "From a chosen place to routes on the map. Loading always ends: a sleeping routing service is waited for at most twice, then Try again. Nothing about a route is stored or logged (P012c1, ADR 0020)",
+  "direction": "TB",
+  "layout": {
+    "nodeWidth": 230,
+    "rankGap": 46
+  },
+  "groups": [
+    {
+      "id": "start",
+      "label": "Before a request"
+    },
+    {
+      "id": "request",
+      "label": "Asking"
+    },
+    {
+      "id": "end",
+      "label": "What the sheet shows"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "card",
+      "label": "Closed: the place card with Directions. The first time ever, the Intro comes next; afterwards it is skipped",
+      "role": "app",
+      "group": "start",
+      "rank": 0
+    },
+    {
+      "id": "intro",
+      "label": "Intro (once ever): your start and destination are sent to SafeRoute, nothing is stored",
+      "role": "security",
+      "group": "start",
+      "rank": 1
+    },
+    {
+      "id": "origin",
+      "label": "NeedsOrigin: no permission, searching or no position. Sends nothing; 'Use my location' is the usual permission flow",
+      "role": "app",
+      "group": "start",
+      "rank": 2
+    },
+    {
+      "id": "loading",
+      "label": "Loading: one request (POST /v1/routes). Another mode or Try again cancels it and starts a new one",
+      "role": "service",
+      "group": "request",
+      "rank": 3
+    },
+    {
+      "id": "starting",
+      "label": "Loading, 'Starting the routing service': shown after 5 s, or on 503 with Retry-After",
+      "role": "service",
+      "group": "request",
+      "rank": 4
+    },
+    {
+      "id": "wait",
+      "label": "Wait Retry-After (at most 15 s) and ask again, at most 2 times",
+      "role": "infra",
+      "group": "request",
+      "rank": 5
+    },
+    {
+      "id": "results",
+      "label": "Results: 1 to 3 cards (duration, distance, Fastest), credit line; routes on the map, camera fits the selected one",
+      "role": "app",
+      "group": "end",
+      "rank": 4
+    },
+    {
+      "id": "select",
+      "label": "Tap a card: another route is selected; no request, the map stays put",
+      "role": "app",
+      "group": "end",
+      "rank": 5
+    },
+    {
+      "id": "place",
+      "label": "Answer about the places (no Try again): outside covered area, no route, not near a road, too far",
+      "role": "app",
+      "group": "end",
+      "rank": 4
+    },
+    {
+      "id": "retry",
+      "label": "Failed with Try again: offline, rate limited, unavailable, or still starting after the waits",
+      "role": "security",
+      "group": "request",
+      "rank": 6
+    },
+    {
+      "id": "closed",
+      "label": "Close, back, or another place: routes leave the map and memory",
+      "role": "data",
+      "group": "end",
+      "rank": 6
+    }
+  ],
+  "edges": [
+    {
+      "from": "card",
+      "to": "intro"
+    },
+    {
+      "from": "intro",
+      "to": "origin",
+      "label": "Continue"
+    },
+    {
+      "from": "origin",
+      "to": "loading",
+      "label": "a position exists"
+    },
+    {
+      "from": "loading",
+      "to": "starting",
+      "label": "slow, or 503"
+    },
+    {
+      "from": "starting",
+      "to": "wait"
+    },
+    {
+      "from": "wait",
+      "to": "retry",
+      "label": "still 503"
+    },
+    {
+      "from": "loading",
+      "to": "results",
+      "label": "200"
+    },
+    {
+      "from": "loading",
+      "to": "place",
+      "label": "404, 422"
+    },
+    {
+      "from": "results",
+      "to": "select"
+    },
+    {
+      "from": "select",
+      "to": "closed"
+    }
+  ]
+}
