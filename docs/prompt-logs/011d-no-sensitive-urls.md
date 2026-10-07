@@ -69,13 +69,18 @@ What was verified rather than assumed, and how:
 | Android | `ApiSearchRepository` sends the generated `SearchRequest` body; two new tests |
 | Docs | ADR 0019 (new), ADR 0018 "Logging" correction, `CLAUDE.md` "Privacy in URLs", observability runbook section, backend, contracts and Android READMEs, the 011a diagram's first node, this log |
 
-No migration. No new dependency. No workflow change.
+No migration. No new dependency. One workflow line changed (`contracts-ci.yml`, below).
 
 **Deviations from the prompt:**
 
 - **A new ADR file (0019), not only a note.** `contracts-ci` lets a breaking change pass only
   with the label **and** a new file under `docs/adr/`. The "Logging" correction asked for is in
   ADR 0018 as well.
+- **A one-line fix in `contracts-ci.yml`.** The first push failed `contracts-ci` although the
+  label and the new ADR were there. The step that looks for a new ADR runs in `backend/` and
+  asked git for `docs/adr/`, which there means `backend/docs/adr/` and never matches: the
+  breaking-change policy had never been exercised and could not pass. The path is now anchored
+  at the repository root (`:/docs/adr/`). Reproduced locally from `backend/` before and after.
 - **The deny-list is longer than the prompt's**: it also has `search…`, `lon`, `bbox`,
   `apikey`, `…password…` and `…secret…`.
 - **Claude Code added the `breaking-api-change` label** when opening the pull request, because
