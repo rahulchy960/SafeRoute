@@ -31,7 +31,9 @@ Cloud SQL, service accounts, the Workload Identity pool, the registry or an exis
 output hides project ID, project number, e-mail addresses and URLs unless `-ShowIds` is passed.
 
 The routing engine images (OSRM over OpenStreetMap data, since P012a) are in [`osrm/`](osrm/README.md);
-their staging services are deployed by a later pull request. Backup exports follow in P020.
+their private staging services are deployed by hand with
+[`osrm-staging`](../.github/workflows/osrm-staging.yml) after the setup script has prepared the account
+and the log exclusions ([runbook](../docs/runbooks/routing-capacity-staging.md), section 5). Backup exports follow in P020.
 
 **Rules:** no service-account JSON keys, ever. Claude Code never receives production credentials
 and never runs commands that change cloud resources. Rahul runs any `gcloud` setup that needs

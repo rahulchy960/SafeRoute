@@ -37,7 +37,8 @@ node infra/osrm/scripts/local-smoke.mjs --image saferoute-osrm:car-state-2026-10
 - **One build at a time**: every build uses `infra/osrm/data/source.osm.pbf` as its input.
 - The stock `foot` and `car` profiles are used as shipped. No custom Lua (ADR 0020).
 - The services are private. Nothing here is ever exposed to the internet or to the app; only
-  the API calls OSRM.
+  the API calls OSRM. Deploying: [`osrm-staging`](../../.github/workflows/osrm-staging.yml),
+  by hand, after `bootstrap-staging.ps1 -Apply` (runbook, section 5).
 
 **Data licence.** The extract, the fixture, `extents/state-extent.json` and every graph are
 derived from OpenStreetMap: © OpenStreetMap contributors, available under the

@@ -1,13 +1,13 @@
 {
   "$schema": "../../tools/diagrams/diagram.schema.json",
   "title": "Routing infrastructure: from OpenStreetMap to private OSRM services",
-  "subtitle": "Built and measured in P012a (left and middle); the staging services and their callers come in the next pull requests (right) (ADR 0020)",
+  "subtitle": "Images and checks since P012a; the deploy path and the private services since P012a2 (deployed by Rahul); the API and the app follow in P012b and P012c (ADR 0020)",
   "direction": "TB",
   "layout": { "nodeWidth": 250, "rankGap": 50 },
   "groups": [
     { "id": "build", "label": "Data and image build (P012a)" },
     { "id": "checks", "label": "Checks (P012a)" },
-    { "id": "staging", "label": "Google Cloud staging (planned: P012a part 2, P012b, P012c)" }
+    { "id": "staging", "label": "Google Cloud staging (deploy path: P012a2; API: P012b; app: P012c)" }
   ],
   "nodes": [
     { "id": "osm", "label": "Geofabrik extract of OpenStreetMap (ODbL 1.0), dated, MD5 checked", "role": "external", "group": "build", "rank": 0 },
@@ -22,6 +22,7 @@
     { "id": "registry", "label": "Artifact Registry: osrm-<profile>-<extract date>", "role": "data", "group": "staging", "rank": 5 },
     { "id": "walking", "label": "Cloud Run saferoute-osrm-walking: private, role-less sa-osrm-runtime, scales to zero", "role": "service", "group": "staging", "rank": 6 },
     { "id": "driving", "label": "Cloud Run saferoute-osrm-driving: private, role-less sa-osrm-runtime, scales to zero", "role": "service", "group": "staging", "rank": 6 },
+    { "id": "setup", "label": "bootstrap-staging.ps1 -Apply (Rahul): role-less account, log exclusions, invoker for the API only", "role": "security", "group": "staging", "rank": 4 },
     { "id": "logs", "label": "Platform request logs of both services excluded: their URLs hold coordinates", "role": "security", "group": "staging", "rank": 7 },
     { "id": "api", "label": "saferoute-api (sa-api-runtime): run.invoker + Google ID token, POST /v1/routes (P012b)", "role": "service", "group": "staging", "rank": 7 },
     { "id": "app", "label": "Android app: directions (P012c). It never calls OSRM", "role": "app", "group": "staging", "rank": 8 }
@@ -35,7 +36,8 @@
     { "from": "ci", "to": "smoke" },
     { "from": "image", "to": "smoke" },
     { "from": "image", "to": "measure" },
-    { "from": "image", "to": "registry", "label": "push (manual workflow)" },
+    { "from": "image", "to": "registry", "label": "osrm-staging workflow (manual)" },
+    { "from": "setup", "to": "registry", "label": "first" },
     { "from": "registry", "to": "walking" },
     { "from": "registry", "to": "driving" },
     { "from": "walking", "to": "logs" },
