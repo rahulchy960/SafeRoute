@@ -21,6 +21,8 @@ sealed interface ApiFailure {
         val detail: String,
         val requestId: String?,
         val fieldErrors: List<FieldError> = emptyList(),
+        /** From the `Retry-After` header: whole seconds to wait, when the server says so. */
+        val retryAfterSeconds: Int? = null,
     ) : ApiFailure
 
     /** 401 after the one token refresh and retry: the user has to sign in again. */
@@ -49,7 +51,7 @@ sealed interface ApiResult<out T> {
     data class Failure(val failure: ApiFailure) : ApiResult<Nothing>
 }
 
-/** The error codes the backend defines today (contract 0.3.0). Unknown codes must be tolerated. */
+/** The error codes the backend defines today (contract 0.4.0). Unknown codes must be tolerated. */
 object ProblemCodes {
     const val VALIDATION_ERROR = "validation_error"
     const val UNAUTHORIZED = "unauthorized"
@@ -69,6 +71,8 @@ object ProblemCodes {
     const val DB_NOT_CONFIGURED = "db_not_configured"
     const val AUTH_UNAVAILABLE = "auth_unavailable"
     const val AUTH_NOT_CONFIGURED = "auth_not_configured"
+    const val SEARCH_UNAVAILABLE = "search_unavailable"
+    const val SEARCH_NOT_CONFIGURED = "search_not_configured"
     const val HTTP_ERROR = "http_error"
 }
 

@@ -9,6 +9,7 @@ import com.saferoute.app.core.network.auth.IdTokenProvider
 import com.saferoute.app.core.network.auth.TokenAuthenticator
 import com.saferoute.app.core.network.generated.api.MeApi
 import com.saferoute.app.core.network.generated.api.OperationalApi
+import com.saferoute.app.core.network.generated.api.SearchApi
 import com.saferoute.app.core.network.interceptor.LogcatNetworkLog
 import com.saferoute.app.core.network.interceptor.NetworkLog
 import com.saferoute.app.core.network.interceptor.RequestIdInterceptor
@@ -103,4 +104,8 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideMeApi(retrofit: Retrofit): MeApi = retrofit.create(MeApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideSearchApi(retrofit: Retrofit): SearchApi = retrofit.create(SearchApi::class.java)
 }
