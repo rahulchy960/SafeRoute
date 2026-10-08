@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 package com.saferoute.app.core.map
 
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 
 /*
@@ -141,6 +142,12 @@ interface MapController {
      * move the camera on its own reads this to stay out of the user's way.
      */
     val userGestures: StateFlow<Int>
+
+    /**
+     * Taps on a route's line: the [MapOverlay.Route.id] of the nearest route within
+     * [ROUTE_TAP_TOLERANCE_DP] of the finger. A tap anywhere else reports nothing.
+     */
+    val routeTaps: SharedFlow<String>
 
     fun setPadding(padding: MapPadding)
 

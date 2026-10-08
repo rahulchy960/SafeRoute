@@ -115,6 +115,8 @@ sealed interface DirectionsUiState {
         val destination: SelectedPlace,
         val mode: TravelMode,
         val status: DirectionsStatus,
+        /** Where the route starts: a place the user chose, or null for their own location. */
+        val origin: SelectedPlace? = null,
         val follow: FollowState? = null,
         val startProblem: StartProblem? = null,
     ) : DirectionsUiState
@@ -167,6 +169,26 @@ class DirectionsViewModel @Inject constructor(
     init {
         // Routes belong to one destination: another place, or none, ends them.
         viewModelScope.launch { selection.selected.drop(1).collect { close() } }
+        // "Change" led to search, and a place was chosen there: the routes start from it.
+        viewModelScope.launch {
+            selection.chosenStart.collect { place ->
+                val open = _state.value as? DirectionsUiState.Open ?: return@collect
+                if (open.follow != null) return@collect
+                _state.value = open.copy(origin = place, startProblem = null)
+                load()
+            }
+        }
+        // A route was chosen on the map itself (a tap on its line): the list follows.
+        viewModelScope.launch {
+            display.routes.collect { shown ->
+                val open = _state.value as? DirectionsUiState.Open ?: return@collect
+                val results = open.status as? DirectionsStatus.Results ?: return@collect
+                val id = shown?.selectedId ?: return@collect
+                if (id != results.selectedId && results.routes.any { it.id == id } && open.follow == null) {
+                    _state.value = open.copy(status = results.copy(selectedId = id), startProblem = null)
+                }
+            }
+        }
         // Waiting for a position: the moment one arrives, ask for routes.
         viewModelScope.launch {
             location.state.collect { state ->
@@ -175,7 +197,7 @@ class DirectionsViewModel @Inject constructor(
                 if (open.startProblem != null && state is LocationState.Fix && !state.fix.isApproximate) {
                     _state.value = open.copy(startProblem = null)
                 }
-                if (open.status is DirectionsStatus.NeedsOrigin) {
+                if (open.status is DirectionsStatus.NeedsOrigin && open.origin == null) {
                     if (state.origin() != null) load() else setStatus(DirectionsStatus.NeedsOrigin(state.problem()))
                 }
             }
@@ -230,6 +252,28 @@ class DirectionsViewModel @Inject constructor(
     }
 
     /**
+     * "Change" next to the start of the route: the next place chosen in search becomes the
+     * start. Returns false when this is not the moment (no routes open, or one is followed).
+     */
+    fun onChangeStartClick(): Boolean {
+        val open = _state.value as? DirectionsUiState.Open ?: return false
+        if (open.follow != null) return false
+        selection.choosingStart = true
+        return true
+    }
+
+    /** "Use my location" next to a chosen start: routes start where the user is again. */
+    fun onUseMyLocationAsStart() {
+        val open = _state.value as? DirectionsUiState.Open ?: return
+        if (open.origin == null || open.follow != null) return
+        _state.value = open.copy(origin = null, startProblem = null)
+        load()
+    }
+
+    /** "Preview": a route from a chosen start cannot be followed; show it whole instead. */
+    fun onPreviewClick() = display.refit()
+
+    /**
      * "Start" on the selected route. Following begins only with precise location and a position
      * from the last few seconds; otherwise the screen says what is missing and offers the usual
      * permission flow. Nothing is requested from here.
@@ -237,7 +281,8 @@ class DirectionsViewModel @Inject constructor(
     fun onStartClick() {
         val open = _state.value as? DirectionsUiState.Open ?: return
         val results = open.status as? DirectionsStatus.Results ?: return
-        if (open.follow != null) return
+        // Following starts where the user is; a route from another place can only be looked at.
+        if (open.follow != null || open.origin != null) return
         val route = results.routes.firstOrNull { it.id == results.selectedId } ?: return
         val state = location.state.value
         val fix = (state as? LocationState.Fix)?.fix
@@ -435,7 +480,7 @@ class DirectionsViewModel @Inject constructor(
         val open = _state.value as? DirectionsUiState.Open ?: return
         request?.cancel()
         display.clear()
-        val origin = location.state.value.origin()
+        val origin = open.origin?.position ?: location.state.value.origin()
         if (origin == null) {
             request = null
             setStatus(DirectionsStatus.NeedsOrigin(location.state.value.problem()))

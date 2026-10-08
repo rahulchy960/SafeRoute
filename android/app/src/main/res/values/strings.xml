@@ -366,4 +366,12 @@
     <string name="route_follow_end_title">End navigation?</string>
     <string name="route_follow_end_text">The routes stay on the map. You can start again.</string>
     <string name="route_follow_end_cancel">Cancel</string>
+
+    <!-- A start point of the user's choice (P012c2b). -->
+    <string name="route_from_place">From %1$s</string>
+    <string name="route_change_start">Change start</string>
+    <string name="route_start_from_my_location">Start from my location</string>
+    <string name="route_start_search_hint">Search for a start point</string>
+    <string name="route_preview">Preview</string>
+    <string name="route_preview_note">A route can be followed only from where you are. To follow this one, choose “Start from my location”.</string>
 </resources>

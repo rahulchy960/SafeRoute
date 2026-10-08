@@ -359,4 +359,12 @@
     <string name="route_follow_end_title">পথ অনুসরণ শেষ করবেন?</string>
     <string name="route_follow_end_text">পথগুলি মানচিত্রে থাকবে। আপনি আবার শুরু করতে পারবেন।</string>
     <string name="route_follow_end_cancel">বাতিল</string>
+
+    <!-- নিজের পছন্দের শুরুর জায়গা (P012c2b)। খসড়া অনুবাদ: প্রকাশের আগে একজন মানুষের পর্যালোচনা দরকার। -->
+    <string name="route_from_place">%1$s থেকে</string>
+    <string name="route_change_start">শুরুর জায়গা বদলান</string>
+    <string name="route_start_from_my_location">আমার অবস্থান থেকে শুরু</string>
+    <string name="route_start_search_hint">শুরুর জায়গা খুঁজুন</string>
+    <string name="route_preview">পথটি দেখুন</string>
+    <string name="route_preview_note">আপনি যেখানে আছেন শুধু সেখান থেকেই পথ অনুসরণ করা যায়। এই পথ অনুসরণ করতে “আমার অবস্থান থেকে শুরু” বেছে নিন।</string>
 </resources>

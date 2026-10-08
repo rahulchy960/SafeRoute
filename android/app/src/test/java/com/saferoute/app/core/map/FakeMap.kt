@@ -12,6 +12,7 @@ import dagger.hilt.components.SingletonComponent
 import dagger.hilt.testing.TestInstallIn
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -63,7 +64,13 @@ class FakeMapController(initialCamera: CameraState) : MapController {
     override val loadState = MutableStateFlow<MapLoadState>(MapLoadState.Ready)
     override val camera = MutableStateFlow(initialCamera)
     override val userGestures = MutableStateFlow(0)
+    override val routeTaps = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val paddings = mutableListOf<MapPadding>()
+
+    /** The user taps the line of the route overlay with this id. */
+    fun tapRoute(overlayId: String) {
+        routeTaps.tryEmit(overlayId)
+    }
 
     /** The user pans, zooms or rotates the map to [camera] with their fingers. */
     fun userMoves(camera: CameraState) {

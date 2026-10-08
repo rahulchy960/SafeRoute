@@ -44,6 +44,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -94,6 +95,7 @@ import com.saferoute.app.feature.directions.RouteIntroDialog
 import com.saferoute.app.feature.emergency.ShortcutOfferDialog
 import com.saferoute.app.feature.emergency.ShortcutOfferViewModel
 import kotlin.math.roundToInt
+import kotlinx.coroutines.launch
 
 /**
  * The order in which TalkBack walks the Home screen: search, map controls, emergency, sheet.
@@ -256,6 +258,10 @@ fun HomeRoute(
             onEndConfirm = directionsViewModel::onEndConfirm,
             onRecalculate = directionsViewModel::onRecalculate,
             onPausedNoteDismiss = directionsViewModel::onPausedNoteDismiss,
+            // The next place chosen in search becomes the start of the route.
+            onChangeStart = { if (directionsViewModel.onChangeStartClick()) onOpenSearch() },
+            onUseMyLocationAsStart = directionsViewModel::onUseMyLocationAsStart,
+            onPreview = directionsViewModel::onPreviewClick,
         ),
         recentreOffered = recentreOffered,
         onRecentre = viewModel::onRecentre,
@@ -385,6 +391,15 @@ fun HomeScreen(
             sheetState.animateTo(SheetDetent.Half)
         }
     }
+
+    // "Preview" shows the whole route: the sheet steps down to make room for the map.
+    val scope = rememberCoroutineScope()
+    val sheetActions = directionsActions.copy(
+        onPreview = {
+            directionsActions.onPreview()
+            scope.launch { sheetState.animateTo(SheetDetent.Peek) }
+        },
+    )
 
     val spacing = SafeRouteTheme.spacing
     // Keeps floating controls clear of display cut-outs and the gesture areas at the sides.
@@ -578,7 +593,7 @@ fun HomeScreen(
             when {
                 directions is DirectionsUiState.Open -> DirectionsSheet(
                     state = directions,
-                    actions = directionsActions,
+                    actions = sheetActions,
                     // "Use my location" is the same button as on the map: one permission flow.
                     onUseMyLocation = onMyLocationClick,
                     headerEnd = sheetSos,

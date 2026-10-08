@@ -118,6 +118,7 @@ fun SearchRoute(
         onBack = onBack,
         modifier = modifier,
         onEmergencyClick = { emergencyDialog = EmergencyDialogState.OfferDialer },
+        choosingStart = viewModel.choosingStart,
     )
 
     if (emergencyDialog != EmergencyDialogState.Hidden) {
@@ -152,6 +153,7 @@ fun SearchScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     onEmergencyClick: () -> Unit = {},
+    choosingStart: Boolean = false,
 ) {
     val focusRequester = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
@@ -185,7 +187,10 @@ fun SearchScreen(
                             .weight(1f)
                             .focusRequester(focusRequester)
                             .testTag(SearchTags.Field),
-                        placeholder = { Text(text = stringResource(R.string.search_hint)) },
+                        placeholder = {
+                            // The field says what the choice is for.
+                            Text(text = stringResource(if (choosingStart) R.string.route_start_search_hint else R.string.search_hint))
+                        },
                         trailingIcon = {
                             if (query.isNotEmpty()) {
                                 IconButton(onClick = { onQueryChange("") }) {

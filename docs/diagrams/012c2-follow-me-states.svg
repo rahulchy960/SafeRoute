@@ -1,102 +1,105 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1838" height="1046" viewBox="0 0 1838 1046" font-family="Helvetica, Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" width="1838" height="1169" viewBox="0 0 1838 1169" font-family="Helvetica, Arial, sans-serif">
 <title>Following a route: states</title>
 <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#495057"/></marker></defs>
 <rect width="100%" height="100%" fill="#ffffff"/>
 <text x="40" y="62" font-size="24" font-weight="700" fill="#1e1e1e">Following a route: states</text>
-<text x="40" y="86" font-size="14" fill="#495057">On screen only: no service, no background location. Positions and progress stay in memory; nothing is saved, logged or sent by itself (P012c2a, ADR 0022). Every state inside Following returns to On the route</text>
-<rect x="40" y="114" width="286" height="846" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="40" y="86" font-size="14" fill="#495057">On screen only: no service, no background location. Positions and progress stay in memory; nothing is saved, logged or sent by itself (P012c2a and b, ADR 0022). Every state inside Following returns to On the route</text>
+<rect x="40" y="114" width="286" height="969" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
 <text x="54" y="135" font-size="14" font-weight="700" fill="#495057">Routes shown</text>
-<rect x="362" y="114" width="838" height="846" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<rect x="362" y="114" width="838" height="969" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
 <text x="376" y="135" font-size="14" font-weight="700" fill="#495057">Following (screen kept on)</text>
-<rect x="1236" y="114" width="562" height="846" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<rect x="1236" y="114" width="562" height="969" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
 <text x="1250" y="135" font-size="14" font-weight="700" fill="#495057">Not following (screen may switch off)</text>
-<line x1="183" y1="228" x2="183" y2="288" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
-<line x1="183" y1="354" x2="183" y2="414" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
-<line x1="183" y1="354" x2="781" y2="414" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
-<line x1="781" y1="480" x2="505" y2="540" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
-<line x1="781" y1="480" x2="781" y2="540" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
-<line x1="781" y1="480" x2="1057" y2="540" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
-<line x1="781" y1="627" x2="643" y2="687" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
-<line x1="781" y1="480" x2="919" y2="708" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
-<line x1="919" y1="774" x2="1655" y2="855" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
-<line x1="781" y1="480" x2="1379" y2="865.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
-<rect x="58" y="162" width="250" height="66" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<line x1="183" y1="270" x2="183" y2="390" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="183" y1="477" x2="183" y2="537" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="183" y1="477" x2="781" y2="537" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="781" y1="603" x2="505" y2="663" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="781" y1="603" x2="781" y2="663" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="781" y1="603" x2="1057" y2="663" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="781" y1="750" x2="643" y2="810" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="781" y1="603" x2="919" y2="831" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="919" y1="897" x2="1655" y2="978" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="781" y1="603" x2="1379" y2="988.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="58" y="162" width="250" height="108" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
 <text x="183" font-size="16" fill="#1e1e1e" text-anchor="middle">
-<tspan x="183" y="190.2">Routes in the sheet, one</tspan>
-<tspan x="183" y="211">selected. Start</tspan>
+<tspan x="183" y="190.4">Routes in the sheet, one</tspan>
+<tspan x="183" y="211.2">selected (its card, or a tap on</tspan>
+<tspan x="183" y="232">its line). From a start chosen</tspan>
+<tspan x="183" y="252.8">in search: Preview only</tspan>
 </text>
-<rect x="58" y="288" width="250" height="66" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<rect x="58" y="390" width="250" height="87" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
 <text x="183" font-size="16" fill="#1e1e1e" text-anchor="middle">
-<tspan x="183" y="316.2">Precise permission and a</tspan>
-<tspan x="183" y="337">position from the last 10 s?</tspan>
+<tspan x="183" y="418.3">Start (from the user's location</tspan>
+<tspan x="183" y="439.1">only): precise permission and</tspan>
+<tspan x="183" y="459.9">a position from the last 10 s?</tspan>
 </text>
-<rect x="58" y="414" width="250" height="66" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<rect x="58" y="537" width="250" height="66" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
 <text x="183" font-size="16" fill="#1e1e1e" text-anchor="middle">
-<tspan x="183" y="442.2">Says what is missing; offers</tspan>
-<tspan x="183" y="463">the existing permission flows</tspan>
+<tspan x="183" y="565.2">Says what is missing; offers</tspan>
+<tspan x="183" y="586">the existing permission flows</tspan>
 </text>
-<rect x="656" y="414" width="250" height="66" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<rect x="656" y="537" width="250" height="66" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
 <text x="781" font-size="16" fill="#1e1e1e" text-anchor="middle">
-<tspan x="781" y="442.2">On the route: camera follows,</tspan>
-<tspan x="781" y="463">distance and time left</tspan>
+<tspan x="781" y="565.2">On the route: camera follows,</tspan>
+<tspan x="781" y="586">distance and time left</tspan>
 </text>
-<rect x="380" y="540" width="250" height="87" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<rect x="380" y="663" width="250" height="87" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
 <text x="505" font-size="16" fill="#1e1e1e" text-anchor="middle">
-<tspan x="505" y="568.3">No position for 10 s:</tspan>
-<tspan x="505" y="589.1">Searching for GPS, until a</tspan>
-<tspan x="505" y="609.9">new position</tspan>
+<tspan x="505" y="691.3">No position for 10 s:</tspan>
+<tspan x="505" y="712.1">Searching for GPS, until a</tspan>
+<tspan x="505" y="732.9">new position</tspan>
 </text>
-<rect x="656" y="540" width="250" height="87" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<rect x="656" y="663" width="250" height="87" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
 <text x="781" font-size="16" fill="#1e1e1e" text-anchor="middle">
-<tspan x="781" y="568.3">Over max(50 m, 2 x accuracy)</tspan>
-<tspan x="781" y="589.1">away for 10 s: off the route,</tspan>
-<tspan x="781" y="609.9">until back near the line</tspan>
+<tspan x="781" y="691.3">Over max(50 m, 2 x accuracy)</tspan>
+<tspan x="781" y="712.1">away for 10 s: off the route,</tspan>
+<tspan x="781" y="732.9">until back near the line</tspan>
 </text>
-<rect x="518" y="687" width="250" height="108" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<rect x="518" y="810" width="250" height="108" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
 <text x="643" font-size="16" fill="#1e1e1e" text-anchor="middle">
-<tspan x="643" y="715.4">Recalculate (tap only): one</tspan>
-<tspan x="643" y="736.2">request, 20 s limit. New route:</tspan>
-<tspan x="643" y="757">following goes on. Failed:</tspan>
-<tspan x="643" y="777.8">says why</tspan>
+<tspan x="643" y="838.4">Recalculate (tap only): one</tspan>
+<tspan x="643" y="859.2">request, 20 s limit. New route:</tspan>
+<tspan x="643" y="880">following goes on. Failed:</tspan>
+<tspan x="643" y="900.8">says why</tspan>
 </text>
-<rect x="932" y="540" width="250" height="87" rx="10" fill="#ffd8a8" stroke="#e8590c" stroke-width="2"/>
+<rect x="932" y="663" width="250" height="87" rx="10" fill="#ffd8a8" stroke="#e8590c" stroke-width="2"/>
 <text x="1057" font-size="16" fill="#1e1e1e" text-anchor="middle">
-<tspan x="1057" y="568.3">App off screen: paused, no</tspan>
-<tspan x="1057" y="589.1">positions read. Returning</tspan>
-<tspan x="1057" y="609.9">continues, with a note once</tspan>
+<tspan x="1057" y="691.3">App off screen: paused, no</tspan>
+<tspan x="1057" y="712.1">positions read. Returning</tspan>
+<tspan x="1057" y="732.9">continues, with a note once</tspan>
 </text>
-<rect x="794" y="708" width="250" height="66" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<rect x="794" y="831" width="250" height="66" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
 <text x="919" font-size="16" fill="#1e1e1e" text-anchor="middle">
-<tspan x="919" y="736.2">Back or End: End navigation?</tspan>
-<tspan x="919" y="757">Cancel keeps following</tspan>
+<tspan x="919" y="859.2">Back or End: End navigation?</tspan>
+<tspan x="919" y="880">Cancel keeps following</tspan>
 </text>
-<rect x="1254" y="865.5" width="250" height="66" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<rect x="1254" y="988.5" width="250" height="66" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
 <text x="1379" font-size="16" fill="#1e1e1e" text-anchor="middle">
-<tspan x="1379" y="893.7">Within max(30 m, accuracy) of</tspan>
-<tspan x="1379" y="914.5">the end: You've arrived, Done</tspan>
+<tspan x="1379" y="1016.7">Within max(30 m, accuracy) of</tspan>
+<tspan x="1379" y="1037.5">the end: You've arrived, Done</tspan>
 </text>
-<rect x="1530" y="855" width="250" height="87" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<rect x="1530" y="978" width="250" height="87" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
 <text x="1655" font-size="16" fill="#1e1e1e" text-anchor="middle">
-<tspan x="1655" y="883.3">Back to the routes (also when</tspan>
-<tspan x="1655" y="904.1">the permission or precise</tspan>
-<tspan x="1655" y="924.9">location is lost)</tspan>
+<tspan x="1655" y="1006.3">Back to the routes (also when</tspan>
+<tspan x="1655" y="1027.1">the permission or precise</tspan>
+<tspan x="1655" y="1047.9">location is lost)</tspan>
 </text>
-<rect x="170" y="373" width="26" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
-<text x="183" y="388.5" font-size="13" fill="#1e1e1e" text-anchor="middle">no</text>
-<rect x="465.5" y="373" width="33.1" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
-<text x="482" y="388.5" font-size="13" fill="#1e1e1e" text-anchor="middle">yes</text>
-<rect x="697" y="646" width="29.9" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
-<text x="712" y="661.5" font-size="13" fill="#1e1e1e" text-anchor="middle">tap</text>
-<rect x="1269.6" y="803.5" width="34.9" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
-<text x="1287" y="819" font-size="13" fill="#1e1e1e" text-anchor="middle">End</text>
-<rect x="40" y="981" width="16" height="16" rx="3" fill="#a5d8ff" stroke="#1971c2" stroke-width="1.5"/>
-<text x="62" y="994" font-size="13" fill="#495057">App / UI</text>
-<rect x="134.8" y="981" width="16" height="16" rx="3" fill="#b2f2bb" stroke="#2f9e44" stroke-width="1.5"/>
-<text x="156.8" y="994" font-size="13" fill="#495057">Service</text>
-<rect x="228.3" y="981" width="16" height="16" rx="3" fill="#ffd8a8" stroke="#e8590c" stroke-width="1.5"/>
-<text x="250.3" y="994" font-size="13" fill="#495057">Data</text>
-<rect x="303.1" y="981" width="16" height="16" rx="3" fill="#ffc9c9" stroke="#e03131" stroke-width="1.5"/>
-<text x="325.1" y="994" font-size="13" fill="#495057">Security / emergency</text>
-<rect x="476.7" y="981" width="16" height="16" rx="3" fill="#e9ecef" stroke="#495057" stroke-width="1.5"/>
-<text x="498.7" y="994" font-size="13" fill="#495057">External</text>
+<rect x="170" y="496" width="26" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="183" y="511.5" font-size="13" fill="#1e1e1e" text-anchor="middle">no</text>
+<rect x="465.5" y="496" width="33.1" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="482" y="511.5" font-size="13" fill="#1e1e1e" text-anchor="middle">yes</text>
+<rect x="697" y="769" width="29.9" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="712" y="784.5" font-size="13" fill="#1e1e1e" text-anchor="middle">tap</text>
+<rect x="1269.6" y="926.5" width="34.9" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="1287" y="942" font-size="13" fill="#1e1e1e" text-anchor="middle">End</text>
+<rect x="40" y="1104" width="16" height="16" rx="3" fill="#a5d8ff" stroke="#1971c2" stroke-width="1.5"/>
+<text x="62" y="1117" font-size="13" fill="#495057">App / UI</text>
+<rect x="134.8" y="1104" width="16" height="16" rx="3" fill="#b2f2bb" stroke="#2f9e44" stroke-width="1.5"/>
+<text x="156.8" y="1117" font-size="13" fill="#495057">Service</text>
+<rect x="228.3" y="1104" width="16" height="16" rx="3" fill="#ffd8a8" stroke="#e8590c" stroke-width="1.5"/>
+<text x="250.3" y="1117" font-size="13" fill="#495057">Data</text>
+<rect x="303.1" y="1104" width="16" height="16" rx="3" fill="#ffc9c9" stroke="#e03131" stroke-width="1.5"/>
+<text x="325.1" y="1117" font-size="13" fill="#495057">Security / emergency</text>
+<rect x="476.7" y="1104" width="16" height="16" rx="3" fill="#e9ecef" stroke="#495057" stroke-width="1.5"/>
+<text x="498.7" y="1117" font-size="13" fill="#495057">External</text>
 </svg>

@@ -3,8 +3,11 @@ package com.saferoute.app.core.map
 
 import dagger.hilt.android.scopes.ActivityRetainedScoped
 import javax.inject.Inject
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
@@ -44,6 +47,29 @@ class MapSelection @Inject constructor() {
      */
     @Volatile
     var viewCentre: LatLng? = null
+
+    /**
+     * True while the next place chosen in search is meant as the **start** of a route, not as
+     * the place to show. Directions sets it before opening search; it is over once a place was
+     * chosen or search was left.
+     */
+    @Volatile
+    var choosingStart: Boolean = false
+
+    private val _chosenStart = MutableSharedFlow<SelectedPlace>(extraBufferCapacity = 1)
+
+    /** Places chosen as the start of a route. Like every place: memory only. */
+    val chosenStart: SharedFlow<SelectedPlace> = _chosenStart.asSharedFlow()
+
+    /** A place was picked in search: the start of a route if that was asked for, else the place to show. */
+    fun choose(place: SelectedPlace) {
+        if (choosingStart) {
+            choosingStart = false
+            _chosenStart.tryEmit(place)
+        } else {
+            select(place)
+        }
+    }
 
     fun select(place: SelectedPlace) {
         _selected.value = place

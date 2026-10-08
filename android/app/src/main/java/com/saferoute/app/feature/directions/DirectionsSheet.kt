@@ -2,6 +2,7 @@
 package com.saferoute.app.feature.directions
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,6 +10,8 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -27,6 +30,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
@@ -70,6 +75,9 @@ data class DirectionsActions(
     val onEndConfirm: () -> Unit = {},
     val onRecalculate: () -> Unit = {},
     val onPausedNoteDismiss: () -> Unit = {},
+    val onChangeStart: () -> Unit = {},
+    val onUseMyLocationAsStart: () -> Unit = {},
+    val onPreview: () -> Unit = {},
 )
 
 /**
@@ -106,11 +114,7 @@ fun DirectionsSheet(
                     modifier = Modifier.semantics { heading() },
                     style = MaterialTheme.typography.titleLarge,
                 )
-                Text(
-                    text = stringResource(R.string.route_from_my_location),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                StartPointLine(origin = state.origin, onChange = actions.onChangeStart.takeIf { !following })
             }
             // IconButton is 48 dp, the minimum touch target.
             if (!following) {
@@ -132,7 +136,7 @@ fun DirectionsSheet(
                     text = stringResource(if (status.starting) R.string.route_starting else R.string.route_loading),
                 )
                 is DirectionsStatus.Results -> {
-                    StartRow(state.startProblem, actions, onUseMyLocation)
+                    StartRow(state.startProblem, state.origin != null, actions, onUseMyLocation)
                     RouteList(status, actions.onRouteSelect)
                 }
                 is DirectionsStatus.NeedsOrigin -> NeedsOrigin(status.problem, onUseMyLocation)
@@ -175,11 +179,63 @@ private fun ModeToggle(mode: TravelMode, onModeChange: (TravelMode) -> Unit) {
 }
 
 /**
+ * Where the route starts, and the way to change it: one row, as tall as a touch target, that
+ * says "Change start" in words. While a route is followed it is plain text.
+ */
+@Composable
+private fun StartPointLine(origin: SelectedPlace?, onChange: (() -> Unit)?) {
+    val from = origin?.let { stringResource(R.string.route_from_place, it.name) }
+        ?: stringResource(R.string.route_from_my_location)
+    if (onChange == null) {
+        Text(text = from, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        return
+    }
+    Row(
+        modifier = Modifier
+            .defaultMinSize(minHeight = MinTouchTarget)
+            .clickable(role = Role.Button, onClick = onChange),
+        horizontalArrangement = Arrangement.spacedBy(SafeRouteTheme.spacing.sm),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = from,
+            modifier = Modifier.weight(1f, fill = false),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = stringResource(R.string.route_change_start),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+        )
+    }
+}
+
+/**
  * "Start" for the selected route and, when following could not begin, the reason with the way
  * out: the usual permission flow, or the request for precise location.
  */
 @Composable
-private fun StartRow(problem: StartProblem?, actions: DirectionsActions, onUseMyLocation: () -> Unit) {
+private fun StartRow(
+    problem: StartProblem?,
+    startChosen: Boolean,
+    actions: DirectionsActions,
+    onUseMyLocation: () -> Unit,
+) {
+    // A route from a place the user chose cannot be followed: they are not there. It can be
+    // looked at, and the sentence says how to follow one.
+    if (startChosen) {
+        FilledTonalButton(onClick = actions.onPreview) { Text(text = stringResource(R.string.route_preview)) }
+        Text(
+            text = stringResource(R.string.route_preview_note),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        TextButton(onClick = actions.onUseMyLocationAsStart) {
+            Text(text = stringResource(R.string.route_start_from_my_location))
+        }
+        return
+    }
     Button(onClick = actions.onStart) { Text(text = stringResource(R.string.route_start)) }
     when (problem) {
         StartProblem.NoPermission -> Message(
@@ -220,8 +276,12 @@ private fun RouteList(results: DirectionsStatus.Results, onSelect: (String) -> U
     ) {
         results.routes.forEachIndexed { index, route ->
             val selected = route.id == results.selectedId
+            // A route chosen on the map may be a card that is scrolled out of sight: bring it in.
+            val intoView = remember { BringIntoViewRequester() }
+            LaunchedEffect(selected) { if (selected) intoView.bringIntoView() }
             Surface(
                 modifier = Modifier
+                    .bringIntoViewRequester(intoView)
                     .fillMaxWidth()
                     .defaultMinSize(minHeight = MinTouchTarget)
                     .testTag(RouteCardTag)
