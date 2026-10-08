@@ -59,6 +59,35 @@
 >   maker's battery manager can remove it; it needs the notification permission on Android 13
 >   and newer; after a force-stop nothing of the app runs until the user opens it. It will be
 >   posted without a foreground service.
+> - **Built in P012f2 (2026-10-08): the pinned notification, as an option.**
+>   - **Off until the user turns it on** in Settings ("Emergency shortcut in notifications"),
+>     or follows a one-time offer shown after the first use of the in-app SOS control. Never
+>     at launch, never in onboarding.
+>   - **What it is:** one silent notification (low importance, no sound, vibration or badge)
+>     with fixed text, shown in full on the lock screen. "Call 112" opens the dialer with
+>     `ACTION_DIAL` and `tel:112`; "Open SOS" and a tap open `EmergencyActivity` through
+>     `EmergencyShortcut`, the same destination as the tile. Nothing about the user is in it.
+>   - **No foreground service.** Nothing of the app runs to keep it there.
+>   - **One rule: shown if, and only if, the switch is on and Android allows it**
+>     (`EmergencyNotificationController.sync`). The rule is applied when the app opens, after
+>     `BOOT_COMPLETED` and `MY_PACKAGE_REPLACED` (one unexported receiver that starts nothing),
+>     and whenever the switch changes.
+>   - **Permission, in context.** `POST_NOTIFICATIONS` is requested only after the switch was
+>     turned on and the app's own explanation was continued; one system dialog per tap. A
+>     refusal, a refusal for good, notifications off for the app and the category switched
+>     off each have their own words; system settings are offered where they can help.
+>   - **The limits are said in the app** (Settings and the explanation, English and Bengali):
+>     it can be swiped away; the phone or a battery manager can remove it; the app puts it
+>     back when it is opened, after a restart and after an update; the tile is the dependable
+>     shortcut. A user who swipes it away keeps the switch on.
+>   - **Stored:** the switch and an "offer shown" flag, in the app's one DataStore file.
+>     Signing out clears that file, so it also turns the shortcut off and removes the
+>     notification.
+>   - **Permissions added:** `POST_NOTIFICATIONS` and `RECEIVE_BOOT_COMPLETED`. No
+>     foreground-service, full-screen-intent, overlay or call permission.
+>   - **Not verified on a device:** what phone makers' battery managers do to it, whether the
+>     dialer opens from the lock screen without the unlock, and that the two broadcasts arrive
+>     on every phone.
 > - **Colour.** A tile's icon is tinted by the system, so the tile is not red. The `sos` red
 >   is still used only by the SOS control and the emergency dialog.
 

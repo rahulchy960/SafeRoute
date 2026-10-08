@@ -259,19 +259,33 @@ class EmergencyShortcutsManifestTest {
     }
 
     @Test
-    fun `no foreground service, no receiver and no new permission came with the tile`() {
-        // The tile is the only service, and it is not a foreground service.
+    fun `no foreground service is declared, and the shortcuts ask for two permissions only`() {
+        // The tile is the only service, and it is not a foreground service: the pinned
+        // notification is an ordinary notification with nothing running behind it.
         val services = elements("service")
         assertEquals(1, services.size)
         services.forEach { assertEquals("", it.attr("foregroundServiceType")) }
-        assertTrue(elements("receiver").isEmpty())
 
         val asked = elements("uses-permission").map { it.attr("name") }
-        for (forbidden in listOf("FOREGROUND_SERVICE", "POST_NOTIFICATIONS", "RECEIVE_BOOT_COMPLETED", "CALL_PHONE")) {
+        assertTrue("android.permission.POST_NOTIFICATIONS" in asked)
+        assertTrue("android.permission.RECEIVE_BOOT_COMPLETED" in asked)
+        for (forbidden in listOf("FOREGROUND_SERVICE", "CALL_PHONE", "USE_FULL_SCREEN_INTENT", "SYSTEM_ALERT_WINDOW", "WAKE_LOCK", "BACKGROUND")) {
             assertTrue("$forbidden is not asked for", asked.none { it.contains(forbidden) })
         }
         // BIND_QUICK_SETTINGS_TILE is required OF the system by the service; the app does not
         // ask for it.
         assertTrue(asked.none { it.contains("BIND_QUICK_SETTINGS_TILE") })
+    }
+
+    @Test
+    fun `one receiver, not exported, for a restart and an update of this app only`() {
+        val receiver = elements("receiver").single()
+        assertTrue(receiver.attr("name").endsWith("EmergencyShortcutReceiver"))
+        assertEquals("false", receiver.attr("exported"))
+        val actions = receiver.getElementsByTagName("action")
+        assertEquals(
+            setOf("android.intent.action.BOOT_COMPLETED", "android.intent.action.MY_PACKAGE_REPLACED"),
+            List(actions.length) { (actions.item(it) as Element).attr("name") }.toSet(),
+        )
     }
 }

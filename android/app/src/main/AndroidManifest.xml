@@ -23,6 +23,18 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
     <!--
+        The pinned emergency notification (P012f2), an optional shortcut the user switches on.
+        POST_NOTIFICATIONS: from Android 13 a "dangerous" permission. Declaring it only makes
+        it possible to ASK; the app asks only after the user turned the shortcut on in
+        Settings and read the app's own explanation. Older versions need no request.
+        RECEIVE_BOOT_COMPLETED: a "normal" permission (no dialog). It lets Android tell the app
+        that the phone has restarted, so the notification can be put back, and only if the
+        user's switch is on. Nothing else runs at boot, and no service is started.
+    -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!--
         The map library (MapLibre, P010a) declares this one in its own manifest, and Android
         merges library manifests into the app's. The app does not need it, so it is taken out
         again. tools:node="remove" means "leave this out of the merged manifest".
@@ -114,6 +126,22 @@
                 android:name="android.service.quicksettings.ACTIVE_TILE"
                 android:value="true" />
         </service>
+
+        <!--
+            Puts the pinned emergency notification back after a restart of the phone and after
+            an update of the app (both remove notifications), and only if the user's switch is
+            on and notifications are allowed (P012f2).
+            exported=false: only the system delivers these two broadcasts; no other app can
+            reach the receiver. It starts no activity and no service.
+        -->
+        <receiver
+            android:name=".feature.emergency.EmergencyShortcutReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

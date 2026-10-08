@@ -44,7 +44,7 @@
       "type": "text",
       "x": 40,
       "y": 72,
-      "width": 933.2,
+      "width": 1008.8,
       "height": 18,
       "angle": 0,
       "strokeColor": "#495057",
@@ -65,8 +65,8 @@
       "updated": 1,
       "link": null,
       "locked": false,
-      "text": "Every entry opens the same options: a dialog that offers the dialer with 112. Nothing is dialled automatically. Grey: not built yet (P012f1, ADR 0008)",
-      "originalText": "Every entry opens the same options: a dialog that offers the dialer with 112. Nothing is dialled automatically. Grey: not built yet (P012f1, ADR 0008)",
+      "text": "Every entry opens the same options: a dialog that offers the dialer with 112. Nothing is dialled automatically. Grey: not built yet (P012f1 and P012f2, ADR 0008)",
+      "originalText": "Every entry opens the same options: a dialog that offers the dialer with 112. Nothing is dialled automatically. Grey: not built yet (P012f1 and P012f2, ADR 0008)",
       "fontSize": 14,
       "fontFamily": 2,
       "textAlign": "left",
@@ -81,7 +81,7 @@
       "x": 40,
       "y": 114,
       "width": 266,
-      "height": 951,
+      "height": 992,
       "angle": 0,
       "strokeColor": "#868e96",
       "backgroundColor": "#f8f9fa",
@@ -146,7 +146,7 @@
       "x": 342,
       "y": 114,
       "width": 522,
-      "height": 951,
+      "height": 992,
       "angle": 0,
       "strokeColor": "#868e96",
       "backgroundColor": "#f8f9fa",
@@ -211,7 +211,7 @@
       "x": 900,
       "y": 114,
       "width": 522,
-      "height": 951,
+      "height": 992,
       "angle": 0,
       "strokeColor": "#868e96",
       "backgroundColor": "#f8f9fa",
@@ -274,7 +274,7 @@
       "id": "node-control",
       "type": "rectangle",
       "x": 58,
-      "y": 655.5,
+      "y": 696.5,
       "width": 230,
       "height": 66,
       "angle": 0,
@@ -312,7 +312,7 @@
       "id": "node-control-text",
       "type": "text",
       "x": 72,
-      "y": 668.5,
+      "y": 709.5,
       "width": 202,
       "height": 40,
       "angle": 0,
@@ -348,7 +348,7 @@
       "id": "node-tile",
       "type": "rectangle",
       "x": 360,
-      "y": 172.5,
+      "y": 193,
       "width": 230,
       "height": 87,
       "angle": 0,
@@ -379,7 +379,7 @@
         },
         {
           "type": "arrow",
-          "id": "edge-4-addtile-tile"
+          "id": "edge-3-addtile-tile"
         }
       ],
       "updated": 1,
@@ -390,7 +390,7 @@
       "id": "node-tile-text",
       "type": "text",
       "x": 374,
-      "y": 186,
+      "y": 206.5,
       "width": 202,
       "height": 60,
       "angle": 0,
@@ -426,12 +426,12 @@
       "id": "node-notification",
       "type": "rectangle",
       "x": 616,
-      "y": 183,
+      "y": 162,
       "width": 230,
-      "height": 66,
+      "height": 149,
       "angle": 0,
-      "strokeColor": "#495057",
-      "backgroundColor": "#e9ecef",
+      "strokeColor": "#e03131",
+      "backgroundColor": "#ffc9c9",
       "fillStyle": "solid",
       "strokeWidth": 2,
       "strokeStyle": "solid",
@@ -453,7 +453,11 @@
         },
         {
           "type": "arrow",
-          "id": "edge-3-notification-shortcut"
+          "id": "edge-8-notification-shortcut"
+        },
+        {
+          "type": "arrow",
+          "id": "edge-9-notification-dialer"
         }
       ],
       "updated": 1,
@@ -464,9 +468,9 @@
       "id": "node-notification-text",
       "type": "text",
       "x": 630,
-      "y": 196,
+      "y": 176.5,
       "width": 202,
-      "height": 40,
+      "height": 120,
       "angle": 0,
       "strokeColor": "#1e1e1e",
       "backgroundColor": "transparent",
@@ -486,8 +490,8 @@
       "updated": 1,
       "link": null,
       "locked": false,
-      "text": "Pinned notification, opt-in\n(P012f2, not built)",
-      "originalText": "Pinned notification, opt-in (P012f2, not built)",
+      "text": "Pinned notification, opt-in\n(a switch in Settings):\nsilent, fixed text, no\nforeground service. Put\nback at app open, after a\nrestart and an update",
+      "originalText": "Pinned notification, opt-in (a switch in Settings): silent, fixed text, no foreground service. Put back at app open, after a restart and an update",
       "fontSize": 16,
       "fontFamily": 2,
       "textAlign": "center",
@@ -500,7 +504,7 @@
       "id": "node-addtile",
       "type": "rectangle",
       "x": 58,
-      "y": 162,
+      "y": 182.5,
       "width": 230,
       "height": 108,
       "angle": 0,
@@ -527,7 +531,7 @@
         },
         {
           "type": "arrow",
-          "id": "edge-4-addtile-tile"
+          "id": "edge-3-addtile-tile"
         }
       ],
       "updated": 1,
@@ -538,7 +542,7 @@
       "id": "node-addtile-text",
       "type": "text",
       "x": 72,
-      "y": 176,
+      "y": 196.5,
       "width": 202,
       "height": 80,
       "angle": 0,
@@ -560,8 +564,8 @@
       "updated": 1,
       "link": null,
       "locked": false,
-      "text": "Settings: Add the SOS tile.\nAndroid 13+: system\nrequest; otherwise four\nsteps by hand",
-      "originalText": "Settings: Add the SOS tile. Android 13+: system request; otherwise four steps by hand",
+      "text": "Settings: Add the SOS tile\n(Android 13+: system\nrequest; otherwise four\nsteps by hand)",
+      "originalText": "Settings: Add the SOS tile (Android 13+: system request; otherwise four steps by hand)",
       "fontSize": 16,
       "fontFamily": 2,
       "textAlign": "center",
@@ -574,7 +578,7 @@
       "id": "node-lock",
       "type": "rectangle",
       "x": 360,
-      "y": 330,
+      "y": 371,
       "width": 230,
       "height": 108,
       "angle": 0,
@@ -616,7 +620,7 @@
       "id": "node-lock-text",
       "type": "text",
       "x": 374,
-      "y": 344,
+      "y": 385,
       "width": 202,
       "height": 80,
       "angle": 0,
@@ -652,7 +656,7 @@
       "id": "node-shortcut",
       "type": "rectangle",
       "x": 1046,
-      "y": 498,
+      "y": 539,
       "width": 230,
       "height": 87,
       "angle": 0,
@@ -683,11 +687,11 @@
         },
         {
           "type": "arrow",
-          "id": "edge-3-notification-shortcut"
+          "id": "edge-4-shortcut-activity"
         },
         {
           "type": "arrow",
-          "id": "edge-5-shortcut-activity"
+          "id": "edge-8-notification-shortcut"
         }
       ],
       "updated": 1,
@@ -698,7 +702,7 @@
       "id": "node-shortcut-text",
       "type": "text",
       "x": 1060,
-      "y": 511.5,
+      "y": 552.5,
       "width": 202,
       "height": 60,
       "angle": 0,
@@ -734,7 +738,7 @@
       "id": "node-activity",
       "type": "rectangle",
       "x": 1046,
-      "y": 645,
+      "y": 686,
       "width": 230,
       "height": 87,
       "angle": 0,
@@ -761,11 +765,11 @@
         },
         {
           "type": "arrow",
-          "id": "edge-5-shortcut-activity"
+          "id": "edge-4-shortcut-activity"
         },
         {
           "type": "arrow",
-          "id": "edge-6-activity-dialog"
+          "id": "edge-5-activity-dialog"
         }
       ],
       "updated": 1,
@@ -776,7 +780,7 @@
       "id": "node-activity-text",
       "type": "text",
       "x": 1060,
-      "y": 658.5,
+      "y": 699.5,
       "width": 202,
       "height": 60,
       "angle": 0,
@@ -812,7 +816,7 @@
       "id": "node-dialog",
       "type": "rectangle",
       "x": 1046,
-      "y": 792,
+      "y": 833,
       "width": 230,
       "height": 108,
       "angle": 0,
@@ -843,15 +847,15 @@
         },
         {
           "type": "arrow",
-          "id": "edge-6-activity-dialog"
+          "id": "edge-5-activity-dialog"
         },
         {
           "type": "arrow",
-          "id": "edge-7-dialog-dialer"
+          "id": "edge-6-dialog-dialer"
         },
         {
           "type": "arrow",
-          "id": "edge-8-dialog-countdown"
+          "id": "edge-7-dialog-countdown"
         }
       ],
       "updated": 1,
@@ -862,7 +866,7 @@
       "id": "node-dialog-text",
       "type": "text",
       "x": 1060,
-      "y": 806,
+      "y": 847,
       "width": 202,
       "height": 80,
       "angle": 0,
@@ -898,7 +902,7 @@
       "id": "node-dialer",
       "type": "rectangle",
       "x": 918,
-      "y": 960,
+      "y": 1001,
       "width": 230,
       "height": 87,
       "angle": 0,
@@ -925,7 +929,11 @@
         },
         {
           "type": "arrow",
-          "id": "edge-7-dialog-dialer"
+          "id": "edge-6-dialog-dialer"
+        },
+        {
+          "type": "arrow",
+          "id": "edge-9-notification-dialer"
         }
       ],
       "updated": 1,
@@ -936,7 +944,7 @@
       "id": "node-dialer-text",
       "type": "text",
       "x": 932,
-      "y": 973.5,
+      "y": 1014.5,
       "width": 202,
       "height": 60,
       "angle": 0,
@@ -972,7 +980,7 @@
       "id": "node-countdown",
       "type": "rectangle",
       "x": 1174,
-      "y": 960,
+      "y": 1001,
       "width": 230,
       "height": 87,
       "angle": 0,
@@ -999,7 +1007,7 @@
         },
         {
           "type": "arrow",
-          "id": "edge-8-dialog-countdown"
+          "id": "edge-7-dialog-countdown"
         }
       ],
       "updated": 1,
@@ -1010,7 +1018,7 @@
       "id": "node-countdown-text",
       "type": "text",
       "x": 1188,
-      "y": 973.5,
+      "y": 1014.5,
       "width": 202,
       "height": 60,
       "angle": 0,
@@ -1046,7 +1054,7 @@
       "id": "edge-0-control-dialog",
       "type": "arrow",
       "x": 173,
-      "y": 721.5,
+      "y": 762.5,
       "width": 988,
       "height": 70.5,
       "angle": 0,
@@ -1104,7 +1112,7 @@
       "id": "edge-0-control-dialog-label",
       "type": "text",
       "x": 657.3,
-      "y": 747.8,
+      "y": 788.8,
       "width": 19.3,
       "height": 18,
       "angle": 0,
@@ -1140,9 +1148,9 @@
       "id": "edge-1-tile-lock",
       "type": "arrow",
       "x": 475,
-      "y": 259.5,
+      "y": 280,
       "width": 0,
-      "height": 70.5,
+      "height": 91,
       "angle": 0,
       "strokeColor": "#495057",
       "backgroundColor": "transparent",
@@ -1171,7 +1179,7 @@
         ],
         [
           0,
-          70.5
+          91
         ]
       ],
       "lastCommittedPoint": null,
@@ -1193,7 +1201,7 @@
       "id": "edge-2-lock-shortcut",
       "type": "arrow",
       "x": 475,
-      "y": 438,
+      "y": 479,
       "width": 686,
       "height": 60,
       "angle": 0,
@@ -1251,7 +1259,7 @@
       "id": "edge-2-lock-shortcut-label",
       "type": "text",
       "x": 808.3,
-      "y": 459,
+      "y": 500,
       "width": 19.3,
       "height": 18,
       "angle": 0,
@@ -1284,104 +1292,10 @@
       "autoResize": true
     },
     {
-      "id": "edge-3-notification-shortcut",
-      "type": "arrow",
-      "x": 731,
-      "y": 249,
-      "width": 430,
-      "height": 249,
-      "angle": 0,
-      "strokeColor": "#495057",
-      "backgroundColor": "transparent",
-      "fillStyle": "solid",
-      "strokeWidth": 2,
-      "strokeStyle": "solid",
-      "roughness": 0,
-      "opacity": 100,
-      "groupIds": [],
-      "frameId": null,
-      "roundness": {
-        "type": 2
-      },
-      "seed": 1852740541,
-      "version": 1,
-      "versionNonce": 807665814,
-      "isDeleted": false,
-      "boundElements": [
-        {
-          "type": "text",
-          "id": "edge-3-notification-shortcut-label"
-        }
-      ],
-      "updated": 1,
-      "link": null,
-      "locked": false,
-      "points": [
-        [
-          0,
-          0
-        ],
-        [
-          430,
-          249
-        ]
-      ],
-      "lastCommittedPoint": null,
-      "startBinding": {
-        "elementId": "node-notification",
-        "focus": 0,
-        "gap": 1
-      },
-      "endBinding": {
-        "elementId": "node-shortcut",
-        "focus": 0,
-        "gap": 1
-      },
-      "startArrowhead": null,
-      "endArrowhead": "arrow",
-      "elbowed": false
-    },
-    {
-      "id": "edge-3-notification-shortcut-label",
-      "type": "text",
-      "x": 931.7,
-      "y": 364.5,
-      "width": 28.6,
-      "height": 18,
-      "angle": 0,
-      "strokeColor": "#1e1e1e",
-      "backgroundColor": "transparent",
-      "fillStyle": "solid",
-      "strokeWidth": 2,
-      "strokeStyle": "solid",
-      "roughness": 0,
-      "opacity": 100,
-      "groupIds": [],
-      "frameId": null,
-      "roundness": null,
-      "seed": 416747342,
-      "version": 1,
-      "versionNonce": 128229695,
-      "isDeleted": false,
-      "boundElements": null,
-      "updated": 1,
-      "link": null,
-      "locked": false,
-      "text": "later",
-      "originalText": "later",
-      "fontSize": 14,
-      "fontFamily": 2,
-      "textAlign": "center",
-      "verticalAlign": "middle",
-      "containerId": "edge-3-notification-shortcut",
-      "lineHeight": 1.25,
-      "autoResize": true
-    },
-    {
-      "id": "edge-4-addtile-tile",
+      "id": "edge-3-addtile-tile",
       "type": "arrow",
       "x": 288,
-      "y": 216,
+      "y": 236.5,
       "width": 72,
       "height": 0,
       "angle": 0,
@@ -1397,14 +1311,14 @@
       "roundness": {
         "type": 2
       },
-      "seed": 655462978,
+      "seed": 1334326830,
       "version": 1,
-      "versionNonce": 921817507,
+      "versionNonce": 1611743813,
       "isDeleted": false,
       "boundElements": [
         {
           "type": "text",
-          "id": "edge-4-addtile-tile-label"
+          "id": "edge-3-addtile-tile-label"
         }
       ],
       "updated": 1,
@@ -1436,10 +1350,10 @@
       "elbowed": false
     },
     {
-      "id": "edge-4-addtile-tile-label",
+      "id": "edge-3-addtile-tile-label",
       "type": "text",
       "x": 308.9,
-      "y": 207,
+      "y": 227.5,
       "width": 30.2,
       "height": 18,
       "angle": 0,
@@ -1453,9 +1367,9 @@
       "groupIds": [],
       "frameId": null,
       "roundness": null,
-      "seed": 744225286,
+      "seed": 1994286911,
       "version": 1,
-      "versionNonce": 2065638349,
+      "versionNonce": 15454702,
       "isDeleted": false,
       "boundElements": null,
       "updated": 1,
@@ -1467,15 +1381,15 @@
       "fontFamily": 2,
       "textAlign": "center",
       "verticalAlign": "middle",
-      "containerId": "edge-4-addtile-tile",
+      "containerId": "edge-3-addtile-tile",
       "lineHeight": 1.25,
       "autoResize": true
     },
     {
-      "id": "edge-5-shortcut-activity",
+      "id": "edge-4-shortcut-activity",
       "type": "arrow",
       "x": 1161,
-      "y": 585,
+      "y": 626,
       "width": 0,
       "height": 60,
       "angle": 0,
@@ -1491,9 +1405,9 @@
       "roundness": {
         "type": 2
       },
-      "seed": 897863792,
+      "seed": 1282777645,
       "version": 1,
-      "versionNonce": 1295703739,
+      "versionNonce": 635664561,
       "isDeleted": false,
       "boundElements": null,
       "updated": 1,
@@ -1525,10 +1439,10 @@
       "elbowed": false
     },
     {
-      "id": "edge-6-activity-dialog",
+      "id": "edge-5-activity-dialog",
       "type": "arrow",
       "x": 1161,
-      "y": 732,
+      "y": 773,
       "width": 0,
       "height": 60,
       "angle": 0,
@@ -1544,9 +1458,9 @@
       "roundness": {
         "type": 2
       },
-      "seed": 1621164322,
+      "seed": 878890263,
       "version": 1,
-      "versionNonce": 449513219,
+      "versionNonce": 22589652,
       "isDeleted": false,
       "boundElements": null,
       "updated": 1,
@@ -1578,10 +1492,10 @@
       "elbowed": false
     },
     {
-      "id": "edge-7-dialog-dialer",
+      "id": "edge-6-dialog-dialer",
       "type": "arrow",
       "x": 1161,
-      "y": 900,
+      "y": 941,
       "width": 128,
       "height": 60,
       "angle": 0,
@@ -1597,14 +1511,14 @@
       "roundness": {
         "type": 2
       },
-      "seed": 1648131488,
+      "seed": 982896820,
       "version": 1,
-      "versionNonce": 907823467,
+      "versionNonce": 880058312,
       "isDeleted": false,
       "boundElements": [
         {
           "type": "text",
-          "id": "edge-7-dialog-dialer-label"
+          "id": "edge-6-dialog-dialer-label"
         }
       ],
       "updated": 1,
@@ -1636,10 +1550,10 @@
       "elbowed": false
     },
     {
-      "id": "edge-7-dialog-dialer-label",
+      "id": "edge-6-dialog-dialer-label",
       "type": "text",
       "x": 1070.5,
-      "y": 921,
+      "y": 962,
       "width": 52.9,
       "height": 18,
       "angle": 0,
@@ -1653,9 +1567,9 @@
       "groupIds": [],
       "frameId": null,
       "roundness": null,
-      "seed": 581625436,
+      "seed": 1572580563,
       "version": 1,
-      "versionNonce": 1730348192,
+      "versionNonce": 300982959,
       "isDeleted": false,
       "boundElements": null,
       "updated": 1,
@@ -1667,15 +1581,15 @@
       "fontFamily": 2,
       "textAlign": "center",
       "verticalAlign": "middle",
-      "containerId": "edge-7-dialog-dialer",
+      "containerId": "edge-6-dialog-dialer",
       "lineHeight": 1.25,
       "autoResize": true
     },
     {
-      "id": "edge-8-dialog-countdown",
+      "id": "edge-7-dialog-countdown",
       "type": "arrow",
       "x": 1161,
-      "y": 900,
+      "y": 941,
       "width": 128,
       "height": 60,
       "angle": 0,
@@ -1691,14 +1605,14 @@
       "roundness": {
         "type": 2
       },
-      "seed": 1345341186,
+      "seed": 1777313765,
       "version": 1,
-      "versionNonce": 710205410,
+      "versionNonce": 1256366126,
       "isDeleted": false,
       "boundElements": [
         {
           "type": "text",
-          "id": "edge-8-dialog-countdown-label"
+          "id": "edge-7-dialog-countdown-label"
         }
       ],
       "updated": 1,
@@ -1730,10 +1644,10 @@
       "elbowed": false
     },
     {
-      "id": "edge-8-dialog-countdown-label",
+      "id": "edge-7-dialog-countdown-label",
       "type": "text",
       "x": 1171.4,
-      "y": 921,
+      "y": 962,
       "width": 107.2,
       "height": 18,
       "angle": 0,
@@ -1747,9 +1661,9 @@
       "groupIds": [],
       "frameId": null,
       "roundness": null,
-      "seed": 1471732038,
+      "seed": 1664962343,
       "version": 1,
-      "versionNonce": 1497916046,
+      "versionNonce": 98453863,
       "isDeleted": false,
       "boundElements": null,
       "updated": 1,
@@ -1761,7 +1675,195 @@
       "fontFamily": 2,
       "textAlign": "center",
       "verticalAlign": "middle",
-      "containerId": "edge-8-dialog-countdown",
+      "containerId": "edge-7-dialog-countdown",
+      "lineHeight": 1.25,
+      "autoResize": true
+    },
+    {
+      "id": "edge-8-notification-shortcut",
+      "type": "arrow",
+      "x": 731,
+      "y": 311,
+      "width": 430,
+      "height": 228,
+      "angle": 0,
+      "strokeColor": "#495057",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 0,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "roundness": {
+        "type": 2
+      },
+      "seed": 691508876,
+      "version": 1,
+      "versionNonce": 799289360,
+      "isDeleted": false,
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "edge-8-notification-shortcut-label"
+        }
+      ],
+      "updated": 1,
+      "link": null,
+      "locked": false,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          430,
+          228
+        ]
+      ],
+      "lastCommittedPoint": null,
+      "startBinding": {
+        "elementId": "node-notification",
+        "focus": 0,
+        "gap": 1
+      },
+      "endBinding": {
+        "elementId": "node-shortcut",
+        "focus": 0,
+        "gap": 1
+      },
+      "startArrowhead": null,
+      "endArrowhead": "arrow",
+      "elbowed": false
+    },
+    {
+      "id": "edge-8-notification-shortcut-label",
+      "type": "text",
+      "x": 885.9,
+      "y": 416,
+      "width": 120.1,
+      "height": 18,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 0,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "roundness": null,
+      "seed": 922279420,
+      "version": 1,
+      "versionNonce": 1738249319,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 1,
+      "link": null,
+      "locked": false,
+      "text": "Open SOS, or a tap",
+      "originalText": "Open SOS, or a tap",
+      "fontSize": 14,
+      "fontFamily": 2,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "containerId": "edge-8-notification-shortcut",
+      "lineHeight": 1.25,
+      "autoResize": true
+    },
+    {
+      "id": "edge-9-notification-dialer",
+      "type": "arrow",
+      "x": 731,
+      "y": 311,
+      "width": 302,
+      "height": 690,
+      "angle": 0,
+      "strokeColor": "#495057",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 0,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "roundness": {
+        "type": 2
+      },
+      "seed": 1433202665,
+      "version": 1,
+      "versionNonce": 762770125,
+      "isDeleted": false,
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "edge-9-notification-dialer-label"
+        }
+      ],
+      "updated": 1,
+      "link": null,
+      "locked": false,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          302,
+          690
+        ]
+      ],
+      "lastCommittedPoint": null,
+      "startBinding": {
+        "elementId": "node-notification",
+        "focus": 0,
+        "gap": 1
+      },
+      "endBinding": {
+        "elementId": "node-dialer",
+        "focus": 0,
+        "gap": 1
+      },
+      "startArrowhead": null,
+      "endArrowhead": "arrow",
+      "elbowed": false
+    },
+    {
+      "id": "edge-9-notification-dialer-label",
+      "type": "text",
+      "x": 855.5,
+      "y": 647,
+      "width": 52.9,
+      "height": 18,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 0,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "roundness": null,
+      "seed": 1055954119,
+      "version": 1,
+      "versionNonce": 1189277251,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 1,
+      "link": null,
+      "locked": false,
+      "text": "Call 112",
+      "originalText": "Call 112",
+      "fontSize": 14,
+      "fontFamily": 2,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "containerId": "edge-9-notification-dialer",
       "lineHeight": 1.25,
       "autoResize": true
     },
@@ -1769,7 +1871,7 @@
       "id": "legend-app",
       "type": "rectangle",
       "x": 40,
-      "y": 1086,
+      "y": 1127,
       "width": 16,
       "height": 16,
       "angle": 0,
@@ -1796,7 +1898,7 @@
       "id": "legend-app-label",
       "type": "text",
       "x": 62,
-      "y": 1085,
+      "y": 1126,
       "width": 46.8,
       "height": 16,
       "angle": 0,
@@ -1832,7 +1934,7 @@
       "id": "legend-service",
       "type": "rectangle",
       "x": 134.8,
-      "y": 1086,
+      "y": 1127,
       "width": 16,
       "height": 16,
       "angle": 0,
@@ -1859,7 +1961,7 @@
       "id": "legend-service-label",
       "type": "text",
       "x": 156.8,
-      "y": 1085,
+      "y": 1126,
       "width": 45.5,
       "height": 16,
       "angle": 0,
@@ -1895,7 +1997,7 @@
       "id": "legend-security",
       "type": "rectangle",
       "x": 228.3,
-      "y": 1086,
+      "y": 1127,
       "width": 16,
       "height": 16,
       "angle": 0,
@@ -1922,7 +2024,7 @@
       "id": "legend-security-label",
       "type": "text",
       "x": 250.3,
-      "y": 1085,
+      "y": 1126,
       "width": 125.6,
       "height": 16,
       "angle": 0,
@@ -1958,7 +2060,7 @@
       "id": "legend-external",
       "type": "rectangle",
       "x": 401.9,
-      "y": 1086,
+      "y": 1127,
       "width": 16,
       "height": 16,
       "angle": 0,
@@ -1985,7 +2087,7 @@
       "id": "legend-external-label",
       "type": "text",
       "x": 423.9,
-      "y": 1085,
+      "y": 1126,
       "width": 49.4,
       "height": 16,
       "angle": 0,
