@@ -32,6 +32,40 @@ data class FoundPlace(
     override fun toString(): String = "FoundPlace(hidden)"
 }
 
+/**
+ * The kinds of place behind the quick-search chips. [key] is the API's name for the kind
+ * (`category` in the request, ADR 0018); the server decides how far it looks.
+ */
+enum class SearchCategory(val key: String) {
+    Bank("bank"),
+    Atm("atm"),
+    Pharmacy("pharmacy"),
+    Hospital("hospital"),
+    Fuel("fuel"),
+    Food("restaurant"),
+    Grocery("grocery"),
+    Transit("public_transport"),
+}
+
+/** What the circle of a search by kind or brand was drawn around. */
+enum class CircleCentre {
+    /** The area the app sent: the user's position or the centre of the map. */
+    SentArea,
+
+    /** A place named in the text ("pharmacy near …"). Distances are measured from IT. */
+    TypedPlace,
+
+    /** A value this version of the app does not know: claim nothing about the centre. */
+    Unknown,
+}
+
+/**
+ * The circle the server searched for a kind of place or a brand. Everything it returned lies
+ * inside; it looked at nothing outside. So "nothing found" means nothing ON THE MAP within
+ * [radiusKm], never that no such place exists.
+ */
+data class SearchedCircle(val radiusKm: Int, val centre: CircleCentre)
+
 /** Why a search has no results to show. */
 sealed interface SearchError {
     /** The server could not be reached. */
@@ -48,7 +82,12 @@ sealed interface SearchError {
 }
 
 sealed interface SearchOutcome {
-    data class Found(val places: List<FoundPlace>, val attribution: String?) : SearchOutcome {
+    data class Found(
+        val places: List<FoundPlace>,
+        val attribution: String?,
+        /** Set for a search by kind or brand around a point; null for a search by name. */
+        val circle: SearchedCircle? = null,
+    ) : SearchOutcome {
         override fun toString(): String = "Found(hidden)"
     }
 
@@ -65,8 +104,15 @@ interface SearchRepository {
      * @param near the area to prefer (the user's position or the centre of the map, see
      * [SearchAreaProvider]), or null for the server's default.
      * @param language `en` or `bn`.
+     * @param category a quick-search chip. When set, it is what is searched and [query] is
+     * not sent.
      */
-    suspend fun search(query: String, near: LatLng?, language: String): SearchOutcome
+    suspend fun search(
+        query: String,
+        near: LatLng?,
+        language: String,
+        category: SearchCategory? = null,
+    ): SearchOutcome
 }
 
 /** How many results the app asks for. */
@@ -81,15 +127,21 @@ internal fun coarse(degrees: Double): BigDecimal = BigDecimal.valueOf(degrees).s
 
 class ApiSearchRepository @Inject constructor(private val api: SearchApi) : SearchRepository {
 
-    override suspend fun search(query: String, near: LatLng?, language: String): SearchOutcome {
+    override suspend fun search(
+        query: String,
+        near: LatLng?,
+        language: String,
+        category: SearchCategory?,
+    ): SearchOutcome {
         // A request BODY, never a URL: servers and platforms log URLs, and what a person
         // searches for must not end up there (ADR 0019).
         val request = SearchRequest(
-            q = query,
+            q = query.takeIf { category == null },
             nearLatitude = near?.let { coarse(it.latitude) },
             nearLongitude = near?.let { coarse(it.longitude) },
             language = if (language == LOCALE_BENGALI) SearchRequest.Language.bn else SearchRequest.Language.en,
             limit = SEARCH_RESULT_LIMIT,
+            category = category?.key,
         )
         val result = apiCall { api.searchPlaces(request) }
         return when (result) {
@@ -105,11 +157,25 @@ class ApiSearchRepository @Inject constructor(private val api: SearchApi) : Sear
                     )
                 },
                 attribution = result.value.attribution?.takeIf(String::isNotBlank),
+                circle = result.value.searchedRadiusKm?.let { radius ->
+                    SearchedCircle(
+                        radiusKm = radius.setScale(0, RoundingMode.HALF_UP).toInt(),
+                        centre = when (result.value.searchedAround) {
+                            AROUND_NEAR -> CircleCentre.SentArea
+                            AROUND_PLACE_HINT -> CircleCentre.TypedPlace
+                            else -> CircleCentre.Unknown
+                        },
+                    )
+                },
             )
             is ApiResult.Failure -> SearchOutcome.Failed(result.failure.toSearchError())
         }
     }
 }
+
+/** Values of `searchedAround` (contract 0.8.0). An open set: anything else is "unknown". */
+private const val AROUND_NEAR = "near"
+private const val AROUND_PLACE_HINT = "placeHint"
 
 private const val HTTP_TOO_MANY_REQUESTS = 429
 private const val HTTP_UNAVAILABLE = 503

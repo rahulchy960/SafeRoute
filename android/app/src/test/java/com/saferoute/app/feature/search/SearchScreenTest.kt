@@ -148,7 +148,7 @@ class SearchScreenTest {
         compose.setContent { Screen() }
         val messages = listOf(
             SearchUiState.TooShort to string(R.string.search_too_short),
-            SearchUiState.Empty to string(R.string.search_no_results_title),
+            SearchUiState.Empty() to string(R.string.search_no_results_title),
             SearchUiState.Error(SearchError.NoConnection) to string(R.string.search_error_offline),
             SearchUiState.Error(SearchError.RateLimited(null)) to string(R.string.search_error_rate_limited),
             SearchUiState.Error(SearchError.RateLimited(17)) to
@@ -163,7 +163,7 @@ class SearchScreenTest {
             compose.onNodeWithText(string(R.string.search_empty_title)).assertDoesNotExist()
         }
         // "No results" says what to try next.
-        state = SearchUiState.Empty
+        state = SearchUiState.Empty()
         compose.onNodeWithText(string(R.string.search_no_results_body)).assertIsDisplayed()
     }
 
@@ -195,7 +195,7 @@ class SearchScreenTest {
     @Test
     @Config(qualifiers = "bn-w360dp-h640dp")
     fun `the messages are in Bengali when the app is`() {
-        state = SearchUiState.Empty
+        state = SearchUiState.Empty()
         compose.setContent { Screen() }
         compose.onNodeWithText("কোনো জায়গা পাওয়া যায়নি").assertIsDisplayed()
     }

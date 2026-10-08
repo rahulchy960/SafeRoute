@@ -183,7 +183,7 @@ class SearchViewModelTest {
     @Test
     fun `each outcome has its state`() = scope.runTest {
         val outcomes = mapOf(
-            "nothing here" to (SearchOutcome.Found(emptyList(), FAKE_ATTRIBUTION) to SearchUiState.Empty),
+            "nothing here" to (SearchOutcome.Found(emptyList(), FAKE_ATTRIBUTION) to SearchUiState.Empty()),
             "offline" to failed(SearchError.NoConnection),
             "too many" to failed(SearchError.RateLimited(retryAfterSeconds = 17)),
             "too many unknown" to failed(SearchError.RateLimited(retryAfterSeconds = null)),
@@ -304,6 +304,177 @@ class SearchViewModelTest {
             SelectedPlace("Main Station", "Station Road, Example District", LatLng(10.5, 20.5)),
             selection.selected.value,
         )
+    }
+
+    private val circle = SearchedCircle(10, CircleCentre.SentArea)
+    private val pharmacies = SearchOutcome.Found(listOf(FAKE_MARKET), FAKE_ATTRIBUTION, circle)
+
+    @Test
+    fun `a chip searches its category at once, near the user, and the answer carries the circle`() = scope.runTest {
+        area.environment.granted = GrantedLocation.Precise
+        area.location.state.value = LocationState.Fix(area.fixAged(60_000))
+        repository.categoryAnswers[SearchCategory.Pharmacy] = pharmacies
+
+        viewModel.onCategoryClick(SearchCategory.Pharmacy)
+        // No debounce: a tap is a decision, not typing.
+        runCurrent()
+
+        assertEquals(
+            listOf(FakeSearchRepository.Call("", FAKE_POSITION, "en", SearchCategory.Pharmacy)),
+            repository.calls,
+        )
+        assertEquals(SearchCategory.Pharmacy, viewModel.category.value)
+        assertEquals(
+            SearchUiState.Results(listOf(FAKE_MARKET), FAKE_ATTRIBUTION, NearSource.Position, circle),
+            viewModel.state.value,
+        )
+    }
+
+    @Test
+    fun `a chip without a position uses the map centre, like typed text`() = scope.runTest {
+        selection.viewCentre = LatLng(12.0, 22.0)
+        viewModel.onCategoryClick(SearchCategory.Bank)
+        runCurrent()
+        assertEquals(LatLng(12.0, 22.0), repository.calls.single().near)
+        assertEquals(NearSource.MapCentre, (viewModel.state.value as SearchUiState.Results).distancesFrom)
+    }
+
+    @Test
+    fun `typed category and brand words go to the server as text, and its circle is kept`() = scope.runTest {
+        selection.viewCentre = LatLng(12.0, 22.0)
+        repository.answers["bank"] = pharmacies
+        val around = SearchedCircle(25, CircleCentre.TypedPlace)
+        repository.answers["sbi exampletown"] = SearchOutcome.Found(listOf(FAKE_STATION), null, around)
+
+        type("bank", thenWaitMillis = SEARCH_DEBOUNCE_MILLIS)
+        assertNull(repository.calls.last().category)
+        assertEquals(circle, (viewModel.state.value as SearchUiState.Results).circle)
+
+        type("sbi exampletown", thenWaitMillis = SEARCH_DEBOUNCE_MILLIS)
+        assertEquals("sbi exampletown", repository.calls.last().query)
+        assertEquals(around, (viewModel.state.value as SearchUiState.Results).circle)
+        assertNull(viewModel.category.value)
+    }
+
+    @Test
+    fun `nothing in the circle is Empty with the circle, for a chip and for typed text`() = scope.runTest {
+        val wide = SearchedCircle(25, CircleCentre.SentArea)
+        repository.categoryAnswers[SearchCategory.Atm] = SearchOutcome.Found(emptyList(), FAKE_ATTRIBUTION, wide)
+        repository.answers["pharmacy"] = SearchOutcome.Found(emptyList(), null, wide)
+        repository.answers["nowhere"] = SearchOutcome.Found(emptyList(), null)
+        selection.viewCentre = LatLng(12.0, 22.0)
+
+        viewModel.onCategoryClick(SearchCategory.Atm)
+        runCurrent()
+        assertEquals(SearchUiState.Empty(wide, NearSource.MapCentre), viewModel.state.value)
+
+        type("pharmacy", thenWaitMillis = SEARCH_DEBOUNCE_MILLIS)
+        assertEquals(SearchUiState.Empty(wide, NearSource.MapCentre), viewModel.state.value)
+        // A name search that finds nothing has no circle to talk about.
+        type("nowhere", thenWaitMillis = SEARCH_DEBOUNCE_MILLIS)
+        assertEquals(SearchUiState.Empty(null, NearSource.MapCentre), viewModel.state.value)
+    }
+
+    @Test
+    fun `a chip's search can fail like any other - offline, 429, 503 - and Try again repeats it`() = scope.runTest {
+        val errors = listOf(
+            SearchError.NoConnection,
+            SearchError.RateLimited(12),
+            SearchError.Unavailable,
+        )
+        errors.forEach { error ->
+            repository.categoryAnswers[SearchCategory.Hospital] = SearchOutcome.Failed(error)
+            viewModel.onSearchNow()
+            if (viewModel.category.value == null) viewModel.onCategoryClick(SearchCategory.Hospital)
+            runCurrent()
+            assertEquals(SearchUiState.Error(error), viewModel.state.value)
+            assertEquals(SearchCategory.Hospital, viewModel.category.value)
+        }
+        assertEquals(3, repository.calls.size)
+
+        repository.categoryAnswers.remove(SearchCategory.Hospital)
+        viewModel.onSearchNow()
+        runCurrent()
+        assertEquals(SearchCategory.Hospital, repository.calls.last().category)
+        assertTrue(viewModel.state.value is SearchUiState.Results)
+        // The answer is on screen: asking again does nothing.
+        viewModel.onSearchNow()
+        runCurrent()
+        assertEquals(4, repository.calls.size)
+    }
+
+    @Test
+    fun `typing ends a chip's search, an empty field does not, and tapping the chip again takes it back`() = scope.runTest {
+        viewModel.onCategoryClick(SearchCategory.Food)
+        runCurrent()
+        // The screen reports its (empty) text again, as after a rotation: the chip stays.
+        type("")
+        assertEquals(SearchCategory.Food, viewModel.category.value)
+        assertTrue(viewModel.state.value is SearchUiState.Results)
+        assertEquals(1, repository.calls.size)
+
+        type("st", thenWaitMillis = SEARCH_DEBOUNCE_MILLIS)
+        assertNull(viewModel.category.value)
+        assertEquals(FakeSearchRepository.Call("st", null, "en"), repository.calls.last())
+
+        type("")
+        assertEquals(SearchUiState.Idle, viewModel.state.value)
+        viewModel.onCategoryClick(SearchCategory.Food)
+        runCurrent()
+        viewModel.onCategoryClick(SearchCategory.Food)
+        runCurrent()
+        assertNull(viewModel.category.value)
+        assertEquals(SearchUiState.Idle, viewModel.state.value)
+        assertEquals(3, repository.calls.size)
+    }
+
+    @Test
+    fun `another chip replaces a slow one, and the old answer never shows`() = scope.runTest {
+        val gate = CompletableDeferred<Unit>()
+        repository.gates[""] = gate
+        repository.categoryAnswers[SearchCategory.Bank] = SearchOutcome.Found(listOf(FAKE_STATION), null, circle)
+        repository.categoryAnswers[SearchCategory.Grocery] = pharmacies
+
+        viewModel.onCategoryClick(SearchCategory.Bank)
+        runCurrent()
+        assertEquals(SearchUiState.Loading, viewModel.state.value)
+        viewModel.onCategoryClick(SearchCategory.Grocery)
+        runCurrent()
+        gate.complete(Unit)
+        runCurrent()
+
+        assertEquals(listOf(FAKE_MARKET), (viewModel.state.value as SearchUiState.Results).places)
+        assertEquals(1, repository.completed)
+    }
+
+    @Test
+    fun `choosing a start point works from a chip's results too`() = scope.runTest {
+        selection.choosingStart = true
+        val forStart = SearchViewModel(repository, AppLocale { language }, selection, area.provider)
+        assertTrue(forStart.choosingStart)
+        forStart.onCategoryClick(SearchCategory.Transit)
+        runCurrent()
+        forStart.onPlaceChosen((forStart.state.value as SearchUiState.Results).places.first())
+        // The place went where a start point goes, not to the map's pin.
+        assertNull(selection.selected.value)
+    }
+
+    @Test
+    fun `a chip's search leaves nothing in the log or a toString`() = scope.runTest {
+        ShadowLog.clear()
+        area.environment.granted = GrantedLocation.Precise
+        area.location.state.value = LocationState.Fix(area.fixAged(0))
+        repository.categoryAnswers[SearchCategory.Pharmacy] = pharmacies
+        viewModel.onCategoryClick(SearchCategory.Pharmacy)
+        runCurrent()
+
+        val logged = ShadowLog.getLogs().joinToString("\n") { "${it.tag} ${it.msg} ${it.throwable}" }
+        val printed = listOf(viewModel.state.value, pharmacies, SearchUiState.Empty(circle)).joinToString(" ")
+        listOf("pharmacy", "Pharmacy", "Station Market", "Example Town", FAKE_POSITION.latitude.toString())
+            .forEach { secret ->
+                assertTrue("log contains $secret", secret !in logged)
+                assertTrue("toString contains $secret", secret !in printed.replace("Empty(circle=", ""))
+            }
     }
 
     @Test

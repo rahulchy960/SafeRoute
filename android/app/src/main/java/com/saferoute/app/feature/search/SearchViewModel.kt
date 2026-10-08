@@ -33,12 +33,17 @@ sealed interface SearchUiState {
         val places: List<FoundPlace>,
         val attribution: String?,
         val distancesFrom: NearSource? = null,
+        /** Set when the server searched a circle (a kind of place or a brand). */
+        val circle: SearchedCircle? = null,
     ) : SearchUiState {
         override fun toString(): String = "Results(hidden)"
     }
 
-    /** The search worked and found nothing. */
-    data object Empty : SearchUiState
+    /**
+     * The search worked and found nothing. With a [circle], nothing of that kind is on the map
+     * inside it, which is all the screen may say.
+     */
+    data class Empty(val circle: SearchedCircle? = null, val distancesFrom: NearSource? = null) : SearchUiState
 
     data class Error(val error: SearchError) : SearchUiState
 }
@@ -77,20 +82,27 @@ class SearchViewModel @Inject constructor(
     private val area: SearchAreaProvider,
 ) : ViewModel() {
 
-    /** The trimmed query, plus a counter that makes "search now" a new value. */
-    private data class Request(val query: String, val submitted: Int) {
+    /**
+     * The trimmed query or a chip's category, plus a counter that makes "search now" a new
+     * value. Never both: typing ends a chip's search, and a chip is chosen with an empty field.
+     */
+    private data class Request(val query: String, val submitted: Int, val category: SearchCategory? = null) {
         override fun toString(): String = "Request(hidden)"
     }
 
     private val requests = MutableStateFlow(Request(query = "", submitted = 0))
+    private val _category = MutableStateFlow<SearchCategory?>(null)
+
+    /** The chip whose search is on screen, if any. */
+    val category: StateFlow<SearchCategory?> = _category.asStateFlow()
     private val _state = MutableStateFlow<SearchUiState>(SearchUiState.Idle)
     val state: StateFlow<SearchUiState> = _state.asStateFlow()
 
     /** Opened from directions' "Change": the place chosen becomes the start of the route. */
     val choosingStart: Boolean = selection.choosingStart
 
-    /** The query the current [state] answers; a repeated "search now" for it does nothing. */
-    private var answered: String? = null
+    /** The request the current [state] answers; a repeated "search now" for it does nothing. */
+    private var answered: Request? = null
 
     init {
         viewModelScope.launch {
@@ -99,33 +111,40 @@ class SearchViewModel @Inject constructor(
             requests.collectLatest { request ->
                 val length = request.query.codePointLength()
                 when {
+                    request.category != null -> run(request)
                     length == 0 -> show(SearchUiState.Idle)
                     length < SEARCH_MIN_CODE_POINTS -> show(SearchUiState.TooShort)
                     else -> {
                         // The keyboard's Search key skips the wait.
                         if (request.submitted == 0) delay(SEARCH_DEBOUNCE_MILLIS)
-                        _state.value = SearchUiState.Loading
-                        // Decided once per search and kept with its answer, so the distances
-                        // on screen are always labelled with what they were measured from.
-                        val near = area.current()
-                        val outcome = repository.search(
-                            query = request.query,
-                            near = near?.point,
-                            language = locale.current(),
-                        )
-                        answered = request.query
-                        _state.value = when (outcome) {
-                            is SearchOutcome.Failed -> SearchUiState.Error(outcome.error)
-                            is SearchOutcome.Found ->
-                                if (outcome.places.isEmpty()) {
-                                    SearchUiState.Empty
-                                } else {
-                                    SearchUiState.Results(outcome.places, outcome.attribution, near?.source)
-                                }
-                        }
+                        run(request)
                     }
                 }
             }
+        }
+    }
+
+    /** One search, for typed text or for a chip. Runs inside `collectLatest`: a newer request cancels it. */
+    private suspend fun run(request: Request) {
+        _state.value = SearchUiState.Loading
+        // Decided once per search and kept with its answer, so the distances on screen are
+        // always labelled with what they were measured from.
+        val near = area.current()
+        val outcome = repository.search(
+            query = request.query,
+            near = near?.point,
+            language = locale.current(),
+            category = request.category,
+        )
+        answered = request.copy(submitted = 0)
+        _state.value = when (outcome) {
+            is SearchOutcome.Failed -> SearchUiState.Error(outcome.error)
+            is SearchOutcome.Found ->
+                if (outcome.places.isEmpty()) {
+                    SearchUiState.Empty(outcome.circle, near?.source)
+                } else {
+                    SearchUiState.Results(outcome.places, outcome.attribution, near?.source, outcome.circle)
+                }
         }
     }
 
@@ -134,16 +153,37 @@ class SearchViewModel @Inject constructor(
         _state.value = state
     }
 
-    /** The text field changed. */
+    /**
+     * The text field changed. Typing ends a chip's search. An EMPTY field does not: a chip is
+     * chosen with an empty field, and the screen reports that empty text again after a rotation.
+     */
     fun onQueryChange(text: String) {
-        requests.value = Request(query = limitCodePoints(text.trim()), submitted = 0)
+        val query = limitCodePoints(text.trim())
+        if (query.isEmpty() && requests.value.category != null) return
+        _category.value = null
+        requests.value = Request(query = query, submitted = 0)
+    }
+
+    /**
+     * A quick-search chip was tapped: search that kind of place near the user, at once. Tapping
+     * the chip that is already chosen takes it back.
+     */
+    fun onCategoryClick(category: SearchCategory) {
+        val current = requests.value
+        if (current.category == category) {
+            _category.value = null
+            requests.value = Request(query = "", submitted = 0)
+            return
+        }
+        _category.value = category
+        requests.value = Request(query = "", submitted = current.submitted + 1, category = category)
     }
 
     /** The keyboard's Search key, or "Try again". Searches at once, unless the answer is on screen. */
     fun onSearchNow() {
         val current = requests.value
-        if (current.query.codePointLength() < SEARCH_MIN_CODE_POINTS) return
-        val showsAnswer = answered == current.query && _state.value !is SearchUiState.Error
+        if (current.category == null && current.query.codePointLength() < SEARCH_MIN_CODE_POINTS) return
+        val showsAnswer = answered == current.copy(submitted = 0) && _state.value !is SearchUiState.Error
         if (showsAnswer) return
         requests.value = current.copy(submitted = current.submitted + 1)
     }
