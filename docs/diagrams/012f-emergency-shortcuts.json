@@ -1,7 +1,7 @@
 {
   "$schema": "../../tools/diagrams/diagram.schema.json",
   "title": "Emergency entry points",
-  "subtitle": "Every entry opens the same options: a dialog that offers the dialer with 112. Nothing is dialled automatically. Grey: not built yet (P012f1, ADR 0008)",
+  "subtitle": "Every entry opens the same options: a dialog that offers the dialer with 112. Nothing is dialled automatically. Grey: not built yet (P012f1 and P012f2, ADR 0008)",
   "direction": "TB",
   "layout": {
     "nodeWidth": 230
@@ -37,14 +37,14 @@
     },
     {
       "id": "notification",
-      "label": "Pinned notification, opt-in (P012f2, not built)",
-      "role": "external",
+      "label": "Pinned notification, opt-in (a switch in Settings): silent, fixed text, no foreground service. Put back at app open, after a restart and an update",
+      "role": "security",
       "group": "outside",
       "rank": 0
     },
     {
       "id": "addtile",
-      "label": "Settings: Add the SOS tile. Android 13+: system request; otherwise four steps by hand",
+      "label": "Settings: Add the SOS tile (Android 13+: system request; otherwise four steps by hand)",
       "role": "app",
       "group": "inapp",
       "rank": 0
@@ -108,11 +108,6 @@
       "label": "tap"
     },
     {
-      "from": "notification",
-      "to": "shortcut",
-      "label": "later"
-    },
-    {
       "from": "addtile",
       "to": "tile",
       "label": "adds"
@@ -134,6 +129,16 @@
       "from": "dialog",
       "to": "countdown",
       "label": "replaced in P014"
+    },
+    {
+      "from": "notification",
+      "to": "shortcut",
+      "label": "Open SOS, or a tap"
+    },
+    {
+      "from": "notification",
+      "to": "dialer",
+      "label": "Call 112"
     }
   ]
 }
