@@ -1,0 +1,181 @@
+{
+  "$schema": "../../tools/diagrams/diagram.schema.json",
+  "title": "Local-first place search",
+  "subtitle": "With an area in the request: nearby places first, a wide pass only when too few are near. Every provider call spends the limits. Nothing about a search is logged (P011e, ADR 0018)",
+  "direction": "TB",
+  "layout": {
+    "nodeWidth": 235
+  },
+  "groups": [
+    {
+      "id": "client",
+      "label": "Phone"
+    },
+    {
+      "id": "api",
+      "label": "SafeRoute API"
+    },
+    {
+      "id": "outside",
+      "label": "Outside SafeRoute"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "app",
+      "label": "App: POST /v1/search, q and (optionally) a coarse area in the body",
+      "role": "app",
+      "group": "client",
+      "rank": 0
+    },
+    {
+      "id": "coarsen",
+      "label": "After auth and validation: round the area to 2 decimals (about 1 km)",
+      "role": "security",
+      "group": "api",
+      "rank": 1
+    },
+    {
+      "id": "limits1",
+      "label": "Rate limits, call 1: user burst, user daily, shared budget",
+      "role": "service",
+      "group": "api",
+      "rank": 2
+    },
+    {
+      "id": "plain",
+      "label": "No area sent: one call, bias to the default area, no distances",
+      "role": "service",
+      "group": "api",
+      "rank": 3
+    },
+    {
+      "id": "pass1",
+      "label": "Pass 1 (nearby): only places within SEARCH_NEARBY_RADIUS_KM (50), plus the bias",
+      "role": "service",
+      "group": "api",
+      "rank": 3
+    },
+    {
+      "id": "enough",
+      "label": "At least SEARCH_MIN_LOCAL_RESULTS (3) within the radius?",
+      "role": "service",
+      "group": "api",
+      "rank": 4
+    },
+    {
+      "id": "merge",
+      "label": "Merge: nearby first, then wide; drop duplicates; cut to limit; add distanceMeters from the coarse point, rounded to 100 m",
+      "role": "service",
+      "group": "api",
+      "rank": 6
+    },
+    {
+      "id": "provider",
+      "label": "Geocoding provider. Geoapify: filter=circle:lon,lat,metres|countrycode. LocationIQ: viewbox + bounded=1",
+      "role": "external",
+      "group": "outside",
+      "rank": 4
+    },
+    {
+      "id": "ok",
+      "label": "200: results (nearby first) + attribution",
+      "role": "app",
+      "group": "client",
+      "rank": 7
+    },
+    {
+      "id": "never",
+      "label": "ONE LOG LINE: outcome, latency, result_count, local_count, provider_calls, wide_pass. Never the query, a coordinate, a distance or a result",
+      "role": "security",
+      "group": "api",
+      "rank": 7
+    },
+    {
+      "id": "one",
+      "label": "Yes: one provider call was enough",
+      "role": "service",
+      "group": "api",
+      "rank": 5
+    },
+    {
+      "id": "wide",
+      "label": "Call 2: the rate limits again (same three buckets), then pass 2 (wide) without the area filter",
+      "role": "service",
+      "group": "api",
+      "rank": 5
+    },
+    {
+      "id": "errors",
+      "label": "Errors: 429 or 503 + Retry-After when a limit refuses call 1; 503 when the provider fails on pass 1. On call 2 the same, but only when nothing was found nearby",
+      "role": "app",
+      "group": "client",
+      "rank": 3
+    }
+  ],
+  "edges": [
+    {
+      "from": "app",
+      "to": "coarsen"
+    },
+    {
+      "from": "coarsen",
+      "to": "limits1"
+    },
+    {
+      "from": "limits1",
+      "to": "errors",
+      "label": "refused"
+    },
+    {
+      "from": "limits1",
+      "to": "plain",
+      "label": "no area"
+    },
+    {
+      "from": "limits1",
+      "to": "pass1",
+      "label": "area sent"
+    },
+    {
+      "from": "pass1",
+      "to": "provider",
+      "label": "coarse area only"
+    },
+    {
+      "from": "pass1",
+      "to": "enough"
+    },
+    {
+      "from": "enough",
+      "to": "one",
+      "label": "yes"
+    },
+    {
+      "from": "enough",
+      "to": "wide",
+      "label": "no"
+    },
+    {
+      "from": "wide",
+      "to": "provider"
+    },
+    {
+      "from": "one",
+      "to": "merge"
+    },
+    {
+      "from": "wide",
+      "to": "merge",
+      "label": "ok; or refused or failed with some nearby"
+    },
+    {
+      "from": "merge",
+      "to": "ok"
+    },
+    {
+      "from": "merge",
+      "to": "never"
+    }
+  ]
+}

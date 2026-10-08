@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "SafeRoute API",
-    "version": "0.6.0",
+    "version": "0.7.0",
     "description": "SafeRoute is a personal-safety navigation API. Safety information is context, never a guarantee that a route or area is safe. SafeRoute is not an emergency service; in an emergency call your local emergency number (112 in India).",
     "license": {
       "name": "AGPL-3.0-only",
@@ -651,7 +651,7 @@
               "$ref": "#/components/schemas/Place"
             },
             "maxItems": 10,
-            "description": "Best match first. Empty when nothing was found."
+            "description": "Places near the requested point first, then places from further away; within each group, best match first. Empty when nothing was found."
           },
           "attribution": {
             "type": [
@@ -716,6 +716,15 @@
             "examples": [
               "amenity"
             ]
+          },
+          "distanceMeters": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 20100000,
+            "description": "Straight-line distance in metres from the rounded `nearLatitude`/`nearLongitude` of the request to this place, rounded to 100 m. Present only when the request carried that point. It is measured from the rounded point, so it is approximate: about 1 km either way.",
+            "examples": [
+              2300
+            ]
           }
         },
         "required": [
@@ -743,7 +752,7 @@
             "type": "number",
             "minimum": -90,
             "maximum": 90,
-            "description": "Latitude of the area to prefer, WGS84 decimal degrees; send it together with `nearLongitude` or not at all. A bias, not a filter. The server rounds it to two decimals (about 1 km) before using it; send the map centre, not a precise position.",
+            "description": "Latitude of the area to prefer, WGS84 decimal degrees; send it together with `nearLongitude` or not at all. Places near it come first; places further away follow when too few are near. The server rounds it to two decimals (about 1 km) before using it; send a coarse point (the map centre, or a position already rounded to two decimals), never a precise position.",
             "examples": [
               10.5
             ]
@@ -1294,7 +1303,7 @@
           "search"
         ],
         "summary": "Search for places by name",
-        "description": "Forwards the text to a geocoding provider and returns matching places, best match first. Results are biased towards `nearLatitude`/`nearLongitude` (or a default area) but not limited to it. The search travels in the request body, never in the URL, and is not stored or logged. Calling it again with the same body is safe (it changes nothing), so no `Idempotency-Key` is needed. Errors: `rate_limited` (429) and `search_unavailable` (503) may carry a `Retry-After` header in seconds; `search_not_configured` (503) means this instance has no geocoding key.",
+        "description": "Forwards the text to a geocoding provider and returns matching places. With `nearLatitude`/`nearLongitude`, places near that point come first and each result carries `distanceMeters`; when too few are found nearby, places from further away follow, so results are never limited to the area. Without them, results are biased towards a default area. The search travels in the request body, never in the URL, and is not stored or logged. Calling it again with the same body is safe (it changes nothing), so no `Idempotency-Key` is needed. Errors: `rate_limited` (429) and `search_unavailable` (503) may carry a `Retry-After` header in seconds; `search_not_configured` (503) means this instance has no geocoding key.",
         "security": [
           {
             "firebaseBearer": []

@@ -26,7 +26,9 @@ const ResponseSchema = z.object({
 
 /**
  * Geoapify Address Autocomplete (ADR 0018). The key is the `apiKey` query parameter. One request
- * is one credit. Bias by proximity, filter by country only.
+ * is one credit. Bias by proximity; filter by country and, when the query has `withinMeters`,
+ * by a circle around the bias point. Filters are joined with `|` and all must hold; the circle
+ * is `circle:lon,lat,radiusMeters` (Geoapify docs, "Location filters").
  */
 export function createGeoapifyGeocoder(
   apiKey: string,
@@ -36,14 +38,21 @@ export function createGeoapifyGeocoder(
     name: 'geoapify',
     // Terms: OpenStreetMap credit always; Geoapify credit on the free plan.
     attribution: 'Powered by Geoapify · © OpenStreetMap contributors',
-    async search({ query, nearLatitude, nearLongitude, language, limit }) {
+    async search({ query, nearLatitude, nearLongitude, withinMeters, language, limit }) {
+      const point = `${String(nearLongitude)},${String(nearLatitude)}`;
+      const country = `countrycode:${LAUNCH_COUNTRY_CODE}`;
       const url = new URL(ENDPOINT);
       url.searchParams.set('text', query);
       url.searchParams.set('format', 'json');
       url.searchParams.set('lang', language);
       url.searchParams.set('limit', String(limit));
-      url.searchParams.set('filter', `countrycode:${LAUNCH_COUNTRY_CODE}`);
-      url.searchParams.set('bias', `proximity:${String(nearLongitude)},${String(nearLatitude)}`);
+      url.searchParams.set(
+        'filter',
+        withinMeters === undefined
+          ? country
+          : `circle:${point},${String(Math.round(withinMeters))}|${country}`,
+      );
+      url.searchParams.set('bias', `proximity:${point}`);
       url.searchParams.set('apiKey', apiKey);
 
       const { status, json } = await providerGet(url, http);

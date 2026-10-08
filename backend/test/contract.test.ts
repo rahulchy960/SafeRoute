@@ -243,6 +243,7 @@ describe('generated OpenAPI document', () => {
 
     const place = components.schemas?.Place as { properties: Record<string, Json> };
     expect(Object.keys(place.properties).sort()).toEqual([
+      'distanceMeters',
       'id',
       'kind',
       'label',
@@ -250,6 +251,9 @@ describe('generated OpenAPI document', () => {
       'longitude',
       'name',
     ]);
+    // Added in 0.7.0 (P011e): optional, so a client generated from 0.6.0 keeps working.
+    expect((place as unknown as { required: string[] }).required).not.toContain('distanceMeters');
+    expect(place.properties.distanceMeters?.type).toBe('integer');
     expect(place.properties.kind).not.toHaveProperty('enum');
     const results = components.schemas?.SearchResults as { properties: Json; required: string[] };
     expect(Object.keys(results.properties).sort()).toEqual(['attribution', 'results']);
@@ -399,7 +403,7 @@ describe('generated OpenAPI document', () => {
   });
 
   it('documents routes as a POST with a body and the routing problem codes (P012b, ADR 0020)', () => {
-    expect((doc.info as Json).version).toBe('0.6.0');
+    expect((doc.info as Json).version).toBe('0.7.0');
     const paths = doc.paths as Record<string, Record<string, Json>>;
     // Origin and destination travel in a request body. No GET, no parameters (ADR 0019).
     expect(Object.keys(paths['/v1/routes'] ?? {})).toEqual(['post']);

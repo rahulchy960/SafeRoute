@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+import { LOCAL_SEARCH_DEFAULTS, searchLocalFirst } from '../../src/modules/search/local-first.js';
 import { normalizeQuery } from '../../src/modules/search/normalize.js';
 import { SEARCH_DEFAULT_LIMIT } from '../../src/modules/search/schema.js';
 import {
@@ -7,7 +8,7 @@ import {
   type PlaceResult,
 } from '../../src/modules/search/types.js';
 import { LAUNCH_REGION_CENTER } from '../../src/regions/defaults.js';
-import type { FixtureEntry, Script } from './fixture.js';
+import { INTENTS, type FixtureEntry, type Intent, type Script } from './fixture.js';
 
 /**
  * Thresholds confirmed by Rahul on 2026-10-07 (addendum v7.2 section E, ADR 0018). The report
@@ -26,10 +27,23 @@ export const PROPOSED_THRESHOLDS = {
  */
 export const MIN_DISTRICT_QUERIES = 3;
 
+/**
+ * A local-intent query is a hit when one of the first three results has the right name AND lies
+ * within this distance of the entry's `near` point. 25 km: about the reach of a town and the
+ * villages around it, and half the default radius of the nearby pass.
+ */
+export const LOCAL_INTENT_RADIUS_METERS = 25_000;
+
 export interface QueryOutcome {
   id: string;
   district: string;
   script: Script;
+  /** Only for a local-intent entry (one with `near`). */
+  intent?: Intent;
+  /** Local intent: a top-3 result with the right name within LOCAL_INTENT_RADIUS_METERS. */
+  nearbyTop3?: boolean;
+  /** Local intent: how many provider calls the search took (1 or 2). */
+  providerCalls?: number;
   /** Set when the provider call failed; such a query is counted apart, not as a miss. */
   error?: string;
   top1: boolean;
@@ -49,11 +63,23 @@ export interface GroupScore {
   top3: number;
 }
 
+export interface LocalScore {
+  group: string;
+  queries: number;
+  errors: number;
+  /** Answered queries with a matching result nearby in the top three. */
+  nearbyTop3: number;
+  /** Answered queries that needed the second, wide provider call. */
+  widePasses: number;
+}
+
 export interface Report {
   provider: string;
   overall: GroupScore;
   byDistrict: GroupScore[];
   byScript: GroupScore[];
+  /** One row per intent and one for all; empty when the fixture has no local-intent entry. */
+  localIntent: LocalScore[];
   thresholds: { name: string; target: number; met: boolean }[];
 }
 
@@ -82,10 +108,21 @@ export function haversineMeters(
 export function scoreQuery(entry: FixtureEntry, results: PlaceResult[]): QueryOutcome {
   const top3 = results.slice(0, 3);
   const expected = entry.expected;
+  const near = entry.near;
   return {
     id: entry.id,
     district: entry.district,
     script: entry.script,
+    ...(near === undefined || entry.intent === undefined
+      ? {}
+      : {
+          intent: entry.intent,
+          nearbyTop3: top3.some(
+            (result) =>
+              nameMatches(result, entry) &&
+              haversineMeters(result, near) <= LOCAL_INTENT_RADIUS_METERS,
+          ),
+        }),
     top1: top3[0] !== undefined && nameMatches(top3[0], entry),
     top3: top3.some((result) => nameMatches(result, entry)),
     ...(expected === undefined
@@ -127,7 +164,36 @@ function groupBy(outcomes: QueryOutcome[], key: (outcome: QueryOutcome) => strin
     .map(([group, members]) => scoreGroup(group, members));
 }
 
-export function buildReport(provider: string, outcomes: QueryOutcome[]): Report {
+function scoreLocal(group: string, outcomes: QueryOutcome[]): LocalScore {
+  const answered = outcomes.filter((outcome) => outcome.error === undefined);
+  return {
+    group,
+    queries: outcomes.length,
+    errors: outcomes.length - answered.length,
+    nearbyTop3: answered.filter((outcome) => outcome.nearbyTop3 === true).length,
+    widePasses: answered.filter((outcome) => outcome.providerCalls === 2).length,
+  };
+}
+
+/**
+ * Local-intent queries are scored apart. The overall, per-script and per-district tables and the
+ * thresholds cover the other queries only, so they stay comparable with earlier runs.
+ */
+export function buildReport(provider: string, all: QueryOutcome[]): Report {
+  const outcomes = all.filter((outcome) => outcome.intent === undefined);
+  const local = all.filter((outcome) => outcome.intent !== undefined);
+  const localIntent =
+    local.length === 0
+      ? []
+      : [
+          ...INTENTS.map((intent) =>
+            scoreLocal(
+              intent,
+              local.filter((outcome) => outcome.intent === intent),
+            ),
+          ).filter((score) => score.queries > 0),
+          scoreLocal('all local intent', local),
+        ];
   const overall = scoreGroup('overall', outcomes);
   const byDistrict = groupBy(outcomes, (outcome) => outcome.district);
   const byScript = groupBy(outcomes, (outcome) => outcome.script);
@@ -138,6 +204,7 @@ export function buildReport(provider: string, outcomes: QueryOutcome[]): Report 
     overall,
     byDistrict,
     byScript,
+    localIntent,
     thresholds: [
       {
         name: 'overall top-3',
@@ -175,12 +242,31 @@ export function formatReport(report: Report): string {
     ...scores.map(row),
     '',
   ];
+  const localRow = (score: LocalScore) => {
+    const answered = score.queries - score.errors;
+    return (
+      `| ${score.group} | ${String(score.queries)} | ${String(score.errors)} | ` +
+      `${percent(answered === 0 ? 0 : score.nearbyTop3 / answered)} | ${String(score.widePasses)} |`
+    );
+  };
+  const localTable =
+    report.localIntent.length === 0
+      ? []
+      : [
+          `### Local intent (top-3 within ${String(LOCAL_INTENT_RADIUS_METERS / 1000)} km of where the search is made)`,
+          '',
+          '| Group | Queries | Provider errors | Nearby top-3 | Needed the wide pass |',
+          '| --- | --- | --- | --- | --- |',
+          ...report.localIntent.map(localRow),
+          '',
+        ];
   return [
     `## Search evaluation: provider \`${report.provider}\``,
     '',
     ...table('Overall', [report.overall]),
     ...table('By script', report.byScript),
     ...table('By district', report.byDistrict),
+    ...localTable,
     '### Thresholds (not a gate)',
     '',
     '| Threshold | Target | Met |',
@@ -205,6 +291,10 @@ export interface RunOptions {
 /**
  * Runs every fixture query through the real adapter, one at a time, the way the endpoint would:
  * the same normalisation, the default bias, the default limit, Bengali names for Bengali text.
+ *
+ * An entry with `near` is searched like a request that carries that area: local-first, with the
+ * default radius and minimum (ADR 0018, "Local ranking"). It can take two provider calls; the
+ * harness waits between them like between any two calls.
  */
 export async function runEvaluation(options: RunOptions): Promise<QueryOutcome[]> {
   const sleep =
@@ -220,14 +310,31 @@ export async function runEvaluation(options: RunOptions): Promise<QueryOutcome[]
       outcomes.push(failed('invalid_query'));
     } else {
       try {
-        const results = await options.provider.search({
+        const near = entry.near ?? LAUNCH_REGION_CENTER;
+        const request = {
           query,
-          nearLatitude: LAUNCH_REGION_CENTER.latitude,
-          nearLongitude: LAUNCH_REGION_CENTER.longitude,
-          language: entry.script === 'bn' ? 'bn' : 'en',
+          nearLatitude: near.latitude,
+          nearLongitude: near.longitude,
+          language: entry.script === 'bn' ? ('bn' as const) : ('en' as const),
           limit: SEARCH_DEFAULT_LIMIT,
-        });
-        outcomes.push(scoreQuery(entry, results));
+        };
+        if (entry.near === undefined) {
+          outcomes.push(scoreQuery(entry, await options.provider.search(request)));
+        } else {
+          const found = await searchLocalFirst(
+            options.provider,
+            request,
+            {
+              radiusMeters: LOCAL_SEARCH_DEFAULTS.radiusKm * 1000,
+              minLocalResults: LOCAL_SEARCH_DEFAULTS.minLocalResults,
+            },
+            () => sleep(pause),
+          );
+          outcomes.push({
+            ...scoreQuery(entry, found.results),
+            providerCalls: found.providerCalls,
+          });
+        }
       } catch (err) {
         // A GeocoderError carries a kind only; anything else is reported without its message.
         outcomes.push(failed(err instanceof GeocoderError ? err.kind : 'unexpected'));

@@ -90,6 +90,8 @@ variable (never its value). Empty values count as unset. See [`.env.example`](.e
 | `GEOCODING_PROVIDER` | no / no / no | no | `geoapify` | A constant in `deploy-staging.yml` → Cloud Run env var. `geoapify` (chosen, ADR 0018) or `locationiq` (spare). Must match the key |
 | `SEARCH_GLOBAL_DAILY_LIMIT` | no / no / no | no | `2500` (1–10000000) | Cloud Run env var. Provider calls per day for all users together; keep it under the provider plan's daily quota |
 | `SEARCH_PROVIDER_TIMEOUT_MS` | no / no / no | no | `3000` (200–20000) | Cloud Run env var |
+| `SEARCH_NEARBY_RADIUS_KM` | no / no / no | no | `50` (1–500) | Not set in the deploy workflow: the default applies. How far around the request's area the nearby pass of a search looks |
+| `SEARCH_MIN_LOCAL_RESULTS` | no / no / no | no | `3` (1–10) | Not set in the deploy workflow: the default applies. With fewer nearby results, a second, wide provider call follows |
 | `OSRM_WALKING_URL`, `OSRM_DRIVING_URL` | no / no / **yes** (https) | treated as one (a Cloud Run URL contains the project number; never logged, never in an error) | none (routes then answer 503 `routing_not_configured`) | GitHub environment **secrets** of the same names → Cloud Run env vars |
 | `ROUTING_AUTH` | no / no / no (`none` is refused in production) | no | `google_id_token` | A constant in `deploy-staging.yml`. `none` only for a local OSRM |
 | `ROUTING_TIMEOUT_MS` | no / no / no | no | `25000` (500–55000) | Optional GitHub environment **variable** of the same name → Cloud Run env var. Not measured yet: see "Routes" below |
@@ -185,8 +187,17 @@ test/search-eval/      search-quality fixture and the `pnpm search:eval` harness
   ([ADR 0019](../docs/adr/0019-privacy-in-urls.md)). The same rule holds for every endpoint: no
   user text, position, phone number or credential in a path or query; a contract test checks
   the parameter names.
-- **Privacy:** the query, the coordinates and the results are never logged or stored. The log
-  has one line per provider call with `outcome`, `latency_ms` and `result_count`. `near` is
+- **Local-first (since P011e):** with `nearLatitude`/`nearLongitude` in the body, the provider
+  is first asked only for places within `SEARCH_NEARBY_RADIUS_KM` of that (rounded) point. With
+  fewer than `SEARCH_MIN_LOCAL_RESULTS` nearby, it is asked once more without the area limit.
+  Nearby places come first, then the others, without duplicates. Each result then has
+  `distanceMeters`, from the rounded point, rounded to 100 m. **Each provider call spends the
+  rate limits and the shared budget**, so such a search can cost two. Without an area there is
+  one call and no distance. The logic is in `src/modules/search/local-first.ts` and names no
+  provider.
+- **Privacy:** the query, the coordinates, the distances and the results are never logged or
+  stored. The log has one line per search with `outcome`, `latency_ms`, `result_count`,
+  `local_count`, `provider_calls` and `wide_pass`. `near` is
   rounded to two decimals (about 1 km) on the server. The provider sees SafeRoute's server, not
   the user's IP address or token. Nothing is cached on the server.
 - **Rate limits** (`SEARCH_LIMITS` in `src/modules/search/service.ts`, plus

@@ -4,6 +4,8 @@ import { normalizeQuery, QUERY_MAX_CODE_POINTS, QUERY_MIN_CODE_POINTS } from './
 
 export const SEARCH_DEFAULT_LIMIT = 6;
 export const SEARCH_MAX_LIMIT = 10;
+/** Half the Earth's circumference, rounded up: no two places are further apart. */
+const MAX_DISTANCE_METERS = 20_100_000;
 
 /**
  * Body of POST /v1/search.
@@ -37,8 +39,10 @@ export const SearchRequestSchema = z
       .openapi({
         description:
           'Latitude of the area to prefer, WGS84 decimal degrees; send it together with ' +
-          '`nearLongitude` or not at all. A bias, not a filter. The server rounds it to two ' +
-          'decimals (about 1 km) before using it; send the map centre, not a precise position.',
+          '`nearLongitude` or not at all. Places near it come first; places further away ' +
+          'follow when too few are near. The server rounds it to two decimals (about 1 km) ' +
+          'before using it; send a coarse point (the map centre, or a position already rounded ' +
+          'to two decimals), never a precise position.',
         examples: [10.5],
       }),
     nearLongitude: z
@@ -101,14 +105,33 @@ export const PlaceSchema = z
       description: 'Kind of place. Open set: clients must tolerate unknown values.',
       examples: ['amenity'],
     }),
+    distanceMeters: z
+      .number()
+      .int()
+      .min(0)
+      .max(MAX_DISTANCE_METERS)
+      .optional()
+      .openapi({
+        description:
+          'Straight-line distance in metres from the rounded `nearLatitude`/`nearLongitude` of ' +
+          'the request to this place, rounded to 100 m. Present only when the request carried ' +
+          'that point. It is measured from the rounded point, so it is approximate: about 1 km ' +
+          'either way.',
+        examples: [2300],
+      }),
   })
   .openapi('Place', { description: 'One search result.' });
 
 export const SearchResultsSchema = z
   .object({
-    results: z.array(PlaceSchema).max(SEARCH_MAX_LIMIT).openapi({
-      description: 'Best match first. Empty when nothing was found.',
-    }),
+    results: z
+      .array(PlaceSchema)
+      .max(SEARCH_MAX_LIMIT)
+      .openapi({
+        description:
+          'Places near the requested point first, then places from further away; within each ' +
+          'group, best match first. Empty when nothing was found.',
+      }),
     attribution: z
       .string()
       .nullable()

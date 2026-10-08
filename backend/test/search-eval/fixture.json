@@ -593,6 +593,324 @@
       "district": "Darjeeling",
       "expectedNameContains": ["Siliguri", "Shiliguri"],
       "addedBy": "claude-known"
+    },
+    {
+      "id": "loc-raiganj-sbi-en",
+      "query": "SBI Bank",
+      "script": "en",
+      "district": "Uttar Dinajpur",
+      "expectedNameContains": ["State Bank", "SBI"],
+      "near": {
+        "latitude": 25.62,
+        "longitude": 88.12
+      },
+      "intent": "generic",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "loc-raiganj-hospital-en",
+      "query": "hospital",
+      "script": "en",
+      "district": "Uttar Dinajpur",
+      "expectedNameContains": ["Hospital", "হাসপাতাল"],
+      "near": {
+        "latitude": 25.62,
+        "longitude": 88.12
+      },
+      "intent": "generic",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "loc-raiganj-pharmacy-en",
+      "query": "pharmacy",
+      "script": "en",
+      "district": "Uttar Dinajpur",
+      "expectedNameContains": ["Pharmacy", "Medical", "Medicine", "Chemist", "Drug"],
+      "near": {
+        "latitude": 25.62,
+        "longitude": 88.12
+      },
+      "intent": "generic",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "loc-raiganj-bank-bn",
+      "query": "ব্যাংক",
+      "script": "bn",
+      "district": "Uttar Dinajpur",
+      "expectedNameContains": ["Bank", "ব্যাংক", "ব্যাঙ্ক"],
+      "near": {
+        "latitude": 25.62,
+        "longitude": 88.12
+      },
+      "intent": "generic",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "loc-raiganj-station-en",
+      "query": "Raiganj railway station",
+      "script": "en",
+      "district": "Uttar Dinajpur",
+      "expectedNameContains": ["Raiganj"],
+      "near": {
+        "latitude": 25.62,
+        "longitude": 88.12
+      },
+      "intent": "named",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "loc-islampur-bus-stand-en",
+      "query": "bus stand",
+      "script": "en",
+      "district": "Uttar Dinajpur",
+      "expectedNameContains": ["Bus", "বাস"],
+      "near": {
+        "latitude": 26.26,
+        "longitude": 88.19
+      },
+      "intent": "generic",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "loc-islampur-bank-en",
+      "query": "bank",
+      "script": "en",
+      "district": "Uttar Dinajpur",
+      "expectedNameContains": ["Bank", "ব্যাংক", "ব্যাঙ্ক"],
+      "near": {
+        "latitude": 26.26,
+        "longitude": 88.19
+      },
+      "intent": "generic",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "loc-balurghat-bank-en",
+      "query": "bank",
+      "script": "en",
+      "district": "Dakshin Dinajpur",
+      "expectedNameContains": ["Bank", "ব্যাংক", "ব্যাঙ্ক"],
+      "near": {
+        "latitude": 25.22,
+        "longitude": 88.77
+      },
+      "intent": "generic",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "loc-balurghat-hospital-en",
+      "query": "hospital",
+      "script": "en",
+      "district": "Dakshin Dinajpur",
+      "expectedNameContains": ["Hospital", "হাসপাতাল"],
+      "near": {
+        "latitude": 25.22,
+        "longitude": 88.77
+      },
+      "intent": "generic",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "loc-krishnanagar-sbi-en",
+      "query": "State Bank of India",
+      "script": "en",
+      "district": "Nadia",
+      "expectedNameContains": ["State Bank", "SBI"],
+      "near": {
+        "latitude": 23.4,
+        "longitude": 88.5
+      },
+      "intent": "generic",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "loc-krishnanagar-bus-stand-en",
+      "query": "bus stand",
+      "script": "en",
+      "district": "Nadia",
+      "expectedNameContains": ["Bus", "বাস"],
+      "near": {
+        "latitude": 23.4,
+        "longitude": 88.5
+      },
+      "intent": "generic",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "loc-krishnanagar-hospital-bn",
+      "query": "হাসপাতাল",
+      "script": "bn",
+      "district": "Nadia",
+      "expectedNameContains": ["Hospital", "হাসপাতাল"],
+      "near": {
+        "latitude": 23.4,
+        "longitude": 88.5
+      },
+      "intent": "generic",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "loc-bolpur-pharmacy-en",
+      "query": "pharmacy",
+      "script": "en",
+      "district": "Birbhum",
+      "expectedNameContains": ["Pharmacy", "Medical", "Medicine", "Chemist", "Drug"],
+      "near": {
+        "latitude": 23.67,
+        "longitude": 87.72
+      },
+      "intent": "generic",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "loc-bolpur-post-office-en",
+      "query": "post office",
+      "script": "en",
+      "district": "Birbhum",
+      "expectedNameContains": ["Post Office", "ডাকঘর"],
+      "near": {
+        "latitude": 23.67,
+        "longitude": 87.72
+      },
+      "intent": "generic",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "loc-bishnupur-bus-stand-en",
+      "query": "bus stand",
+      "script": "en",
+      "district": "Bankura",
+      "expectedNameContains": ["Bus", "বাস"],
+      "near": {
+        "latitude": 23.07,
+        "longitude": 87.32
+      },
+      "intent": "generic",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "loc-bishnupur-hospital-en",
+      "query": "hospital",
+      "script": "en",
+      "district": "Bankura",
+      "expectedNameContains": ["Hospital", "হাসপাতাল"],
+      "near": {
+        "latitude": 23.07,
+        "longitude": 87.32
+      },
+      "intent": "generic",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "loc-tamluk-bank-en",
+      "query": "bank",
+      "script": "en",
+      "district": "Purba Medinipur",
+      "expectedNameContains": ["Bank", "ব্যাংক", "ব্যাঙ্ক"],
+      "near": {
+        "latitude": 22.3,
+        "longitude": 87.92
+      },
+      "intent": "generic",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "loc-tamluk-police-station-en",
+      "query": "police station",
+      "script": "en",
+      "district": "Purba Medinipur",
+      "expectedNameContains": ["Police", "থানা"],
+      "near": {
+        "latitude": 22.3,
+        "longitude": 87.92
+      },
+      "intent": "generic",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "loc-coochbehar-hospital-en",
+      "query": "hospital",
+      "script": "en",
+      "district": "Cooch Behar",
+      "expectedNameContains": ["Hospital", "হাসপাতাল"],
+      "near": {
+        "latitude": 26.32,
+        "longitude": 89.45
+      },
+      "intent": "generic",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "loc-coochbehar-sbi-en",
+      "query": "SBI",
+      "script": "en",
+      "district": "Cooch Behar",
+      "expectedNameContains": ["State Bank", "SBI"],
+      "near": {
+        "latitude": 26.32,
+        "longitude": 89.45
+      },
+      "intent": "generic",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "loc-purulia-bus-stand-en",
+      "query": "bus stand",
+      "script": "en",
+      "district": "Purulia",
+      "expectedNameContains": ["Bus", "বাস"],
+      "near": {
+        "latitude": 23.33,
+        "longitude": 86.36
+      },
+      "intent": "generic",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "loc-purulia-petrol-pump-en",
+      "query": "petrol pump",
+      "script": "en",
+      "district": "Purulia",
+      "expectedNameContains": [
+        "Petrol",
+        "Fuel",
+        "Indian Oil",
+        "Bharat Petroleum",
+        "Hindustan Petroleum"
+      ],
+      "near": {
+        "latitude": 23.33,
+        "longitude": 86.36
+      },
+      "intent": "generic",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "loc-berhampore-post-office-en",
+      "query": "post office",
+      "script": "en",
+      "district": "Murshidabad",
+      "expectedNameContains": ["Post Office", "ডাকঘর"],
+      "near": {
+        "latitude": 24.1,
+        "longitude": 88.25
+      },
+      "intent": "generic",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "loc-berhampore-court-station-en",
+      "query": "Berhampore Court railway station",
+      "script": "en",
+      "district": "Murshidabad",
+      "expectedNameContains": ["Berhampore Court", "Baharampur Court"],
+      "near": {
+        "latitude": 24.1,
+        "longitude": 88.25
+      },
+      "intent": "named",
+      "addedBy": "claude-known"
     }
   ]
 }

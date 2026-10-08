@@ -3,6 +3,12 @@ import type { Logger } from '../../lib/logger.js';
 import { AppError } from '../../lib/problem.js';
 import type { RateLimiter } from '../../lib/rate-limit.js';
 import {
+  searchLocalFirst,
+  WidePassRefused,
+  type LocalFirstOptions,
+  type LocalFirstOutcome,
+} from './local-first.js';
+import {
   GeocoderError,
   type GeocoderProvider,
   type GeocoderQuery,
@@ -29,6 +35,8 @@ export interface SearchDeps {
   limiter: RateLimiter;
   /** Provider calls per day for everyone together (SEARCH_GLOBAL_DAILY_LIMIT). */
   globalDailyLimit: number;
+  /** Set when the app sent an area: nearby places first, then a wide pass if needed. */
+  localFirst: LocalFirstOptions | undefined;
 }
 
 /** Thrown for 429 and for 503 with a wait; the route turns `retryAfterSeconds` into a header. */
@@ -78,11 +86,15 @@ async function enforceLimits({ limiter, globalDailyLimit }: SearchDeps, userId: 
 }
 
 /**
- * Checks the limits, calls the provider once and writes one log line.
+ * Checks the limits, calls the provider and writes one log line.
  *
- * NEVER log the query, the coordinates or the results: together they say where a person is or
- * means to go (Plan v7 §12.2). The log line has the outcome, the latency and a count, nothing
- * else; `request_id` and `user_id` come from the request logger.
+ * With `deps.localFirst` there can be two provider calls (ADR 0018, "Local ranking"). EACH call
+ * spends the user's limits and the shared daily budget, so a search can cost two of each. When
+ * a limit refuses the second call, the nearby results are returned without it.
+ *
+ * NEVER log the query, the coordinates, the distances or the results: together they say where a
+ * person is or means to go (Plan v7 §12.2). The log line has the outcome, the latency and
+ * counts, nothing else; `request_id` and `user_id` come from the request logger.
  */
 export async function searchPlaces(
   deps: SearchDeps,
@@ -95,12 +107,33 @@ export async function searchPlaces(
   const started = performance.now();
   const latency = () => Math.round(performance.now() - started);
   try {
-    const results = await deps.geocoder.search(query);
+    const found: LocalFirstOutcome =
+      deps.localFirst === undefined
+        ? {
+            results: await deps.geocoder.search(query),
+            localCount: 0,
+            providerCalls: 1,
+            widePass: 'off',
+          }
+        : await searchLocalFirst(deps.geocoder, query, deps.localFirst, async () => {
+            try {
+              await enforceLimits(deps, userId);
+            } catch (err) {
+              throw err instanceof SearchLimitError ? new WidePassRefused(err) : err;
+            }
+          });
     log.info(
-      { outcome: 'ok', latency_ms: latency(), result_count: results.length },
+      {
+        outcome: 'ok',
+        latency_ms: latency(),
+        result_count: found.results.length,
+        local_count: found.localCount,
+        provider_calls: found.providerCalls,
+        wide_pass: found.widePass,
+      },
       'geocoder call',
     );
-    return results;
+    return found.results;
   } catch (err) {
     if (!(err instanceof GeocoderError)) throw err;
     const fields = { outcome: err.kind, latency_ms: latency(), result_count: 0 };

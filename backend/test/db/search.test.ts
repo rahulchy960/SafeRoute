@@ -47,17 +47,34 @@ const NEAR = { nearLatitude: 10.123456, nearLongitude: 20.987654 };
 
 /** A geocoder that records what it was asked and answers from a script. */
 function fakeGeocoder(reply: PlaceResult[] | GeocoderError = [PLACE]) {
+  return scriptedGeocoder(() => reply);
+}
+
+/** Like `fakeGeocoder`, with a reply that depends on the call (nearby pass or wide pass). */
+function scriptedGeocoder(reply: (query: GeocoderQuery) => PlaceResult[] | GeocoderError) {
   const calls: GeocoderQuery[] = [];
   const provider: GeocoderProvider = {
     name: 'fake',
     attribution: 'Fake attribution line',
     search: (query) => {
       calls.push(query);
-      return reply instanceof GeocoderError ? Promise.reject(reply) : Promise.resolve(reply);
+      const answer = reply(query);
+      return answer instanceof GeocoderError ? Promise.reject(answer) : Promise.resolve(answer);
     },
   };
   return { provider, calls };
 }
+
+/** A fake place `northDegrees` north of the coarse NEAR point (0.01 degrees is 1112 m). */
+const placeNear = (id: string, northDegrees: number): PlaceResult => ({
+  id,
+  name: `Branch ${id} RESULTNAME`,
+  label: 'Example District RESULTLABEL',
+  latitude: 10.12 + northDegrees,
+  longitude: 20.99,
+  kind: 'bank',
+});
+const NEARBY = [placeNear('n1', 0.02), placeNear('n2', 0.1), placeNear('n3', 0.3)];
 
 function setup(
   geocoder: GeocoderProvider = fakeGeocoder().provider,
@@ -299,6 +316,140 @@ describe('POST /v1/search', () => {
   });
 });
 
+describe('POST /v1/search: local-first ranking (ADR 0018)', () => {
+  const tokensLeft = async (key: string) =>
+    Number(
+      (await db.select().from(rateLimitBuckets).where(eq(rateLimitBuckets.key, key)))[0]?.tokens,
+    );
+
+  it('without an area: one unfiltered call and no distances', async () => {
+    const { provider, calls } = fakeGeocoder(NEARBY);
+    const { app } = setup(provider);
+    const { token } = await signUp(app, 50);
+
+    const res = await search(app, token, { q: 'bank' });
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).not.toHaveProperty('withinMeters');
+    const body = (await res.json()) as { results: Record<string, unknown>[] };
+    expect(body.results).toHaveLength(3);
+    for (const result of body.results) expect(result).not.toHaveProperty('distanceMeters');
+  });
+
+  it('enough nearby places: one filtered call, one token, distances from the coarse point', async () => {
+    const { provider, calls } = scriptedGeocoder(() => NEARBY);
+    const { app } = setup(provider, { SEARCH_GLOBAL_DAILY_LIMIT: '10' });
+    const { token, userId } = await signUp(app, 51);
+
+    const res = await search(app, token, { q: 'bank', ...NEAR });
+    expect(res.status).toBe(200);
+    expect(calls).toEqual([
+      {
+        query: 'bank',
+        nearLatitude: 10.12,
+        nearLongitude: 20.99,
+        language: 'en',
+        limit: 6,
+        withinMeters: 50_000,
+      },
+    ]);
+    const body = (await res.json()) as { results: { id: string; distanceMeters: number }[] };
+    expect(body.results.map((result) => [result.id, result.distanceMeters])).toEqual([
+      ['n1', 2200],
+      ['n2', 11_100],
+      ['n3', 33_400],
+    ]);
+    expect(await tokensLeft('search:global')).toBeCloseTo(9, 1);
+    expect(await tokensLeft(`search:burst:${userId}`)).toBeCloseTo(
+      SEARCH_LIMITS.userBurst.capacity - 1,
+      0,
+    );
+  });
+
+  it('too few nearby: a wide call follows, nearby first, and BOTH calls spend the limits', async () => {
+    const far = { ...PLACE, id: 'far-1' };
+    const { provider, calls } = scriptedGeocoder((query) =>
+      query.withinMeters === undefined ? [far, NEARBY[0] ?? far] : NEARBY.slice(0, 1),
+    );
+    const { app, logs } = setup(provider, { SEARCH_GLOBAL_DAILY_LIMIT: '10' });
+    const { token, userId } = await signUp(app, 52);
+
+    const res = await search(app, token, { q: 'bank', ...NEAR });
+    expect(res.status).toBe(200);
+    expect(calls.map((call) => call.withinMeters)).toEqual([50_000, undefined]);
+    const body = (await res.json()) as { results: { id: string; distanceMeters: number }[] };
+    expect(body.results.map((result) => result.id)).toEqual(['n1', 'far-1']);
+    expect(body.results[1]?.distanceMeters).toBeGreaterThan(200_000);
+
+    expect(await tokensLeft('search:global')).toBeCloseTo(8, 1);
+    expect(await tokensLeft(`search:daily:${userId}`)).toBeCloseTo(
+      SEARCH_LIMITS.userDaily.capacity - 2,
+      0,
+    );
+    expect(logs().find((line) => line.message === 'geocoder call')).toMatchObject({
+      outcome: 'ok',
+      result_count: 2,
+      local_count: 1,
+      provider_calls: 2,
+      wide_pass: 'ok',
+    });
+  });
+
+  it('the budget runs out between the passes: nearby results alone; with none, 503', async () => {
+    const one = scriptedGeocoder((query) =>
+      query.withinMeters === undefined ? [PLACE] : NEARBY.slice(0, 1),
+    );
+    const first = setup(one.provider, { SEARCH_GLOBAL_DAILY_LIMIT: '1' });
+    const alice = await signUp(first.app, 53);
+    const kept = await search(first.app, alice.token, { q: 'bank', ...NEAR });
+    expect(kept.status).toBe(200);
+    expect(((await kept.json()) as { results: { id: string }[] }).results.map((r) => r.id)).toEqual(
+      ['n1'],
+    );
+    expect(one.calls).toHaveLength(1);
+    expect(first.logs().find((line) => line.message === 'geocoder call')).toMatchObject({
+      provider_calls: 1,
+      wide_pass: 'refused',
+    });
+
+    await truncateAll(pool);
+    const none = scriptedGeocoder((query) => (query.withinMeters === undefined ? [PLACE] : []));
+    const second = setup(none.provider, { SEARCH_GLOBAL_DAILY_LIMIT: '1' });
+    const bob = await signUp(second.app, 54);
+    const refused = await search(second.app, bob.token, { q: 'bank', ...NEAR });
+    expect(refused.status).toBe(503);
+    expect(await refused.json()).toMatchObject({ code: 'search_unavailable' });
+    expect(refused.headers.get('retry-after')).not.toBeNull();
+    expect(none.calls).toHaveLength(1);
+  });
+
+  it('the provider fails on the wide pass: nearby results alone', async () => {
+    const { provider } = scriptedGeocoder((query) =>
+      query.withinMeters === undefined ? new GeocoderError('timeout') : NEARBY.slice(0, 2),
+    );
+    const { app, logs } = setup(provider);
+    const { token } = await signUp(app, 55);
+    const res = await search(app, token, { q: 'bank', ...NEAR });
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as { results: unknown[] }).results).toHaveLength(2);
+    expect(logs().find((line) => line.message === 'geocoder call')).toMatchObject({
+      outcome: 'ok',
+      wide_pass: 'timeout',
+    });
+  });
+
+  it('the radius and the minimum come from the configuration', async () => {
+    const { provider, calls } = scriptedGeocoder(() => NEARBY.slice(0, 1));
+    const { app } = setup(provider, {
+      SEARCH_NEARBY_RADIUS_KM: '20',
+      SEARCH_MIN_LOCAL_RESULTS: '1',
+    });
+    const { token } = await signUp(app, 56);
+    expect((await search(app, token, { q: 'bank', ...NEAR })).status).toBe(200);
+    // One nearby result is enough now, so there is no wide call.
+    expect(calls.map((call) => call.withinMeters)).toEqual([20_000]);
+  });
+});
+
 describe('POST /v1/search: provider failures', () => {
   const KINDS: GeocoderFailure[] = [
     'auth',
@@ -483,6 +634,8 @@ describe("POST /v1/search: nothing about the search is in the API's log lines", 
         'RESULTNAME',
         'RESULTLABEL',
         'fake-place-1',
+        'distanceMeters',
+        'withinMeters',
         'FAKEKEY',
         '?',
         'nearLatitude',
@@ -497,6 +650,8 @@ describe("POST /v1/search: nothing about the search is in the API's log lines", 
       expect(Object.keys(call[0] ?? {}).sort()).toEqual(
         [
           ...(status === 503 && index === 1 ? ['alert'] : []),
+          // Counts and a fixed word only, on a search that reached the provider.
+          ...(status === 200 ? ['local_count', 'provider_calls', 'wide_pass'] : []),
           'latency_ms',
           'message',
           'outcome',

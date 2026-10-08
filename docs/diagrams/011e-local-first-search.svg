@@ -1,0 +1,138 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1226" height="1630" viewBox="0 0 1226 1630" font-family="Helvetica, Arial, sans-serif">
+<title>Local-first place search</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#495057"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="40" y="62" font-size="24" font-weight="700" fill="#1e1e1e">Local-first place search</text>
+<text x="40" y="86" font-size="14" fill="#495057">With an area in the request: nearby places first, a wide pass only when too few are near. Every provider call spends the limits. Nothing about a search is logged (P011e, ADR 0018)</text>
+<rect x="40" y="114" width="271" height="1430" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="54" y="135" font-size="14" font-weight="700" fill="#495057">Phone</text>
+<rect x="347" y="114" width="532" height="1430" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="361" y="135" font-size="14" font-weight="700" fill="#495057">SafeRoute API</text>
+<rect x="915" y="114" width="271" height="1430" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="929" y="135" font-size="14" font-weight="700" fill="#495057">Outside SafeRoute</text>
+<line x1="175.5" y1="249" x2="613" y2="309" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="613" y1="396" x2="613" y2="456" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="613" y1="543" x2="175.5" y2="603" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="613" y1="543" x2="482.5" y2="644.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="613" y1="543" x2="743.5" y2="634" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="743.5" y1="742" x2="1050.5" y2="833" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="743.5" y1="742" x2="743.5" y2="853.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="743.5" y1="940.5" x2="482.5" y2="1042" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="743.5" y1="940.5" x2="743.5" y2="1021" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="743.5" y1="1021" x2="1050.5" y2="961" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="482.5" y1="1108" x2="613" y2="1189" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="743.5" y1="1129" x2="613" y2="1189" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="613" y1="1317" x2="175.5" y2="1418.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="613" y1="1317" x2="613" y2="1377" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="58" y="162" width="235" height="87" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="175.5" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="175.5" y="190.3">App: POST /v1/search, q</tspan>
+<tspan x="175.5" y="211.1">and (optionally) a coarse</tspan>
+<tspan x="175.5" y="231.9">area in the body</tspan>
+</text>
+<rect x="495.5" y="309" width="235" height="87" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="613" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="613" y="337.3">After auth and validation:</tspan>
+<tspan x="613" y="358.1">round the area to 2 decimals</tspan>
+<tspan x="613" y="378.9">(about 1 km)</tspan>
+</text>
+<rect x="495.5" y="456" width="235" height="87" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="613" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="613" y="484.3">Rate limits, call 1: user</tspan>
+<tspan x="613" y="505.1">burst, user daily, shared</tspan>
+<tspan x="613" y="525.9">budget</tspan>
+</text>
+<rect x="365" y="644.5" width="235" height="87" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="482.5" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="482.5" y="672.8">No area sent: one call, bias</tspan>
+<tspan x="482.5" y="693.6">to the default area, no</tspan>
+<tspan x="482.5" y="714.4">distances</tspan>
+</text>
+<rect x="626" y="634" width="235" height="108" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="743.5" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="743.5" y="662.4">Pass 1 (nearby): only places</tspan>
+<tspan x="743.5" y="683.2">within</tspan>
+<tspan x="743.5" y="704">SEARCH_NEARBY_RADIUS_KM</tspan>
+<tspan x="743.5" y="724.8">(50), plus the bias</tspan>
+</text>
+<rect x="626" y="853.5" width="235" height="87" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="743.5" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="743.5" y="881.8">At least</tspan>
+<tspan x="743.5" y="902.6">SEARCH_MIN_LOCAL_RESULTS</tspan>
+<tspan x="743.5" y="923.4">(3) within the radius?</tspan>
+</text>
+<rect x="495.5" y="1189" width="235" height="128" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="613" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="613" y="1217">Merge: nearby first, then</tspan>
+<tspan x="613" y="1237.8">wide; drop duplicates; cut to</tspan>
+<tspan x="613" y="1258.6">limit; add distanceMeters</tspan>
+<tspan x="613" y="1279.4">from the coarse point,</tspan>
+<tspan x="613" y="1300.2">rounded to 100 m</tspan>
+</text>
+<rect x="933" y="833" width="235" height="128" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="1050.5" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1050.5" y="861">Geocoding provider.</tspan>
+<tspan x="1050.5" y="881.8">Geoapify:</tspan>
+<tspan x="1050.5" y="902.6">filter=circle:lon,lat,metres|countrycode.</tspan>
+<tspan x="1050.5" y="923.4">LocationIQ: viewbox +</tspan>
+<tspan x="1050.5" y="944.2">bounded=1</tspan>
+</text>
+<rect x="58" y="1418.5" width="235" height="66" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="175.5" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="175.5" y="1446.7">200: results (nearby first) +</tspan>
+<tspan x="175.5" y="1467.5">attribution</tspan>
+</text>
+<rect x="495.5" y="1377" width="235" height="149" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="613" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="613" y="1405.1">ONE LOG LINE: outcome,</tspan>
+<tspan x="613" y="1425.9">latency, result_count,</tspan>
+<tspan x="613" y="1446.7">local_count, provider_calls,</tspan>
+<tspan x="613" y="1467.5">wide_pass. Never the</tspan>
+<tspan x="613" y="1488.3">query, a coordinate, a</tspan>
+<tspan x="613" y="1509.1">distance or a result</tspan>
+</text>
+<rect x="365" y="1042" width="235" height="66" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="482.5" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="482.5" y="1070.2">Yes: one provider call was</tspan>
+<tspan x="482.5" y="1091">enough</tspan>
+</text>
+<rect x="626" y="1021" width="235" height="108" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="743.5" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="743.5" y="1049.4">Call 2: the rate limits again</tspan>
+<tspan x="743.5" y="1070.2">(same three buckets), then</tspan>
+<tspan x="743.5" y="1091">pass 2 (wide) without the</tspan>
+<tspan x="743.5" y="1111.8">area filter</tspan>
+</text>
+<rect x="58" y="603" width="235" height="170" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="175.5" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="175.5" y="631.2">Errors: 429 or 503 +</tspan>
+<tspan x="175.5" y="652">Retry-After when a limit</tspan>
+<tspan x="175.5" y="672.8">refuses call 1; 503 when the</tspan>
+<tspan x="175.5" y="693.6">provider fails on pass 1. On</tspan>
+<tspan x="175.5" y="714.4">call 2 the same, but only</tspan>
+<tspan x="175.5" y="735.2">when nothing was found</tspan>
+<tspan x="175.5" y="756">nearby</tspan>
+</text>
+<rect x="366.4" y="562" width="55.7" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="394.3" y="577.5" font-size="13" fill="#1e1e1e" text-anchor="middle">refused</text>
+<rect x="520" y="582.8" width="55.4" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="547.8" y="598.3" font-size="13" fill="#1e1e1e" text-anchor="middle">no area</text>
+<rect x="645.1" y="577.5" width="66.3" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="678.3" y="593" font-size="13" fill="#1e1e1e" text-anchor="middle">area sent</text>
+<rect x="842.1" y="776.5" width="109.8" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="897" y="792" font-size="13" fill="#1e1e1e" text-anchor="middle">coarse area only</text>
+<rect x="596.5" y="980.3" width="33.1" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="613" y="995.8" font-size="13" fill="#1e1e1e" text-anchor="middle">yes</text>
+<rect x="730.5" y="969.8" width="26" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="743.5" y="985.3" font-size="13" fill="#1e1e1e" text-anchor="middle">no</text>
+<rect x="551.6" y="1148" width="253.3" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="678.3" y="1163.5" font-size="13" fill="#1e1e1e" text-anchor="middle">ok; or refused or failed with some nearby</text>
+<rect x="40" y="1565" width="16" height="16" rx="3" fill="#a5d8ff" stroke="#1971c2" stroke-width="1.5"/>
+<text x="62" y="1578" font-size="13" fill="#495057">App / UI</text>
+<rect x="134.8" y="1565" width="16" height="16" rx="3" fill="#b2f2bb" stroke="#2f9e44" stroke-width="1.5"/>
+<text x="156.8" y="1578" font-size="13" fill="#495057">Service</text>
+<rect x="228.3" y="1565" width="16" height="16" rx="3" fill="#ffc9c9" stroke="#e03131" stroke-width="1.5"/>
+<text x="250.3" y="1578" font-size="13" fill="#495057">Security / emergency</text>
+<rect x="401.9" y="1565" width="16" height="16" rx="3" fill="#e9ecef" stroke="#495057" stroke-width="1.5"/>
+<text x="423.9" y="1578" font-size="13" fill="#495057">External</text>
+</svg>
