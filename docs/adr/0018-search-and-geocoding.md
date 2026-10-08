@@ -211,6 +211,28 @@ Added in P011b.
 - **Coarse area.** `near` is the centre of the map, rounded to two decimals on the phone as
   well as on the server. No location permission is needed or asked for; the user's own position
   is never sent for a search.
+- **Changed on 2026-10-08 (P011e2): the area can be the user's position.** The line above is
+  kept as the record of P011b. Since P011e2, in this order:
+  1. the user's position, when the location permission is granted at that moment and the
+     phone's position is at most 5 minutes old (by the clock, not by how the map labels it);
+  2. otherwise the centre of the map, when the map is zoomed in on an area (P012e1);
+  3. otherwise no area: the server uses its default bias and no area filter.
+  - **Why:** P011e1 made the server put nearby places first, but "nearby" was near the map's
+    centre. Someone who searches "bank" means near themselves, wherever the map looks.
+  - **What does not change:** the point is rounded to two decimals (about 1 km) on the phone and
+    again on the server; search asks for no permission and starts no location updates (it reads
+    the position Home already has, or uses none); nothing about a search is stored or logged.
+  - **What does change, for privacy:** a search now sends the user's own rounded position to
+    SafeRoute's server, which passes that rounded point to the geocoding provider as the area
+    of the request. Before, this happened only when the map was centred on the user. The
+    location disclosure says so since this prompt (**wording to be verified by a lawyer**).
+  - **Distances.** Each row shows the server's `distanceMeters`: "under 1 km" below a
+    kilometre (the server measures from the rounded point, so finer figures would be false
+    precision), one decimal up to 10 km, whole kilometres beyond. A line above the list and the
+    row's spoken text say whether they are measured from the user's location or from the
+    centre of the map. The label belongs to the answer: it is what that search was sent with.
+  - **Not changed:** ranking on the server. Searches that still go wrong (brand aliases,
+    category words) are collected as examples first; no fix is guessed.
 - **Language** follows the app's language (`en` or `bn`); the limit is 6.
 - **No history.** The typed text lives in the screen's saved state (it survives a rotation) and
   nowhere else: not in a file, a log or analytics. There are no recent searches or saved places.
