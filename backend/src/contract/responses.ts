@@ -62,7 +62,8 @@ export const ERROR_RESPONSES = {
     name: 'Conflict',
     description:
       'Conflicts with the current state (`conflict`, `phone_already_registered`, ' +
-      '`account_deletion_required`).',
+      '`account_deletion_required`, `invalid_contact`, `contact_exists`, `contact_opted_out`, ' +
+      '`contact_limit_reached`).',
   },
   410: { name: 'Gone', description: 'The resource existed but has expired or ended (`gone`).' },
   422: {
@@ -73,7 +74,8 @@ export const ERROR_RESPONSES = {
   },
   429: {
     name: 'TooManyRequests',
-    description: 'Rate limit exceeded (`rate_limited`). Wait for `Retry-After` seconds.',
+    description:
+      'Rate limit exceeded (`rate_limited`). Wait for `Retry-After` seconds when it is sent.',
   },
   500: { name: 'InternalError', description: 'Unexpected server error (`internal_error`).' },
   503: {

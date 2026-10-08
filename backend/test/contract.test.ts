@@ -21,10 +21,16 @@ const DOCUMENTED_PATHS = [
   '/v1/me/consents/{purpose}',
   '/v1/search',
   '/v1/routes',
+  '/v1/contacts',
+  '/v1/contacts/{id}',
+  '/v1/contacts/{id}/invite',
+  '/v1/contacts/{id}/invite/confirm',
+  '/c',
+  '/v1/public/contacts/opt-out',
 ];
 
 /** Operations that are public by design; every other operation must require firebaseBearer. */
-const PUBLIC_OPERATIONS = ['getHealth', 'getReadiness'];
+const PUBLIC_OPERATIONS = ['getHealth', 'getReadiness', 'getContactOptOutPage', 'optOutContact'];
 
 const HTTP_METHODS = ['get', 'put', 'post', 'delete', 'options', 'head', 'patch', 'trace'];
 
@@ -422,7 +428,7 @@ describe('generated OpenAPI document', () => {
   });
 
   it('documents routes as a POST with a body and the routing problem codes (P012b, ADR 0020)', () => {
-    expect((doc.info as Json).version).toBe('0.8.0');
+    expect((doc.info as Json).version).toBe('0.9.0');
     const paths = doc.paths as Record<string, Record<string, Json>>;
     // Origin and destination travel in a request body. No GET, no parameters (ADR 0019).
     expect(Object.keys(paths['/v1/routes'] ?? {})).toEqual(['post']);
@@ -499,6 +505,67 @@ describe('generated OpenAPI document', () => {
     expect(JSON.stringify(components.schemas?.Route).toLowerCase()).not.toMatch(
       /safe(st|r)? route|safety score/,
     );
+  });
+
+  it('documents emergency contacts and the public opt-out (P013a, ADR 0024)', () => {
+    const paths = doc.paths as Record<string, Record<string, Json>>;
+    expect(Object.keys(paths['/v1/contacts'] ?? {}).sort()).toEqual(['get', 'post']);
+    expect(Object.keys(paths['/v1/contacts/{id}'] ?? {}).sort()).toEqual(['delete', 'patch']);
+    expect(Object.keys(paths['/v1/contacts/{id}/invite'] ?? {})).toEqual(['post']);
+    expect(Object.keys(paths['/v1/contacts/{id}/invite/confirm'] ?? {})).toEqual(['post']);
+    expect(Object.keys(paths['/c'] ?? {})).toEqual(['get']);
+    expect(Object.keys(paths['/v1/public/contacts/opt-out'] ?? {})).toEqual(['post']);
+
+    // The only URL parameter of the whole feature is the server-made contact id.
+    const contactOps = operations().filter(
+      ({ path }) => path === '/c' || path.includes('/contacts'),
+    );
+    expect(contactOps).toHaveLength(8);
+    for (const { op, path } of contactOps) {
+      const parameters = ((op.parameters as Json[] | undefined) ?? []).map((p) => p.name);
+      expect(parameters, path).toEqual(path.includes('{id}') ? ['id'] : []);
+      expect(op.tags, path).toEqual([path.startsWith('/v1/contacts') ? 'contacts' : 'public']);
+    }
+
+    const schemas = components.schemas as Record<string, Json>;
+    expect(Object.keys(schemas.Contact?.properties as Json)).toEqual([
+      'id',
+      'name',
+      'phoneE164',
+      'createdAt',
+      'invitedAt',
+      'optedOutAt',
+    ]);
+    expect(Object.keys(schemas.CreateContactRequest?.properties as Json)).toEqual([
+      'name',
+      'phone',
+    ]);
+    expect(Object.keys(schemas.ContactOptOutRequest?.properties as Json)).toEqual(['token']);
+    // Whether a number belongs to a registered user is never exposed (P015 decides).
+    expect(serialized).not.toMatch(/hasAppUser|has_app_user|registered user/i);
+
+    const create = String(paths['/v1/contacts']?.post?.description);
+    for (const code of [
+      'consent_required',
+      'invalid_contact',
+      'contact_exists',
+      'contact_opted_out',
+      'contact_limit_reached',
+      'rate_limited',
+    ]) {
+      expect(create, code).toContain(code);
+      expect(serialized, code).toContain(code);
+    }
+    // The server sends no message, and the contract says so where an invite is created.
+    expect(String(paths['/v1/contacts/{id}/invite']?.post?.description)).toContain(
+      'The server sends no message to a contact',
+    );
+    expect(String(paths['/v1/me/consents/{purpose}']?.put?.description)).toContain(
+      'deletes all of',
+    );
+    expect(
+      Object.keys((paths['/c']?.get?.responses as Record<string, Json>)['200']?.content as Json),
+    ).toEqual(['text/html']);
   });
 
   it('is city-neutral (ADR 0005)', () => {

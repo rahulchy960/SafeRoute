@@ -51,7 +51,9 @@ export const setMyConsentRoute = createRoute({
     'Records the decision and returns the latest state; safe to retry. Ask just-in-time, when ' +
     'the feature that needs the purpose is first used. Errors: `validation_error` (400) for an ' +
     'unknown purpose; `account_deletion_required` (409) when withdrawing `account_core`, which ' +
-    'can only be withdrawn by deleting the account.',
+    'can only be withdrawn by deleting the account. **Withdrawing `sos_alerts` deletes all of ' +
+    "the user's emergency contacts**, and their opt-out links stop working, in the same step; " +
+    'it cannot be undone.',
   security: [{ firebaseBearer: [] }],
   request: {
     params: ConsentPurposeParamSchema,

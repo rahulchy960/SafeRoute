@@ -63,6 +63,15 @@ new ADR file under `docs/adr/`.
   `attribution`. **The routing service can be asleep:** the first request after a quiet period
   may get 503 `routing_unavailable` with `Retry-After`; retry after that many seconds. Routes
   carry no safety information.
+- **Emergency contacts** (`contacts` tag, ADR 0024): `GET/POST /v1/contacts`,
+  `PATCH/DELETE /v1/contacts/{id}`, `POST /v1/contacts/{id}/invite` and `.../invite/confirm`.
+  Adding needs the `sos_alerts` consent. **The server sends no message to a contact.** The
+  invite call returns `optOutToken` once; the app builds `<API address>/c#<token>` (the token
+  in the URL **fragment**, which never reaches a server) and opens the SMS app; when the user
+  says the SMS was sent, the app calls `confirm`. Keep the token in memory only. An item with
+  `optedOutAt` must never be alerted. Withdrawing `sos_alerts` deletes all contacts.
+- **Public** (`public` tag): `GET /c` is the opt-out web page (HTML, not for the app) and
+  `POST /v1/public/contacts/opt-out` is the call that page makes. Neither needs sign-in.
 - Paste the file into any OpenAPI viewer (e.g. editor.swagger.io) to browse it. It is public data.
 
 ## API contract rules (summary of ADR 0004)
@@ -114,14 +123,18 @@ Currently defined codes:
 | `forbidden` | 403 | Authenticated but the role is not allowed. Final |
 | `bootstrap_required` | 403 | Signed in, but no account yet: call `POST /v1/me/bootstrap`, then retry |
 | `account_deleted` | 403 | The account was deleted. Final |
-| `consent_required` | 403 | Bootstrap of a new account without the `consent` object. Show the consent notice, then retry with it |
+| `consent_required` | 403 | Bootstrap of a new account without the `consent` object: show the consent notice, then retry with it. Emergency contacts: the `sos_alerts` consent is not granted: show its notice, record the consent, then retry |
 | `adult_required` | 403 | Bootstrap of a new account without `ageConfirmed: true`. SafeRoute is for adults (18+); nothing is stored |
 | `not_found` | 404 | No such route or resource |
 | `conflict` | 409 | Conflicts with the current state |
 | `phone_already_registered` | 409 | Bootstrap: another account already holds this phone number |
 | `account_deletion_required` | 409 | `account_core` consent can't be withdrawn on its own; the user must delete the account |
+| `invalid_contact` | 409 | Emergency contacts: the number is the user's own |
+| `contact_exists` | 409 | Emergency contacts: the number is already a contact. Also the answer to a retried create that reached the server: read the list again and continue |
+| `contact_opted_out` | 409 | Emergency contacts: this person opted out. They can't be added or invited again by this user. Explain it calmly; never suggest a way around it |
+| `contact_limit_reached` | 409 | Emergency contacts: the user already has the maximum (`maxContacts` in the list response) |
 | `gone` | 410 | Existed but expired or ended (e.g. a finished share) |
-| `rate_limited` | 429 | Too many requests. Wait for the `Retry-After` header (seconds) before trying again |
+| `rate_limited` | 429 | Too many requests. Wait for the `Retry-After` header (seconds) before trying again. Without the header (a contact that already has 10 invite links) waiting does not help |
 | `http_error` | 4xx | Framework-level rejection (e.g. malformed JSON, unsupported media type) |
 | `internal_error` | 500 | Unexpected server error (details only in server logs) |
 | `db_unavailable` | 503 | Readiness: the database is not reachable |

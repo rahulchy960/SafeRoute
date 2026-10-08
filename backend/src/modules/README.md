@@ -12,7 +12,7 @@ own service later only if measurements justify it (Plan v7 §14.6).
 | `auth` | Firebase ID-token verification (jose), `authenticate` / `requireUser` / `requireRole`; roles from `users.role` (ADR 0006) | P005a |
 | `users` | `/v1/me` bootstrap (with the age declaration) and profile; deletion and export | P005b, P009a, P020 |
 | `consents` | `/v1/me/consents`: per-purpose consent history and the purpose allowlist (ADR 0010) | P009a |
-| `contacts` | emergency contacts, contact opt-out | P013 |
+| `contacts` | `/v1/contacts`: up to 5 emergency contacts behind the `sos_alerts` consent, invite tokens (hashes only), the public opt-out page `/c` and `POST /v1/public/contacts/opt-out`, contacts rate limits (`CONTACT_LIMITS`). Sends no message to anyone (ADR 0024) | P013a |
 | `search` | `POST /v1/search` (a body, never a query string: ADR 0019): place search behind the `GeocoderProvider` adapter, query normalisation, search rate limits (ADR 0018) | P011a |
 | `routing` | `POST /v1/routes` (a body, never a query string): walking and driving routes behind the `RoutingProvider` adapter (OSRM), ID tokens for the private services, the covered-area check, route rate limits (ADR 0020) | P012b |
 | `safety` | H3 safety cells, areas and the route exposure metric | P019 |
