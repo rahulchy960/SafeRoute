@@ -57,7 +57,7 @@ internal class MapStateHolder(
     private val config: MapProviderConfig,
     private val network: NetworkStatus,
     private val scope: CoroutineScope,
-    initialCamera: CameraState = RegionDefaults.camera,
+    initialCamera: CameraState = RegionDefaults.overview,
 ) : MapController {
 
     private val _loadState = MutableStateFlow(
@@ -67,6 +67,9 @@ internal class MapStateHolder(
 
     private val _camera = MutableStateFlow(initialCamera)
     override val camera: StateFlow<CameraState> = _camera.asStateFlow()
+
+    private val _userGestures = MutableStateFlow(0)
+    override val userGestures: StateFlow<Int> = _userGestures.asStateFlow()
 
     private var renderer: MapRenderer? = null
     private var variant = MapStyleVariant.Light
@@ -126,6 +129,11 @@ internal class MapStateHolder(
         }
         watchdog?.cancel()
         _loadState.value = next
+    }
+
+    /** The user began to pan, zoom or rotate the map with their fingers. */
+    fun onUserGesture() {
+        _userGestures.value += 1
     }
 
     /** The map stopped moving. */

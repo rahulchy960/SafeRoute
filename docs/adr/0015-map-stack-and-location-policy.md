@@ -123,6 +123,62 @@ Facts found in the P010a spike (2026-10-06), with their sources:
 - The map opens at `RegionDefaults`: the centre of Kolkata, the launch city, at city zoom.
   Regions become configuration when they arrive (`regionCode`, ADR 0013); no identifier names a
   place (ADR 0005).
+- **Changed on 2026-10-08 (P012e1):** the map now opens on the whole launch region, see
+  "Initial camera" below. The line above is kept as the record of what was built first.
+
+### Initial camera (P012e1, 2026-10-08)
+
+Evidence: on a phone in a small town in Uttar Dinajpur the map opened on Kolkata on every
+launch, until "my location" was tapped. The launch geography is West Bengal (ADR 0016); a map
+that opens on one city tells everyone else the app is not for them.
+
+- **The overview.** `RegionDefaults.overview` shows the whole launch region: the middle of its
+  bounding box (about 21.5 to 27.2 north, 85.8 to 89.9 east) at zoom 6. It replaces the city
+  camera, which is removed. At zoom 6 the region is about 570 dp tall and 370 dp wide (the
+  map library counts 512 dp for the whole world at zoom 0), which fits between the search pill
+  and the sheet on a phone. **Computed, not checked on a device**; the prompt suggested 6.5 to
+  7, at which the region would be 800 dp tall or more and cut off at the top and bottom.
+- **No permission, or no position: the overview stays.** Never a city.
+- **Permission already granted when Home first shows:** the map moves to the user's position at
+  zoom 15, **once per launch**:
+  - at once, when the phone's last known position is at most 10 minutes old;
+  - otherwise with the first new position, if it arrives within 8 seconds;
+  - otherwise not at all: the map stays on the overview and only the dot appears later.
+- **The phone's last known position** is read through the same `LocationRepository`, only while
+  the permission is granted and Home is visible. It costs no new measurement. One older than
+  10 minutes is ignored everywhere (it may be from another town), so it is never drawn and
+  never used as the start of a route. A recent one is drawn as an old (grey) position until a
+  new one arrives, like any position after a pause.
+- **Never against the user.** The automatic move is given up for good as soon as the user pans,
+  zooms or rotates the map, taps "my location" (which centres the map itself), or chooses a
+  place or a route. The map engine reports moves that a finger started
+  (`MapController.userGestures`); only `MapLibreEngine.kt` knows how.
+- **Rotation and process death** keep the camera the user had. A saved camera means "not a
+  fresh launch", and then nothing moves by itself.
+- **Outside the launch region** the map still goes to the user's position. That routes or
+  safety data are missing there is said when they are asked for, not by hiding where the user
+  is.
+- **The permission is still never requested at launch.** A user without it sees the overview
+  and the "my location" button; the disclosure and the system dialog come only after a tap, as
+  before. A permission switched on in system Settings while the app is open does not move the
+  map either: only the first showing of Home counts.
+- **Nothing new is stored, logged or sent.** The last known position lives in the repository's
+  memory like any other. The camera is saved in the ViewModel's saved state as before, so
+  after the automatic move it holds the position the map is centred on, exactly as it does
+  after a tap on "my location". Tests capture Logcat and check the saved state's keys.
+- **Search area.** The app sends the map's centre as the area a search prefers. Looking at the
+  whole region is not looking at an area, so below zoom 9 the app sends no area (the server
+  then uses its default bias and no area filter, ADR 0018).
+- **Consequence for privacy wording (to be verified by a lawyer):** once the map has moved to
+  the user's position by itself, its centre is that position, and a search then sends it,
+  rounded to two decimals, to SafeRoute's server and the geocoding provider. Before this
+  change that happened only after a tap on "my location". The code path is the same and the
+  rounding is the same; what changed is that no tap is needed. The disclosure text says that
+  for showing the location "nothing is sent to SafeRoute's servers"; whether it must mention
+  search is part of the disclosure change that P011e2 owes (ADR 0018).
+- **Not verified on a device:** the overview's fit, that the library reports gestures as
+  documented in its class files (`OnCameraMoveStartedListener.REASON_API_GESTURE`, MapLibre
+  Android 13.6.1), and how quickly Play services returns the last known position.
 
 ### Location policy (confirmed in P010b)
 

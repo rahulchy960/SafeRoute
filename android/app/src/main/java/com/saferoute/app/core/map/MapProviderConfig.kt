@@ -113,14 +113,23 @@ data class MapProviderConfig(val key: MapKey?) {
 /**
  * Where the map opens and how far it zooms, for the region the app launched in.
  *
- * SafeRoute launches in Kolkata, so the centre is the middle of that city. Further regions
- * arrive as configuration (`regionCode`, ADR 0013); nothing else in the code should name a
- * place. The centre is a public city-centre point, not anybody's location.
+ * Further regions arrive as configuration (`regionCode`, ADR 0013); nothing else in the code
+ * should name a place.
  */
 object RegionDefaults {
-    val camera = CameraState(target = LatLng(22.5726, 88.3639), zoom = 12.0)
+    /**
+     * The whole launch region on one screen: what the map shows until it knows where the user
+     * is, and all it shows when it may not know (ADR 0015, "Initial camera"). Not a city: a map
+     * that opens on one city tells everybody else that the app is not for them.
+     *
+     * The centre is the middle of the region's bounding box (about 21.5 to 27.2 north, 85.8 to
+     * 89.9 east), a point on the map and nobody's location. At zoom 6 the region is about
+     * 570 dp tall and 370 dp wide, which fits the part of a phone screen between the search
+     * pill and the sheet; computed, not yet checked on a device.
+     */
+    val overview = CameraState(target = LatLng(24.35, 87.85), zoom = 6.0)
 
-    /** Zoomed out: the wider region. Further out is useless for getting around a city. */
+    /** Zoomed out: the wider region. Further out is useless for getting around. */
     const val MIN_ZOOM: Double = 5.0
 
     /** Zoomed in: single buildings. The tiles have no more detail beyond this. */

@@ -9,6 +9,7 @@ import android.location.Location
 import android.location.LocationManager
 import android.os.Build
 import android.os.Looper
+import android.os.SystemClock
 import androidx.core.content.ContextCompat
 import androidx.core.location.LocationManagerCompat
 import com.google.android.gms.common.ConnectionResult
@@ -79,6 +80,24 @@ class FusedLocationSource @Inject constructor(
         callback = null
     }
 
+    // Same permission reasoning as start(): the repository checked just before.
+    @SuppressLint("MissingPermission")
+    override fun lastKnown(onResult: (fix: RawFix, ageMillis: Long) -> Unit) {
+        try {
+            // Answers from what the phone already holds; it is null on a phone that has not
+            // located itself since it was switched on. Delivered on the main thread.
+            client.lastLocation.addOnSuccessListener { location: Location? ->
+                if (location != null) {
+                    // Both clocks count from boot and keep running while the phone sleeps.
+                    val ageNanos = SystemClock.elapsedRealtimeNanos() - location.elapsedRealtimeNanos
+                    onResult(location.toRawFix(), ageNanos / NANOS_PER_MILLI)
+                }
+            }
+        } catch (_: SecurityException) {
+            // The permission went away. The next resume recomputes the permission state.
+        }
+    }
+
     private fun Location.toRawFix() = RawFix(
         position = LatLng(latitude, longitude),
         accuracyMeters = if (hasAccuracy()) accuracy else 0f,
@@ -95,6 +114,7 @@ class FusedLocationSource @Inject constructor(
         const val PRECISE_INTERVAL_MILLIS = 3_000L
         const val PRECISE_MIN_INTERVAL_MILLIS = 2_000L
         const val COARSE_INTERVAL_MILLIS = 10_000L
+        const val NANOS_PER_MILLI = 1_000_000L
 
         /** Metres per second. Below walking pace the reported direction is noise. */
         const val MOVING_SPEED = 0.5f

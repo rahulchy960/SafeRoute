@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 package com.saferoute.app
 
+import com.saferoute.app.core.map.LatLng
+import com.saferoute.app.core.map.CameraState
 import android.content.Intent
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
@@ -124,12 +126,16 @@ class SearchFlowTest {
 
     @Test
     fun `the search prefers the area the map shows, and needs no location permission`() {
+        // Zoomed in on a town: that is an area. (The whole-region overview is not; see
+        // HomePlaceTest.)
+        val town = CameraState(target = LatLng(12.0, 22.0), zoom = 13.0)
+        compose.runOnUiThread { mapEngine.controller.userMoves(town) }
         searchFor("station")
         waitForText(FAKE_STATION.name)
 
         val call = search.calls.single()
         assertEquals("station", call.query)
-        assertEquals(mapEngine.controller.camera.value.target, call.near)
+        assertEquals(town.target, call.near)
         assertEquals("en", call.language)
         // No permission dialog was ever requested for a search.
         assertEquals(null, shadowOf(compose.activity).lastRequestedPermission)

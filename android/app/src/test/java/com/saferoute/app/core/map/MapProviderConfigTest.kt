@@ -98,10 +98,12 @@ class MapProviderConfigTest {
     }
 
     @Test
-    fun `the launch region default is a city-level view inside the zoom limits`() {
-        val zoom = RegionDefaults.camera.zoom
+    fun `the launch region default is a view of the whole region inside the zoom limits`() {
+        val zoom = RegionDefaults.overview.zoom
         assertTrue(zoom in RegionDefaults.MIN_ZOOM..RegionDefaults.MAX_ZOOM)
-        assertEquals(0.0, RegionDefaults.camera.bearing, 0.0)
+        // Far enough out to show a state, not a city (a city fills the screen at about 11).
+        assertTrue(zoom <= 7.0)
+        assertEquals(0.0, RegionDefaults.overview.bearing, 0.0)
         assertTrue(MapProviderConfig.AMBIENT_CACHE_BYTES in (50L shl 20)..(100L shl 20))
     }
 }

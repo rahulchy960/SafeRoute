@@ -42,6 +42,73 @@ class DefaultLocationRepositoryTest {
         scope = backgroundScope,
     )
 
+    // --- the phone's last known position (ADR 0015, "Initial camera") ---------------------
+
+    @Test
+    fun `a recent last known position is shown as old until a new one arrives`() = runTest {
+        advanceTimeBy(3_600_000)
+        source.lastKnown = FAKE_POSITION to 4 * 60_000L
+        val repository = repository()
+
+        repository.start()
+
+        val stale = repository.state.value as LocationState.Stale
+        assertEquals(FAKE_POSITION, stale.lastFix.position)
+        assertEquals(240, stale.ageSeconds)
+        assertEquals(1, source.lastKnownRequests)
+
+        val next = LatLng(10.5, 20.5)
+        source.emit(next)
+        assertEquals(next, (repository.state.value as LocationState.Fix).fix.position)
+    }
+
+    @Test
+    fun `a last known position of a few seconds ago counts as current`() = runTest {
+        advanceTimeBy(3_600_000)
+        source.lastKnown = FAKE_POSITION to 5_000L
+        val repository = repository()
+
+        repository.start()
+
+        assertTrue(repository.state.value is LocationState.Fix)
+    }
+
+    @Test
+    fun `a last known position older than ten minutes is ignored`() = runTest {
+        advanceTimeBy(3_600_000)
+        source.lastKnown = FAKE_POSITION to DefaultLocationRepository.LAST_KNOWN_MAX_AGE_MILLIS + 1
+        val repository = repository()
+
+        repository.start()
+
+        assertEquals(LocationState.Searching, repository.state.value)
+        assertEquals(10 * 60_000L, DefaultLocationRepository.LAST_KNOWN_MAX_AGE_MILLIS)
+    }
+
+    @Test
+    fun `the last known position is not asked for without the permission, and never replaces a newer one`() = runTest {
+        environment.granted = GrantedLocation.None
+        source.lastKnown = FAKE_POSITION to 1_000L
+        val repository = repository()
+        repository.start()
+        assertEquals(0, source.lastKnownRequests)
+        assertEquals(LocationState.NoPermission, repository.state.value)
+
+        // With the permission: a position of this session is kept across a pause, and the
+        // phone's older one is not even asked for.
+        environment.granted = GrantedLocation.Precise
+        source.lastKnown = null
+        repository.start()
+        val fresh = LatLng(11.0, 21.0)
+        source.emit(fresh)
+        repository.stop()
+        source.lastKnown = FAKE_POSITION to 1_000L
+        repository.start()
+
+        assertEquals(1, source.lastKnownRequests)
+        assertEquals(fresh, (repository.state.value as LocationState.Fix).fix.position)
+    }
+
     @Test
     fun `nothing runs until start is called`() = runTest {
         val repository = repository()

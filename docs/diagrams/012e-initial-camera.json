@@ -1,0 +1,148 @@
+{
+  "$schema": "../../tools/diagrams/diagram.schema.json",
+  "title": "Where the map opens",
+  "subtitle": "One automatic move per launch, and only when the permission was already granted. The permission is never requested at launch. Nothing is stored or logged (P012e1, ADR 0015)",
+  "direction": "TB",
+  "layout": {
+    "nodeWidth": 240
+  },
+  "groups": [
+    {
+      "id": "start",
+      "label": "Home is created"
+    },
+    {
+      "id": "wait",
+      "label": "Waiting (at most 8 s)"
+    },
+    {
+      "id": "end",
+      "label": "Settled: the camera is the user’s"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "launch",
+      "label": "Home ViewModel created",
+      "role": "app",
+      "group": "start",
+      "rank": 0
+    },
+    {
+      "id": "saved",
+      "label": "A camera is saved (rotation, process death)?",
+      "role": "service",
+      "group": "start",
+      "rank": 1
+    },
+    {
+      "id": "overview",
+      "label": "Fresh launch: the map shows the whole region (overview, zoom 6)",
+      "role": "app",
+      "group": "start",
+      "rank": 2
+    },
+    {
+      "id": "permission",
+      "label": "Home first shows: is the location permission already granted?",
+      "role": "security",
+      "group": "start",
+      "rank": 3
+    },
+    {
+      "id": "waiting",
+      "label": "Waiting: location starts; the phone’s last known position is asked for",
+      "role": "service",
+      "group": "wait",
+      "rank": 4
+    },
+    {
+      "id": "recent",
+      "label": "A position at most 10 minutes old, or a new one",
+      "role": "service",
+      "group": "wait",
+      "rank": 5
+    },
+    {
+      "id": "gaveup",
+      "label": "A user gesture, a tap on my location, a chosen place or route, 8 s passed, or no position can be had",
+      "role": "service",
+      "group": "wait",
+      "rank": 5
+    },
+    {
+      "id": "restored",
+      "label": "The saved camera is shown; nothing moves by itself",
+      "role": "app",
+      "group": "end",
+      "rank": 2
+    },
+    {
+      "id": "stay",
+      "label": "The overview stays. My location (tap) asks for the permission as before",
+      "role": "security",
+      "group": "end",
+      "rank": 4
+    },
+    {
+      "id": "moved",
+      "label": "Move ONCE to the position at zoom 15, inside the launch region or not",
+      "role": "app",
+      "group": "end",
+      "rank": 6
+    },
+    {
+      "id": "left",
+      "label": "The camera is left alone; later positions move only the dot",
+      "role": "app",
+      "group": "end",
+      "rank": 6
+    }
+  ],
+  "edges": [
+    {
+      "from": "launch",
+      "to": "saved"
+    },
+    {
+      "from": "saved",
+      "to": "restored",
+      "label": "yes"
+    },
+    {
+      "from": "saved",
+      "to": "overview",
+      "label": "no"
+    },
+    {
+      "from": "overview",
+      "to": "permission"
+    },
+    {
+      "from": "permission",
+      "to": "stay",
+      "label": "no"
+    },
+    {
+      "from": "permission",
+      "to": "waiting",
+      "label": "yes"
+    },
+    {
+      "from": "waiting",
+      "to": "recent"
+    },
+    {
+      "from": "waiting",
+      "to": "gaveup"
+    },
+    {
+      "from": "recent",
+      "to": "moved"
+    },
+    {
+      "from": "gaveup",
+      "to": "left"
+    }
+  ]
+}

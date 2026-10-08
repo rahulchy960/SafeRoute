@@ -62,7 +62,14 @@ internal class FakeMapRenderer : MapRenderer {
 class FakeMapController(initialCamera: CameraState) : MapController {
     override val loadState = MutableStateFlow<MapLoadState>(MapLoadState.Ready)
     override val camera = MutableStateFlow(initialCamera)
+    override val userGestures = MutableStateFlow(0)
     val paddings = mutableListOf<MapPadding>()
+
+    /** The user pans, zooms or rotates the map to [camera] with their fingers. */
+    fun userMoves(camera: CameraState) {
+        userGestures.value += 1
+        this.camera.value = camera
+    }
     val variants = mutableListOf<MapStyleVariant>()
     var retries = 0
 
@@ -107,7 +114,7 @@ class FakeMapEngine : MapEngine {
 
     override fun createController(scope: CoroutineScope, initialCamera: CameraState?): MapController {
         initialCameras += initialCamera
-        return FakeMapController(initialCamera ?: RegionDefaults.camera).also { controllers += it }
+        return FakeMapController(initialCamera ?: RegionDefaults.overview).also { controllers += it }
     }
 
     @Composable

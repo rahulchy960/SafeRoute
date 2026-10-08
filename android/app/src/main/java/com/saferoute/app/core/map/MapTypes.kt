@@ -131,6 +131,13 @@ interface MapController {
     /** Where the map was looking when it last came to rest. */
     val camera: StateFlow<CameraState>
 
+    /**
+     * How often the user has started to move the map by hand (pan, zoom, rotate) since this
+     * controller was made. Moves the app asked for do not count. A screen that is about to
+     * move the camera on its own reads this to stay out of the user's way.
+     */
+    val userGestures: StateFlow<Int>
+
     fun setPadding(padding: MapPadding)
 
     fun setStyleVariant(variant: MapStyleVariant)

@@ -98,7 +98,7 @@ class MapFailureEmergencyTest {
         compose.onNodeWithTag(FakeMapEngine.MAP_TAG).assertExists()
         // Nothing was saved, so the engine was asked for its default.
         assertEquals(listOf(null), mapEngine.initialCameras)
-        assertEquals(RegionDefaults.camera, mapEngine.controller.camera.value)
+        assertEquals(RegionDefaults.overview, mapEngine.controller.camera.value)
         assertEquals(listOf(MapStyleVariant.Light), mapEngine.controller.variants)
         assertTrue(mapEngine.controller.paddings.last().bottom > 0)
     }

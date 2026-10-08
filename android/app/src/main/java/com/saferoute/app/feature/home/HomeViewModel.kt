@@ -19,11 +19,14 @@ import com.saferoute.app.core.map.boundsOf
 import com.saferoute.app.core.map.routeOverlays
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -60,6 +63,10 @@ enum class EmergencyDialogState {
  * is drawn, and the sheet shows a card until the user closes it. It is kept across a rotation
  * and across process death (in [savedState], like the camera), and nowhere else.
  *
+ * Where the map opens (ADR 0015, "Initial camera"): on the whole region; and, once per launch,
+ * on the user's position when the permission was already granted and a position arrives in
+ * time. See [InitialCamera].
+ *
  * There is no SOS logic here. P014 replaces the dialog with the real device-first SOS flow.
  *
  * @param savedState a small key-value store that Android keeps even when it kills the app's
@@ -74,6 +81,16 @@ class HomeViewModel @Inject constructor(
     private val selection: MapSelection,
     private val routes: RouteDisplay,
 ) : ViewModel() {
+
+    /**
+     * Whether the map may still move to the user's position by itself. Decided once, here: a
+     * saved camera means the user has been on this screen before (rotation keeps this object;
+     * after process death the camera comes back from [savedState]), and then the map belongs
+     * where they left it.
+     */
+    private var initialCamera =
+        if (savedCamera() == null) InitialCamera.Pending else InitialCamera.Settled
+    private var initialWait: Job? = null
 
     /** The map's state. It survives rotation with this ViewModel; the map view does not. */
     val map: MapController = mapEngine.createController(viewModelScope, savedCamera())
@@ -115,6 +132,7 @@ class HomeViewModel @Inject constructor(
                 // place already on screen (rotation, restore), and the camera is where the user
                 // left it.
                 if (place != null && !first) {
+                    settleInitialCamera()
                     following.value = false
                     recentreOnNextFix = false
                     val camera = map.camera.value
@@ -127,8 +145,9 @@ class HomeViewModel @Inject constructor(
         }
         viewModelScope.launch {
             map.camera.collect { camera ->
-                // The coarse area a search prefers: where the map looks, never where the user is.
-                selection.viewCentre = camera.target
+                // The coarse area a search prefers: where the map looks. Looking at the whole
+                // region is not looking at an area, so then there is none.
+                selection.viewCentre = camera.target.takeIf { camera.zoom >= SEARCH_AREA_MIN_ZOOM }
                 savedState[KEY_CAMERA] = doubleArrayOf(
                     camera.target.latitude,
                     camera.target.longitude,
@@ -141,6 +160,8 @@ class HomeViewModel @Inject constructor(
             }
         }
         viewModelScope.launch { location.state.collect(::onLocationState) }
+        // Never fight the user: once they have moved the map themselves, it stays theirs.
+        viewModelScope.launch { map.userGestures.drop(1).collect { settleInitialCamera() } }
         viewModelScope.launch {
             var fitted: Int? = null
             routes.routes.collect { shown ->
@@ -151,6 +172,7 @@ class HomeViewModel @Inject constructor(
                     fitted = shown.fitToken
                     val line = shown.lines.firstOrNull { it.id == shown.selectedId }
                     boundsOf(line?.points.orEmpty())?.let {
+                        settleInitialCamera()
                         following.value = false
                         recentreOnNextFix = false
                         map.fitBounds(it)
@@ -162,7 +184,19 @@ class HomeViewModel @Inject constructor(
 
     /** Home is visible and location is permitted: start updates (the repository checks again). */
     fun onLocationAvailable(userAsked: Boolean) {
-        if (userAsked) recentreOnNextFix = true
+        if (userAsked) {
+            // A tap on "my location" centres the map by itself; no second, automatic move.
+            settleInitialCamera()
+            recentreOnNextFix = true
+        } else if (initialCamera == InitialCamera.Pending) {
+            // Home came up with the permission already in place: go to the user's position
+            // when one arrives in time, otherwise stay on the overview.
+            initialCamera = InitialCamera.Waiting
+            initialWait = viewModelScope.launch {
+                delay(INITIAL_FIX_WAIT_MILLIS)
+                settleInitialCamera()
+            }
+        }
         locationActive.value = true
         location.start()
         onLocationState(location.state.value)
@@ -177,6 +211,9 @@ class HomeViewModel @Inject constructor(
     fun onLocationUnavailable(permissionLost: Boolean) {
         location.stop()
         if (permissionLost) {
+            // No permission when Home came up: the overview is where the map stays. A grant
+            // later comes from a tap on "my location", which moves the map itself.
+            settleInitialCamera()
             locationActive.value = false
             following.value = false
             recentreOnNextFix = false
@@ -244,10 +281,35 @@ class HomeViewModel @Inject constructor(
         return true
     }
 
+    private fun settleInitialCamera() {
+        initialCamera = InitialCamera.Settled
+        initialWait?.cancel()
+        initialWait = null
+    }
+
+    /**
+     * The one automatic move per launch. A new position always qualifies; one from before
+     * (the phone's last known position, or one this app had earlier) only while it is recent.
+     * Wherever it is, inside the launch region or not: the map shows where the user is.
+     */
+    private fun openOnPosition(state: LocationState) {
+        if (initialCamera != InitialCamera.Waiting) return
+        val fix = when (state) {
+            is LocationState.Fix -> state.fix
+            is LocationState.Stale -> state.lastFix.takeIf { state.ageSeconds <= INITIAL_FIX_MAX_AGE_SECONDS }
+            // No position can be had: nothing to wait for.
+            LocationState.Unavailable, LocationState.NoPermission -> return settleInitialCamera()
+            LocationState.Searching -> null
+        } ?: return
+        settleInitialCamera()
+        map.moveCamera(CameraState(target = fix.position, zoom = INITIAL_LOCATE_ZOOM))
+    }
+
     private fun onLocationState(state: LocationState) {
         if (!locationActive.value) return
         locationShapes = locationOverlays(state)
         drawOverlays()
+        openOnPosition(state)
         val fix = (state as? LocationState.Fix)?.fix ?: return
         when {
             recentreOnNextFix -> {
@@ -291,6 +353,18 @@ class HomeViewModel @Inject constructor(
     /** Cancel, Close, back gesture or a tap outside the dialog. */
     fun onEmergencyDialogDismiss() {
         _emergencyDialog.value = EmergencyDialogState.Hidden
+    }
+
+    /** Where the automatic move to the user's position stands; it happens at most once. */
+    private enum class InitialCamera {
+        /** A fresh launch; Home has not said yet whether location is permitted. */
+        Pending,
+
+        /** Permitted: waiting, for a short while, for a position that is recent enough. */
+        Waiting,
+
+        /** Done, given up, or not wanted: the camera is the user's from here on. */
+        Settled,
     }
 
     private companion object {
