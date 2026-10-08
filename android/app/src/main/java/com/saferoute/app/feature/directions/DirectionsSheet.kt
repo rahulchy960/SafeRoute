@@ -63,6 +63,13 @@ data class DirectionsActions(
     val onRouteSelect: (String) -> Unit = {},
     val onRetry: () -> Unit = {},
     val onClose: () -> Unit = {},
+    val onStart: () -> Unit = {},
+    val onUsePrecise: () -> Unit = {},
+    val onEnd: () -> Unit = {},
+    val onEndCancel: () -> Unit = {},
+    val onEndConfirm: () -> Unit = {},
+    val onRecalculate: () -> Unit = {},
+    val onPausedNoteDismiss: () -> Unit = {},
 )
 
 /**
@@ -89,6 +96,9 @@ fun DirectionsSheet(
     ) {
         // The header does not scroll: the close button and whatever [headerEnd] holds (the SOS
         // control) stay in reach however long the list below is.
+        // While the route is followed the banner at the top of the map does the talking; the
+        // sheet keeps the destination and the SOS control.
+        val following = state.follow != null
         Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(spacing.sm)) {
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(spacing.xxs)) {
                 Text(
@@ -103,12 +113,14 @@ fun DirectionsSheet(
                 )
             }
             // IconButton is 48 dp, the minimum touch target.
-            IconButton(onClick = actions.onClose) {
-                Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.route_close))
+            if (!following) {
+                IconButton(onClick = actions.onClose) {
+                    Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.route_close))
+                }
             }
             headerEnd()
         }
-        Column(
+        if (!following) Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState()),
@@ -119,7 +131,10 @@ fun DirectionsSheet(
                 is DirectionsStatus.Loading -> Waiting(
                     text = stringResource(if (status.starting) R.string.route_starting else R.string.route_loading),
                 )
-                is DirectionsStatus.Results -> RouteList(status, actions.onRouteSelect)
+                is DirectionsStatus.Results -> {
+                    StartRow(state.startProblem, actions, onUseMyLocation)
+                    RouteList(status, actions.onRouteSelect)
+                }
                 is DirectionsStatus.NeedsOrigin -> NeedsOrigin(status.problem, onUseMyLocation)
                 is DirectionsStatus.Failed -> Failure(status, actions.onRetry)
             }
@@ -159,6 +174,29 @@ private fun ModeToggle(mode: TravelMode, onModeChange: (TravelMode) -> Unit) {
     }
 }
 
+/**
+ * "Start" for the selected route and, when following could not begin, the reason with the way
+ * out: the usual permission flow, or the request for precise location.
+ */
+@Composable
+private fun StartRow(problem: StartProblem?, actions: DirectionsActions, onUseMyLocation: () -> Unit) {
+    Button(onClick = actions.onStart) { Text(text = stringResource(R.string.route_start)) }
+    when (problem) {
+        StartProblem.NoPermission -> Message(
+            text = stringResource(R.string.route_start_no_permission),
+            action = stringResource(R.string.route_use_my_location),
+            onAction = onUseMyLocation,
+        )
+        StartProblem.NeedsPrecise -> Message(
+            text = stringResource(R.string.route_start_needs_precise),
+            action = stringResource(R.string.route_start_use_precise),
+            onAction = actions.onUsePrecise,
+        )
+        StartProblem.NoRecentFix -> Message(text = stringResource(R.string.route_start_no_fix), action = null, onAction = {})
+        null -> Unit
+    }
+}
+
 /** A spinner is never shown alone: the sentence next to it says what is happening. */
 @Composable
 private fun Waiting(text: String) {
@@ -176,8 +214,6 @@ private fun Waiting(text: String) {
 @Composable
 private fun RouteList(results: DirectionsStatus.Results, onSelect: (String) -> Unit) {
     val spacing = SafeRouteTheme.spacing
-    // Read from the configuration, so the numbers change with the app language at once.
-    val locale = ConfigurationCompat.getLocales(LocalConfiguration.current)[0] ?: Locale.ROOT
     Column(
         modifier = Modifier.selectableGroup(),
         verticalArrangement = Arrangement.spacedBy(spacing.sm),
@@ -210,7 +246,7 @@ private fun RouteList(results: DirectionsStatus.Results, onSelect: (String) -> U
                             fontWeight = FontWeight.Bold,
                         )
                         Text(
-                            text = distanceText(route.distanceMeters, locale),
+                            text = distanceText(route.distanceMeters),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -253,9 +289,10 @@ private fun NeedsOrigin(problem: OriginProblem, onUseMyLocation: () -> Unit) {
     )
 }
 
+/** One calm sentence per reason for having no routes. */
 @Composable
-private fun Failure(status: DirectionsStatus.Failed, onRetry: () -> Unit) {
-    val text = when (val error = status.error) {
+internal fun routeErrorText(error: RouteError): String =
+    when (error) {
         RouteError.OutsideCovered -> stringResource(R.string.route_error_outside)
         RouteError.NoRoute -> stringResource(R.string.route_error_no_route)
         RouteError.NotRoutable -> stringResource(R.string.route_error_not_routable)
@@ -267,6 +304,10 @@ private fun Failure(status: DirectionsStatus.Failed, onRetry: () -> Unit) {
         RouteError.Unavailable -> stringResource(R.string.route_error_unavailable)
         RouteError.Offline -> stringResource(R.string.route_error_offline)
     }
+
+@Composable
+private fun Failure(status: DirectionsStatus.Failed, onRetry: () -> Unit) {
+    val text = routeErrorText(status.error)
     // Asking again cannot change an answer about the places themselves.
     val canRetry = when (status.error) {
         RouteError.OutsideCovered, RouteError.NoRoute, RouteError.NotRoutable, RouteError.TooLong -> false
@@ -331,7 +372,7 @@ fun RouteIntroDialog(onContinue: () -> Unit, onNotNow: () -> Unit) {
 internal fun routeMinutes(durationSeconds: Int): Int = ceil(durationSeconds / 60.0).toInt().coerceAtLeast(1)
 
 @Composable
-private fun durationText(durationSeconds: Int): String {
+internal fun durationText(durationSeconds: Int): String {
     val minutes = routeMinutes(durationSeconds)
     return if (minutes < 60) {
         stringResource(R.string.route_duration_minutes, minutes)
@@ -351,12 +392,15 @@ internal fun routeKilometres(distanceMeters: Int, locale: Locale): String =
 internal fun routeRoundedMeters(distanceMeters: Int): Int = ((distanceMeters / 10.0).roundToInt() * 10).coerceAtLeast(10)
 
 @Composable
-private fun distanceText(distanceMeters: Int, locale: Locale): String =
-    if (distanceMeters < 1000) {
+internal fun distanceText(distanceMeters: Int): String {
+    // Read from the configuration, so the numbers change with the app language at once.
+    val locale = ConfigurationCompat.getLocales(LocalConfiguration.current)[0] ?: Locale.ROOT
+    return if (distanceMeters < 1000) {
         stringResource(R.string.route_distance_meters, routeRoundedMeters(distanceMeters))
     } else {
         stringResource(R.string.route_distance_km, routeKilometres(distanceMeters, locale))
     }
+}
 
 @SafeRoutePreviews
 @Composable

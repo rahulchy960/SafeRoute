@@ -29,6 +29,17 @@ data class ShownRoutes(
 }
 
 /**
+ * A route that is being followed, as the map needs it: what lies behind the person, and where
+ * the camera belongs.
+ *
+ * @property bearing the direction of travel, degrees clockwise from north; 0 (north up) while
+ * the person stands still.
+ */
+data class FollowView(val travelled: List<LatLng>, val position: LatLng, val bearing: Double) {
+    override fun toString(): String = "FollowView(hidden)"
+}
+
+/**
  * What the directions feature asks the map screen to draw. Directions and Home have separate
  * ViewModels; this small object connects them without either knowing the other, the same way
  * [MapSelection] connects search and Home.
@@ -44,7 +55,16 @@ class RouteDisplay @Inject constructor() {
     /** The routes on the map, or null when there are none. */
     val routes: StateFlow<ShownRoutes?> = _routes.asStateFlow()
 
+    private val _following = MutableStateFlow<FollowView?>(null)
+
+    /** Set while the user follows the selected route (ADR 0022), null otherwise. */
+    val following: StateFlow<FollowView?> = _following.asStateFlow()
+
     private var fits = 0
+
+    fun follow(view: FollowView?) {
+        _following.value = view
+    }
 
     /** New routes: draw them and show the selected one whole. */
     fun show(lines: List<RouteLine>, selectedId: String, start: LatLng) {
@@ -58,6 +78,7 @@ class RouteDisplay @Inject constructor() {
     }
 
     fun clear() {
+        _following.value = null
         _routes.value = null
     }
 }
@@ -74,9 +95,17 @@ fun boundsOf(points: List<LatLng>): LatLngBounds? {
 /**
  * Overlay descriptions for [shown]: the alternatives first, the selected route on top of them,
  * then a ring where the route starts. The destination pin is the chosen place's own marker.
+ *
+ * While a route is followed ([following]) only that route is drawn, with the part already
+ * travelled muted on top of it.
  */
-fun routeOverlays(shown: ShownRoutes): List<MapOverlay> {
+fun routeOverlays(shown: ShownRoutes, following: FollowView? = null): List<MapOverlay> {
     val (selected, others) = shown.lines.partition { it.id == shown.selectedId }
+    if (following != null) {
+        val behind = following.travelled.takeIf { it.size >= 2 }
+            ?.let { MapOverlay.Route("route-travelled", it, selected = false, travelled = true) }
+        return selected.map { MapOverlay.Route("route-${it.id}", it.points, selected = true) } + listOfNotNull(behind)
+    }
     return others.map { MapOverlay.Route("route-${it.id}", it.points, selected = false) } +
         selected.map { MapOverlay.Route("route-${it.id}", it.points, selected = true) } +
         MapOverlay.Marker(id = "route-start", position = shown.start, style = MarkerStyle.RouteStart)

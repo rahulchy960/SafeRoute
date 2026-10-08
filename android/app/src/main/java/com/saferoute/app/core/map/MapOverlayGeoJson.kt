@@ -87,7 +87,8 @@ internal fun overlaysToGeoJson(overlays: List<MapOverlay>, palette: OverlayPalet
             )
             is MapOverlay.Route -> {
                 val line = """{"type":"LineString","coordinates":${coordinates(overlay.points)}}"""
-                val width = if (overlay.selected) RouteWidth.SELECTED else RouteWidth.ALTERNATIVE
+                val wide = overlay.selected || overlay.travelled
+                val width = if (wide) RouteWidth.SELECTED else RouteWidth.ALTERNATIVE
                 listOf(
                     feature(
                         geometry = line,
@@ -99,7 +100,7 @@ internal fun overlaysToGeoJson(overlays: List<MapOverlay>, palette: OverlayPalet
                         geometry = line,
                         kind = OverlayKind.ROUTE,
                         // Selected: the strong line colour. Alternative: grey, and thinner.
-                        color = if (overlay.selected) palette.line else palette.stale,
+                        color = if (overlay.selected && !overlay.travelled) palette.line else palette.stale,
                         width = width,
                     ),
                 )

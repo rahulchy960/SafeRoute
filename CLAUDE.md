@@ -448,6 +448,19 @@ and [`android/README.md`](android/README.md):
   API stays visible with the results. Search screens and Home talk through
   `core/map/MapSelection`, and a chosen place is drawn as an overlay description, so MapLibre
   types stay in `MapLibreEngine.kt`.
+- Following a route follows [ADR 0022](docs/adr/0022-follow-me-navigation.md) (since P012c2a):
+  **on screen only**. No foreground service, background location, notification or new
+  permission without a superseding ADR and a prompt that asks for it. It starts only with
+  precise location and a position from the last 10 seconds, and is never restored after the
+  process ended. The route, the progress and the positions stay in memory: never saved,
+  logged or printed. **No automatic rerouting**: a new route is requested only when the user
+  taps "Recalculate", one request at a time, with a time limit. The arithmetic lives in
+  `feature/directions/RouteProgress.kt` (`RouteTracker`, plain Kotlin, no clock of its own);
+  its numbers change only with a note in ADR 0022. The screen is kept on only through
+  `KeepScreenOn`, only while following. The banner states a distance, a time and a clock
+  time: no label, score or colour about safety or traffic, and it never reaches the SOS
+  control (`FollowScreenTest`). A test that leaves following running must end it (the ticker
+  never stops by itself in virtual time; see `FollowRouteTest.followTest`).
 - `android/app/google-services.json` is never opened, printed or committed by Claude Code. CI and
   fresh clones use `android/scripts/write-dummy-google-services` (project `demo-saferoute`); a
   release build refuses the dummy or a missing file unless `-Psaferoute.allowDummyFirebase=true`

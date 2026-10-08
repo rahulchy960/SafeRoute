@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.saferoute.app.core.location.LocationRepository
 import com.saferoute.app.core.location.LocationState
 import com.saferoute.app.core.map.CameraState
+import com.saferoute.app.core.map.FollowView
 import com.saferoute.app.core.map.LatLng
 import com.saferoute.app.core.map.MapController
 import com.saferoute.app.core.map.MapEngine
@@ -105,6 +106,13 @@ class HomeViewModel @Inject constructor(
     private val locationActive = MutableStateFlow(false)
     private val following = MutableStateFlow(false)
 
+    /** While a route is followed: the user moved the map away, and the camera leaves it there. */
+    private val followCameraFree = MutableStateFlow(false)
+
+    /** True while a route is followed and the map no longer shows where the user is. */
+    val recentreOffered: StateFlow<Boolean> = followCameraFree.asStateFlow()
+    private var wasFollowingRoute = false
+
     /** Set by a tap on "my location": the next position centres the map, once. */
     private var recentreOnNextFix = false
 
@@ -161,7 +169,13 @@ class HomeViewModel @Inject constructor(
         }
         viewModelScope.launch { location.state.collect(::onLocationState) }
         // Never fight the user: once they have moved the map themselves, it stays theirs.
-        viewModelScope.launch { map.userGestures.drop(1).collect { settleInitialCamera() } }
+        viewModelScope.launch {
+            map.userGestures.drop(1).collect {
+                settleInitialCamera()
+                if (routes.following.value != null) followCameraFree.value = true
+            }
+        }
+        viewModelScope.launch { routes.following.collect(::onFollowView) }
         viewModelScope.launch {
             var fitted: Int? = null
             routes.routes.collect { shown ->
@@ -171,7 +185,8 @@ class HomeViewModel @Inject constructor(
                 if (shown != null && shown.fitToken != fitted) {
                     fitted = shown.fitToken
                     val line = shown.lines.firstOrNull { it.id == shown.selectedId }
-                    boundsOf(line?.points.orEmpty())?.let {
+                    // A route recalculated while it is followed: the camera stays on the user.
+                    boundsOf(line?.points.orEmpty())?.takeIf { routes.following.value == null }?.let {
                         settleInitialCamera()
                         following.value = false
                         recentreOnNextFix = false
@@ -235,7 +250,7 @@ class HomeViewModel @Inject constructor(
         val pin = selection.selected.value?.let {
             MapOverlay.Marker(id = PLACE_PIN_ID, position = it.position, style = MarkerStyle.Place)
         }
-        val lines = routes.routes.value?.let(::routeOverlays).orEmpty()
+        val lines = routes.routes.value?.let { routeOverlays(it, routes.following.value) }.orEmpty()
         map.setOverlays(lines + locationShapes + listOfNotNull(pin))
     }
 
@@ -279,6 +294,46 @@ class HomeViewModel @Inject constructor(
             }
         }
         return true
+    }
+
+    /** "Re-centre": the camera follows the user again. */
+    fun onRecentre() {
+        followCameraFree.value = false
+        routes.following.value?.let { moveFollowCamera(it, closeUp = true) }
+    }
+
+    /**
+     * A route is followed (ADR 0022): the camera stays on the user and turns with their
+     * direction of travel, until they move the map themselves. When following ends, north is
+     * up again and the map stays where it is.
+     */
+    private fun onFollowView(view: FollowView?) {
+        drawOverlays()
+        if (view == null) {
+            if (wasFollowingRoute) map.moveCamera(map.camera.value.copy(bearing = 0.0))
+            wasFollowingRoute = false
+            followCameraFree.value = false
+            return
+        }
+        val first = !wasFollowingRoute
+        if (first) {
+            wasFollowingRoute = true
+            settleInitialCamera()
+            following.value = false
+            recentreOnNextFix = false
+        }
+        if (!followCameraFree.value) moveFollowCamera(view, closeUp = first)
+    }
+
+    private fun moveFollowCamera(view: FollowView, closeUp: Boolean) {
+        val zoom = map.camera.value.zoom
+        map.moveCamera(
+            CameraState(
+                target = view.position,
+                zoom = if (closeUp) maxOf(zoom, FOLLOW_ZOOM) else zoom,
+                bearing = view.bearing,
+            ),
+        )
     }
 
     private fun settleInitialCamera() {
@@ -375,5 +430,8 @@ class HomeViewModel @Inject constructor(
 
         /** Close enough to see the streets around a chosen place. */
         const val PLACE_ZOOM = 15.0
+
+        /** Close enough to see the next turns of a route that is followed. */
+        const val FOLLOW_ZOOM = 17.0
     }
 }

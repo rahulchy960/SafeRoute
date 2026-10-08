@@ -8,6 +8,7 @@ import com.saferoute.app.core.map.LatLng
 import com.saferoute.app.core.map.MapSelection
 import com.saferoute.app.core.map.RouteDisplay
 import com.saferoute.app.core.map.SelectedPlace
+import com.saferoute.app.feature.search.TestClock
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -47,6 +48,7 @@ class DirectionsViewModelTest {
     private val location = FakeLocationRepository()
     private val selection = MapSelection()
     private val display = RouteDisplay()
+    private val clock = TestClock()
     private lateinit var viewModel: DirectionsViewModel
 
     /** Invented positions with digits that are easy to find in a log. */
@@ -59,7 +61,7 @@ class DirectionsViewModelTest {
         Dispatchers.setMain(dispatcher)
         location.state.value = LocationState.Fix(fakeFix(position = here))
         selection.select(place)
-        viewModel = DirectionsViewModel(repository, preferences, location, selection, display)
+        viewModel = DirectionsViewModel(repository, preferences, location, selection, display, clock)
     }
 
     @After

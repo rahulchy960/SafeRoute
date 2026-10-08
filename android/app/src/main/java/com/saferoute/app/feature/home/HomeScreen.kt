@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.only
@@ -32,6 +33,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -85,6 +87,9 @@ import com.saferoute.app.feature.directions.DirectionsActions
 import com.saferoute.app.feature.directions.DirectionsSheet
 import com.saferoute.app.feature.directions.DirectionsUiState
 import com.saferoute.app.feature.directions.DirectionsViewModel
+import com.saferoute.app.feature.directions.EndNavigationDialog
+import com.saferoute.app.feature.directions.FollowBanner
+import com.saferoute.app.feature.directions.KeepScreenOn
 import com.saferoute.app.feature.directions.RouteIntroDialog
 import com.saferoute.app.feature.emergency.ShortcutOfferDialog
 import com.saferoute.app.feature.emergency.ShortcutOfferViewModel
@@ -131,6 +136,7 @@ fun HomeRoute(
     val locationState by viewModel.locationState.collectAsStateWithLifecycle()
     val permission by permissionViewModel.state.collectAsStateWithLifecycle()
     val selectedPlace by viewModel.selectedPlace.collectAsStateWithLifecycle()
+    val recentreOffered by viewModel.recentreOffered.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
 
@@ -184,8 +190,16 @@ fun HomeRoute(
             viewModel.onLocationAvailable(userAsked = permissionViewModel.consumeUserAsked())
         } else {
             viewModel.onLocationUnavailable(permissionLost = true)
+            directionsViewModel.onLocationPermissionLost()
         }
         onStopOrDispose { viewModel.onLocationUnavailable(permissionLost = false) }
+    }
+
+    // Following a route happens on screen only (ADR 0022). Leaving the screen pauses it; a
+    // rotation is not leaving (Android rebuilds the screen and is back at once).
+    LifecycleStartEffect(Unit) {
+        directionsViewModel.onForeground()
+        onStopOrDispose { if (activity?.isChangingConfigurations != true) directionsViewModel.onBackground() }
     }
 
     // The map follows the app theme, which follows the phone's dark-mode setting.
@@ -235,7 +249,16 @@ fun HomeRoute(
             onRouteSelect = directionsViewModel::onRouteSelect,
             onRetry = directionsViewModel::onRetry,
             onClose = directionsViewModel::onClose,
+            onStart = directionsViewModel::onStartClick,
+            onUsePrecise = permissionViewModel::onUsePreciseClick,
+            onEnd = directionsViewModel::onEndClick,
+            onEndCancel = directionsViewModel::onEndCancel,
+            onEndConfirm = directionsViewModel::onEndConfirm,
+            onRecalculate = directionsViewModel::onRecalculate,
+            onPausedNoteDismiss = directionsViewModel::onPausedNoteDismiss,
         ),
+        recentreOffered = recentreOffered,
+        onRecentre = viewModel::onRecentre,
         onSearchClick = onOpenSearch,
         onSettingsClick = onOpenSettings,
         onEmergencyClick = viewModel::onEmergencyClick,
@@ -266,6 +289,9 @@ fun HomeRoute(
         )
     }
 }
+
+/** How much of the screen's height the banner of a followed route may take. */
+private const val FOLLOW_BANNER_MAX_FRACTION = 0.4f
 
 /** The app's own page in system Settings, where a permission denied for good can be allowed. */
 private fun appSettingsIntent(context: Context) = Intent(
@@ -328,6 +354,8 @@ fun HomeScreen(
     onPlaceDismiss: () -> Unit = {},
     directions: DirectionsUiState = DirectionsUiState.Closed,
     directionsActions: DirectionsActions = DirectionsActions(),
+    recentreOffered: Boolean = false,
+    onRecentre: () -> Unit = {},
 ) {
     // Back with a place on the map takes the place away first; the next back leaves the app as
     // before. BackHandler is only active while there is a place, so normal back is untouched.
@@ -335,12 +363,27 @@ fun HomeScreen(
     // Declared after it, so it wins while directions show: back closes the routes first and
     // leaves the place card.
     BackHandler(enabled = directions != DirectionsUiState.Closed, onBack = directionsActions.onClose)
+    // And last, so it wins over both: while a route is followed, back asks before ending it.
+    val follow = (directions as? DirectionsUiState.Open)?.follow
+    val following = follow?.active == true
+    BackHandler(enabled = following, onBack = directionsActions.onEnd)
+    // The screen stays on while a route is followed, and at no other time.
+    KeepScreenOn(active = following)
 
     // Directions need room: a sheet that only peeks is raised to half once when they open. The
     // user can still pull it down again; it is not forced back up.
     val directionsOpen = directions is DirectionsUiState.Open
     LaunchedEffect(directionsOpen) {
         if (directionsOpen && sheetState.currentDetent == SheetDetent.Peek) sheetState.animateTo(SheetDetent.Half)
+    }
+    // Following needs the map: the sheet steps down once, and can be pulled up again. When
+    // following ends it comes back up, so that the routes, or the reason it ended, can be read.
+    LaunchedEffect(following) {
+        if (following) {
+            sheetState.animateTo(SheetDetent.Peek)
+        } else if (directionsOpen && sheetState.currentDetent == SheetDetent.Peek) {
+            sheetState.animateTo(SheetDetent.Half)
+        }
     }
 
     val spacing = SafeRouteTheme.spacing
@@ -365,6 +408,7 @@ fun HomeScreen(
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val density = LocalDensity.current
+        val screenHeight = maxHeight
         // Where the pill and the credit end, measured after layout.
         var topCoveredPx by remember { mutableIntStateOf(0) }
         val mapPadding = MapPadding(
@@ -409,7 +453,21 @@ fun HomeScreen(
                 },
                 verticalArrangement = Arrangement.spacedBy(spacing.xs),
             ) {
-                SearchPill(
+                // While a route is followed its banner takes the place of the search pill.
+                if (follow != null) {
+                    FollowBanner(
+                        follow = follow,
+                        actions = directionsActions,
+                        // At most this much of the screen, so that it ends above the map
+                        // controls and the SOS control; what does not fit scrolls inside it.
+                        modifier = Modifier
+                            .heightIn(max = screenHeight * FOLLOW_BANNER_MAX_FRACTION)
+                            .semantics {
+                                isTraversalGroup = true
+                                traversalIndex = HomeTraversal.Search
+                            },
+                    )
+                } else SearchPill(
                     hint = stringResource(R.string.search_hint),
                     onClick = onSearchClick,
                     modifier = Modifier
@@ -467,7 +525,15 @@ fun HomeScreen(
                 .navigationBarsPadding()
                 .padding(end = spacing.md, bottom = abovePeek),
             verticalArrangement = Arrangement.spacedBy(spacing.sm),
+            horizontalAlignment = Alignment.End,
         ) {
+            // Shown after the user moved the map away while following: one tap brings it back.
+            if (following && recentreOffered) {
+                FilledTonalButton(
+                    onClick = onRecentre,
+                    modifier = Modifier.semantics { traversalIndex = HomeTraversal.MapControls },
+                ) { Text(text = stringResource(R.string.route_follow_recentre)) }
+            }
             Column(
                 modifier = Modifier.semantics {
                     isTraversalGroup = true
@@ -476,8 +542,9 @@ fun HomeScreen(
                 verticalArrangement = Arrangement.spacedBy(spacing.sm),
             ) {
                 // Layers has no prompt yet. Its description says so; the faded icon alone would
-                // be a colour-only signal.
-                MapControlButton(
+                // be a colour-only signal. Left out while a route is followed: the room is the
+                // banner's.
+                if (!following) MapControlButton(
                     painter = painterResource(R.drawable.ic_layers),
                     contentDescription = stringResource(R.string.map_control_layers_unavailable),
                     onClick = {},
@@ -536,6 +603,10 @@ fun HomeScreen(
 
     if (directions is DirectionsUiState.Intro) {
         RouteIntroDialog(onContinue = directionsActions.onIntroContinue, onNotNow = directionsActions.onClose)
+    }
+
+    if (follow?.active == true && follow.confirmEnd) {
+        EndNavigationDialog(onEnd = directionsActions.onEndConfirm, onCancel = directionsActions.onEndCancel)
     }
 
     if (showMapCredits) {
