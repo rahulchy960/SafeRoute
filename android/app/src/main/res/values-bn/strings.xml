@@ -253,8 +253,8 @@
     <string name="my_location_unavailable">অবস্থান পাওয়া যাচ্ছে না। কারণ জানুন</string>
     <string name="location_disclosure_title">মানচিত্রে আপনার অবস্থান দেখাবেন?</string>
     <string name="location_disclosure_what">অ্যাপ খোলা থাকাকালীন SafeRoute আপনার ফোনের অবস্থান পড়বে।</string>
-    <string name="location_disclosure_why">মানচিত্রে আপনি কোথায় আছেন তা দেখাতে, এবং আপনি পথনির্দেশ চাইলে পথের শুরু হিসেবে এটি ব্যবহার হয় (প্রথম অনুরোধের আগে কী পাঠানো হয় তা আপনাকে জানানো হয়)। পরের ফিচারগুলিতে, আপনি নিজে শুরু করলে SOS ও লাইভ শেয়ারিংয়ের জন্যও এটি ব্যবহার হবে।</string>
-    <string name="location_disclosure_not">SafeRoute ব্যাকগ্রাউন্ডে আপনার অবস্থান পড়ে না। এই ফিচারের জন্য SafeRoute-এর সার্ভারে কিছুই পাঠানো হয় না। আপনি SOS বা লাইভ শেয়ারিং শুরু করলে তবেই আপনার অবস্থান অন্যদের সঙ্গে শেয়ার হয়।</string>
+    <string name="location_disclosure_why">মানচিত্রে আপনি কোথায় আছেন তা দেখাতে, আপনি খুঁজলে আপনার কাছের জায়গাগুলি আগে দেখাতে, এবং আপনি পথনির্দেশ চাইলে পথের শুরু হিসেবে এটি ব্যবহার হয় (প্রথম অনুরোধের আগে কী পাঠানো হয় তা আপনাকে জানানো হয়)। পরের ফিচারগুলিতে, আপনি নিজে শুরু করলে SOS ও লাইভ শেয়ারিংয়ের জন্যও এটি ব্যবহার হবে।</string>
+    <string name="location_disclosure_not">SafeRoute ব্যাকগ্রাউন্ডে আপনার অবস্থান পড়ে না। মানচিত্রে আপনার অবস্থান দেখানোর জন্য SafeRoute-এর সার্ভারে কিছুই পাঠানো হয় না। খোঁজার সময় আপনার অবস্থান প্রায় 1 কিমি পর্যন্ত মোটামুটি করে SafeRoute-এর সার্ভারে পাঠানো হয়, আর সার্ভার সেই মোটামুটি বিন্দুটি তার ব্যবহৃত মানচিত্র-খোঁজার পরিষেবাকে দেয়, যাতে কাছের জায়গাগুলি আগে আসে। SafeRoute এটি সংরক্ষণ করে না। আপনি SOS বা লাইভ শেয়ারিং শুরু করলে তবেই আপনার অবস্থান অন্যদের সঙ্গে শেয়ার হয়।</string>
     <string name="location_disclosure_stop">আপনি যে কোনো সময় ফোনের সেটিংসে, অ্যাপ, SafeRoute, অনুমতি থেকে এটি বন্ধ করতে পারেন।</string>
     <string name="location_disclosure_continue">এগিয়ে যান</string>
     <string name="location_disclosure_not_now">এখন নয়</string>
@@ -281,6 +281,12 @@
         <item quantity="one">%dটি জায়গা পাওয়া গেছে</item>
         <item quantity="other">%dটি জায়গা পাওয়া গেছে</item>
     </plurals>
+    <string name="search_distance_km">%1$s কিমি</string>
+    <string name="search_distance_under_km">1 কিমির কম</string>
+    <string name="search_distance_from_position">আপনার অবস্থান থেকে %1$s</string>
+    <string name="search_distance_from_map">মানচিত্রের কেন্দ্র থেকে %1$s</string>
+    <string name="search_distance_note_position">দূরত্বগুলি আনুমানিক, আপনার অবস্থান থেকে।</string>
+    <string name="search_distance_note_map">দূরত্বগুলি আনুমানিক, মানচিত্রের কেন্দ্র থেকে।</string>
     <string name="search_no_results_title">কোনো জায়গা পাওয়া যায়নি</string>
     <string name="search_no_results_body">অন্য বানানে লিখে দেখুন, অথবা কাছের কোনো পরিচিত জায়গা বা এলাকার নাম লিখুন।</string>
     <string name="search_error_offline">আপনি অফলাইনে আছেন। ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।</string>

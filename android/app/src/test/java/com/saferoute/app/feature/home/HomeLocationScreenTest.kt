@@ -135,7 +135,14 @@ class HomeLocationScreenTest {
         // The wording is a draft for the lawyer, but these statements must stay in it.
         assertTrue(string(R.string.location_disclosure_what).contains("while the app is open"))
         assertTrue(string(R.string.location_disclosure_not).contains("background"))
-        assertTrue(string(R.string.location_disclosure_not).contains("nothing is sent"))
+        // Since P011e2 a search sends the position, rounded: the text must say what is sent,
+        // how coarse, to whom, and that it is not kept. "Nothing is sent" would no longer be true.
+        val notSent = string(R.string.location_disclosure_not)
+        assertTrue(notSent.contains("sends nothing to SafeRoute’s servers"))
+        assertTrue(notSent.contains("rounded to about 1 km"))
+        assertTrue(notSent.contains("map search service"))
+        assertTrue(notSent.contains("does not store it"))
+        assertTrue(string(R.string.location_disclosure_why).contains("when you search"))
         assertTrue(string(R.string.location_disclosure_stop).contains("Settings"))
     }
 

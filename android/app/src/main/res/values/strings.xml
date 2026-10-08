@@ -260,8 +260,8 @@
     <string name="my_location_unavailable">Location unavailable. Find out why</string>
     <string name="location_disclosure_title">Show your location on the map?</string>
     <string name="location_disclosure_what">SafeRoute will read your phone’s location while the app is open.</string>
-    <string name="location_disclosure_why">It is used to show where you are on the map and, when you ask for directions, as the start of the route (you are told what is sent before the first request). Later features will also use it for SOS and live sharing when you start them yourself.</string>
-    <string name="location_disclosure_not">SafeRoute does not read your location in the background. For this feature nothing is sent to SafeRoute’s servers. Your location is shared with others only if you start SOS or live sharing.</string>
+    <string name="location_disclosure_why">It is used to show where you are on the map, to put places near you first when you search, and, when you ask for directions, as the start of the route (you are told what is sent before the first request). Later features will also use it for SOS and live sharing when you start them yourself.</string>
+    <string name="location_disclosure_not">SafeRoute does not read your location in the background. Showing where you are on the map sends nothing to SafeRoute’s servers. A search sends your location rounded to about 1 km to SafeRoute’s server, which passes that rounded point to the map search service it uses, so that nearby places can come first. SafeRoute does not store it. Your location is shared with others only if you start SOS or live sharing.</string>
     <string name="location_disclosure_stop">You can stop this at any time in your phone’s Settings, under Apps, SafeRoute, Permissions.</string>
     <string name="location_disclosure_continue">Continue</string>
     <string name="location_disclosure_not_now">Not now</string>
@@ -288,6 +288,12 @@
         <item quantity="one">%d place found</item>
         <item quantity="other">%d places found</item>
     </plurals>
+    <string name="search_distance_km">%1$s km</string>
+    <string name="search_distance_under_km">under 1 km</string>
+    <string name="search_distance_from_position">%1$s from your location</string>
+    <string name="search_distance_from_map">%1$s from the centre of the map</string>
+    <string name="search_distance_note_position">Distances are approximate, from your location.</string>
+    <string name="search_distance_note_map">Distances are approximate, from the centre of the map.</string>
     <string name="search_no_results_title">No places found</string>
     <string name="search_no_results_body">Try another spelling, or the name of a nearby landmark or area.</string>
     <string name="search_error_offline">You are offline. Check your connection and try again.</string>
