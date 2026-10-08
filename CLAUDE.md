@@ -4,8 +4,9 @@ Claude Code loads this file at the start of every session. Read it fully before 
 The full design lives in [`docs/plan/SafeRoute_Plan_v7_MVP.pdf`](docs/plan/SafeRoute_Plan_v7_MVP.pdf)
 (cited as "Plan v7 §N"), amended by [`docs/plan/addendum-v7.1.md`](docs/plan/addendum-v7.1.md),
 [`docs/plan/addendum-v7.2.md`](docs/plan/addendum-v7.2.md),
-[`docs/plan/addendum-v7.3.md`](docs/plan/addendum-v7.3.md) and
-[`docs/plan/addendum-v7.4.md`](docs/plan/addendum-v7.4.md) (see "Plan addendum" below).
+[`docs/plan/addendum-v7.3.md`](docs/plan/addendum-v7.3.md),
+[`docs/plan/addendum-v7.4.md`](docs/plan/addendum-v7.4.md) and
+[`docs/plan/addendum-v7.5.md`](docs/plan/addendum-v7.5.md) (see "Plan addendum" below).
 
 ## Plan addendum (since P009a)
 
@@ -17,8 +18,9 @@ never edited; a full v8 comes after the MVP.
 
 Then read [`docs/plan/addendum-v7.2.md`](docs/plan/addendum-v7.2.md) (since P010c) and
 [`docs/plan/addendum-v7.3.md`](docs/plan/addendum-v7.3.md) (since P010d), then
-[`docs/plan/addendum-v7.4.md`](docs/plan/addendum-v7.4.md) (since P012d). **Reading order: PDF →
-v7.1 → v7.2 → v7.3 → v7.4; where they differ, the later document wins.** v7.2 records the launch
+[`docs/plan/addendum-v7.4.md`](docs/plan/addendum-v7.4.md) (since P012d) and
+[`docs/plan/addendum-v7.5.md`](docs/plan/addendum-v7.5.md) (since P012g). **Reading order: PDF →
+v7.1 → v7.2 → v7.3 → v7.4 → v7.5; where they differ, the later document wins.** v7.2 records the launch
 geography (West Bengal, with Kolkata as the first pilot area for community safety data), the
 three coverage layers, the region model, the changed scopes of P011, P012, P017 and P019, and the
 claims rule (see "Coverage claims" below). v7.3 replaces v7.2's "reports only in active regions":
@@ -26,7 +28,8 @@ reports are accepted anywhere inside West Bengal, and publication is gated regio
 (statuses `context_only`, `collecting`, `published`); it changes the scopes of P017, P018 and P019.
 v7.4 records the post-MVP product direction (the order of features after the MVP, the journey
 engine) and the guardrails for every future feature (see "Product guardrails" below); it changes
-no MVP scope.
+no MVP scope. v7.5 supplements v7.4 with a long-term direction (live local context) and a staged
+path to it (see "Live local context" below); it builds nothing and changes no MVP scope.
 
 ## Project summary
 
@@ -64,7 +67,7 @@ moderation/     Moderator web app (P018)
 contracts/      openapi.json, generated, never hand-edited (from P004)
 infra/          GCP / Cloud Run / WIF configuration (from P006)
 tools/diagrams/ JSON → Excalidraw + SVG + PNG diagram generator
-docs/plan/      Plan v7 PDF (source of truth for design) + addenda v7.1 to v7.4 (the later one wins)
+docs/plan/      Plan v7 PDF (source of truth for design) + addenda v7.1 to v7.5 (the later one wins)
 docs/adr/       Architecture Decision Records (template.md, NNNN-title.md)
 docs/diagrams/  Diagram JSON specs + generated .excalidraw/.svg/.png
 docs/prompt-logs/ One log per prompt (NNN-core-work.md)
@@ -338,6 +341,31 @@ public text. The MVP prompts (P013–P022) keep their scope; v7.4 builds nothing
 - A places or events data source needs a terms check recorded in an ADR before its adapter.
 - No revenue claim in public materials until measured.
 - A feature that can't fit these rules needs a new ADR first.
+
+## Live local context (since P012g, ADR 0023, Proposed)
+
+Follow [addendum v7.5](docs/plan/addendum-v7.5.md) and
+[ADR 0023](docs/adr/0023-live-local-context-staged-path.md). It is a direction, not scope:
+nothing in it is built, and no prompt starts a stage on the strength of a Proposed ADR.
+
+- "Google Maps tells you where to go. SafeRoute tells you what nearby people report along the
+  way" is a **long-term direction, never a description of the app today**. Pitch, website,
+  store listing and README claims must match the live feature set and the live coverage.
+- **Home stays the map.** Local context goes into the Home bottom sheet, in this order:
+  (1) a Nearby panel with essentials, labelled "may be incomplete"; (2) curated alerts posted
+  by staff from official or verified sources, each source's terms checked first; (3) community
+  reports with expiry, confirmations, abuse controls and delays that protect the reporter;
+  (4) social posts, only behind every gate of addendum v7.4, section F.
+- Before stage 3, every conflict in addendum v7.5, section C needs an answer in an ADR and a
+  lawyer's review. **No "normal", "quiet" or "safe" wording**, and never "0 reports" as if it
+  meant that nothing is happening.
+- No traffic or weather claim without a licensed source.
+- Route-affected alerts need server-side matching of a route and a position, background
+  location, new consent purposes, retention limits and an opt-in. The promise that routes and
+  positions are not stored changes only with explicit consent, a lawyer's review and a
+  superseding ADR (ADR 0015, ADR 0022).
+- Community content appears in a region only above a minimum density that is recorded in the
+  plan first. The k-threshold of the safety layer is never lowered for it.
 
 ## Search and geocoding rules (since P011a, ADR 0018)
 
