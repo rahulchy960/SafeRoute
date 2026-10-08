@@ -79,6 +79,23 @@
     <string name="settings_title">Settings</string>
     <string name="settings_language_title">Language</string>
     <string name="settings_language_supporting">English / বাংলা · Coming soon</string>
+    <string name="sos_tile_label">SafeRoute SOS</string>
+    <string name="sos_tile_subtitle">Emergency options</string>
+    <string name="settings_shortcuts_title">Emergency shortcuts</string>
+    <string name="settings_tile_add_title">Add the SOS tile</string>
+    <string name="settings_tile_add_supporting">Puts “SafeRoute SOS” in Quick Settings, the panel you pull down from the top of the screen. Tapping it opens the emergency options, also when the phone is locked.</string>
+    <string name="settings_tile_help">The tile opens the same options as the SOS control in the app: it offers to open your phone app with 112 entered. It does not call by itself. SafeRoute is not an emergency service.</string>
+    <string name="settings_tile_added_title">Tile added</string>
+    <string name="settings_tile_added_body">“SafeRoute SOS” is now in Quick Settings. Pull down from the top of the screen to find it.</string>
+    <string name="settings_tile_already_title">The tile is already there</string>
+    <string name="settings_tile_already_body">“SafeRoute SOS” is in Quick Settings. Pull down from the top of the screen to find it.</string>
+    <string name="settings_tile_steps_title">Add the tile by hand</string>
+    <string name="settings_tile_steps_1">1. Pull down from the top of the screen twice to open Quick Settings.</string>
+    <string name="settings_tile_steps_2">2. Tap the edit button (a pencil, or “Edit” in the menu).</string>
+    <string name="settings_tile_steps_3">3. Find “SafeRoute SOS” among the tiles that are not in use.</string>
+    <string name="settings_tile_steps_4">4. Hold it and drag it up to the tiles in use.</string>
+    <string name="settings_tile_steps_note">The names and places differ a little between phone makers. Some phones have no Quick Settings tiles from apps; the SOS control in the app always works.</string>
+    <string name="settings_tile_ok">OK</string>
     <string name="settings_about_title">About</string>
     <!-- %1$s is the version name, %2$d the build number -->
     <string name="settings_version">Version %1$s (%2$d)</string>

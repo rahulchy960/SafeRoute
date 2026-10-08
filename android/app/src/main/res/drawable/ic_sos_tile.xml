@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<!--
+    The Quick Settings tile's icon: a warning triangle with an exclamation mark, drawn for
+    SafeRoute. Solid white on transparent, 24 dp, as Android asks of tile icons; the system
+    tints it, so it can not be (and is not) the emergency red.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="@android:color/white"
+        android:fillType="evenOdd"
+        android:pathData="M12,3L22,20H2L12,3ZM11,9.5V14.5H13V9.5H11ZM11,16V18H13V16H11Z" />
+</vector>

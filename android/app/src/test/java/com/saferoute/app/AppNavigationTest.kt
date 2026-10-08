@@ -7,6 +7,7 @@ import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.saferoute.app.core.session.FakeSession
 import com.saferoute.app.core.session.Session
@@ -134,14 +135,15 @@ class AppNavigationTest {
     @Test
     fun `home to settings shows the real version and back returns to home`() {
         compose.onNodeWithContentDescription(string(R.string.settings_title)).performClick()
-        compose.onNodeWithText(string(R.string.settings_about_title)).assertIsDisplayed()
+        // Further down the list since the shortcuts section was added: it exists, it may need a scroll.
+        compose.onNodeWithText(string(R.string.settings_about_title)).assertExists()
         compose.onNodeWithText(
             compose.activity.getString(
                 R.string.settings_version,
                 BuildConfig.VERSION_NAME,
                 BuildConfig.VERSION_CODE,
             ),
-        ).assertIsDisplayed()
+        ).performScrollTo().assertIsDisplayed()
 
         pressSystemBack()
         assertOnHome()

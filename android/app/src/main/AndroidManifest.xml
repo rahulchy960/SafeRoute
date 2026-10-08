@@ -72,6 +72,48 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!--
+            Where the emergency shortcuts outside the app lead (P012f): the same dialog as the
+            in-app SOS control, and nothing else.
+            exported=false: only this app's own tile (and later its notification) start it.
+            showWhenLocked: it may appear on top of the lock screen. That is safe for this
+            screen only: fixed text and a button that opens the dialer with 112. It unlocks
+            nothing, and MainActivity never has this attribute (a test checks both).
+            excludeFromRecents + its own taskAffinity: it is a moment, not a place to return
+            to; it does not show up in the recent-apps list or on top of the main screen.
+        -->
+        <activity
+            android:name=".feature.emergency.EmergencyActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:showWhenLocked="true"
+            android:taskAffinity="com.saferoute.app.emergency"
+            android:theme="@style/Theme.SafeRoute"
+            tools:targetApi="27" />
+
+        <!--
+            The "SafeRoute SOS" Quick Settings tile (P012f). Not a service that keeps running:
+            Android binds it for a moment when the tile is added or tapped.
+            permission BIND_QUICK_SETTINGS_TILE: only the system may bind it. It is a
+            permission this component REQUIRES of its caller, not one the app asks for, so the
+            app's own permission list does not change.
+            exported=true: the system must be able to reach it (and to offer it to the user).
+            ACTIVE_TILE: Android wakes the service for a tap, not each time the panel opens.
+        -->
+        <service
+            android:name=".feature.emergency.SosTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_sos_tile"
+            android:label="@string/sos_tile_label"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.quicksettings.ACTIVE_TILE"
+                android:value="true" />
+        </service>
     </application>
 
 </manifest>
