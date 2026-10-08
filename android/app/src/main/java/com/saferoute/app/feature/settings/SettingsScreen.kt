@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 package com.saferoute.app.feature.settings
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -32,7 +34,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -56,8 +60,10 @@ fun SettingsRoute(
     modifier: Modifier = Modifier,
     developerEntry: @Composable () -> Unit = {},
     viewModel: AccountViewModel = hiltViewModel(),
+    shortcutsViewModel: EmergencyShortcutsViewModel = hiltViewModel(),
 ) {
     val account by viewModel.account.collectAsStateWithLifecycle()
+    val tileNotice by shortcutsViewModel.tileNotice.collectAsStateWithLifecycle()
     SettingsScreen(
         versionName = versionName,
         versionCode = versionCode,
@@ -67,6 +73,9 @@ fun SettingsRoute(
         account = account,
         onRetryAccount = viewModel::load,
         onSignOut = viewModel::signOut,
+        tileNotice = tileNotice,
+        onAddTile = shortcutsViewModel::onAddTileClick,
+        onTileNoticeDismiss = shortcutsViewModel::onTileNoticeDismiss,
     )
 }
 
@@ -83,6 +92,8 @@ fun SettingsRoute(
  * @param account What the Account and Privacy sections show; null leaves both out.
  * @param onRetryAccount "Try again" when the account could not be loaded.
  * @param onSignOut Called after the person confirmed "Sign out" in the dialog.
+ * @param tileNotice What to say after "Add the SOS tile" was tapped; null says nothing.
+ * @param onAddTile "Add the SOS tile" was tapped.
  */
 @Composable
 fun SettingsScreen(
@@ -94,7 +105,12 @@ fun SettingsScreen(
     account: AccountUiState? = null,
     onRetryAccount: () -> Unit = {},
     onSignOut: () -> Unit = {},
+    tileNotice: TileNotice? = null,
+    onAddTile: () -> Unit = {},
+    onTileNoticeDismiss: () -> Unit = {},
 ) {
+    tileNotice?.let { TileNoticeDialog(notice = it, onDismiss = onTileNoticeDismiss) }
+
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -148,6 +164,8 @@ fun SettingsScreen(
             HorizontalDivider()
             developerEntry()
 
+            EmergencyShortcutsSection(onAddTile = onAddTile)
+
             SectionTitle(text = stringResource(R.string.settings_about_title))
             ListItem(
                 headlineContent = { Text(text = stringResource(R.string.app_name)) },
@@ -182,6 +200,71 @@ fun SettingsScreen(
             )
         }
     }
+}
+
+/**
+ * Emergency shortcuts outside the app. For now one: the Quick Settings tile. The row is a
+ * button (a ListItem is far taller than 48 dp); the text under it says what the tile does and
+ * what it does not do.
+ */
+@Composable
+private fun EmergencyShortcutsSection(onAddTile: () -> Unit) {
+    SectionTitle(text = stringResource(R.string.settings_shortcuts_title))
+    ListItem(
+        headlineContent = { Text(text = stringResource(R.string.settings_tile_add_title)) },
+        modifier = Modifier.clickable(role = Role.Button, onClick = onAddTile),
+        supportingContent = { Text(text = stringResource(R.string.settings_tile_add_supporting)) },
+        leadingContent = {
+            Icon(painter = painterResource(R.drawable.ic_sos_tile), contentDescription = null)
+        },
+    )
+    Text(
+        text = stringResource(R.string.settings_tile_help),
+        modifier = Modifier.padding(
+            horizontal = SafeRouteTheme.spacing.md,
+            vertical = SafeRouteTheme.spacing.xs,
+        ),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    HorizontalDivider()
+}
+
+/** The answer to "Add the SOS tile": done, there already, or how to do it by hand. */
+@Composable
+private fun TileNoticeDialog(notice: TileNotice, onDismiss: () -> Unit) {
+    val title = when (notice) {
+        TileNotice.Added -> R.string.settings_tile_added_title
+        TileNotice.AlreadyAdded -> R.string.settings_tile_already_title
+        TileNotice.ShowSteps -> R.string.settings_tile_steps_title
+    }
+    val lines = when (notice) {
+        TileNotice.Added -> listOf(R.string.settings_tile_added_body)
+        TileNotice.AlreadyAdded -> listOf(R.string.settings_tile_already_body)
+        TileNotice.ShowSteps -> listOf(
+            R.string.settings_tile_steps_1,
+            R.string.settings_tile_steps_2,
+            R.string.settings_tile_steps_3,
+            R.string.settings_tile_steps_4,
+            R.string.settings_tile_steps_note,
+        )
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = stringResource(title), modifier = Modifier.semantics { heading() }) },
+        text = {
+            // Scrolls, so that large text can never push the button off the screen.
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(SafeRouteTheme.spacing.xs),
+            ) {
+                lines.forEach { Text(text = stringResource(it)) }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(text = stringResource(R.string.settings_tile_ok)) }
+        },
+    )
 }
 
 /**

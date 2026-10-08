@@ -79,6 +79,7 @@ class DeveloperNavigationTest {
             .assertIsDisplayed()
 
         compose.onNodeWithContentDescription(string(R.string.navigate_back)).performClick()
-        compose.onNodeWithText(string(R.string.settings_about_title)).assertIsDisplayed()
+        // Further down the list since the shortcuts section was added: it exists, it may need a scroll.
+        compose.onNodeWithText(string(R.string.settings_about_title)).assertExists()
     }
 }

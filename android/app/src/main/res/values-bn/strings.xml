@@ -76,6 +76,23 @@
     <string name="settings_title">সেটিংস</string>
     <string name="settings_language_title">ভাষা</string>
     <string name="settings_language_supporting">English / বাংলা · শীঘ্রই আসছে</string>
+    <string name="sos_tile_label">SafeRoute SOS</string>
+    <string name="sos_tile_subtitle">জরুরি বিকল্প</string>
+    <string name="settings_shortcuts_title">জরুরি শর্টকাট</string>
+    <string name="settings_tile_add_title">SOS টাইল যোগ করুন</string>
+    <string name="settings_tile_add_supporting">“SafeRoute SOS” কুইক সেটিংসে রাখে, অর্থাৎ স্ক্রিনের উপর থেকে নিচে টানলে যে প্যানেল খোলে। এতে ট্যাপ করলে জরুরি বিকল্পগুলি খোলে, ফোন লক থাকলেও।</string>
+    <string name="settings_tile_help">টাইলটি অ্যাপের SOS নিয়ন্ত্রণের মতো একই বিকল্প খোলে: এটি 112 লেখা অবস্থায় আপনার ফোন অ্যাপ খোলার প্রস্তাব দেয়। এটি নিজে থেকে কল করে না। SafeRoute কোনো জরুরি পরিষেবা নয়।</string>
+    <string name="settings_tile_added_title">টাইল যোগ হয়েছে</string>
+    <string name="settings_tile_added_body">“SafeRoute SOS” এখন কুইক সেটিংসে আছে। খুঁজে পেতে স্ক্রিনের উপর থেকে নিচে টানুন।</string>
+    <string name="settings_tile_already_title">টাইলটি আগে থেকেই আছে</string>
+    <string name="settings_tile_already_body">“SafeRoute SOS” কুইক সেটিংসে আছে। খুঁজে পেতে স্ক্রিনের উপর থেকে নিচে টানুন।</string>
+    <string name="settings_tile_steps_title">নিজে টাইল যোগ করুন</string>
+    <string name="settings_tile_steps_1">1. কুইক সেটিংস খুলতে স্ক্রিনের উপর থেকে দুবার নিচে টানুন।</string>
+    <string name="settings_tile_steps_2">2. সম্পাদনা বোতামে ট্যাপ করুন (একটি পেনসিল, বা মেনুতে “Edit”)।</string>
+    <string name="settings_tile_steps_3">3. ব্যবহার না হওয়া টাইলগুলির মধ্যে “SafeRoute SOS” খুঁজুন।</string>
+    <string name="settings_tile_steps_4">4. এটি ধরে রেখে ব্যবহৃত টাইলগুলির মধ্যে টেনে আনুন।</string>
+    <string name="settings_tile_steps_note">ফোন নির্মাতা ভেদে নাম ও জায়গা কিছুটা আলাদা হয়। কিছু ফোনে অ্যাপের কুইক সেটিংস টাইল নেই; অ্যাপের ভিতরের SOS নিয়ন্ত্রণ সবসময় কাজ করে।</string>
+    <string name="settings_tile_ok">ঠিক আছে</string>
     <string name="settings_about_title">অ্যাপ সম্পর্কে</string>
     <!-- %1$s is the version name, %2$d the build number -->
     <string name="settings_version">সংস্করণ %1$s (%2$d)</string>
