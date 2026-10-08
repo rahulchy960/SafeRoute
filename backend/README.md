@@ -134,6 +134,7 @@ src/
   routes/ready.ts      GET /health/ready (readiness: SELECT 1 with a 2 s timeout)
   modules/auth/        Firebase ID-token verifier (jose), authenticate / requireUser / requireRole
   modules/users/       POST /v1/me/bootstrap, GET /v1/me
+  modules/contacts/    /v1/contacts, the opt-out page GET /c and POST /v1/public/contacts/opt-out (ADR 0024)
   modules/search/      POST /v1/search, the GeocoderProvider interface and the provider adapters
   lib/rate-limit.ts    token buckets in PostgreSQL (rate_limit_buckets)
   regions/defaults.ts  default search bias for the launch region

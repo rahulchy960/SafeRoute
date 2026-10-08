@@ -29,6 +29,7 @@ Copy [`template.md`](template.md) to `NNNN-short-title.md`, and add a row to the
 | [0021](0021-post-mvp-product-direction.md) | Post-MVP product direction: sequence, journey engine and guardrails for future features | Accepted |
 | [0022](0022-follow-me-navigation.md) | Follow-me navigation: on screen only, off-route and arrival rules, Recalculate on a tap, nothing stored | Accepted |
 | [0023](0023-live-local-context-staged-path.md) | Live local context: the map stays Home, four stages through the bottom sheet, what triggers each; a feed as Home rejected | Proposed |
+| [0024](0024-emergency-contacts-and-opt-out.md) | Emergency contacts and opt-out: server list with an offline copy, `sos_alerts` gating and erasure on withdrawal, no server messaging, opt-out token in the URL fragment, tombstone for an opted-out number | Accepted |
 
 A breaking API change, new infrastructure, a new data store or the Android package name each need
 an ADR.
