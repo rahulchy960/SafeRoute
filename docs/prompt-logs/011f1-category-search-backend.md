@@ -163,10 +163,16 @@ New and changed tests:
 
 **Failure matrix (Plan v7 §7.5):** not applicable; no SOS, live-location or contacts code.
 
-**Generated client:** every new field is optional, so the Kotlin client generated from 0.8.0
-has the same constructors as before plus nullable properties. The Android gate was not run in
-this prompt (no Android file changed); `android-ci` runs on `contracts/**` in the pull request
-and is the check.
+**Generated client:** the first push failed `android-ci`. The Kotlin client is generated from
+the contract, its data classes take their properties in the order of the schema, and an
+Android test builds `SearchRequest` positionally; `category`, declared after `q`, shifted
+every argument. The claim made here before, that optional fields cannot break the client, was
+wrong. Fix, in the backend only: the new properties are declared **after** the older ones
+(`category` last in `SearchRequest`, `searchedRadiusKm` and `searchedAround` after
+`attribution`), with a comment that says why. Then, in `android/`:
+`./gradlew testDebugUnitTest --tests "com.saferoute.app.feature.search.*"` compiled every unit
+test against the 0.8.0 client and passed. The full Android gate was not run locally;
+`android-ci` on the pull request runs it.
 
 ## 7. Decisions & ADRs
 
@@ -187,6 +193,8 @@ are unchanged, and the contract change is additive. The decisions that were mine
   existing line, not `matchType` as the prompt wrote it.
 - **`public_transport`** as one category for the "Bus & train" chip.
 - New fields are optional in the schema although the server always sends `matchType`.
+- **New contract properties go after the existing ones.** oasdiff does not see property order,
+  but a generated Kotlin data class does.
 
 ## 8. Security & privacy notes
 

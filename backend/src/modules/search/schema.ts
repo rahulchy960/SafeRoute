@@ -35,19 +35,6 @@ export const SearchRequestSchema = z
           'Any script is accepted.',
         examples: ['railway station'],
       }),
-    category: z
-      .string()
-      .regex(/^[a-z][a-z_]{1,39}$/)
-      .optional()
-      .openapi({
-        description:
-          'A kind of place to look for near the point, for a quick-search button. When it is ' +
-          'sent, `q` may be left out and is ignored. Open set: the values this version knows ' +
-          `are ${CATEGORY_KEYS.join(', ')}; an unknown value is a 400. Send the point with it: ` +
-          'without `nearLatitude`/`nearLongitude` there is no circle to search, and the ' +
-          'answer is a plain name search for the word.',
-        examples: ['pharmacy'],
-      }),
     nearLatitude: z
       .number()
       .min(-90)
@@ -82,6 +69,21 @@ export const SearchRequestSchema = z
       .max(SEARCH_MAX_LIMIT)
       .default(SEARCH_DEFAULT_LIMIT)
       .openapi({ description: 'Maximum number of results.', examples: [SEARCH_DEFAULT_LIMIT] }),
+    // Declared LAST on purpose: generated clients build this object positionally, and a new
+    // property in the middle shifts every argument after it (android-ci, P011f1).
+    category: z
+      .string()
+      .regex(/^[a-z][a-z_]{1,39}$/)
+      .optional()
+      .openapi({
+        description:
+          'A kind of place to look for near the point, for a quick-search button. When it is ' +
+          'sent, `q` may be left out and is ignored. Open set: the values this version knows ' +
+          `are ${CATEGORY_KEYS.join(', ')}; an unknown value is a 400. Send the point with it: ` +
+          'without `nearLatitude`/`nearLongitude` there is no circle to search, and the ' +
+          'answer is a plain name search for the word.',
+        examples: ['pharmacy'],
+      }),
   })
   .superRefine((value, ctx) => {
     if (value.category !== undefined && !isCategoryKey(value.category)) {
@@ -167,6 +169,16 @@ export const SearchResultsSchema = z
           'away; within each group, best match first. A search by kind or brand: nearest ' +
           'first, all inside the circle. Empty when nothing was found.',
       }),
+    attribution: z
+      .string()
+      .nullable()
+      .openapi({
+        description:
+          'Credit line the app must show next to the results when it is not null (required by ' +
+          'the terms of the geocoding provider and of the map data).',
+        examples: ['© OpenStreetMap contributors'],
+      }),
+    // After the older properties, for the same reason as `category` above.
     searchedRadiusKm: z
       .number()
       .min(1)
@@ -190,15 +202,6 @@ export const SearchResultsSchema = z
           'near Exampletown"); `distanceMeters` is then measured from that place, not from the ' +
           'point of the request. Open set.',
         examples: ['near'],
-      }),
-    attribution: z
-      .string()
-      .nullable()
-      .openapi({
-        description:
-          'Credit line the app must show next to the results when it is not null (required by ' +
-          'the terms of the geocoding provider and of the map data).',
-        examples: ['© OpenStreetMap contributors'],
       }),
   })
   .openapi('SearchResults', { description: 'Places that match a search.' });
