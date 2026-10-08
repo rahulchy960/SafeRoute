@@ -5,6 +5,7 @@ import { rateLimitBuckets, users } from '../../src/db/schema/index.js';
 import { SEARCH_LIMITS } from '../../src/modules/search/service.js';
 import {
   GeocoderError,
+  type CategoryQuery,
   type GeocoderFailure,
   type GeocoderProvider,
   type GeocoderQuery,
@@ -166,7 +167,10 @@ describe('POST /v1/search', () => {
     expect(res.status).toBe(200);
     expect(res.headers.get('cache-control')).toBe('no-store');
     expect(res.headers.get('x-request-id')).toBeTruthy();
-    expect(await res.json()).toEqual({ results: [PLACE], attribution: 'Fake attribution line' });
+    expect(await res.json()).toEqual({
+      results: [{ ...PLACE, matchType: 'name' }],
+      attribution: 'Fake attribution line',
+    });
     // Defaults: English, 6 results, the default bias (coarse already).
     expect(calls).toEqual([
       { query: 'station', nearLatitude: 22.57, nearLongitude: 88.36, language: 'en', limit: 6 },
@@ -327,7 +331,7 @@ describe('POST /v1/search: local-first ranking (ADR 0018)', () => {
     const { app } = setup(provider);
     const { token } = await signUp(app, 50);
 
-    const res = await search(app, token, { q: 'bank' });
+    const res = await search(app, token, { q: 'ferry ghat' });
     expect(calls).toHaveLength(1);
     expect(calls[0]).not.toHaveProperty('withinMeters');
     const body = (await res.json()) as { results: Record<string, unknown>[] };
@@ -340,11 +344,11 @@ describe('POST /v1/search: local-first ranking (ADR 0018)', () => {
     const { app } = setup(provider, { SEARCH_GLOBAL_DAILY_LIMIT: '10' });
     const { token, userId } = await signUp(app, 51);
 
-    const res = await search(app, token, { q: 'bank', ...NEAR });
+    const res = await search(app, token, { q: 'ferry ghat', ...NEAR });
     expect(res.status).toBe(200);
     expect(calls).toEqual([
       {
-        query: 'bank',
+        query: 'ferry ghat',
         nearLatitude: 10.12,
         nearLongitude: 20.99,
         language: 'en',
@@ -373,7 +377,7 @@ describe('POST /v1/search: local-first ranking (ADR 0018)', () => {
     const { app, logs } = setup(provider, { SEARCH_GLOBAL_DAILY_LIMIT: '10' });
     const { token, userId } = await signUp(app, 52);
 
-    const res = await search(app, token, { q: 'bank', ...NEAR });
+    const res = await search(app, token, { q: 'ferry ghat', ...NEAR });
     expect(res.status).toBe(200);
     expect(calls.map((call) => call.withinMeters)).toEqual([50_000, undefined]);
     const body = (await res.json()) as { results: { id: string; distanceMeters: number }[] };
@@ -400,7 +404,7 @@ describe('POST /v1/search: local-first ranking (ADR 0018)', () => {
     );
     const first = setup(one.provider, { SEARCH_GLOBAL_DAILY_LIMIT: '1' });
     const alice = await signUp(first.app, 53);
-    const kept = await search(first.app, alice.token, { q: 'bank', ...NEAR });
+    const kept = await search(first.app, alice.token, { q: 'ferry ghat', ...NEAR });
     expect(kept.status).toBe(200);
     expect(((await kept.json()) as { results: { id: string }[] }).results.map((r) => r.id)).toEqual(
       ['n1'],
@@ -415,7 +419,7 @@ describe('POST /v1/search: local-first ranking (ADR 0018)', () => {
     const none = scriptedGeocoder((query) => (query.withinMeters === undefined ? [PLACE] : []));
     const second = setup(none.provider, { SEARCH_GLOBAL_DAILY_LIMIT: '1' });
     const bob = await signUp(second.app, 54);
-    const refused = await search(second.app, bob.token, { q: 'bank', ...NEAR });
+    const refused = await search(second.app, bob.token, { q: 'ferry ghat', ...NEAR });
     expect(refused.status).toBe(503);
     expect(await refused.json()).toMatchObject({ code: 'search_unavailable' });
     expect(refused.headers.get('retry-after')).not.toBeNull();
@@ -428,7 +432,7 @@ describe('POST /v1/search: local-first ranking (ADR 0018)', () => {
     );
     const { app, logs } = setup(provider);
     const { token } = await signUp(app, 55);
-    const res = await search(app, token, { q: 'bank', ...NEAR });
+    const res = await search(app, token, { q: 'ferry ghat', ...NEAR });
     expect(res.status).toBe(200);
     expect(((await res.json()) as { results: unknown[] }).results).toHaveLength(2);
     expect(logs().find((line) => line.message === 'geocoder call')).toMatchObject({
@@ -444,7 +448,7 @@ describe('POST /v1/search: local-first ranking (ADR 0018)', () => {
       SEARCH_MIN_LOCAL_RESULTS: '1',
     });
     const { token } = await signUp(app, 56);
-    expect((await search(app, token, { q: 'bank', ...NEAR })).status).toBe(200);
+    expect((await search(app, token, { q: 'ferry ghat', ...NEAR })).status).toBe(200);
     // One nearby result is enough now, so there is no wide call.
     expect(calls.map((call) => call.withinMeters)).toEqual([20_000]);
   });
@@ -598,6 +602,239 @@ describe('POST /v1/search: rate limits', () => {
   });
 });
 
+/** A geocoder that can also search by category; it records both kinds of call. */
+function categoryGeocoder(
+  byCategory: (query: CategoryQuery) => PlaceResult[] | GeocoderError,
+  byName: (query: GeocoderQuery) => PlaceResult[] | GeocoderError = () => [],
+) {
+  const { provider, calls } = scriptedGeocoder(byName);
+  const categoryCalls: CategoryQuery[] = [];
+  provider.searchCategory = (query) => {
+    categoryCalls.push(query);
+    const answer = byCategory(query);
+    return answer instanceof GeocoderError ? Promise.reject(answer) : Promise.resolve(answer);
+  };
+  return { provider, calls, categoryCalls };
+}
+
+describe('POST /v1/search: category and brand search (ADR 0018)', () => {
+  const tokensLeft = async (key: string) =>
+    Number(
+      (await db.select().from(rateLimitBuckets).where(eq(rateLimitBuckets.key, key)))[0]?.tokens,
+    );
+  interface Body {
+    results: { id: string; distanceMeters?: number; matchType?: string }[];
+    searchedRadiusKm?: number;
+    searchedAround?: string;
+  }
+
+  it('`category` without q: a circle around the coarse point, nearest first, one token', async () => {
+    const { provider, calls, categoryCalls } = categoryGeocoder(() => [
+      placeNear('c2', 0.05),
+      placeNear('c1', 0.01),
+      placeNear('c3', 0.08),
+    ]);
+    const { app } = setup(provider, { SEARCH_GLOBAL_DAILY_LIMIT: '10' });
+    const { token } = await signUp(app, 60);
+
+    const res = await search(app, token, { category: 'pharmacy', ...NEAR });
+    expect(res.status).toBe(200);
+    expect(calls).toHaveLength(0);
+    expect(categoryCalls).toEqual([
+      {
+        category: 'pharmacy',
+        nearLatitude: 10.12,
+        nearLongitude: 20.99,
+        withinMeters: 10_000,
+        language: 'en',
+        limit: 6,
+      },
+    ]);
+    const body = (await res.json()) as Body;
+    expect(body.results.map((r) => [r.id, r.distanceMeters, r.matchType])).toEqual([
+      ['c1', 1100, 'category'],
+      ['c2', 5600, 'category'],
+      ['c3', 8900, 'category'],
+    ]);
+    expect(body.searchedRadiusKm).toBe(10);
+    expect(body.searchedAround).toBe('near');
+    expect(await tokensLeft('search:global')).toBeCloseTo(9, 1);
+  });
+
+  it('a typed category word is the same search; a typed brand keeps only that brand', async () => {
+    const sbi = { ...placeNear('b1', 0.03), name: 'State Bank of India' };
+    const other = { ...placeNear('b2', 0.01), name: 'Example Co-operative Bank' };
+    const { provider, categoryCalls } = categoryGeocoder(() => [other, sbi, placeNear('b3', 0.02)]);
+    const { app } = setup(provider, { SEARCH_MIN_LOCAL_RESULTS: '1' });
+    const { token } = await signUp(app, 61);
+
+    const typed = (await (await search(app, token, { q: ' Bank ', ...NEAR })).json()) as Body;
+    expect(typed.results.map((r) => r.id)).toEqual(['b2', 'b3', 'b1']);
+    expect(typed.results.every((r) => r.matchType === 'category')).toBe(true);
+
+    const brand = (await (await search(app, token, { q: 'SBI', ...NEAR })).json()) as Body;
+    expect(brand.results.map((r) => [r.id, r.matchType])).toEqual([['b1', 'brand']]);
+    // A brand search asks for more candidates, still within one provider credit.
+    expect(categoryCalls.map((call) => [call.category, call.limit])).toEqual([
+      ['bank', 6],
+      ['bank', 20],
+    ]);
+  });
+
+  it('too few in 10 km: ONE wider circle at 25 km, both calls charged, nothing beyond it', async () => {
+    const { provider, calls, categoryCalls } = categoryGeocoder((query) =>
+      query.withinMeters === 10_000
+        ? [placeNear('w1', 0.02)]
+        : // The provider ignores the circle and returns a place 33 km away too.
+          [placeNear('w1', 0.02), placeNear('w2', 0.15), placeNear('far', 0.3)],
+    );
+    const { app, logs } = setup(provider, { SEARCH_GLOBAL_DAILY_LIMIT: '10' });
+    const { token, userId } = await signUp(app, 62);
+
+    const res = await search(app, token, { q: 'hospital', ...NEAR });
+    const body = (await res.json()) as Body;
+    expect(categoryCalls.map((call) => call.withinMeters)).toEqual([10_000, 25_000]);
+    expect(body.results.map((r) => r.id)).toEqual(['w1', 'w2']);
+    expect(body.searchedRadiusKm).toBe(25);
+    // No name search ran: nothing from further away can be added.
+    expect(calls).toHaveLength(0);
+    expect(await tokensLeft('search:global')).toBeCloseTo(8, 1);
+    expect(await tokensLeft(`search:daily:${userId}`)).toBeCloseTo(
+      SEARCH_LIMITS.userDaily.capacity - 2,
+      0,
+    );
+    expect(logs().find((line) => line.message === 'geocoder call')).toMatchObject({
+      outcome: 'ok',
+      match_type: 'category',
+      result_count: 2,
+      provider_calls: 2,
+      searched_radius_km: 25,
+    });
+  });
+
+  it('nothing within 25 km is an empty 200 with the radius, not a far fuzzy match', async () => {
+    const { provider, calls, categoryCalls } = categoryGeocoder(
+      () => [],
+      () => [{ ...PLACE, name: 'Bankura' }],
+    );
+    const { app } = setup(provider);
+    const { token } = await signUp(app, 63);
+    const res = await search(app, token, { q: 'bank', ...NEAR });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({
+      results: [],
+      attribution: 'Fake attribution line',
+      searchedRadiusKm: 25,
+      searchedAround: 'near',
+    });
+    expect(categoryCalls).toHaveLength(2);
+    expect(calls).toHaveLength(0);
+  });
+
+  it('the budget runs out before the wider circle: the first circle alone; with none, 503', async () => {
+    const some = categoryGeocoder(() => [placeNear('k1', 0.02)]);
+    const first = setup(some.provider, { SEARCH_GLOBAL_DAILY_LIMIT: '1' });
+    const alice = await signUp(first.app, 64);
+    const kept = await search(first.app, alice.token, { category: 'atm', ...NEAR });
+    const body = (await kept.json()) as Body;
+    expect(body.results.map((r) => r.id)).toEqual(['k1']);
+    expect(body.searchedRadiusKm).toBe(10);
+    expect(some.categoryCalls).toHaveLength(1);
+
+    await truncateAll(pool);
+    const none = categoryGeocoder(() => []);
+    const second = setup(none.provider, { SEARCH_GLOBAL_DAILY_LIMIT: '1' });
+    const bob = await signUp(second.app, 65);
+    const refused = await search(second.app, bob.token, { category: 'atm', ...NEAR });
+    expect(refused.status).toBe(503);
+    expect(refused.headers.get('retry-after')).not.toBeNull();
+    expect(none.categoryCalls).toHaveLength(1);
+  });
+
+  it('a place hint is looked up once and its coarse point becomes the centre: three tokens at most', async () => {
+    const town = { ...PLACE, id: 'town', latitude: 12.345678, longitude: 23.456789 };
+    const { provider, calls, categoryCalls } = categoryGeocoder(
+      () => [{ ...PLACE, id: 'h1', name: 'SBI', latitude: 12.36, longitude: 23.46 }],
+      () => [town],
+    );
+    const { app } = setup(provider, { SEARCH_GLOBAL_DAILY_LIMIT: '10' });
+    const { token } = await signUp(app, 66);
+
+    const res = await search(app, token, { q: 'sbi exampletown', ...NEAR });
+    const body = (await res.json()) as Body;
+    expect(calls).toEqual([
+      { query: 'exampletown', nearLatitude: 10.12, nearLongitude: 20.99, language: 'en', limit: 1 },
+    ]);
+    expect(categoryCalls.map((call) => [call.nearLatitude, call.nearLongitude])).toEqual([
+      [12.35, 23.46],
+      [12.35, 23.46],
+    ]);
+    expect(body.results.map((r) => [r.id, r.matchType])).toEqual([['h1', 'brand']]);
+    expect(body.searchedAround).toBe('placeHint');
+    expect(await tokensLeft('search:global')).toBeCloseTo(7, 1);
+  });
+
+  it('an unknown category, or neither q nor category → 400, provider not called', async () => {
+    const { provider, calls, categoryCalls } = categoryGeocoder(() => []);
+    const { app } = setup(provider);
+    const { token } = await signUp(app, 67);
+    for (const [body, path] of [
+      [{ category: 'casino', ...NEAR }, 'body.category'],
+      [{ category: 'Bank; DROP', ...NEAR }, 'body.category'],
+      [{ ...NEAR }, 'body.q'],
+    ] as const) {
+      const res = await search(app, token, body);
+      expect(res.status).toBe(400);
+      expect(((await res.json()) as Problem).errors?.[0]?.path).toBe(path);
+    }
+    expect(calls).toHaveLength(0);
+    expect(categoryCalls).toHaveLength(0);
+  });
+
+  it('logs the kind of match and counts, never the word, the category or a coordinate', async () => {
+    const { provider } = categoryGeocoder(() => [placeNear('L1', 0.02)]);
+    const { app, lines, logs } = setup(provider);
+    const { token } = await signUp(app, 68);
+    await search(app, token, { q: 'ওষুধের দোকান', language: 'bn', ...NEAR });
+    await search(app, token, { category: 'pharmacy', ...NEAR });
+    await search(app, token, { q: 'apollo pharmacy near exampletown', ...NEAR });
+
+    const raw = lines.join('\n');
+    for (const secret of [
+      'ওষুধ',
+      'pharmacy',
+      'apollo',
+      'Apollo',
+      'exampletown',
+      '10.12',
+      '20.99',
+      'RESULTNAME',
+      'placeHint',
+    ]) {
+      expect(raw, `log contains ${secret}`).not.toContain(secret);
+    }
+    const call = logs().filter((line) => line.message === 'geocoder call');
+    expect(call.map((line) => line.match_type)).toEqual(['category', 'category', 'name']);
+    expect(Object.keys(call[0] ?? {}).sort()).toEqual(
+      [
+        'latency_ms',
+        'match_type',
+        'message',
+        'outcome',
+        'provider_calls',
+        'request_id',
+        'result_count',
+        'searched_radius_km',
+        'service',
+        'severity',
+        'timestamp',
+        'user_id',
+        'version',
+      ].sort(),
+    );
+  });
+});
+
 // These tests see the API's OWN log lines. The platform's request log (the URL) is outside any
 // test here: that is why the search travels in a body (ADR 0019).
 describe("POST /v1/search: nothing about the search is in the API's log lines", () => {
@@ -651,7 +888,7 @@ describe("POST /v1/search: nothing about the search is in the API's log lines", 
         [
           ...(status === 503 && index === 1 ? ['alert'] : []),
           // Counts and a fixed word only, on a search that reached the provider.
-          ...(status === 200 ? ['local_count', 'provider_calls', 'wide_pass'] : []),
+          ...(status === 200 ? ['local_count', 'match_type', 'provider_calls', 'wide_pass'] : []),
           'latency_ms',
           'message',
           'outcome',

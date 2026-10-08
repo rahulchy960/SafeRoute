@@ -1,0 +1,358 @@
+{
+  "description": "Search intent dictionary (ADR 0018, 'Category and brand search'). Words that mean a KIND of place, brand names with their category, and the small words around them. Every entry was written by Claude Code from general knowledge ('claude-known') and is reviewed by Rahul; entries with 'review' still need a native Bengali speaker. Keep it small: a phrase belongs here only when people type it and it can only mean that kind of place.",
+  "version": 1,
+  "categories": [
+    { "phrase": "bank", "category": "bank", "script": "en", "addedBy": "claude-known" },
+    { "phrase": "banks", "category": "bank", "script": "en", "addedBy": "claude-known" },
+    {
+      "phrase": "ব্যাংক",
+      "category": "bank",
+      "script": "bn",
+      "addedBy": "claude-known",
+      "review": "native-speaker"
+    },
+    {
+      "phrase": "ব্যাঙ্ক",
+      "category": "bank",
+      "script": "bn",
+      "addedBy": "claude-known",
+      "review": "native-speaker"
+    },
+    { "phrase": "atm", "category": "atm", "script": "en", "addedBy": "claude-known" },
+    { "phrase": "atms", "category": "atm", "script": "en", "addedBy": "claude-known" },
+    { "phrase": "cash machine", "category": "atm", "script": "en", "addedBy": "claude-known" },
+    {
+      "phrase": "এটিএম",
+      "category": "atm",
+      "script": "bn",
+      "addedBy": "claude-known",
+      "review": "native-speaker"
+    },
+    { "phrase": "pharmacy", "category": "pharmacy", "script": "en", "addedBy": "claude-known" },
+    { "phrase": "pharmacies", "category": "pharmacy", "script": "en", "addedBy": "claude-known" },
+    { "phrase": "pharmecy", "category": "pharmacy", "script": "en", "addedBy": "claude-known" },
+    { "phrase": "farmacy", "category": "pharmacy", "script": "en", "addedBy": "claude-known" },
+    { "phrase": "chemist", "category": "pharmacy", "script": "en", "addedBy": "claude-known" },
+    { "phrase": "chemists", "category": "pharmacy", "script": "en", "addedBy": "claude-known" },
+    {
+      "phrase": "medicine shop",
+      "category": "pharmacy",
+      "script": "en",
+      "addedBy": "claude-known"
+    },
+    { "phrase": "medical shop", "category": "pharmacy", "script": "en", "addedBy": "claude-known" },
+    {
+      "phrase": "medical store",
+      "category": "pharmacy",
+      "script": "en",
+      "addedBy": "claude-known"
+    },
+    { "phrase": "drug store", "category": "pharmacy", "script": "en", "addedBy": "claude-known" },
+    {
+      "phrase": "ফার্মেসি",
+      "category": "pharmacy",
+      "script": "bn",
+      "addedBy": "claude-known",
+      "review": "native-speaker"
+    },
+    {
+      "phrase": "ওষুধের দোকান",
+      "category": "pharmacy",
+      "script": "bn",
+      "addedBy": "claude-known",
+      "review": "native-speaker"
+    },
+    {
+      "phrase": "oshudher dokan",
+      "category": "pharmacy",
+      "script": "translit",
+      "addedBy": "claude-known",
+      "review": "native-speaker"
+    },
+    { "phrase": "hospital", "category": "hospital", "script": "en", "addedBy": "claude-known" },
+    { "phrase": "hospitals", "category": "hospital", "script": "en", "addedBy": "claude-known" },
+    { "phrase": "hospitel", "category": "hospital", "script": "en", "addedBy": "claude-known" },
+    {
+      "phrase": "হাসপাতাল",
+      "category": "hospital",
+      "script": "bn",
+      "addedBy": "claude-known",
+      "review": "native-speaker"
+    },
+    {
+      "phrase": "haspatal",
+      "category": "hospital",
+      "script": "translit",
+      "addedBy": "claude-known",
+      "review": "native-speaker"
+    },
+    { "phrase": "clinic", "category": "clinic", "script": "en", "addedBy": "claude-known" },
+    { "phrase": "clinics", "category": "clinic", "script": "en", "addedBy": "claude-known" },
+    { "phrase": "doctor", "category": "clinic", "script": "en", "addedBy": "claude-known" },
+    { "phrase": "doctors", "category": "clinic", "script": "en", "addedBy": "claude-known" },
+    {
+      "phrase": "ক্লিনিক",
+      "category": "clinic",
+      "script": "bn",
+      "addedBy": "claude-known",
+      "review": "native-speaker"
+    },
+    {
+      "phrase": "ডাক্তার",
+      "category": "clinic",
+      "script": "bn",
+      "addedBy": "claude-known",
+      "review": "native-speaker"
+    },
+    {
+      "phrase": "daktar",
+      "category": "clinic",
+      "script": "translit",
+      "addedBy": "claude-known",
+      "review": "native-speaker"
+    },
+    { "phrase": "petrol pump", "category": "fuel", "script": "en", "addedBy": "claude-known" },
+    { "phrase": "petrol station", "category": "fuel", "script": "en", "addedBy": "claude-known" },
+    { "phrase": "fuel station", "category": "fuel", "script": "en", "addedBy": "claude-known" },
+    { "phrase": "gas station", "category": "fuel", "script": "en", "addedBy": "claude-known" },
+    { "phrase": "petrol", "category": "fuel", "script": "en", "addedBy": "claude-known" },
+    { "phrase": "fuel", "category": "fuel", "script": "en", "addedBy": "claude-known" },
+    {
+      "phrase": "পেট্রোল পাম্প",
+      "category": "fuel",
+      "script": "bn",
+      "addedBy": "claude-known",
+      "review": "native-speaker"
+    },
+    { "phrase": "restaurant", "category": "restaurant", "script": "en", "addedBy": "claude-known" },
+    {
+      "phrase": "restaurants",
+      "category": "restaurant",
+      "script": "en",
+      "addedBy": "claude-known"
+    },
+    { "phrase": "resturant", "category": "restaurant", "script": "en", "addedBy": "claude-known" },
+    { "phrase": "food", "category": "restaurant", "script": "en", "addedBy": "claude-known" },
+    {
+      "phrase": "রেস্তোরাঁ",
+      "category": "restaurant",
+      "script": "bn",
+      "addedBy": "claude-known",
+      "review": "native-speaker"
+    },
+    {
+      "phrase": "রেস্টুরেন্ট",
+      "category": "restaurant",
+      "script": "bn",
+      "addedBy": "claude-known",
+      "review": "native-speaker"
+    },
+    { "phrase": "grocery", "category": "grocery", "script": "en", "addedBy": "claude-known" },
+    { "phrase": "groceries", "category": "grocery", "script": "en", "addedBy": "claude-known" },
+    { "phrase": "grocery shop", "category": "grocery", "script": "en", "addedBy": "claude-known" },
+    { "phrase": "grocery store", "category": "grocery", "script": "en", "addedBy": "claude-known" },
+    { "phrase": "supermarket", "category": "grocery", "script": "en", "addedBy": "claude-known" },
+    {
+      "phrase": "মুদি দোকান",
+      "category": "grocery",
+      "script": "bn",
+      "addedBy": "claude-known",
+      "review": "native-speaker"
+    },
+    {
+      "phrase": "মুদির দোকান",
+      "category": "grocery",
+      "script": "bn",
+      "addedBy": "claude-known",
+      "review": "native-speaker"
+    },
+    {
+      "phrase": "mudi dokan",
+      "category": "grocery",
+      "script": "translit",
+      "addedBy": "claude-known",
+      "review": "native-speaker"
+    },
+    { "phrase": "bus stand", "category": "bus", "script": "en", "addedBy": "claude-known" },
+    { "phrase": "bus stop", "category": "bus", "script": "en", "addedBy": "claude-known" },
+    { "phrase": "bus station", "category": "bus", "script": "en", "addedBy": "claude-known" },
+    { "phrase": "bus terminus", "category": "bus", "script": "en", "addedBy": "claude-known" },
+    {
+      "phrase": "বাস স্ট্যান্ড",
+      "category": "bus",
+      "script": "bn",
+      "addedBy": "claude-known",
+      "review": "native-speaker"
+    },
+    {
+      "phrase": "বাসস্ট্যান্ড",
+      "category": "bus",
+      "script": "bn",
+      "addedBy": "claude-known",
+      "review": "native-speaker"
+    },
+    { "phrase": "railway station", "category": "train", "script": "en", "addedBy": "claude-known" },
+    { "phrase": "train station", "category": "train", "script": "en", "addedBy": "claude-known" },
+    { "phrase": "rail station", "category": "train", "script": "en", "addedBy": "claude-known" },
+    {
+      "phrase": "রেল স্টেশন",
+      "category": "train",
+      "script": "bn",
+      "addedBy": "claude-known",
+      "review": "native-speaker"
+    },
+    {
+      "phrase": "রেলস্টেশন",
+      "category": "train",
+      "script": "bn",
+      "addedBy": "claude-known",
+      "review": "native-speaker"
+    },
+    { "phrase": "police station", "category": "police", "script": "en", "addedBy": "claude-known" },
+    { "phrase": "police", "category": "police", "script": "en", "addedBy": "claude-known" },
+    {
+      "phrase": "thana",
+      "category": "police",
+      "script": "translit",
+      "addedBy": "claude-known",
+      "review": "native-speaker"
+    },
+    {
+      "phrase": "থানা",
+      "category": "police",
+      "script": "bn",
+      "addedBy": "claude-known",
+      "review": "native-speaker"
+    },
+    {
+      "phrase": "পুলিশ স্টেশন",
+      "category": "police",
+      "script": "bn",
+      "addedBy": "claude-known",
+      "review": "native-speaker"
+    },
+    {
+      "phrase": "post office",
+      "category": "post_office",
+      "script": "en",
+      "addedBy": "claude-known"
+    },
+    {
+      "phrase": "ডাকঘর",
+      "category": "post_office",
+      "script": "bn",
+      "addedBy": "claude-known",
+      "review": "native-speaker"
+    },
+    {
+      "phrase": "পোস্ট অফিস",
+      "category": "post_office",
+      "script": "bn",
+      "addedBy": "claude-known",
+      "review": "native-speaker"
+    },
+    {
+      "phrase": "dakghar",
+      "category": "post_office",
+      "script": "translit",
+      "addedBy": "claude-known",
+      "review": "native-speaker"
+    },
+    { "phrase": "school", "category": "school", "script": "en", "addedBy": "claude-known" },
+    { "phrase": "schools", "category": "school", "script": "en", "addedBy": "claude-known" },
+    {
+      "phrase": "স্কুল",
+      "category": "school",
+      "script": "bn",
+      "addedBy": "claude-known",
+      "review": "native-speaker"
+    },
+    {
+      "phrase": "বিদ্যালয়",
+      "category": "school",
+      "script": "bn",
+      "addedBy": "claude-known",
+      "review": "native-speaker"
+    },
+    { "phrase": "college", "category": "college", "script": "en", "addedBy": "claude-known" },
+    { "phrase": "colleges", "category": "college", "script": "en", "addedBy": "claude-known" },
+    {
+      "phrase": "কলেজ",
+      "category": "college",
+      "script": "bn",
+      "addedBy": "claude-known",
+      "review": "native-speaker"
+    }
+  ],
+  "brands": [
+    {
+      "name": "State Bank of India",
+      "category": "bank",
+      "aliases": ["sbi", "state bank"],
+      "addedBy": "claude-known"
+    },
+    {
+      "name": "Punjab National Bank",
+      "category": "bank",
+      "aliases": ["pnb"],
+      "addedBy": "claude-known"
+    },
+    { "name": "HDFC Bank", "category": "bank", "aliases": ["hdfc"], "addedBy": "claude-known" },
+    { "name": "ICICI Bank", "category": "bank", "aliases": ["icici"], "addedBy": "claude-known" },
+    { "name": "Axis Bank", "category": "bank", "aliases": [], "addedBy": "claude-known" },
+    { "name": "Bank of Baroda", "category": "bank", "aliases": [], "addedBy": "claude-known" },
+    { "name": "Bank of India", "category": "bank", "aliases": [], "addedBy": "claude-known" },
+    { "name": "UCO Bank", "category": "bank", "aliases": [], "addedBy": "claude-known" },
+    { "name": "Canara Bank", "category": "bank", "aliases": [], "addedBy": "claude-known" },
+    {
+      "name": "Union Bank of India",
+      "category": "bank",
+      "aliases": ["union bank"],
+      "addedBy": "claude-known"
+    },
+    { "name": "Bandhan Bank", "category": "bank", "aliases": [], "addedBy": "claude-known" },
+    { "name": "Apollo Pharmacy", "category": "pharmacy", "aliases": [], "addedBy": "claude-known" },
+    {
+      "name": "MedPlus",
+      "category": "pharmacy",
+      "aliases": ["med plus"],
+      "addedBy": "claude-known"
+    },
+    {
+      "name": "Indian Oil",
+      "category": "fuel",
+      "aliases": ["indianoil", "iocl"],
+      "addedBy": "claude-known"
+    },
+    {
+      "name": "Bharat Petroleum",
+      "category": "fuel",
+      "aliases": ["bpcl"],
+      "addedBy": "claude-known"
+    },
+    {
+      "name": "Hindustan Petroleum",
+      "category": "fuel",
+      "aliases": ["hpcl"],
+      "addedBy": "claude-known"
+    }
+  ],
+  "words": [
+    { "phrase": "near", "role": "joiner", "script": "en", "addedBy": "claude-known" },
+    { "phrase": "in", "role": "joiner", "script": "en", "addedBy": "claude-known" },
+    { "phrase": "at", "role": "joiner", "script": "en", "addedBy": "claude-known" },
+    { "phrase": "around", "role": "joiner", "script": "en", "addedBy": "claude-known" },
+    { "phrase": "near me", "role": "filler", "script": "en", "addedBy": "claude-known" },
+    { "phrase": "nearby", "role": "filler", "script": "en", "addedBy": "claude-known" },
+    { "phrase": "near by", "role": "filler", "script": "en", "addedBy": "claude-known" },
+    { "phrase": "nearest", "role": "filler", "script": "en", "addedBy": "claude-known" },
+    { "phrase": "closest", "role": "filler", "script": "en", "addedBy": "claude-known" },
+    {
+      "phrase": "কাছাকাছি",
+      "role": "filler",
+      "script": "bn",
+      "addedBy": "claude-known",
+      "review": "native-speaker"
+    }
+  ]
+}

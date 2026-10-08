@@ -86,6 +86,114 @@ function everythingIn(err: Error): string {
   return [err.name, err.message, err.stack ?? '', JSON.stringify(err), String(err.cause)].join(' ');
 }
 
+describe('geoapify adapter: category search (Places API)', () => {
+  const CATEGORY_QUERY = {
+    category: 'pharmacy',
+    nearLatitude: 10.12,
+    nearLongitude: 20.34,
+    withinMeters: 10_000,
+    language: 'bn',
+    limit: 6,
+  } as const;
+  const feature = (properties: Record<string, unknown>) => ({
+    type: 'Feature',
+    properties,
+    geometry: { type: 'Point', coordinates: [20.5, 10.5] },
+  });
+  const PLACES_BODY = {
+    type: 'FeatureCollection',
+    features: [
+      feature({
+        place_id: 'fake-poi-1',
+        name: 'Example Medical Hall',
+        address_line1: 'Example Medical Hall',
+        address_line2: 'Station Road, Example District',
+        categories: ['healthcare', 'healthcare.pharmacy'],
+        distance: 420,
+        lat: 10.5,
+        lon: 20.5,
+      }),
+      // No name: common for small shops. The first address line stands in.
+      feature({ formatted: 'Market Road, Example District', lat: 10.6, lon: 20.6 }),
+    ],
+  };
+
+  it('asks for the category inside the circle, nearest first, and maps the features', async () => {
+    const { provider, urls } = geocoder('geoapify', json(PLACES_BODY));
+    const results = await provider.searchCategory?.(CATEGORY_QUERY);
+    const url = urls[0] ?? new URL('https://missing.invalid');
+    expect(`${url.origin}${url.pathname}`).toBe('https://api.geoapify.com/v2/places');
+    expect(Object.fromEntries(url.searchParams)).toEqual({
+      categories: 'healthcare.pharmacy',
+      filter: 'circle:20.34,10.12,10000',
+      bias: 'proximity:20.34,10.12',
+      lang: 'bn',
+      limit: '6',
+      apiKey: FAKE_KEY,
+    });
+    expect(results).toEqual([
+      {
+        id: 'fake-poi-1',
+        name: 'Example Medical Hall',
+        label: 'Station Road, Example District',
+        latitude: 10.5,
+        longitude: 20.5,
+        kind: 'pharmacy',
+      },
+      {
+        id: 'geoapify-place-1',
+        name: 'Market Road, Example District',
+        label: 'Market Road, Example District',
+        latitude: 10.6,
+        longitude: 20.6,
+        kind: 'pharmacy',
+      },
+    ]);
+  });
+
+  it('never asks for more than one credit buys, and joins several categories', async () => {
+    const { provider, urls } = geocoder('geoapify', json({ features: [] }));
+    expect(
+      await provider.searchCategory?.({ ...CATEGORY_QUERY, category: 'grocery', limit: 500 }),
+    ).toEqual([]);
+    const params = (urls[0] ?? new URL('https://missing.invalid')).searchParams;
+    expect(params.get('limit')).toBe('20');
+    expect(params.get('categories')).toBe('commercial.supermarket,commercial.convenience');
+  });
+
+  it.each([
+    ['a refused key', json({ message: 'Invalid apiKey' }, 401), 'auth'],
+    ['a category it does not know', json({ message: 'bad categories' }, 400), 'upstream'],
+    ['a body that is not GeoJSON', json({ results: [] }), 'malformed'],
+    [
+      'a network error that quotes the URL',
+      new TypeError(`fetch failed: ?apiKey=${FAKE_KEY}`),
+      'network',
+    ],
+  ] as const)('%s → a GeocoderError with a kind and no key', async (_name, reply, kind) => {
+    const { provider } = geocoder('geoapify', reply);
+    const err = await failure(provider.searchCategory?.(CATEGORY_QUERY) ?? Promise.resolve());
+    expect(err.kind).toBe(kind);
+    expect(everythingIn(err)).not.toContain(FAKE_KEY);
+    expect(everythingIn(err)).not.toContain('10.12');
+  });
+
+  it('placesOnly restricts a name search to amenities; without it there is no type filter', async () => {
+    // A Response can be read once: a fresh one for each call.
+    const { provider, urls } = geocoder('geoapify', () => Promise.resolve(json(OK_BODY.geoapify)));
+    await provider.search({ ...QUERY, placesOnly: true });
+    await provider.search(QUERY);
+    expect(urls.map((url) => url.searchParams.get('type'))).toEqual(['amenity', null]);
+  });
+
+  it('locationiq has no category search and ignores placesOnly', async () => {
+    const { provider, urls } = geocoder('locationiq', json(OK_BODY.locationiq));
+    expect(provider.searchCategory).toBeUndefined();
+    await provider.search({ ...QUERY, placesOnly: true });
+    expect([...(urls[0]?.searchParams.keys() ?? [])]).not.toContain('type');
+  });
+});
+
 describe.each(GEOCODING_PROVIDERS)('%s adapter', (name) => {
   it('maps a result to the provider-neutral shape and ignores unknown fields', async () => {
     const { provider } = geocoder(name, json(OK_BODY[name]));

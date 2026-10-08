@@ -128,6 +128,10 @@ const BaseSchema = z.object({
   // LOCAL_SEARCH_DEFAULTS (src/modules/search/local-first.ts).
   SEARCH_NEARBY_RADIUS_KM: z.coerce.number().min(1).max(500).default(50),
   SEARCH_MIN_LOCAL_RESULTS: z.coerce.number().int().min(1).max(10).default(3),
+  // Category and brand search (ADR 0018): kilometres around the point that are searched first.
+  // With fewer than SEARCH_MIN_LOCAL_RESULTS places it widens ONCE to 25 km, never beyond, so
+  // this cannot be set above 25. Default: CATEGORY_SEARCH_DEFAULTS (intent-search.ts).
+  SEARCH_CATEGORY_RADIUS_KM: z.coerce.number().min(1).max(25).default(10),
   // Base URLs of the two private OSRM services (ADR 0020). Treated as SECRETS: never logged,
   // never in an error or in /health. Optional outside production: routing then answers 503.
   OSRM_WALKING_URL: osrmBaseUrl.optional(),

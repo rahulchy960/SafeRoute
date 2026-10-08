@@ -1,4 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+import type { CategoryKey } from './intents.js';
+
+/** Why a result is in the list: its name matched, it is of the kind asked for, or of the brand. */
+export type MatchType = 'name' | 'category' | 'brand';
 
 /** One place, in a shape that names no provider (ADR 0018). */
 export interface PlaceResult {
@@ -17,6 +21,8 @@ export interface PlaceResult {
    * `searchLocalFirst`, never by an adapter; absent when the client sent no area.
    */
   distanceMeters?: number;
+  /** Set by `searchByIntent`, never by an adapter. */
+  matchType?: MatchType;
 }
 
 export interface GeocoderQuery {
@@ -30,6 +36,23 @@ export interface GeocoderQuery {
    * bias). An adapter whose provider has no circle asks for the box around it.
    */
   withinMeters?: number;
+  /**
+   * When true: named places only, no towns, districts or other administrative areas. Used for
+   * a category word, where "Bankura" is not an answer to "bank". An adapter whose provider
+   * cannot restrict the kind of result ignores it.
+   */
+  placesOnly?: boolean;
+  language: 'en' | 'bn';
+  limit: number;
+}
+
+/** A search for a KIND of place inside a circle (ADR 0018, "Category and brand search"). */
+export interface CategoryQuery {
+  category: CategoryKey;
+  /** Centre of the circle, already coarsened. */
+  nearLatitude: number;
+  nearLongitude: number;
+  withinMeters: number;
   language: 'en' | 'bn';
   limit: number;
 }
@@ -45,6 +68,11 @@ export interface GeocoderProvider {
   /** Credit line the provider's terms require next to results, or null. */
   readonly attribution: string | null;
   search(query: GeocoderQuery): Promise<PlaceResult[]>;
+  /**
+   * Places of one kind inside a circle, whatever they are called. Optional: with a provider
+   * that has no such search, the category's word is searched by name inside the circle.
+   */
+  searchCategory?(query: CategoryQuery): Promise<PlaceResult[]>;
 }
 
 export type GeocoderFailure =
