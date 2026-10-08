@@ -70,7 +70,24 @@
 - Automatic rerouting.
 - Background navigation with a foreground service.
 - Stops along a route, saved places.
-- A choice of start point and selecting a route by tapping it on the map: P012c2b.
+- A choice of start point and selecting a route by tapping it on the map: added in P012c2b,
+  see the note below.
+
+## Note of 2026-10-08 (P012c2b): a chosen start, and routes chosen on the map
+
+- **A start of the user's choice.** "Change start" opens search; the place chosen there
+  becomes the start of the route and the routes are asked for again. "Start from my location"
+  switches back. A chosen start needs no location permission at all.
+- **Following starts only from the user's own location.** A route from another place cannot
+  be followed: the person is not on it. With a chosen start the button is "Preview" (the map
+  shows the whole route) and one sentence says how to follow a route. This keeps decision 3.
+- **The chosen start is treated like every place:** memory only, hidden in `toString()`,
+  sent only as the start of the routes request the user asked for.
+- **A tap on a route's line selects that route**, as a tap on its card does. The nearest line
+  within 24 dp wins; where routes share a road, the one drawn on top (the selected one). The
+  arithmetic is `nearestLine` in `core/map/RouteHitTest.kt`, on screen pixels; only
+  `MapLibreEngine.kt` turns map points into pixels. While a route is followed taps select
+  nothing: only that route is drawn.
 
 ## Alternatives considered
 

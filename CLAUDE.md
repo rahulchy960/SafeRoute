@@ -460,7 +460,12 @@ and [`android/README.md`](android/README.md):
   `KeepScreenOn`, only while following. The banner states a distance, a time and a clock
   time: no label, score or colour about safety or traffic, and it never reaches the SOS
   control (`FollowScreenTest`). A test that leaves following running must end it (the ticker
-  never stops by itself in virtual time; see `FollowRouteTest.followTest`).
+  never stops by itself in virtual time; see `FollowRouteTest.followTest`). Since P012c2b a
+  route may start at a place chosen in search (`MapSelection.choosingStart`,
+  `DirectionsUiState.Open.origin`): it is memory only like every place, and such a route can
+  be previewed but **never followed**. A tap on a route's line selects it: the hit test is
+  `nearestLine` in `core/map/RouteHitTest.kt` (screen pixels, no map types), and the list
+  and the map agree through `RouteDisplay`.
 - `android/app/google-services.json` is never opened, printed or committed by Claude Code. CI and
   fresh clones use `android/scripts/write-dummy-google-services` (project `demo-saferoute`); a
   release build refuses the dummy or a missing file unless `-Psaferoute.allowDummyFirebase=true`
