@@ -188,7 +188,7 @@ describe('geoapify adapter: category search (Places API)', () => {
 
   it('locationiq has no category search and ignores placesOnly', async () => {
     const { provider, urls } = geocoder('locationiq', json(OK_BODY.locationiq));
-    expect(provider.searchCategory).toBeUndefined();
+    expect('searchCategory' in provider).toBe(false);
     await provider.search({ ...QUERY, placesOnly: true });
     expect([...(urls[0]?.searchParams.keys() ?? [])]).not.toContain('type');
   });

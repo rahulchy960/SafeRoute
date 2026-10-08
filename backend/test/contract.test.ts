@@ -226,7 +226,7 @@ describe('generated OpenAPI document', () => {
     });
     const request = components.schemas?.SearchRequest as {
       properties: Record<string, Json>;
-      required: string[];
+      required?: string[];
     };
     expect(Object.keys(request.properties).sort()).toEqual([
       'category',

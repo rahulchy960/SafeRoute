@@ -1,0 +1,164 @@
+{
+  "$schema": "../../tools/diagrams/diagram.schema.json",
+  "title": "Category and brand search",
+  "subtitle": "A word for a kind of place, or a brand, is searched inside a circle: 10 km, widened once to 25 km, never beyond. Nothing from outside the circle is added. Every provider call spends the limits (P011f1, ADR 0018)",
+  "direction": "TB",
+  "layout": {
+    "nodeWidth": 235
+  },
+  "groups": [
+    {
+      "id": "client",
+      "label": "Phone"
+    },
+    {
+      "id": "api",
+      "label": "SafeRoute API"
+    },
+    {
+      "id": "outside",
+      "label": "Outside SafeRoute"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "app",
+      "label": "App: POST /v1/search with q, or category, and a coarse point in the body",
+      "role": "app",
+      "group": "client",
+      "rank": 0
+    },
+    {
+      "id": "classify",
+      "label": "Classify q with the dictionary (intents.json): whole words only, no fuzzy match. category sent by the app wins",
+      "role": "service",
+      "group": "api",
+      "rank": 1
+    },
+    {
+      "id": "name",
+      "label": "NAME (anything else, e.g. Bankura): the name search as before, local-first",
+      "role": "service",
+      "group": "api",
+      "rank": 2
+    },
+    {
+      "id": "hint",
+      "label": "Place hint (\"sbi exampletown\"): look it up once, charged; its point rounded to 2 decimals becomes the centre. Unknown hint: name search",
+      "role": "service",
+      "group": "api",
+      "rank": 2
+    },
+    {
+      "id": "nocentre",
+      "label": "No point and no hint: no circle. Name search among places only, so a town is not an answer",
+      "role": "service",
+      "group": "api",
+      "rank": 3
+    },
+    {
+      "id": "circle1",
+      "label": "Charge the limits, then places of the category within SEARCH_CATEGORY_RADIUS_KM (10). Brand: 20 candidates, keep those with the brand's name",
+      "role": "service",
+      "group": "api",
+      "rank": 3
+    },
+    {
+      "id": "circle2",
+      "label": "Only with fewer than SEARCH_MIN_LOCAL_RESULTS (3) in the circle: charge the limits again, then ONE wider circle of 25 km. Never beyond, and no name search",
+      "role": "service",
+      "group": "api",
+      "rank": 4
+    },
+    {
+      "id": "provider",
+      "label": "Provider. Geoapify Places API: categories + filter=circle, one credit up to 20 places. A provider without it: the word by name inside the circle",
+      "role": "external",
+      "group": "outside",
+      "rank": 3
+    },
+    {
+      "id": "answer",
+      "label": "Sort by distance, drop anything outside the circle, cut to limit. An EMPTY list is a valid answer",
+      "role": "service",
+      "group": "api",
+      "rank": 5
+    },
+    {
+      "id": "ok",
+      "label": "200: results with matchType and distanceMeters, searchedRadiusKm (10 or 25), searchedAround, attribution",
+      "role": "app",
+      "group": "client",
+      "rank": 6
+    },
+    {
+      "id": "never",
+      "label": "ONE LOG LINE: outcome, match_type, latency, counts, searched_radius_km. Never the text, the category, a coordinate or a result",
+      "role": "security",
+      "group": "api",
+      "rank": 6
+    },
+    {
+      "id": "errors",
+      "label": "429 or 503 + Retry-After when a limit refuses a needed call. A refused or failed widening keeps the first circle's places",
+      "role": "app",
+      "group": "client",
+      "rank": 4
+    }
+  ],
+  "edges": [
+    {
+      "from": "app",
+      "to": "classify"
+    },
+    {
+      "from": "classify",
+      "to": "name",
+      "label": "not in the dictionary"
+    },
+    {
+      "from": "classify",
+      "to": "hint",
+      "label": "category or brand"
+    },
+    {
+      "from": "hint",
+      "to": "nocentre",
+      "label": "no centre"
+    },
+    {
+      "from": "hint",
+      "to": "circle1",
+      "label": "centre: hint or the app's point"
+    },
+    {
+      "from": "circle1",
+      "to": "provider"
+    },
+    {
+      "from": "circle2",
+      "to": "provider"
+    },
+    {
+      "from": "circle2",
+      "to": "answer"
+    },
+    {
+      "from": "circle2",
+      "to": "errors",
+      "label": "refused, nothing found"
+    },
+    {
+      "from": "answer",
+      "to": "ok"
+    },
+    {
+      "from": "answer",
+      "to": "never"
+    },
+    {
+      "from": "circle1",
+      "to": "circle2"
+    }
+  ]
+}

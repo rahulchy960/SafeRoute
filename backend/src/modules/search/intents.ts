@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { z } from 'zod';
 import dictionary from './intents.json' with { type: 'json' };
+import { countCodePoints } from './normalize.js';
 
 /**
  * Kinds of place a search can ask for (ADR 0018, "Category and brand search"). Our own names:
@@ -232,7 +233,7 @@ export function createClassifier(input: unknown): Classifier {
       if (rest.length > 0 && joined === undefined && brand === undefined) return { kind: 'name' };
       const hint = rest.join(' ');
       // One letter is not a place; the geocoder needs two code points anyway.
-      if (rest.length > 0 && [...hint].length < 2) return { kind: 'name' };
+      if (rest.length > 0 && countCodePoints(hint) < 2) return { kind: 'name' };
       const placeHint = rest.length > 0 ? { placeHint: hint } : {};
 
       if (brand !== undefined) {

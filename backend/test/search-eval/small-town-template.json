@@ -1,0 +1,384 @@
+{
+  "description": "TEMPLATE, not a measurement set yet. Placeholder category and brand queries asked from small towns (P011f1, ADR 0018). Every row is claude-known: the town centres are written from general knowledge and NOT checked against a map, and nobody has looked whether the places are on OpenStreetMap (inOsm: unknown). Rahul reviews, corrects and extends it; see README.md, \"Small towns: category and brand entries\". Public places only: never a home, a person or a private address.",
+  "version": 1,
+  "entries": [
+    {
+      "id": "tmpl-kaliyaganj-bank",
+      "query": "bank",
+      "script": "en",
+      "district": "Uttar Dinajpur",
+      "expectedNameContains": ["Bank", "ব্যাংক", "ব্যাঙ্ক"],
+      "near": {
+        "latitude": 25.63,
+        "longitude": 88.32
+      },
+      "intent": "category",
+      "inOsm": "unknown",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "tmpl-kaliyaganj-sbi",
+      "query": "sbi",
+      "script": "en",
+      "district": "Uttar Dinajpur",
+      "expectedNameContains": ["State Bank", "SBI"],
+      "near": {
+        "latitude": 25.63,
+        "longitude": 88.32
+      },
+      "intent": "brand",
+      "inOsm": "unknown",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "tmpl-kaliyaganj-pharmacy",
+      "query": "pharmacy",
+      "script": "en",
+      "district": "Uttar Dinajpur",
+      "expectedNameContains": ["Pharmacy", "Medical", "Medicine", "Chemist", "Drug"],
+      "near": {
+        "latitude": 25.63,
+        "longitude": 88.32
+      },
+      "intent": "category",
+      "inOsm": "unknown",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "tmpl-kaliyaganj-apollo",
+      "query": "apollo pharmacy",
+      "script": "en",
+      "district": "Uttar Dinajpur",
+      "expectedNameContains": ["Apollo"],
+      "near": {
+        "latitude": 25.63,
+        "longitude": 88.32
+      },
+      "intent": "brand",
+      "inOsm": "unknown",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "tmpl-kaliyaganj-atm",
+      "query": "atm",
+      "script": "en",
+      "district": "Uttar Dinajpur",
+      "expectedNameContains": ["ATM", "এটিএম"],
+      "near": {
+        "latitude": 25.63,
+        "longitude": 88.32
+      },
+      "intent": "category",
+      "inOsm": "unknown",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "tmpl-kaliyaganj-bank-bn",
+      "query": "ব্যাংক",
+      "script": "bn",
+      "district": "Uttar Dinajpur",
+      "expectedNameContains": ["Bank", "ব্যাংক", "ব্যাঙ্ক"],
+      "near": {
+        "latitude": 25.63,
+        "longitude": 88.32
+      },
+      "intent": "category",
+      "inOsm": "unknown",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "tmpl-raiganj-pharmacy",
+      "query": "pharmacy",
+      "script": "en",
+      "district": "Uttar Dinajpur",
+      "expectedNameContains": ["Pharmacy", "Medical", "Medicine", "Chemist", "Drug"],
+      "near": {
+        "latitude": 25.62,
+        "longitude": 88.12
+      },
+      "intent": "category",
+      "inOsm": "unknown",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "tmpl-raiganj-state-bank",
+      "query": "state bank of india",
+      "script": "en",
+      "district": "Uttar Dinajpur",
+      "expectedNameContains": ["State Bank", "SBI"],
+      "near": {
+        "latitude": 25.62,
+        "longitude": 88.12
+      },
+      "intent": "brand",
+      "inOsm": "unknown",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "tmpl-raiganj-petrol-pump",
+      "query": "petrol pump",
+      "script": "en",
+      "district": "Uttar Dinajpur",
+      "expectedNameContains": ["Petrol", "Fuel", "Oil", "Petroleum", "Filling"],
+      "near": {
+        "latitude": 25.62,
+        "longitude": 88.12
+      },
+      "intent": "category",
+      "inOsm": "unknown",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "tmpl-islampur-bank",
+      "query": "bank",
+      "script": "en",
+      "district": "Uttar Dinajpur",
+      "expectedNameContains": ["Bank", "ব্যাংক", "ব্যাঙ্ক"],
+      "near": {
+        "latitude": 26.26,
+        "longitude": 88.19
+      },
+      "intent": "category",
+      "inOsm": "unknown",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "tmpl-islampur-pnb",
+      "query": "pnb",
+      "script": "en",
+      "district": "Uttar Dinajpur",
+      "expectedNameContains": ["Punjab National", "PNB"],
+      "near": {
+        "latitude": 26.26,
+        "longitude": 88.19
+      },
+      "intent": "brand",
+      "inOsm": "unknown",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "tmpl-balurghat-medicine-shop",
+      "query": "medicine shop",
+      "script": "en",
+      "district": "Dakshin Dinajpur",
+      "expectedNameContains": ["Pharmacy", "Medical", "Medicine", "Chemist", "Drug"],
+      "near": {
+        "latitude": 25.22,
+        "longitude": 88.77
+      },
+      "intent": "category",
+      "inOsm": "unknown",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "tmpl-balurghat-sbi",
+      "query": "sbi",
+      "script": "en",
+      "district": "Dakshin Dinajpur",
+      "expectedNameContains": ["State Bank", "SBI"],
+      "near": {
+        "latitude": 25.22,
+        "longitude": 88.77
+      },
+      "intent": "brand",
+      "inOsm": "unknown",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "tmpl-krishnanagar-atm",
+      "query": "atm",
+      "script": "en",
+      "district": "Nadia",
+      "expectedNameContains": ["ATM", "এটিএম"],
+      "near": {
+        "latitude": 23.4,
+        "longitude": 88.5
+      },
+      "intent": "category",
+      "inOsm": "unknown",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "tmpl-krishnanagar-hdfc",
+      "query": "hdfc bank",
+      "script": "en",
+      "district": "Nadia",
+      "expectedNameContains": ["HDFC"],
+      "near": {
+        "latitude": 23.4,
+        "longitude": 88.5
+      },
+      "intent": "brand",
+      "inOsm": "unknown",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "tmpl-bolpur-pharmacy",
+      "query": "pharmacy",
+      "script": "en",
+      "district": "Birbhum",
+      "expectedNameContains": ["Pharmacy", "Medical", "Medicine", "Chemist", "Drug"],
+      "near": {
+        "latitude": 23.67,
+        "longitude": 87.72
+      },
+      "intent": "category",
+      "inOsm": "unknown",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "tmpl-bolpur-sbi",
+      "query": "sbi",
+      "script": "en",
+      "district": "Birbhum",
+      "expectedNameContains": ["State Bank", "SBI"],
+      "near": {
+        "latitude": 23.67,
+        "longitude": 87.72
+      },
+      "intent": "brand",
+      "inOsm": "unknown",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "tmpl-bishnupur-bank",
+      "query": "bank",
+      "script": "en",
+      "district": "Bankura",
+      "expectedNameContains": ["Bank", "ব্যাংক", "ব্যাঙ্ক"],
+      "near": {
+        "latitude": 23.07,
+        "longitude": 87.32
+      },
+      "intent": "category",
+      "inOsm": "unknown",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "tmpl-bishnupur-post-office",
+      "query": "post office",
+      "script": "en",
+      "district": "Bankura",
+      "expectedNameContains": ["Post Office", "ডাকঘর"],
+      "near": {
+        "latitude": 23.07,
+        "longitude": 87.32
+      },
+      "intent": "category",
+      "inOsm": "unknown",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "tmpl-tamluk-hospital",
+      "query": "hospital",
+      "script": "en",
+      "district": "Purba Medinipur",
+      "expectedNameContains": ["Hospital", "হাসপাতাল"],
+      "near": {
+        "latitude": 22.3,
+        "longitude": 87.92
+      },
+      "intent": "category",
+      "inOsm": "unknown",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "tmpl-tamluk-pnb",
+      "query": "pnb",
+      "script": "en",
+      "district": "Purba Medinipur",
+      "expectedNameContains": ["Punjab National", "PNB"],
+      "near": {
+        "latitude": 22.3,
+        "longitude": 87.92
+      },
+      "intent": "brand",
+      "inOsm": "unknown",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "tmpl-coochbehar-pharmacy",
+      "query": "pharmacy",
+      "script": "en",
+      "district": "Cooch Behar",
+      "expectedNameContains": ["Pharmacy", "Medical", "Medicine", "Chemist", "Drug"],
+      "near": {
+        "latitude": 26.32,
+        "longitude": 89.45
+      },
+      "intent": "category",
+      "inOsm": "unknown",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "tmpl-coochbehar-sbi",
+      "query": "sbi",
+      "script": "en",
+      "district": "Cooch Behar",
+      "expectedNameContains": ["State Bank", "SBI"],
+      "near": {
+        "latitude": 26.32,
+        "longitude": 89.45
+      },
+      "intent": "brand",
+      "inOsm": "unknown",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "tmpl-purulia-bank",
+      "query": "bank",
+      "script": "en",
+      "district": "Purulia",
+      "expectedNameContains": ["Bank", "ব্যাংক", "ব্যাঙ্ক"],
+      "near": {
+        "latitude": 23.33,
+        "longitude": 86.36
+      },
+      "intent": "category",
+      "inOsm": "unknown",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "tmpl-purulia-police-station",
+      "query": "police station",
+      "script": "en",
+      "district": "Purulia",
+      "expectedNameContains": ["Police", "Thana", "থানা"],
+      "near": {
+        "latitude": 23.33,
+        "longitude": 86.36
+      },
+      "intent": "category",
+      "inOsm": "unknown",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "tmpl-berhampore-medicine-shop",
+      "query": "medicine shop",
+      "script": "en",
+      "district": "Murshidabad",
+      "expectedNameContains": ["Pharmacy", "Medical", "Medicine", "Chemist", "Drug"],
+      "near": {
+        "latitude": 24.1,
+        "longitude": 88.25
+      },
+      "intent": "category",
+      "inOsm": "unknown",
+      "addedBy": "claude-known"
+    },
+    {
+      "id": "tmpl-berhampore-apollo",
+      "query": "apollo pharmacy",
+      "script": "en",
+      "district": "Murshidabad",
+      "expectedNameContains": ["Apollo"],
+      "near": {
+        "latitude": 24.1,
+        "longitude": 88.25
+      },
+      "intent": "brand",
+      "inOsm": "unknown",
+      "addedBy": "claude-known"
+    }
+  ]
+}

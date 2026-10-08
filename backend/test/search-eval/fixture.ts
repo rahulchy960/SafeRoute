@@ -14,8 +14,23 @@ export const ADDED_BY = ['claude-known', 'rahul', 'contributor'] as const;
  * towns ("bank", "bus stand"), where only a nearby one is a good answer. `named`: one
  * particular place, searched from nearby.
  */
-export const INTENTS = ['generic', 'named'] as const;
+export const LOCAL_INTENTS = ['generic', 'named'] as const;
+/**
+ * Since P011f1: what the search should be understood as. `category`: a kind of place
+ * ("pharmacy"). `brand`: a chain ("SBI"). `name`: one particular place, which must still be
+ * found by name. These are searched the way the endpoint searches (classifier, circle, one
+ * widening) and scored in the "category/brand intent" table.
+ */
+export const NEARBY_INTENTS = ['category', 'brand', 'name'] as const;
+export const INTENTS = [...LOCAL_INTENTS, ...NEARBY_INTENTS] as const;
 export type Intent = (typeof INTENTS)[number];
+export type NearbyIntent = (typeof NEARBY_INTENTS)[number];
+
+export const isNearbyIntent = (intent: Intent | undefined): intent is NearbyIntent =>
+  (NEARBY_INTENTS as readonly string[]).includes(intent ?? '');
+
+/** Whether the place is on OpenStreetMap, as checked by the person who added the entry. */
+export const IN_OSM = ['yes', 'no', 'unknown'] as const;
 
 /** Two decimals at most (about 1 km): a town, not a spot in it. */
 const coarseDegrees = (limit: number) =>
@@ -52,8 +67,22 @@ export const FixtureEntrySchema = z
      */
     near: z.strictObject({ latitude: coarseDegrees(90), longitude: coarseDegrees(180) }).optional(),
     intent: z.enum(INTENTS).optional(),
+    /**
+     * Category, brand and name intents only. `yes`: you looked on openstreetmap.org and a place
+     * that answers the query is mapped within the radius. `no`: you looked and it is not.
+     * Leave it out, or `unknown`, when nobody looked. It splits misses into "the map has no
+     * such place" (a data gap) and "the map has it and the search missed it" (a search failure).
+     */
+    inOsm: z.enum(IN_OSM).optional(),
+    /** Category, brand and name intents only: the first radius, when not the default of 10 km. */
+    radiusKm: z.number().min(1).max(25).optional(),
     addedBy: z.enum(ADDED_BY),
   })
+  .refine(
+    (entry) =>
+      isNearbyIntent(entry.intent) || (entry.inOsm === undefined && entry.radiusKm === undefined),
+    { message: 'inOsm and radiusKm need a category, brand or name intent' },
+  )
   .refine((entry) => (entry.near === undefined) === (entry.intent === undefined), {
     message: 'near and intent go together',
   });

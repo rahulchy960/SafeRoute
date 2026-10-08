@@ -1,4 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+import {
+  CATEGORY_SEARCH_DEFAULTS,
+  searchByIntent,
+} from '../../src/modules/search/intent-search.js';
 import { LOCAL_SEARCH_DEFAULTS, searchLocalFirst } from '../../src/modules/search/local-first.js';
 import { normalizeQuery } from '../../src/modules/search/normalize.js';
 import { SEARCH_DEFAULT_LIMIT } from '../../src/modules/search/schema.js';
@@ -8,7 +12,13 @@ import {
   type PlaceResult,
 } from '../../src/modules/search/types.js';
 import { LAUNCH_REGION_CENTER } from '../../src/regions/defaults.js';
-import { INTENTS, type FixtureEntry, type Intent, type Script } from './fixture.js';
+import {
+  isNearbyIntent,
+  LOCAL_INTENTS,
+  type FixtureEntry,
+  type Intent,
+  type Script,
+} from './fixture.js';
 
 /**
  * Thresholds confirmed by Rahul on 2026-10-07 (addendum v7.2 section E, ADR 0018). The report
@@ -44,6 +54,16 @@ export interface QueryOutcome {
   nearbyTop3?: boolean;
   /** Local intent: how many provider calls the search took (1 or 2). */
   providerCalls?: number;
+  /**
+   * Category, brand and name intents: `within` when the search, run like the endpoint runs it,
+   * returned a place with the right name inside the circle it searched; `far` when only a plain
+   * name search without any area found one; `none` when neither did.
+   */
+  nearby?: 'within' | 'far' | 'none';
+  /** Copied from the entry, for the data-gap and search-failure counts. */
+  inOsm?: 'yes' | 'no' | 'unknown';
+  /** Category, brand and name intents: the radius the search ended with, when it used a circle. */
+  searchedRadiusKm?: number;
   /** Set when the provider call failed; such a query is counted apart, not as a miss. */
   error?: string;
   top1: boolean;
@@ -73,6 +93,20 @@ export interface LocalScore {
   widePasses: number;
 }
 
+/** One row of the "category/brand intent" table. Counts only. */
+export interface NearbyScore {
+  group: string;
+  queries: number;
+  errors: number;
+  within: number;
+  far: number;
+  none: number;
+  /** Not found within the radius, and the entry says the place is NOT on OpenStreetMap. */
+  dataGap: number;
+  /** Not found within the radius, although the entry says the place IS on OpenStreetMap. */
+  searchFailure: number;
+}
+
 export interface Report {
   provider: string;
   overall: GroupScore;
@@ -80,6 +114,8 @@ export interface Report {
   byScript: GroupScore[];
   /** One row per intent and one for all; empty when the fixture has no local-intent entry. */
   localIntent: LocalScore[];
+  /** One row per district and one for all; empty without category, brand or name entries. */
+  nearbyIntent: NearbyScore[];
   thresholds: { name: string; target: number; met: boolean }[];
 }
 
@@ -113,8 +149,10 @@ export function scoreQuery(entry: FixtureEntry, results: PlaceResult[]): QueryOu
     id: entry.id,
     district: entry.district,
     script: entry.script,
-    ...(near === undefined || entry.intent === undefined
-      ? {}
+    ...(near === undefined || entry.intent === undefined || isNearbyIntent(entry.intent)
+      ? entry.intent === undefined
+        ? {}
+        : { intent: entry.intent }
       : {
           intent: entry.intent,
           nearbyTop3: top3.some(
@@ -175,18 +213,51 @@ function scoreLocal(group: string, outcomes: QueryOutcome[]): LocalScore {
   };
 }
 
+function scoreNearby(group: string, outcomes: QueryOutcome[]): NearbyScore {
+  const answered = outcomes.filter((outcome) => outcome.error === undefined);
+  const count = (test: (outcome: QueryOutcome) => boolean) => answered.filter(test).length;
+  return {
+    group,
+    queries: outcomes.length,
+    errors: outcomes.length - answered.length,
+    within: count((outcome) => outcome.nearby === 'within'),
+    far: count((outcome) => outcome.nearby === 'far'),
+    none: count((outcome) => outcome.nearby === 'none'),
+    dataGap: count((outcome) => outcome.nearby !== 'within' && outcome.inOsm === 'no'),
+    searchFailure: count((outcome) => outcome.nearby !== 'within' && outcome.inOsm === 'yes'),
+  };
+}
+
 /**
  * Local-intent queries are scored apart. The overall, per-script and per-district tables and the
  * thresholds cover the other queries only, so they stay comparable with earlier runs.
  */
 export function buildReport(provider: string, all: QueryOutcome[]): Report {
   const outcomes = all.filter((outcome) => outcome.intent === undefined);
-  const local = all.filter((outcome) => outcome.intent !== undefined);
+  const local = all.filter(
+    (outcome) => outcome.intent !== undefined && !isNearbyIntent(outcome.intent),
+  );
+  const nearby = all.filter((outcome) => isNearbyIntent(outcome.intent));
+  const nearbyDistricts = [...new Set(nearby.map((outcome) => outcome.district))].sort((a, b) =>
+    a.localeCompare(b),
+  );
+  const nearbyIntent =
+    nearby.length === 0
+      ? []
+      : [
+          ...nearbyDistricts.map((district) =>
+            scoreNearby(
+              district,
+              nearby.filter((outcome) => outcome.district === district),
+            ),
+          ),
+          scoreNearby('all districts', nearby),
+        ];
   const localIntent =
     local.length === 0
       ? []
       : [
-          ...INTENTS.map((intent) =>
+          ...LOCAL_INTENTS.map((intent) =>
             scoreLocal(
               intent,
               local.filter((outcome) => outcome.intent === intent),
@@ -205,6 +276,7 @@ export function buildReport(provider: string, all: QueryOutcome[]): Report {
     byDistrict,
     byScript,
     localIntent,
+    nearbyIntent,
     thresholds: [
       {
         name: 'overall top-3',
@@ -260,6 +332,24 @@ export function formatReport(report: Report): string {
           ...report.localIntent.map(localRow),
           '',
         ];
+  const nearbyTable =
+    report.nearbyIntent.length === 0
+      ? []
+      : [
+          '### Category/brand intent (searched like the app does: a circle, widened once)',
+          '',
+          '| District | Queries | Provider errors | Found within radius | Found only far | Not found | Data gap (not on the map) | Search failure (on the map) |',
+          '| --- | --- | --- | --- | --- | --- | --- | --- |',
+          ...report.nearbyIntent.map(
+            (score) =>
+              `| ${score.group} | ${String(score.queries)} | ${String(score.errors)} | ` +
+              `${String(score.within)} | ${String(score.far)} | ${String(score.none)} | ` +
+              `${String(score.dataGap)} | ${String(score.searchFailure)} |`,
+          ),
+          '',
+          'The last two columns count only entries whose `inOsm` is `yes` or `no`.',
+          '',
+        ];
   return [
     `## Search evaluation: provider \`${report.provider}\``,
     '',
@@ -267,6 +357,7 @@ export function formatReport(report: Report): string {
     ...table('By script', report.byScript),
     ...table('By district', report.byDistrict),
     ...localTable,
+    ...nearbyTable,
     '### Thresholds (not a gate)',
     '',
     '| Threshold | Target | Met |',
@@ -295,6 +386,11 @@ export interface RunOptions {
  * An entry with `near` is searched like a request that carries that area: local-first, with the
  * default radius and minimum (ADR 0018, "Local ranking"). It can take two provider calls; the
  * harness waits between them like between any two calls.
+ *
+ * An entry with a category, brand or name intent goes through `searchByIntent`, the function
+ * the endpoint calls: the classifier, the circle and the one widening (ADR 0018, "Category and
+ * brand search"). When that finds no place with the right name, ONE more plain name search
+ * without any area says whether such a place exists further away. Up to four provider calls.
  */
 export async function runEvaluation(options: RunOptions): Promise<QueryOutcome[]> {
   const sleep =
@@ -320,6 +416,56 @@ export async function runEvaluation(options: RunOptions): Promise<QueryOutcome[]
         };
         if (entry.near === undefined) {
           outcomes.push(scoreQuery(entry, await options.provider.search(request)));
+        } else if (isNearbyIntent(entry.intent)) {
+          const found = await searchByIntent(
+            options.provider,
+            {
+              text: query,
+              category: undefined,
+              near: entry.near,
+              hasArea: true,
+              language: request.language,
+              limit: request.limit,
+            },
+            {
+              localFirst: {
+                radiusMeters: LOCAL_SEARCH_DEFAULTS.radiusKm * 1000,
+                minLocalResults: LOCAL_SEARCH_DEFAULTS.minLocalResults,
+              },
+              categoryRadiusMeters: (entry.radiusKm ?? CATEGORY_SEARCH_DEFAULTS.radiusKm) * 1000,
+            },
+            // The first call was already spaced by the loop.
+            (() => {
+              let first = true;
+              return () => {
+                const wait = first ? Promise.resolve() : sleep(pause);
+                first = false;
+                return wait;
+              };
+            })(),
+          );
+          // A name search is not held to a circle: the widest one counts as "within".
+          const reachMeters =
+            (found.searchedRadiusKm ?? CATEGORY_SEARCH_DEFAULTS.wideRadiusKm) * 1000;
+          const near = entry.near;
+          const within = found.results.some(
+            (result) => nameMatches(result, entry) && haversineMeters(result, near) <= reachMeters,
+          );
+          let nearby: 'within' | 'far' | 'none' = 'within';
+          if (!within) {
+            await sleep(pause);
+            const anywhere = await options.provider.search(request);
+            nearby = anywhere.some((result) => nameMatches(result, entry)) ? 'far' : 'none';
+          }
+          outcomes.push({
+            ...scoreQuery(entry, found.results),
+            nearby,
+            providerCalls: found.providerCalls + (within ? 0 : 1),
+            ...(entry.inOsm === undefined ? {} : { inOsm: entry.inOsm }),
+            ...(found.searchedRadiusKm === undefined
+              ? {}
+              : { searchedRadiusKm: found.searchedRadiusKm }),
+          });
         } else {
           const found = await searchLocalFirst(
             options.provider,
