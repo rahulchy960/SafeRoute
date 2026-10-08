@@ -420,8 +420,10 @@ and [`android/README.md`](android/README.md):
   `checkReleaseMapKey`.
 - Location follows ADR 0015, "Location policy" (since P010b): **foreground only** (no
   `ACCESS_BACKGROUND_LOCATION` and no foreground-service permission without a prompt that asks
-  for it; `MainActivityTest` pins the list); positions are never stored, logged, printed or
-  sent, and the types that hold one hide it in `toString()`; the system permission dialog is
+  for it; `MainActivityTest` pins the list); positions are never stored, logged or printed,
+  and the types that hold one hide it in `toString()`; a position leaves the phone only in a
+  request the user started and the disclosure names (directions: the start of the route;
+  search, since P011e2: the position rounded to two decimals); the system permission dialog is
   requested only after the user tapped "my location" and continued past the disclosure, never
   at app start or in onboarding, and never in a loop; the permission state is recomputed on
   every resume. Only `core/location/FusedLocation.kt` uses `play-services-location`; the rest
@@ -434,8 +436,12 @@ and [`android/README.md`](android/README.md):
   Only `feature/search/SearchRepository.kt` uses `SearchApi`; tests use `FakeSearchRepository`
   (`FakeSearchModule` replaces the real one in every Hilt test). The typed text, the results
   and the chosen place are never logged, stored or sent anywhere else; the types that hold
-  them hide them in `toString()`. The search area is the map's centre rounded to two decimals,
-  never the user's position, and search asks for no permission. No recent searches or saved
+  them hide them in `toString()`. The search area (since P011e2) is decided only in
+  `feature/search/SearchArea.kt`: the user's position when the permission is granted and the
+  fix is at most 5 minutes old, otherwise the map's centre, otherwise none; always rounded to
+  two decimals before it leaves the phone. Search never asks for a permission and never starts
+  location updates. Distances shown are the server's `distanceMeters`, labelled with what they
+  are measured from, and make no claim about a place. No recent searches or saved
   places without a prompt that brings the consent purpose. A newer answer must never be
   replaced by an older one (`collectLatest`; `SearchViewModelTest` proves it), and no
   experimental coroutine API (`debounce`, `flatMapLatest`) is used. The credit line from the

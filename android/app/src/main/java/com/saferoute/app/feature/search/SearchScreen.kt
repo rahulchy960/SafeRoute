@@ -43,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
@@ -58,6 +59,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.os.ConfigurationCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.saferoute.app.R
@@ -68,12 +70,15 @@ import com.saferoute.app.core.map.LatLng
 import com.saferoute.app.feature.home.EmergencyDialog
 import com.saferoute.app.feature.home.EmergencyDialogState
 import com.saferoute.app.feature.home.openEmergencyDialer
+import java.text.NumberFormat
+import java.util.Locale
 
 /** Test tags of the search screen. */
 internal object SearchTags {
     const val Field = "search-field"
     const val Results = "search-results"
     const val Row = "search-result-row"
+    const val DistanceNote = "search-distance-note"
 }
 
 /**
@@ -349,8 +354,27 @@ private fun SearchResults(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+        // Said once, in words, for everyone: what the distances are measured from.
+        if (results.distancesFrom != null && results.places.any { it.distanceMeters != null }) {
+            item(key = "distance-note") {
+                Text(
+                    text = stringResource(
+                        when (results.distancesFrom) {
+                            NearSource.Position -> R.string.search_distance_note_position
+                            NearSource.MapCentre -> R.string.search_distance_note_map
+                        },
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = spacing.md)
+                        .testTag(SearchTags.DistanceNote),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
         items(items = results.places, key = { it.id }) { place ->
-            PlaceRow(place = place, onClick = { onPlaceClick(place) })
+            PlaceRow(place = place, distancesFrom = results.distancesFrom, onClick = { onPlaceClick(place) })
         }
         results.attribution?.let { attribution ->
             item(key = "attribution") {
@@ -368,9 +392,36 @@ private fun SearchResults(
     }
 }
 
+/**
+ * A distance for a row: "under 1 km", "2.3 km", "12 km", in the phone's number style.
+ *
+ * Deliberately rough. The server measures from a point rounded to about 1 km, so anything
+ * below a kilometre is only "under 1 km", one decimal is shown up to 10 km, and whole
+ * kilometres from there.
+ */
 @Composable
-private fun PlaceRow(place: FoundPlace, onClick: () -> Unit) {
+internal fun searchDistanceText(distanceMeters: Int, locale: Locale): String = when {
+    distanceMeters < METERS_PER_KM -> stringResource(R.string.search_distance_under_km)
+    else -> stringResource(R.string.search_distance_km, searchKilometres(distanceMeters, locale))
+}
+
+private const val METERS_PER_KM = 1000
+private const val WHOLE_KM_FROM_METERS = 10_000
+
+/** "2.3" below 10 km, "12" from there; digits and decimal mark follow [locale]. */
+internal fun searchKilometres(distanceMeters: Int, locale: Locale): String {
+    val decimals = if (distanceMeters < WHOLE_KM_FROM_METERS) 1 else 0
+    return NumberFormat.getNumberInstance(locale).apply {
+        minimumFractionDigits = decimals
+        maximumFractionDigits = decimals
+    }.format(distanceMeters / METERS_PER_KM.toDouble())
+}
+
+@Composable
+private fun PlaceRow(place: FoundPlace, distancesFrom: NearSource?, onClick: () -> Unit) {
     val spacing = SafeRouteTheme.spacing
+    // Read from the configuration, so the numbers change with the app language at once.
+    val locale = ConfigurationCompat.getLocales(LocalConfiguration.current)[0] ?: Locale.ROOT
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -387,7 +438,8 @@ private fun PlaceRow(place: FoundPlace, onClick: () -> Unit) {
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Column(verticalArrangement = Arrangement.spacedBy(spacing.xxs)) {
+        // weight(1f): the name and the label take what the distance leaves, and wrap.
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(spacing.xxs)) {
             Text(
                 text = place.name,
                 style = MaterialTheme.typography.titleMedium,
@@ -400,6 +452,24 @@ private fun PlaceRow(place: FoundPlace, onClick: () -> Unit) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+        }
+        if (place.distanceMeters != null && distancesFrom != null) {
+            val distance = searchDistanceText(place.distanceMeters, locale)
+            // What TalkBack reads instead of the bare figure: "2.3 km from your location".
+            val spoken = stringResource(
+                when (distancesFrom) {
+                    NearSource.Position -> R.string.search_distance_from_position
+                    NearSource.MapCentre -> R.string.search_distance_from_map
+                },
+                distance,
+            )
+            Text(
+                text = distance,
+                modifier = Modifier.semantics { contentDescription = spoken },
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+            )
         }
     }
 }

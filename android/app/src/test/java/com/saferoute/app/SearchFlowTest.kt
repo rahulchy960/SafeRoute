@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 package com.saferoute.app
 
+import com.saferoute.app.core.location.FakeLocationEnvironment
+import com.saferoute.app.core.location.FakeLocationRepository
+import com.saferoute.app.core.location.GrantedLocation
+import com.saferoute.app.core.location.LocationState
+import com.saferoute.app.core.location.fakeFix
 import com.saferoute.app.core.map.LatLng
 import com.saferoute.app.core.map.CameraState
 import android.content.Intent
@@ -69,6 +74,12 @@ class SearchFlowTest {
 
     @Inject
     lateinit var mapEngine: FakeMapEngine
+
+    @Inject
+    lateinit var location: FakeLocationRepository
+
+    @Inject
+    lateinit var locationEnvironment: FakeLocationEnvironment
 
     @Before
     fun inject() = hilt.inject()
@@ -139,6 +150,33 @@ class SearchFlowTest {
         assertEquals("en", call.language)
         // No permission dialog was ever requested for a search.
         assertEquals(null, shadowOf(compose.activity).lastRequestedPermission)
+    }
+
+    @Test
+    fun `with location allowed and a recent position, the search is sent from there - still no permission dialog`() {
+        // The map looks at one town; the user is in another.
+        val town = CameraState(target = LatLng(12.0, 22.0), zoom = 13.0)
+        val here = LatLng(10.0, 20.0)
+        compose.runOnUiThread { mapEngine.controller.userMoves(town) }
+        locationEnvironment.granted = GrantedLocation.Precise
+        location.state.value = LocationState.Fix(fakeFix(position = here, timeMillis = System.currentTimeMillis()))
+
+        searchFor("bank")
+        waitForText(FAKE_STATION.name)
+
+        assertEquals(here, search.calls.single().near)
+        // A search asks Android for nothing. (That it also starts no location updates is
+        // checked where the search area is decided, in SearchAreaProviderTest: here Home is on
+        // the back stack and manages location for the map by its own rules.)
+        assertEquals(null, shadowOf(compose.activity).lastRequestedPermission)
+
+        // The position is older than five minutes: the map centre again.
+        location.state.value =
+            LocationState.Fix(fakeFix(position = here, timeMillis = System.currentTimeMillis() - 6 * 60_000L))
+        compose.onNodeWithTag("search-field").performTextInput(" two")
+        compose.onNodeWithTag("search-field").performImeAction()
+        compose.waitUntil(timeoutMillis = 5_000) { search.calls.size == 2 }
+        assertEquals(town.target, search.calls.last().near)
     }
 
     @Test

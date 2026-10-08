@@ -25,7 +25,15 @@ sealed interface SearchUiState {
 
     data object Loading : SearchUiState
 
-    data class Results(val places: List<FoundPlace>, val attribution: String?) : SearchUiState {
+    /**
+     * @property distancesFrom what the places' distances are measured from: the area THIS
+     * answer's search was sent with. Null when it was sent without an area.
+     */
+    data class Results(
+        val places: List<FoundPlace>,
+        val attribution: String?,
+        val distancesFrom: NearSource? = null,
+    ) : SearchUiState {
         override fun toString(): String = "Results(hidden)"
     }
 
@@ -59,12 +67,14 @@ internal fun limitCodePoints(text: String, max: Int = SEARCH_MAX_CODE_POINTS): S
  *   request in flight.
  *
  * The query is never stored, logged or sent anywhere but the search call. There is no history.
+ * The same holds for the area the search prefers ([SearchAreaProvider]).
  */
 @HiltViewModel
 class SearchViewModel @Inject constructor(
     private val repository: SearchRepository,
     private val locale: AppLocale,
     private val selection: MapSelection,
+    private val area: SearchAreaProvider,
 ) : ViewModel() {
 
     /** The trimmed query, plus a counter that makes "search now" a new value. */
@@ -92,9 +102,12 @@ class SearchViewModel @Inject constructor(
                         // The keyboard's Search key skips the wait.
                         if (request.submitted == 0) delay(SEARCH_DEBOUNCE_MILLIS)
                         _state.value = SearchUiState.Loading
+                        // Decided once per search and kept with its answer, so the distances
+                        // on screen are always labelled with what they were measured from.
+                        val near = area.current()
                         val outcome = repository.search(
                             query = request.query,
-                            near = selection.viewCentre,
+                            near = near?.point,
                             language = locale.current(),
                         )
                         answered = request.query
@@ -104,7 +117,7 @@ class SearchViewModel @Inject constructor(
                                 if (outcome.places.isEmpty()) {
                                     SearchUiState.Empty
                                 } else {
-                                    SearchUiState.Results(outcome.places, outcome.attribution)
+                                    SearchUiState.Results(outcome.places, outcome.attribution, near?.source)
                                 }
                         }
                     }

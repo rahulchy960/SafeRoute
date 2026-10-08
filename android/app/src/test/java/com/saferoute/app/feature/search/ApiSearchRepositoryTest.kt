@@ -73,6 +73,18 @@ class ApiSearchRepositoryTest {
     }
 
     @Test
+    fun `the distance from the server is passed on, and its absence is not a zero`() = runTest {
+        val json = """{"results":[
+            {"id":"a","name":"Near","label":"","latitude":10.5,"longitude":20.5,"kind":"bank","distanceMeters":2300},
+            {"id":"b","name":"Here","label":"","latitude":10.5,"longitude":20.5,"kind":"bank","distanceMeters":0},
+            {"id":"c","name":"Unknown","label":"","latitude":10.5,"longitude":20.5,"kind":"bank"}
+        ],"attribution":null}"""
+        val found = search(ok(json)) as SearchOutcome.Found
+
+        assertEquals(listOf(2300, 0, null), found.places.map { it.distanceMeters })
+    }
+
+    @Test
     fun `a null or blank attribution is no attribution, and no results is an empty list`() = runTest {
         val none = search(ok("""{"results":[],"attribution":null}""")) as SearchOutcome.Found
         assertEquals(emptyList<FoundPlace>(), none.places)

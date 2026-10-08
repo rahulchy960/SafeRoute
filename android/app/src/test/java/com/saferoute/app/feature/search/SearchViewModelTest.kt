@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 package com.saferoute.app.feature.search
 
+import com.saferoute.app.core.location.LocationState
+import com.saferoute.app.core.location.GrantedLocation
+import com.saferoute.app.core.location.FAKE_POSITION
 import androidx.lifecycle.ViewModelStore
 import com.saferoute.app.core.map.LatLng
 import com.saferoute.app.core.map.MapSelection
@@ -43,14 +46,15 @@ class SearchViewModelTest {
     private val dispatcher = StandardTestDispatcher()
     private val scope = TestScope(dispatcher)
     private val repository = FakeSearchRepository()
-    private val selection = MapSelection()
+    private val area = SearchAreaParts(granted = GrantedLocation.None)
+    private val selection = area.selection
     private var language = "en"
     private lateinit var viewModel: SearchViewModel
 
     @Before
     fun setUp() {
         Dispatchers.setMain(dispatcher)
-        viewModel = SearchViewModel(repository, AppLocale { language }, selection)
+        viewModel = SearchViewModel(repository, AppLocale { language }, selection, area.provider)
     }
 
     @After
@@ -243,6 +247,53 @@ class SearchViewModelTest {
             FakeSearchRepository.Call("বাজার", LatLng(10.123456, 20.987654), "bn"),
             repository.calls.last(),
         )
+    }
+
+    @Test
+    fun `with the permission and a recent position the search is sent from there, and says so`() = scope.runTest {
+        selection.viewCentre = LatLng(12.0, 22.0)
+        area.environment.granted = GrantedLocation.Precise
+        area.location.state.value = LocationState.Fix(area.fixAged(60_000))
+
+        type("bank", thenWaitMillis = SEARCH_DEBOUNCE_MILLIS)
+
+        assertEquals(FAKE_POSITION, repository.calls.single().near)
+        assertEquals(NearSource.Position, (viewModel.state.value as SearchUiState.Results).distancesFrom)
+    }
+
+    @Test
+    fun `a stale position falls back to the map centre, and the answer is labelled so`() = scope.runTest {
+        selection.viewCentre = LatLng(12.0, 22.0)
+        area.environment.granted = GrantedLocation.Precise
+        area.location.state.value = LocationState.Fix(area.fixAged(SEARCH_POSITION_MAX_AGE_MILLIS + 1))
+
+        type("bank", thenWaitMillis = SEARCH_DEBOUNCE_MILLIS)
+
+        assertEquals(LatLng(12.0, 22.0), repository.calls.single().near)
+        assertEquals(NearSource.MapCentre, (viewModel.state.value as SearchUiState.Results).distancesFrom)
+    }
+
+    @Test
+    fun `no position and a map that shows the whole region - no area is sent and nothing is labelled`() = scope.runTest {
+        type("bank", thenWaitMillis = SEARCH_DEBOUNCE_MILLIS)
+
+        assertNull(repository.calls.single().near)
+        assertNull((viewModel.state.value as SearchUiState.Results).distancesFrom)
+    }
+
+    @Test
+    fun `the label belongs to the answer - a position that arrives later does not relabel it`() = scope.runTest {
+        selection.viewCentre = LatLng(12.0, 22.0)
+        type("bank", thenWaitMillis = SEARCH_DEBOUNCE_MILLIS)
+        assertEquals(NearSource.MapCentre, (viewModel.state.value as SearchUiState.Results).distancesFrom)
+
+        area.environment.granted = GrantedLocation.Precise
+        area.location.state.value = LocationState.Fix(area.fixAged(0))
+        runCurrent()
+
+        // Still the answer of the search that was sent from the map centre.
+        assertEquals(NearSource.MapCentre, (viewModel.state.value as SearchUiState.Results).distancesFrom)
+        assertEquals(1, repository.calls.size)
     }
 
     @Test

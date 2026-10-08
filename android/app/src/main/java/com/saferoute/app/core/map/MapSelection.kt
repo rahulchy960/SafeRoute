@@ -38,8 +38,9 @@ class MapSelection @Inject constructor() {
     val selected: StateFlow<SelectedPlace?> = _selected.asStateFlow()
 
     /**
-     * Where the map was looking when it last came to rest; null before the map has reported.
-     * The area a search prefers. It is the map's centre, never the user's own position.
+     * Where the map was looking when it last came to rest; null before the map has reported
+     * and while the map shows the whole region. A search prefers this area when it can not use
+     * the user's recent position (see `SearchAreaProvider`, P011e2).
      */
     @Volatile
     var viewCentre: LatLng? = null

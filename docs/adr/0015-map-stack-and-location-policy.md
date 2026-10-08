@@ -220,6 +220,13 @@ proprietary ("Android Software Development Kit License").
   `LatLng`, `LocationFix` and `RawFix` hide their values in `toString()`; tests capture Logcat
   and scan the saved state. Sharing happens only when the user starts SOS or live sharing
   (later prompts).
+- **Changed since:** "nothing is sent" described P010b. Two requests the user starts now carry
+  a position, and the disclosure names both: directions send the precise start of the route
+  (P012c1, ADR 0020), and a search sends the position rounded to two decimals, about 1 km
+  (P011e2, 2026-10-08, ADR 0018). Still never stored, logged or printed, and never sent in the
+  background or without a request the user made. Changing what location is used for meant
+  changing the disclosure in the same prompt, as this policy requires; the wording is a draft
+  until a lawyer has reviewed it.
 - **Disclosure first, and only on request.** The system dialog is requested only after the
   user tapped "my location" and chose "Continue" on the app's own explanation (what is
   collected, why, what is not done, how to stop). Never at app start or during onboarding.

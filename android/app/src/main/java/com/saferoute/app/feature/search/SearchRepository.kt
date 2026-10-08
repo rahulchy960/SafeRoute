@@ -21,6 +21,12 @@ data class FoundPlace(
     val position: LatLng,
     /** What kind of place the provider says it is. An open set: unknown values are normal. */
     val kind: String,
+    /**
+     * Metres, in a straight line, from the area the search was sent with to this place; null
+     * when the search carried no area. The server measures from the ROUNDED point (about 1 km
+     * coarse), so this is a rough figure, good for "about 2 km", not for "400 m".
+     */
+    val distanceMeters: Int? = null,
 ) {
     // A result says where the user may be going: keep it out of logs.
     override fun toString(): String = "FoundPlace(hidden)"
@@ -56,7 +62,8 @@ sealed interface SearchOutcome {
 interface SearchRepository {
     /**
      * @param query what the user typed, trimmed.
-     * @param near the area to prefer: the centre of the map, or null for the server's default.
+     * @param near the area to prefer (the user's position or the centre of the map, see
+     * [SearchAreaProvider]), or null for the server's default.
      * @param language `en` or `bn`.
      */
     suspend fun search(query: String, near: LatLng?, language: String): SearchOutcome
@@ -67,7 +74,8 @@ internal const val SEARCH_RESULT_LIMIT = 6
 
 /**
  * Rounds a coordinate to two decimals, about 1 km. The server does the same; doing it here too
- * means a finer position never leaves the phone for a search.
+ * means a finer position never leaves the phone for a search. This matters since the area can
+ * be the user's own position (P011e2).
  */
 internal fun coarse(degrees: Double): BigDecimal = BigDecimal.valueOf(degrees).setScale(2, RoundingMode.HALF_UP)
 
@@ -93,6 +101,7 @@ class ApiSearchRepository @Inject constructor(private val api: SearchApi) : Sear
                         label = it.label,
                         position = LatLng(it.latitude.toDouble(), it.longitude.toDouble()),
                         kind = it.kind,
+                        distanceMeters = it.distanceMeters,
                     )
                 },
                 attribution = result.value.attribution?.takeIf(String::isNotBlank),
