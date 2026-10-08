@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 package com.saferoute.app.feature.home
 
+import com.saferoute.app.core.map.CameraState
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -144,10 +145,15 @@ class HomePlaceTest {
     }
 
     @Test
-    fun `the map's centre is shared as the search area`() {
-        assertEquals(map.camera.value.target, selection.viewCentre)
-        map.camera.value = map.camera.value.copy(target = LatLng(12.0, 22.0))
+    fun `the map's centre is shared as the search area, unless the map shows the whole region`() {
+        // The overview shows many districts: its middle is not an area anybody is looking at.
+        assertNull(selection.viewCentre)
+
+        map.camera.value = CameraState(target = LatLng(12.0, 22.0), zoom = SEARCH_AREA_MIN_ZOOM)
         assertEquals(LatLng(12.0, 22.0), selection.viewCentre)
+
+        map.camera.value = map.camera.value.copy(zoom = SEARCH_AREA_MIN_ZOOM - 0.5)
+        assertNull(selection.viewCentre)
     }
 
     @Test

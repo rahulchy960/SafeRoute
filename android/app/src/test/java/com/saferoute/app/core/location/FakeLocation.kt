@@ -51,6 +51,17 @@ class FakeLocationSource : LocationSource {
         listener = null
     }
 
+    /** What the phone already has: a position and its age in milliseconds, or nothing. */
+    var lastKnown: Pair<LatLng, Long>? = null
+    var lastKnownRequests = 0
+
+    override fun lastKnown(onResult: (fix: RawFix, ageMillis: Long) -> Unit) {
+        lastKnownRequests++
+        lastKnown?.let { (position, age) ->
+            onResult(RawFix(position, accuracyMeters = 40f, headingDegrees = null, isMock = false), age)
+        }
+    }
+
     /** Delivers a position as the phone would. Returns false when nobody is listening. */
     fun emit(
         position: LatLng = FAKE_POSITION,

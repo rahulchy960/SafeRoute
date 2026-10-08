@@ -62,7 +62,7 @@ class MapLibreEngine @Inject constructor(
 ) : MapEngine {
 
     override fun createController(scope: CoroutineScope, initialCamera: CameraState?): MapController =
-        MapStateHolder(config, network, scope, initialCamera ?: RegionDefaults.camera)
+        MapStateHolder(config, network, scope, initialCamera ?: RegionDefaults.overview)
 
     @Composable
     override fun Map(controller: MapController, modifier: Modifier) {
@@ -195,6 +195,12 @@ private class MapLibreRenderer(
             map = ready
             ready.addOnCameraIdleListener {
                 ready.cameraPosition.toCameraState()?.let(holder::onCameraIdle)
+            }
+            // The library says why the camera starts to move: a finger, or our own calls.
+            ready.addOnCameraMoveStartedListener { reason ->
+                if (reason == MapLibreMap.OnCameraMoveStartedListener.REASON_API_GESTURE) {
+                    holder.onUserGesture()
+                }
             }
             holder.attach(this)
         }

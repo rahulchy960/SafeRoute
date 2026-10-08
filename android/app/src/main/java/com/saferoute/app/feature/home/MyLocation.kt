@@ -58,6 +58,21 @@ enum class MyLocationControl {
 /** Zoom used when the map first centres on the user: a few streets around. */
 internal const val LOCATE_ZOOM = 16.0
 
+/** Street level: where the map opens when it knows where the user is. */
+internal const val INITIAL_LOCATE_ZOOM = 15.0
+
+/** A position older than this does not open the map; a new one is waited for instead. */
+internal const val INITIAL_FIX_MAX_AGE_SECONDS = 600L
+
+/** How long the map waits for a position when it opens, before it stays on the overview. */
+internal const val INITIAL_FIX_WAIT_MILLIS = 8_000L
+
+/**
+ * Zoomed out further than this, the middle of the map is not "the area the user is looking
+ * at" any more (it shows several districts), so a search prefers no area at all.
+ */
+internal const val SEARCH_AREA_MIN_ZOOM = 9.0
+
 /** Two positions closer than this (in degrees, about 10 m) count as the same place. */
 private const val SAME_PLACE_DEGREES = 0.0001
 

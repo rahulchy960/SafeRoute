@@ -24,7 +24,7 @@ class MapStateHolderTest {
 
     private fun TestScope.holder(
         config: MapProviderConfig = configured,
-        camera: CameraState = RegionDefaults.camera,
+        camera: CameraState = RegionDefaults.overview,
     ) = MapStateHolder(config, network, backgroundScope, camera).also { runCurrent() }
 
     private val forbidden = "loading style failed: HTTP status code 403"
@@ -231,6 +231,24 @@ class MapStateHolderTest {
         advanceTimeBy(MapStateHolder.LOAD_TIMEOUT_MILLIS * 2)
 
         assertEquals(MapLoadState.Loading, holder.loadState.value)
+    }
+
+    @Test
+    fun `only the user's own gestures are counted, never the app's camera moves`() = runTest {
+        val holder = holder()
+        holder.attach(renderer)
+        assertEquals(0, holder.userGestures.value)
+
+        // The app moves the camera, and the map reports where it came to rest.
+        holder.moveCamera(CameraState(LatLng(10.0, 20.0), zoom = 15.0))
+        holder.onCameraIdle(CameraState(LatLng(10.0, 20.0), zoom = 15.0))
+        holder.fitBounds(LatLngBounds(LatLng(9.0, 19.0), LatLng(11.0, 21.0)))
+        assertEquals(0, holder.userGestures.value)
+
+        // The map view reports a move that a finger started.
+        holder.onUserGesture()
+        holder.onUserGesture()
+        assertEquals(2, holder.userGestures.value)
     }
 
     @Test

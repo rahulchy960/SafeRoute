@@ -52,8 +52,20 @@ class HomeLocationTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
-        viewModel = HomeViewModel(SavedStateHandle(), mapEngine, location, MapSelection(), RouteDisplay())
+        viewModel = HomeViewModel(settledState(), mapEngine, location, MapSelection(), RouteDisplay())
     }
+
+    /** A camera is already saved, so the map does not open on the position by itself. */
+    private fun settledState() = SavedStateHandle(
+        mapOf(
+            "map_camera" to doubleArrayOf(
+                RegionDefaults.overview.target.latitude,
+                RegionDefaults.overview.target.longitude,
+                RegionDefaults.overview.zoom,
+                RegionDefaults.overview.bearing,
+            ),
+        ),
+    )
 
     @After
     fun tearDown() = Dispatchers.resetMain()
@@ -209,7 +221,7 @@ class HomeLocationTest {
         location.state.value = fix()
 
         assertTrue(map.cameraMoves.isEmpty())
-        assertEquals(RegionDefaults.camera, map.camera.value)
+        assertEquals(RegionDefaults.overview, map.camera.value)
         assertEquals(2, map.overlays.size)
         assertEquals(MyLocationControl.Located, viewModel.myLocation.value)
     }
@@ -241,7 +253,7 @@ class HomeLocationTest {
 
     @Test
     fun `centring keeps a closer zoom the user already chose`() {
-        map.camera.value = RegionDefaults.camera.copy(zoom = 18.0)
+        map.camera.value = RegionDefaults.overview.copy(zoom = 18.0)
         viewModel.onLocationAvailable(userAsked = true)
 
         location.state.value = fix()
@@ -330,7 +342,7 @@ class HomeLocationTest {
 
     @Test
     fun `positions are not put in the saved state`() {
-        val savedState = SavedStateHandle()
+        val savedState = settledState()
         val engine = FakeMapEngine()
         val vm = HomeViewModel(savedState, engine, location, MapSelection(), RouteDisplay())
         vm.onLocationAvailable(userAsked = false)
@@ -340,7 +352,7 @@ class HomeLocationTest {
         // Only the camera is saved, and nothing asked the camera to move.
         assertEquals(setOf("map_camera"), savedState.keys())
         val camera = savedState.get<DoubleArray>("map_camera")!!
-        assertEquals(RegionDefaults.camera.target.latitude, camera[0], 0.0)
+        assertEquals(RegionDefaults.overview.target.latitude, camera[0], 0.0)
         assertNull(camera.firstOrNull { it == 12.345678 || it == 98.765432 })
     }
 

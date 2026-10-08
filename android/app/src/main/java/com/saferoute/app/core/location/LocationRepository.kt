@@ -100,6 +100,13 @@ interface LocationSource {
     /** @param precise ask for GPS-level accuracy and frequent updates. */
     fun start(precise: Boolean, onFix: (RawFix) -> Unit)
 
+    /**
+     * The position the phone already has, if any: no new measurement, so it costs no battery
+     * and arrives at once. [onResult] is called at most once, with how old the position is;
+     * never when the phone has none.
+     */
+    fun lastKnown(onResult: (fix: RawFix, ageMillis: Long) -> Unit)
+
     fun stop()
 }
 
@@ -150,6 +157,9 @@ class DefaultLocationRepository @Inject constructor(
         // A position from before the pause is shown as old until a new one arrives.
         _state.value = lastFix?.let { stale(it) } ?: LocationState.Searching
         source.start(precise = !approximate) { raw -> onFix(raw, approximate) }
+        // Until the first new position arrives, the one the phone already has is better than
+        // nothing: the map can open where the user is instead of waiting for GPS.
+        if (lastFix == null) source.lastKnown { raw, age -> onLastKnown(raw, age, approximate) }
         ticker = scope.launch {
             while (true) {
                 delay(TICK_MILLIS)
@@ -183,6 +193,28 @@ class DefaultLocationRepository @Inject constructor(
         _state.value = LocationState.Fix(fix)
     }
 
+    /**
+     * The phone's last known position. Used only while there is nothing better, and only when
+     * it is recent: an old one may be from another town. Like every position here it lives in
+     * this object's memory and nowhere else.
+     */
+    @Synchronized
+    private fun onLastKnown(raw: RawFix, ageMillis: Long, approximate: Boolean) {
+        if (!started || lastFix != null) return
+        if (ageMillis !in 0..LAST_KNOWN_MAX_AGE_MILLIS) return
+        val fix = LocationFix(
+            position = raw.position,
+            accuracyMeters = raw.accuracyMeters,
+            timeMillis = clock.millis() - ageMillis,
+            isApproximate = approximate,
+            headingDegrees = null,
+        )
+        lastFix = fix
+        lastWasMock = raw.isMock
+        // Older than STALE_AFTER_MILLIS: shown grey, with its age, until a new one arrives.
+        _state.value = stale(fix)
+    }
+
     @Synchronized
     private fun tick(startedAt: Long) {
         if (!started) return
@@ -211,6 +243,9 @@ class DefaultLocationRepository @Inject constructor(
 
         /** After this long without a first position the control says so instead of spinning. */
         const val SEARCH_TIMEOUT_MILLIS = 45_000L
+
+        /** A last known position older than this is ignored (ADR 0015, "Initial camera"). */
+        const val LAST_KNOWN_MAX_AGE_MILLIS = 10 * 60_000L
         const val TICK_MILLIS = 5_000L
     }
 }
