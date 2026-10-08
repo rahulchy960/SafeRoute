@@ -430,7 +430,9 @@ CI builds this way. A **release** build refuses to assemble without a real key
 - `core/map/MapTypes.kt`: the map vocabulary of the app (`LatLng`, `CameraState`,
   `MapLoadState`, overlay descriptions, `MapController`). Plain Kotlin.
 - `core/map/MapProviderConfig.kt`: everything MapTiler-specific (style names, URL, credit
-  links, cache size) and `RegionDefaults`, where the map opens.
+  links, cache size) and `RegionDefaults`, where the map opens: on the whole launch region
+  (`RegionDefaults.overview`). When the location permission is already granted, the map moves
+  once per launch to the user's position (ADR 0015, "Initial camera"; `InitialCameraTest`).
 - `core/map/MapStateHolder.kt`: the state machine. It survives rotation in `HomeViewModel`;
   the map view does not, and re-attaches to it.
 - `core/map/MapLibreEngine.kt`: **the only file that imports MapLibre.**
