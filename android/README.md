@@ -94,6 +94,9 @@ android/
                                    location permission flow and "my location", 112 dialog
       feature/search/              Search screen (layout only until P011)
       feature/directions/          routes to a chosen place: repository, states, sheet (P012c1)
+      feature/contacts/            emergency contacts: repository, phone rules, session sync
+                                   (P013b1; the screens arrive with P013b2)
+      core/data/                   the local Room database and ActiveSosContacts (P013b1)
       feature/settings/            Settings: account, privacy, About
       feature/onboarding/          welcome, age gate, consent notice, phone and code, blocked
       core/designsystem/theme/     colours, type, shapes, spacing: the design tokens
@@ -157,6 +160,7 @@ Chosen on 2026-10-02 from Google Maven and Maven Central metadata; all are stabl
 | Firebase BoM | 34.19.0 | picks firebase-auth 24.2.0 (chosen 2026-10-06) |
 | Google Services Gradle plugin | 4.5.0 | build time only; reads `google-services.json` |
 | DataStore Preferences | 1.2.1 | the stored onboarding flags |
+| Room (runtime, compiler, testing) | 2.8.5 | the local database: the offline copy of the emergency contacts (P013b1) |
 | kotlinx-coroutines-play-services | 1.11.0 | `await()` for Play services tasks |
 | OkHttp MockWebServer | 5.5.0 | tests only |
 | JUnit 4 · Robolectric · AndroidX Test · Turbine | 4.13.2 · 4.17 · core 1.7.0, ext-junit 1.3.0 · 1.2.1 | tests only |
@@ -633,6 +637,53 @@ another start arrive with P012c2.
   the real ones in every Hilt test, so no test asks a server for a route.
 - Not checked without a phone: how the route lines, their light edge and the start ring look
   on the real map; the camera fit with the sheet half open; TalkBack reading the cards.
+
+## Emergency contacts (data layer, since P013b1)
+
+Follows [ADR 0024](../docs/adr/0024-emergency-contacts-and-opt-out.md). **This part has no
+screen yet.** It is the storage and the rules the screens (P013b2) and SOS (P014) build on.
+
+- **The server holds the list; the phone keeps a copy** in a Room database
+  (`core/data/local`, file `saferoute.db`, table `contacts`). The copy is replaced by the
+  server's list after every successful fetch. A failed fetch never changes it.
+- **Reading works offline.** `ContactsRepository.contacts` and `ActiveSosContacts.current()`
+  read the phone only. **Every change needs the network** (add, rename, remove, invite,
+  consent) and answers `ContactsError.NoConnection` without one.
+- **`ActiveSosContacts`** (`core/data`) is what SOS will read: the contacts that have not
+  opted out, at most 5, oldest first. It can be empty; 112 stays the first answer.
+- **When the copy is fetched and emptied** (`ContactsSessionSync`, started by the application
+  class): fetched in the background when the session becomes `Ready`; emptied when the user
+  signs out, is back at the start, or the account is blocked. It follows the session's state,
+  so a sign-out forced by the server is covered too.
+- **Consent.** Adding needs the `sos_alerts` consent (`hasConsent`, `grantConsent`).
+  `withdrawConsent` makes the server delete every contact and then empties the copy.
+- **The invite link** is `<API address>/c#<token>`: the token is the URL fragment, lives in
+  memory only (`InviteLink` hides it in `toString()`) and is never saved or logged. The app
+  sends no message; the user will send the SMS from their own SMS app (P013b2).
+- **Phone numbers** (`ContactPhone.kt`): without a `+` a number is read as an Indian mobile
+  (ten digits starting 6 to 9, optional `0`, `91`, `0091`); other countries need an explicit
+  `+`. The result always has the shape the server checks.
+- **No new permission.** No `READ_CONTACTS`, no `SEND_SMS` (`ContactsBoundaryTest`,
+  `MainActivityTest`).
+- **Not encrypted at rest yet.** The table is in the app's private storage and is never backed
+  up (`allowBackup=false`); encrypting the database is a recorded follow-up.
+
+### Changing a table
+
+1. Change the entity and raise `SafeRouteDatabase.VERSION` by one.
+2. Build: Room writes `app/schemas/<database class>/<version>.json`. **Commit it.**
+3. Write a `Migration`, add it to the database builder, and add a test to
+   `SafeRouteDatabaseMigrationTest` that creates the old version and migrates it.
+4. Never use `fallbackToDestructiveMigration`: it would delete the user's contacts.
+
+The schema files are assets of the **debug** build only (the JVM tests read them from there);
+a release build does not contain them.
+
+### Tests of the contacts data layer
+
+`FakeContactsRepository` replaces the real one in every Hilt test (`FakeContactsModule`), and
+`TestDatabaseModule` gives every Hilt test a database in memory. The real repository is tested
+against a local fake server and a real in-memory database (`ApiContactsRepositoryTest`).
 
 ## Design tokens
 

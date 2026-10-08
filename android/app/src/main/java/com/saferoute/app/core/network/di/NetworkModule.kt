@@ -7,6 +7,7 @@ import com.saferoute.app.core.network.apiConfigFromBuild
 import com.saferoute.app.core.network.auth.AuthInterceptor
 import com.saferoute.app.core.network.auth.IdTokenProvider
 import com.saferoute.app.core.network.auth.TokenAuthenticator
+import com.saferoute.app.core.network.generated.api.ContactsApi
 import com.saferoute.app.core.network.generated.api.MeApi
 import com.saferoute.app.core.network.generated.api.OperationalApi
 import com.saferoute.app.core.network.generated.api.RoutingApi
@@ -105,6 +106,10 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideMeApi(retrofit: Retrofit): MeApi = retrofit.create(MeApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideContactsApi(retrofit: Retrofit): ContactsApi = retrofit.create(ContactsApi::class.java)
 
     @Provides
     @Singleton
