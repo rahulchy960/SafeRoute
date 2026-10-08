@@ -9,6 +9,7 @@ const ALL = [
   '0001_identity_support_tables',
   '0002_consent_records_adult_attestation',
   '0003_rate_limit_buckets',
+  '0004_emergency_contacts',
 ];
 
 async function query<T extends pg.QueryResultRow>(url: string, text: string): Promise<T[]> {
@@ -68,7 +69,9 @@ describe('runMigrations', () => {
     expect(tables.map((t) => t.tablename)).toEqual([
       'audit_log',
       'consent_records',
+      'contact_optout_tokens',
       'devices',
+      'emergency_contacts',
       'idempotency_keys',
       'rate_limit_buckets',
       'spatial_ref_sys',

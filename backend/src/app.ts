@@ -10,6 +10,7 @@ import { accessLog } from './middleware/access-log.js';
 import { requestId } from './middleware/request-id.js';
 import type { TokenVerifier } from './modules/auth/verifier.js';
 import { consentRoutes } from './modules/consents/routes.js';
+import { contactRoutes } from './modules/contacts/routes.js';
 import { routingRoutes } from './modules/routing/routes.js';
 import type { RoutingProvider } from './modules/routing/types.js';
 import { searchRoutes } from './modules/search/routes.js';
@@ -67,6 +68,7 @@ export function createApp({ config, logger, readiness, verifier, db, geocoder, r
   app.route('/', readyRoutes(readiness));
   app.route('/', userRoutes({ verifier, db }));
   app.route('/', consentRoutes({ verifier, db }));
+  app.route('/', contactRoutes({ verifier, db }));
   app.route(
     '/',
     searchRoutes({

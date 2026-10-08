@@ -3,6 +3,7 @@ import { and, desc, eq, sql } from 'drizzle-orm';
 import type { Db } from '../../db/client.js';
 import { auditLog, consentRecords, users } from '../../db/schema/index.js';
 import { AppError } from '../../lib/problem.js';
+import { eraseContacts } from '../contacts/erasure.js';
 import { ACCOUNT_CORE, type ConsentPurpose } from './purposes.js';
 import type { Consent } from './schema.js';
 
@@ -78,6 +79,25 @@ export async function listLatestConsents(db: Pick<Db, 'selectDistinctOn'>, userI
   return rows.map(toConsent);
 }
 
+/**
+ * The status of the newest decision for one purpose (`granted` or `withdrawn`), or undefined
+ * when the user was never asked. A feature gate calls this inside its own transaction, after
+ * locking the user's row, so the answer cannot change under it.
+ */
+export async function latestConsentStatus(
+  db: Pick<Db, 'select'>,
+  userId: string,
+  purpose: ConsentPurpose,
+): Promise<string | undefined> {
+  const [latest] = await db
+    .select({ status: consentRecords.status })
+    .from(consentRecords)
+    .where(and(eq(consentRecords.userId, userId), eq(consentRecords.purpose, purpose)))
+    .orderBy(desc(consentRecords.decidedAt))
+    .limit(1);
+  return latest?.status;
+}
+
 export interface ConsentDecision {
   purpose: ConsentPurpose;
   status: 'granted' | 'withdrawn';
@@ -98,6 +118,9 @@ export interface SetConsentResult {
  *   without it, so the only way to withdraw is to delete the account (P020).
  * - Same status and notice version as the latest row → nothing is written (a retry or a double
  *   tap must not grow the history).
+ * - Withdrawing `sos_alerts` deletes every emergency contact of the user, with the opt-out
+ *   tokens, in this same transaction (ADR 0024): the withdrawal and the erasure happen together
+ *   or not at all. It runs on a repeated withdrawal too, so a retry finishes the job.
  *
  * The user's row is locked (`FOR UPDATE`) for the transaction, so two concurrent calls for the
  * same user run one after the other and cannot both insert the "same" decision. `decided_at`
@@ -126,6 +149,9 @@ export async function setConsent(
       .where(and(eq(consentRecords.userId, userId), eq(consentRecords.purpose, decision.purpose)))
       .orderBy(desc(consentRecords.decidedAt))
       .limit(1);
+    if (decision.purpose === 'sos_alerts' && decision.status === 'withdrawn') {
+      await eraseContacts(tx, userId);
+    }
     if (latest?.status === decision.status && latest.noticeVersion === decision.noticeVersion) {
       return { changed: false, consent: toConsent(latest) };
     }

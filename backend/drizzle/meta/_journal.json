@@ -29,6 +29,13 @@
       "when": 1791325383741,
       "tag": "0003_rate_limit_buckets",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791495395397,
+      "tag": "0004_emergency_contacts",
+      "breakpoints": true
     }
   ]
 }

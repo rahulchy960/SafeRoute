@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "SafeRoute API",
-    "version": "0.8.0",
+    "version": "0.9.0",
     "description": "SafeRoute is a personal-safety navigation API. Safety information is context, never a guarantee that a route or area is safe. SafeRoute is not an emergency service; in an emergency call your local emergency number (112 in India).",
     "license": {
       "name": "AGPL-3.0-only",
@@ -30,6 +30,14 @@
     {
       "name": "routing",
       "description": "Walking and driving routes between two points, computed from OpenStreetMap data. Origins, destinations and routes are not stored or logged. A route is a way to travel, never a statement that it is safe."
+    },
+    {
+      "name": "contacts",
+      "description": "The signed-in user's emergency contacts (up to 5). Needs the `sos_alerts` consent. The server never sends a message to a contact: the user sends each invite from their own phone. Names, numbers and opt-out tokens never travel in a URL and are not logged."
+    },
+    {
+      "name": "public",
+      "description": "Public by design, no sign-in: the page and the call with which an emergency contact, who has no account, opts out."
     }
   ],
   "components": {
@@ -130,7 +138,7 @@
         }
       },
       "Conflict": {
-        "description": "Conflicts with the current state (`conflict`, `phone_already_registered`, `account_deletion_required`).",
+        "description": "Conflicts with the current state (`conflict`, `phone_already_registered`, `account_deletion_required`, `invalid_contact`, `contact_exists`, `contact_opted_out`, `contact_limit_reached`).",
         "headers": {
           "X-Request-Id": {
             "$ref": "#/components/headers/RequestId"
@@ -175,7 +183,7 @@
         }
       },
       "TooManyRequests": {
-        "description": "Rate limit exceeded (`rate_limited`). Wait for `Retry-After` seconds.",
+        "description": "Rate limit exceeded (`rate_limited`). Wait for `Retry-After` seconds when it is sent.",
         "headers": {
           "X-Request-Id": {
             "$ref": "#/components/headers/RequestId"
@@ -268,7 +276,7 @@
           },
           "code": {
             "type": "string",
-            "description": "Stable, machine-readable error code; clients switch on this, not on `title` or `detail`. Open set: clients must tolerate unknown values. Currently defined: `validation_error`, `unauthorized`, `forbidden`, `bootstrap_required`, `account_deleted`, `consent_required`, `adult_required`, `not_found`, `conflict`, `phone_already_registered`, `account_deletion_required`, `gone`, `rate_limited`, `internal_error`, `db_unavailable`, `db_not_configured`, `auth_unavailable`, `auth_not_configured`, `search_unavailable`, `search_not_configured`, `outside_covered_area`, `route_too_long`, `location_not_routable`, `no_route_found`, `routing_unavailable`, `routing_not_configured`, `http_error`.",
+            "description": "Stable, machine-readable error code; clients switch on this, not on `title` or `detail`. Open set: clients must tolerate unknown values. Currently defined: `validation_error`, `unauthorized`, `forbidden`, `bootstrap_required`, `account_deleted`, `consent_required`, `adult_required`, `not_found`, `conflict`, `phone_already_registered`, `account_deletion_required`, `invalid_contact`, `contact_exists`, `contact_opted_out`, `contact_limit_reached`, `gone`, `rate_limited`, `internal_error`, `db_unavailable`, `db_not_configured`, `auth_unavailable`, `auth_not_configured`, `search_unavailable`, `search_not_configured`, `outside_covered_area`, `route_too_long`, `location_not_routable`, `no_route_found`, `routing_unavailable`, `routing_not_configured`, `http_error`.",
             "examples": [
               "not_found"
             ]
@@ -641,6 +649,185 @@
           "noticeLocale"
         ],
         "description": "The user's decision for the purpose in the path."
+      },
+      "ContactList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Contact"
+            },
+            "description": "Oldest first."
+          },
+          "maxContacts": {
+            "type": "integer",
+            "description": "How many contacts a user can have.",
+            "examples": [
+              5
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "maxContacts"
+        ],
+        "description": "The signed-in user's emergency contacts."
+      },
+      "Contact": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "examples": [
+              "7c0e1a52-3f7b-4c58-9d0e-2a4b6c8d0e1f"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "examples": [
+              "Example Contact"
+            ]
+          },
+          "phoneE164": {
+            "type": "string",
+            "description": "Phone number in E.164 form.",
+            "examples": [
+              "+910000000000"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "examples": [
+              "2026-10-09T09:30:00.000Z"
+            ]
+          },
+          "invitedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the user confirmed that they sent the invite SMS from their own phone; null until then. The server sends no message.",
+            "examples": [
+              null
+            ]
+          },
+          "optedOutAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the contact opted out through the public page; null otherwise. An opted-out contact must never be alerted and cannot be invited again.",
+            "examples": [
+              null
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "phoneE164",
+          "createdAt",
+          "invitedAt",
+          "optedOutAt"
+        ],
+        "description": "One emergency contact of the signed-in user."
+      },
+      "CreateContactRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "What the user calls this contact: 1 to 80 characters after trimming, no control characters.",
+            "examples": [
+              "Example Contact"
+            ]
+          },
+          "phone": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "Phone number in E.164 form: `+`, country code, number, digits only (7 to 15 digits).",
+            "examples": [
+              "+910000000000"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "phone"
+        ],
+        "description": "A new emergency contact."
+      },
+      "RenameContactRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "What the user calls this contact: 1 to 80 characters after trimming, no control characters.",
+            "examples": [
+              "Example Contact"
+            ]
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "description": "The new name of the contact."
+      },
+      "ContactInvite": {
+        "type": "object",
+        "properties": {
+          "optOutToken": {
+            "type": "string",
+            "description": "A new opt-out token for this contact, returned once and never stored in plaintext. The app puts it in the FRAGMENT of the opt-out link (`<API address>/c#<token>`) inside the SMS the user sends. Keep it in memory only: never log or save it.",
+            "examples": [
+              "AAAAAAAAAAAAAAAAAAAAAA"
+            ]
+          }
+        },
+        "required": [
+          "optOutToken"
+        ],
+        "description": "What the app needs to build an invite SMS."
+      },
+      "ContactOptOutResult": {
+        "type": "object",
+        "properties": {
+          "optedOut": {
+            "type": "boolean",
+            "examples": [
+              true
+            ]
+          }
+        },
+        "required": [
+          "optedOut"
+        ],
+        "description": "The contact is opted out. Says nothing about the contact or who added them."
+      },
+      "ContactOptOutRequest": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "The token from the fragment of the opt-out link.",
+            "examples": [
+              "AAAAAAAAAAAAAAAAAAAAAA"
+            ]
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "description": "An opt-out by the contact."
       },
       "SearchResults": {
         "type": "object",
@@ -1252,7 +1439,7 @@
           "me"
         ],
         "summary": "Grant or withdraw consent for one purpose",
-        "description": "Records the decision and returns the latest state; safe to retry. Ask just-in-time, when the feature that needs the purpose is first used. Errors: `validation_error` (400) for an unknown purpose; `account_deletion_required` (409) when withdrawing `account_core`, which can only be withdrawn by deleting the account.",
+        "description": "Records the decision and returns the latest state; safe to retry. Ask just-in-time, when the feature that needs the purpose is first used. Errors: `validation_error` (400) for an unknown purpose; `account_deletion_required` (409) when withdrawing `account_core`, which can only be withdrawn by deleting the account. **Withdrawing `sos_alerts` deletes all of the user's emergency contacts**, and their opt-out links stop working, in the same step; it cannot be undone.",
         "security": [
           {
             "firebaseBearer": []
@@ -1314,6 +1501,486 @@
           },
           "409": {
             "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/v1/contacts": {
+      "get": {
+        "operationId": "listContacts",
+        "tags": [
+          "contacts"
+        ],
+        "summary": "List the signed-in user's emergency contacts",
+        "description": "The server is the source of truth; the app keeps a copy for use without a network. Removed contacts are not listed. Opted-out contacts are listed with `optedOutAt` set and must never be alerted.",
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The contacts, oldest first.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/CacheControlNoStore"
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContactList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createContact",
+        "tags": [
+          "contacts"
+        ],
+        "summary": "Add an emergency contact",
+        "description": "Adds a contact, up to 5 per user. Needs the `sos_alerts` consent: the latest decision must be `granted`, otherwise 403 `consent_required` and nothing is stored. The server sends no message to a contact: no SMS, push or call. Errors (409): `invalid_contact` (the user's own number), `contact_exists` (already a contact), `contact_opted_out` (this number opted out and cannot be added again), `contact_limit_reached`. No `Idempotency-Key`: a number can be added only once, so a retry that reached the server the first time gets `contact_exists`; read the list again and continue. `rate_limited` (429) carries `Retry-After`.",
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateContactRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The new contact.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/CacheControlNoStore"
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Contact"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/v1/contacts/{id}": {
+      "patch": {
+        "operationId": "renameContact",
+        "tags": [
+          "contacts"
+        ],
+        "summary": "Rename an emergency contact",
+        "description": "Changes the name only; the number cannot be changed (remove the contact and add it again). Another user's contact, or a removed one, is `not_found` (404).",
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Id of the contact, as returned by the server.",
+              "examples": [
+                "7c0e1a52-3f7b-4c58-9d0e-2a4b6c8d0e1f"
+              ]
+            },
+            "required": true,
+            "description": "Id of the contact, as returned by the server.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenameContactRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The contact with its new name.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/CacheControlNoStore"
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Contact"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteContact",
+        "tags": [
+          "contacts"
+        ],
+        "summary": "Remove an emergency contact",
+        "description": "Deletes the contact and its opt-out links for good. Exception: for a contact that opted out, the server keeps the number (and nothing else) so that it cannot be added again; that record goes away with the account or when `sos_alerts` is withdrawn. Another user's contact is `not_found` (404).",
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Id of the contact, as returned by the server.",
+              "examples": [
+                "7c0e1a52-3f7b-4c58-9d0e-2a4b6c8d0e1f"
+              ]
+            },
+            "required": true,
+            "description": "Id of the contact, as returned by the server.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Removed.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/CacheControlNoStore"
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/v1/contacts/{id}/invite": {
+      "post": {
+        "operationId": "createContactInvite",
+        "tags": [
+          "contacts"
+        ],
+        "summary": "Create an opt-out link token for an invite SMS",
+        "description": "Returns a new opt-out token for this contact, once. The app builds the link `<API address>/c#<token>` (the token in the URL FRAGMENT) and opens the SMS app with a prefilled invite that the user sends from their own phone. The server sends no message to a contact: no SMS, push or call. Earlier tokens of the contact stay valid. Errors: `contact_opted_out` (409); `rate_limited` (429) when the contact already has 10 links (no `Retry-After`) or the user created too many links today (with `Retry-After`). Then call `confirmContactInvite` when the user says the SMS was sent.",
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Id of the contact, as returned by the server.",
+              "examples": [
+                "7c0e1a52-3f7b-4c58-9d0e-2a4b6c8d0e1f"
+              ]
+            },
+            "required": true,
+            "description": "Id of the contact, as returned by the server.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The token for the link.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/CacheControlNoStore"
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContactInvite"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/v1/contacts/{id}/invite/confirm": {
+      "post": {
+        "operationId": "confirmContactInvite",
+        "tags": [
+          "contacts"
+        ],
+        "summary": "Record that the user sent the invite SMS",
+        "description": "Sets `invitedAt` to now. It records what the user said, not a delivery: the server cannot see the SMS. Safe to repeat. Errors (409): `contact_opted_out`; `conflict` when no invite link was created for the contact.",
+        "security": [
+          {
+            "firebaseBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Id of the contact, as returned by the server.",
+              "examples": [
+                "7c0e1a52-3f7b-4c58-9d0e-2a4b6c8d0e1f"
+              ]
+            },
+            "required": true,
+            "description": "Id of the contact, as returned by the server.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Recorded.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/CacheControlNoStore"
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/c": {
+      "get": {
+        "operationId": "getContactOptOutPage",
+        "tags": [
+          "public"
+        ],
+        "summary": "The opt-out page for emergency contacts",
+        "description": "Public by design: a contact has no account. A static HTML page in English and Bengali, the same for everyone, with no cookie and no external resource. The link in the invite SMS is `/c#<token>`: a browser never sends the fragment to a server, so this request carries no token. The page sends the token in the body of `optOutContact` only when the visitor taps \"Opt out\". Not for the app.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "The page.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/CacheControlNoStore"
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/v1/public/contacts/opt-out": {
+      "post": {
+        "operationId": "optOutContact",
+        "tags": [
+          "public"
+        ],
+        "summary": "Opt out as an emergency contact",
+        "description": "Public by design: called by the opt-out page with the token from the invite SMS, in the request body. The contact is then never alerted and cannot be invited or added again by that user. Safe to repeat (200 again). A malformed, unknown or no longer active token gets the same `not_found` (404). One rate limit is shared by all callers (`rate_limited`, 429, with `Retry-After`); nothing about the caller is stored or logged.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContactOptOutRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Opted out.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/CacheControlNoStore"
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContactOptOutResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"

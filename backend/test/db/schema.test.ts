@@ -247,6 +247,8 @@ describe('personal-data markers', () => {
     );
     expect(rows.map((r) => r.col)).toEqual([
       'devices.fcm_token',
+      'emergency_contacts.name',
+      'emergency_contacts.phone_e164',
       'users.adult_attested_at',
       'users.display_name',
       'users.firebase_uid',

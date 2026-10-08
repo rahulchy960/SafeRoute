@@ -1,0 +1,50 @@
+{
+  "$schema": "../../tools/diagrams/diagram.schema.json",
+  "title": "Emergency contacts: data model and opt-out",
+  "subtitle": "The server sends no message. The opt-out token travels in the URL fragment, which a browser never sends to a server, and then in a request body (P013a, ADR 0024)",
+  "direction": "TB",
+  "layout": { "nodeWidth": 250, "rankGap": 46 },
+  "groups": [
+    { "id": "user", "label": "User's phone" },
+    { "id": "api", "label": "SafeRoute API" },
+    { "id": "db", "label": "PostgreSQL" },
+    { "id": "contact", "label": "Contact's phone (no account)" }
+  ],
+  "nodes": [
+    { "id": "consent", "label": "App: user agrees to sos_alerts (PUT /v1/me/consents/sos_alerts)", "role": "app", "group": "user", "rank": 0 },
+    { "id": "add", "label": "App: POST /v1/contacts with name and phone in the body", "role": "app", "group": "user", "rank": 1 },
+    { "id": "invite", "label": "App: POST /v1/contacts/{id}/invite, gets the token once, keeps it in memory only", "role": "app", "group": "user", "rank": 3 },
+    { "id": "sms", "label": "User sends the invite from their own SMS app: link = API address + /c#token", "role": "app", "group": "user", "rank": 4 },
+    { "id": "gate", "label": "Create: lock the user's row, sos_alerts granted? own number? duplicate? opted out? at most 5", "role": "security", "group": "api", "rank": 1 },
+    { "id": "mint", "label": "Invite: 128 random bits, store SHA-256 only, at most 10 links per contact", "role": "security", "group": "api", "rank": 3 },
+    { "id": "page", "label": "GET /c: one static page for everyone, strict CSP by hash, no cookie. The request carries NO token", "role": "service", "group": "api", "rank": 5 },
+    { "id": "optout", "label": "POST /v1/public/contacts/opt-out with the token in the BODY: shared rate limit, lookup by hash, same 404 for every bad token", "role": "service", "group": "api", "rank": 7 },
+    { "id": "withdraw", "label": "Withdrawing sos_alerts deletes every contact, tombstone and token in one transaction", "role": "security", "group": "api", "rank": 9 },
+    { "id": "users", "label": "users, consent_records (append-only)", "role": "data", "group": "db", "rank": 0 },
+    { "id": "contacts", "label": "emergency_contacts: user_id, name, phone_e164, invited_at, opted_out_at, deleted_at. UNIQUE (user_id, phone_e164)", "role": "data", "group": "db", "rank": 2 },
+    { "id": "tokens", "label": "contact_optout_tokens: token_hash (primary key), contact_id. Never a plaintext token", "role": "data", "group": "db", "rank": 4 },
+    { "id": "tombstone", "label": "opted_out_at set: never alerted, never invited again. Removed by the user: the number stays as a tombstone", "role": "data", "group": "db", "rank": 8 },
+    { "id": "open", "label": "Contact opens the link. Browser asks for /c only: the fragment stays on the phone", "role": "external", "group": "contact", "rank": 5 },
+    { "id": "script", "label": "Page script reads the token from the fragment and removes it from the address bar", "role": "external", "group": "contact", "rank": 6 },
+    { "id": "tap", "label": "Contact taps Opt out. Opening the link alone changes nothing", "role": "external", "group": "contact", "rank": 7 }
+  ],
+  "edges": [
+    { "from": "consent", "to": "users", "label": "granted" },
+    { "from": "consent", "to": "add" },
+    { "from": "add", "to": "gate" },
+    { "from": "gate", "to": "contacts", "label": "insert" },
+    { "from": "users", "to": "contacts", "label": "ON DELETE CASCADE" },
+    { "from": "add", "to": "invite" },
+    { "from": "invite", "to": "mint" },
+    { "from": "mint", "to": "tokens", "label": "hash only" },
+    { "from": "contacts", "to": "tokens", "label": "ON DELETE CASCADE" },
+    { "from": "invite", "to": "sms" },
+    { "from": "sms", "to": "open", "label": "SMS, not through the server" },
+    { "from": "open", "to": "page", "label": "GET /c" },
+    { "from": "open", "to": "script" },
+    { "from": "script", "to": "tap" },
+    { "from": "tap", "to": "optout", "label": "token in the body" },
+    { "from": "optout", "to": "tombstone", "label": "set opted_out_at" },
+    { "from": "withdraw", "to": "tombstone", "label": "erases" }
+  ]
+}

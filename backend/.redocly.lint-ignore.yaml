@@ -5,8 +5,10 @@
 # operation-4xx-response: the operational probes take no input (no params, query or body), so no
 # 4xx can come from them. Unknown paths and methods get the app-wide 404 (`not_found`). Declaring
 # a 4xx the probe never returns would make the contract lie. Every /v1 operation must still
-# declare its 4xx responses.
+# declare its 4xx responses. The same holds for the static opt-out page `/c` (P013a, ADR 0024): it
+# takes no input, because its token travels in the URL fragment, which never reaches the server.
 ../contracts/openapi.json:
   operation-4xx-response:
     - '#/paths/~1health/get/responses'
     - '#/paths/~1health~1ready/get/responses'
+    - '#/paths/~1c/get/responses'

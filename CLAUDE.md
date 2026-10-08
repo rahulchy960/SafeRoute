@@ -399,6 +399,29 @@ Follow [ADR 0018](docs/adr/0018-search-and-geocoding.md):
   rate-limit tokens. The log line carries the kind of match and counts, never the text, the
   category or the brand.
 
+## Emergency contacts rules (since P013a, ADR 0024)
+
+Follow [ADR 0024](docs/adr/0024-emergency-contacts-and-opt-out.md):
+
+- A contact is a person who is **not a user**. Names, phone numbers and opt-out tokens never
+  appear in a URL, a log line, an error body, `audit_log.metadata`, a test's output, Notion or a
+  prompt log. Tests use `+91000010NNNN` and "Test Contact N".
+- **The server sends no message to a contact** (no SMS, push or call) without a prompt that asks
+  for it and a lawyer's review. Invites are sent by the user from their own phone.
+- Nothing about a contact is stored without the user's `sos_alerts` consent, and withdrawing it
+  erases every contact, tombstone and token in the same transaction. Don't weaken either.
+- **An opted-out contact is never alerted, invited or added again by that user.** Code that
+  reads contacts for an alert must filter on `opted_out_at` (failure matrix).
+- The opt-out token goes in the URL **fragment** (`/c#<token>`) and then in a request body.
+  Never a path or a query. Only its SHA-256 is stored. The page `/c` stays static, the same for
+  everyone, with its hash-based CSP, no cookie and no external resource; changing its script or
+  style changes the hash automatically, and `contacts-page.test.ts` must still pass.
+- Never expose, or let a response or its timing reveal, whether a number belongs to a
+  registered user (`has_app_user_id` stays NULL until P015 decides).
+- Limits live in `CONTACT_LIMITS`, `MAX_CONTACTS` and `MAX_TOKENS_PER_CONTACT` only.
+- The page wording (English and Bengali) and the tombstone retention are drafts "to be verified
+  by a lawyer".
+
 ## Android rules (since P007a, ADR 0008)
 
 Follow [ADR 0008](docs/adr/0008-android-foundation.md), [ADR 0009](docs/adr/0009-android-api-client.md)

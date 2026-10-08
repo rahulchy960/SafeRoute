@@ -7,7 +7,7 @@
  * build number. Bump it in the same PR that changes the spec: minor for additive changes, and a
  * breaking change also needs an ADR plus a new path version or a coordinated app release.
  */
-export const CONTRACT_VERSION = '0.8.0';
+export const CONTRACT_VERSION = '0.9.0';
 
 export const OPENAPI_VERSION = '3.1.0';
 
@@ -40,6 +40,19 @@ export const TAGS = [
       'Walking and driving routes between two points, computed from OpenStreetMap data. ' +
       'Origins, destinations and routes are not stored or logged. A route is a way to travel, ' +
       'never a statement that it is safe.',
+  },
+  {
+    name: 'contacts',
+    description:
+      "The signed-in user's emergency contacts (up to 5). Needs the `sos_alerts` consent. The " +
+      'server never sends a message to a contact: the user sends each invite from their own ' +
+      'phone. Names, numbers and opt-out tokens never travel in a URL and are not logged.',
+  },
+  {
+    name: 'public',
+    description:
+      'Public by design, no sign-in: the page and the call with which an emergency contact, ' +
+      'who has no account, opts out.',
   },
 ];
 
