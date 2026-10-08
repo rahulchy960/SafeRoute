@@ -36,6 +36,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -63,6 +64,9 @@ enum class SheetDetent {
 
     internal fun shorter(): SheetDetent? = entries.getOrNull(ordinal - 1)
 }
+
+/** On the sheet's surface, so that layout tests can ask what the sheet currently covers. */
+const val SheetSurfaceTag = "sheet-surface"
 
 /** Sizes and motion of [SafeRouteBottomSheet]. */
 object SafeRouteSheetDefaults {
@@ -199,6 +203,7 @@ fun SafeRouteBottomSheet(
                 }
                 .fillMaxWidth()
                 .height(with(density) { (containerHeight - fullTop).coerceAtLeast(0f).toDp() })
+                .testTag(SheetSurfaceTag)
                 .anchoredDraggable(
                     state = state.draggable,
                     orientation = Orientation.Vertical,

@@ -30,6 +30,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -50,6 +51,9 @@ import java.text.NumberFormat
 import java.util.Locale
 import kotlin.math.ceil
 import kotlin.math.roundToInt
+
+/** On every route card, so that layout tests can ask where the cards are. */
+const val RouteCardTag = "route-card"
 
 /** What the directions UI reports. Defaults do nothing, for previews and tests. */
 data class DirectionsActions(
@@ -74,15 +78,17 @@ fun DirectionsSheet(
     actions: DirectionsActions,
     onUseMyLocation: () -> Unit,
     modifier: Modifier = Modifier,
+    headerEnd: @Composable () -> Unit = {},
 ) {
     val spacing = SafeRouteTheme.spacing
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .verticalScroll(rememberScrollState())
             .padding(horizontal = spacing.md),
         verticalArrangement = Arrangement.spacedBy(spacing.sm),
     ) {
+        // The header does not scroll: the close button and whatever [headerEnd] holds (the SOS
+        // control) stay in reach however long the list below is.
         Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(spacing.sm)) {
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(spacing.xxs)) {
                 Text(
@@ -100,15 +106,23 @@ fun DirectionsSheet(
             IconButton(onClick = actions.onClose) {
                 Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.route_close))
             }
+            headerEnd()
         }
-        ModeToggle(mode = state.mode, onModeChange = actions.onModeChange)
-        when (val status = state.status) {
-            is DirectionsStatus.Loading -> Waiting(
-                text = stringResource(if (status.starting) R.string.route_starting else R.string.route_loading),
-            )
-            is DirectionsStatus.Results -> RouteList(status, actions.onRouteSelect)
-            is DirectionsStatus.NeedsOrigin -> NeedsOrigin(status.problem, onUseMyLocation)
-            is DirectionsStatus.Failed -> Failure(status, actions.onRetry)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(spacing.sm),
+        ) {
+            ModeToggle(mode = state.mode, onModeChange = actions.onModeChange)
+            when (val status = state.status) {
+                is DirectionsStatus.Loading -> Waiting(
+                    text = stringResource(if (status.starting) R.string.route_starting else R.string.route_loading),
+                )
+                is DirectionsStatus.Results -> RouteList(status, actions.onRouteSelect)
+                is DirectionsStatus.NeedsOrigin -> NeedsOrigin(status.problem, onUseMyLocation)
+                is DirectionsStatus.Failed -> Failure(status, actions.onRetry)
+            }
         }
     }
 }
@@ -174,6 +188,7 @@ private fun RouteList(results: DirectionsStatus.Results, onSelect: (String) -> U
                 modifier = Modifier
                     .fillMaxWidth()
                     .defaultMinSize(minHeight = MinTouchTarget)
+                    .testTag(RouteCardTag)
                     .selectable(selected = selected, onClick = { onSelect(route.id) }, role = Role.RadioButton),
                 shape = MaterialTheme.shapes.medium,
                 // The chosen card differs in its border and its radio mark, not in colour alone.

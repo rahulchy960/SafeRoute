@@ -5,6 +5,29 @@
 - **Prompt:** P007 (split: P007a Gradle, Hilt, theme and components; P007b navigation, screens and their tests)
 - **Plan refs:** Plan v7 §1, §5.1–§5.4, §12.3, §15.1, §17
 
+> **Note of 2026-10-08 (P012e2): the emergency control is compact and never an overlay.**
+> On a phone the large "Emergency 112" pill, drawn on top of everything above the sheet,
+> covered the first route card. It is replaced by `SosControl`: a 48 dp red circle that shows
+> "SOS" and is read by TalkBack as "SOS and call 112".
+>
+> - **It always has a place of its own in a layout.** While the sheet only peeks it is the last
+>   of the map controls. When the sheet is at, or on its way to, half or full height, it is at
+>   the end of the sheet's header row, next to the close button. On the search screen it is an
+>   action at the end of the top bar. It is on screen exactly once and never disappears.
+> - **It can not cover content**, because it is not drawn over any: `SosPlacementTest` fails if
+>   its bounds intersect a route card, a result row, a row or button of the sheet, a map
+>   control or the search pill, at every detent, at double font size, in Bengali, in the dark
+>   theme and in landscape.
+> - **It stays 48 dp at every font size.** The letters do not grow with the font setting; the
+>   spoken description is the accessible name. The meaning still does not rest on colour.
+> - **Behaviour is unchanged:** a tap opens the same dialog, "Call 112" opens the dialer with
+>   `ACTION_DIAL` and `tel:112`, and the dialog says that SafeRoute is not an emergency service.
+> - **Room for P014:** `SosControl` only reports a tap. P014 replaces what the tap does (the
+>   real SOS flow, with a hold to arm if that is the design) without moving the control. A
+>   Quick Settings tile is a separate entry point and needs no place on this screen.
+> - This replaces "the emergency button always visible above the sheet" in the Decision below;
+>   the `sos` red is still used only by this control and the emergency dialog.
+
 ## Context
 
 - P007 turns the project Rahul created with Android Studio's wizard into the base every later

@@ -94,6 +94,29 @@ Facts found in the P010a spike (2026-10-06), with their sources:
 - It is the app's own element, so it is translated, large enough to tap and testable. The
   library's own logo and "i" button are switched off in its favour.
 - OpenStreetMap data is under the ODbL, which requires the credit.
+- **Changed on 2026-10-08 (P012e2): smaller, still always shown.** On a phone the credit was a
+  large dark box on the map. It is now a small label, on one line where it fits, on a light
+  backdrop; the area that can be tapped around it is still 48 dp, without a background. It
+  stays in full view whenever a map is shown, and a tap still opens the dialog with both links.
+- **Why not a button that shows the credit on a tap.** That was the first choice, checked
+  against both providers' guidance on 2026-10-08 and not taken:
+  - OpenStreetMap Foundation, "Attribution Guidelines" (Requirements; Interactive maps): the
+    credit should not require a person to interact with the map to see it. It may be
+    collapsed on a dismiss, on a map interaction or after five seconds, and the licence
+    information must stay findable (an "i" button is given as an example for that). The
+    text must be easily readable. "© OpenStreetMap contributors" is an accepted form.
+  - MapTiler, "Map attribution and how to add it": the text attribution, with its links, must
+    appear on every map, including dynamic maps in mobile apps. Its example for one web
+    library switches the collapsible control off so that the attribution is shown expanded.
+    A logo is asked for on free accounts. The page names no collapsed or tap-to-reveal form
+    for mobile apps, and refers to the terms for the rest.
+  - Read together: a credit hidden behind a button until tapped is not clearly allowed by
+    either, and MapTiler's page points the other way. Collapsing after five seconds would be
+    allowed by OpenStreetMap's text; MapTiler's page does not say, so it is not used.
+  - **Not checked:** MapTiler's Terms and Conditions were not read again for this change, and
+    nobody at MapTiler was asked. The MapTiler logo on the free plan is an open point from
+    before this prompt (the library's own logo is switched off) and is a follow-up. This is a
+    summary in our own words, not legal advice (**to be verified by a lawyer**).
 
 ### Cache and offline
 

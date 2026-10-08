@@ -110,7 +110,7 @@ class HomeScreenTest {
         compose.onNodeWithContentDescription(string(R.string.my_location_off))
     private fun layers() =
         compose.onNodeWithContentDescription(string(R.string.map_control_layers_unavailable))
-    private fun emergencyButton() = compose.onNodeWithText(string(R.string.emergency_button_label))
+    private fun emergencyButton() = compose.onNodeWithContentDescription(string(R.string.sos_control_description))
     private fun sheetHandle() =
         compose.onNodeWithContentDescription(string(R.string.sheet_handle_description))
 

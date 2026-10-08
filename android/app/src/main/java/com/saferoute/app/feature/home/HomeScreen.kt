@@ -60,20 +60,19 @@ import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.saferoute.app.R
-import com.saferoute.app.core.designsystem.component.EmergencyButton
 import com.saferoute.app.core.designsystem.component.MapControlButton
 import com.saferoute.app.core.designsystem.component.SafeRouteBottomSheet
 import com.saferoute.app.core.designsystem.component.SafeRouteSheetDefaults
 import com.saferoute.app.core.designsystem.component.SafeRouteSheetState
 import com.saferoute.app.core.designsystem.component.SearchPill
 import com.saferoute.app.core.designsystem.component.SheetDetent
+import com.saferoute.app.core.designsystem.component.SosControl
 import com.saferoute.app.core.designsystem.component.rememberSafeRouteSheetState
 import com.saferoute.app.core.designsystem.preview.SafeRoutePreviews
 import com.saferoute.app.core.designsystem.theme.SafeRouteTheme
@@ -100,6 +99,9 @@ internal object HomeTraversal {
     const val MapControls = 1f
     const val Emergency = 2f
     const val Sheet = 3f
+
+    /** Inside the sheet's own group: the SOS control is read before the sheet's content. */
+    const val EmergencyInSheet = -1f
 }
 
 /**
@@ -267,9 +269,12 @@ private fun Context.openSettings(intent: Intent) {
  *   button, which are separate elements drawn on top of it.
  * - The search pill sits at the top, clear of the status bar, with the map credit below it:
  *   the one place the sheet never covers while any map is visible.
- * - The map controls and the emergency button sit just above the sheet's peek area.
- * - The emergency button is drawn last, so it stays visible and tappable even when the sheet
- *   is pulled up over the map controls.
+ * - The map controls sit just above the sheet's peek area.
+ * - The SOS control is a compact control with a place of its own, never an overlay (ADR 0008,
+ *   note of 2026-10-08). While the sheet only peeks it is the last of the map controls. When
+ *   the sheet is (or is on its way) to half or full height, it moves to the end of the sheet's
+ *   header row, next to the close button. It is on screen in exactly one of the two places at
+ *   any time, and in neither can it cover a card, a result or a row.
  *
  * @param onMapPaddingChange Told how much of the map the pill (top) and the sheet (bottom)
  * cover, in pixels, whenever that changes, so the map keeps its focus in the visible part.
@@ -323,6 +328,18 @@ fun HomeScreen(
     val sideInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)
     // Lifts floating controls above the part of the sheet that always shows.
     val abovePeek = SafeRouteSheetDefaults.PeekHeight + spacing.md
+    // `targetDetent`, not the settled one: the control changes place the moment the sheet
+    // starts for another height, so the rising sheet never slides over it.
+    val sosInSheet = sheetState.targetDetent != SheetDetent.Peek
+    val sheetSos: @Composable () -> Unit = {
+        if (sosInSheet) {
+            SosControl(
+                onClick = onEmergencyClick,
+                modifier = Modifier.semantics { traversalIndex = HomeTraversal.EmergencyInSheet },
+                elevated = false,
+            )
+        }
+    }
 
     var showMapCredits by rememberSaveable { mutableStateOf(false) }
 
@@ -421,33 +438,47 @@ fun HomeScreen(
             }
         }
 
+        // One column of controls above the sheet: layers, my location and, while the sheet only
+        // peeks, the SOS control at its end.
         Column(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .windowInsetsPadding(sideInsets)
                 .navigationBarsPadding()
-                // One emergency button's height higher, so the two never overlap.
-                .padding(end = spacing.md, bottom = abovePeek + EmergencyRowHeight)
-                .semantics {
+                .padding(end = spacing.md, bottom = abovePeek),
+            verticalArrangement = Arrangement.spacedBy(spacing.sm),
+        ) {
+            Column(
+                modifier = Modifier.semantics {
                     isTraversalGroup = true
                     traversalIndex = HomeTraversal.MapControls
                 },
-            verticalArrangement = Arrangement.spacedBy(spacing.sm),
-        ) {
-            // Layers has no prompt yet. Its description says so; the faded icon alone would
-            // be a colour-only signal.
-            MapControlButton(
-                painter = painterResource(R.drawable.ic_layers),
-                contentDescription = stringResource(R.string.map_control_layers_unavailable),
-                onClick = {},
-                enabled = false,
-            )
-            MyLocationButton(
-                control = myLocation,
-                onClick = onMyLocationClick,
-                stale = locationStale,
-                approximate = locationApproximate,
-            )
+                verticalArrangement = Arrangement.spacedBy(spacing.sm),
+            ) {
+                // Layers has no prompt yet. Its description says so; the faded icon alone would
+                // be a colour-only signal.
+                MapControlButton(
+                    painter = painterResource(R.drawable.ic_layers),
+                    contentDescription = stringResource(R.string.map_control_layers_unavailable),
+                    onClick = {},
+                    enabled = false,
+                )
+                MyLocationButton(
+                    control = myLocation,
+                    onClick = onMyLocationClick,
+                    stale = locationStale,
+                    approximate = locationApproximate,
+                )
+            }
+            if (!sosInSheet) {
+                SosControl(
+                    onClick = onEmergencyClick,
+                    modifier = Modifier.semantics {
+                        isTraversalGroup = true
+                        traversalIndex = HomeTraversal.Emergency
+                    },
+                )
+            }
         }
 
         SafeRouteBottomSheet(
@@ -463,28 +494,17 @@ fun HomeScreen(
                     actions = directionsActions,
                     // "Use my location" is the same button as on the map: one permission flow.
                     onUseMyLocation = onMyLocationClick,
+                    headerEnd = sheetSos,
                 )
                 selectedPlace != null -> PlaceCard(
                     place = selectedPlace,
                     onClose = onPlaceDismiss,
                     onDirections = directionsActions.onOpen,
+                    headerEnd = sheetSos,
                 )
-                else -> HomeSheetContent()
+                else -> HomeSheetContent(headerEnd = sheetSos)
             }
         }
-
-        EmergencyButton(
-            onClick = onEmergencyClick,
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .windowInsetsPadding(sideInsets)
-                .navigationBarsPadding()
-                .padding(start = spacing.md, end = spacing.md, bottom = abovePeek)
-                .semantics {
-                    isTraversalGroup = true
-                    traversalIndex = HomeTraversal.Emergency
-                },
-        )
     }
 
     if (showLocationDisclosure) {
@@ -512,9 +532,6 @@ fun HomeScreen(
     }
 }
 
-/** Room reserved for the emergency button below the map controls (its height plus a gap). */
-private val EmergencyRowHeight = 72.dp
-
 /**
  * How much of the bottom of the map the sheet covers, in pixels.
  *
@@ -537,7 +554,7 @@ internal fun mapBottomPaddingPx(
  * rows are not buttons; each says in words that it is not available yet.
  */
 @Composable
-private fun HomeSheetContent() {
+private fun HomeSheetContent(headerEnd: @Composable () -> Unit = {}) {
     val spacing = SafeRouteTheme.spacing
     Column(
         modifier = Modifier
@@ -545,11 +562,21 @@ private fun HomeSheetContent() {
             .padding(horizontal = spacing.md),
         verticalArrangement = Arrangement.spacedBy(spacing.md),
     ) {
-        Text(
-            text = stringResource(R.string.home_sheet_title),
-            modifier = Modifier.semantics { heading() },
-            style = MaterialTheme.typography.titleLarge,
-        )
+        // The header row: the title, and at its end whatever the screen puts there.
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(spacing.sm),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(R.string.home_sheet_title),
+                modifier = Modifier
+                    .weight(1f)
+                    .semantics { heading() },
+                style = MaterialTheme.typography.titleLarge,
+            )
+            headerEnd()
+        }
         PlaceholderRow(icon = Icons.Filled.Star, title = stringResource(R.string.home_saved_places))
         PlaceholderRow(icon = Icons.Filled.Place, title = stringResource(R.string.home_recent))
     }

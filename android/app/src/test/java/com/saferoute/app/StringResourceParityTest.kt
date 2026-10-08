@@ -80,7 +80,8 @@ class StringResourceParityTest {
     fun `the emergency number is written as 112 in both languages`() {
         // Latin digits on purpose: that is what people know and what the dialer shows.
         listOf(english, bengali).forEach { strings ->
-            assertTrue(strings.getValue("string:emergency_button_label").contains("112"))
+            assertTrue(strings.getValue("string:sos_control_description").contains("112"))
+            assertTrue(strings.getValue("string:emergency_dialog_call").contains("112"))
         }
     }
 
