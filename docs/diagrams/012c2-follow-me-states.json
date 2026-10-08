@@ -1,0 +1,148 @@
+{
+  "$schema": "../../tools/diagrams/diagram.schema.json",
+  "title": "Following a route: states",
+  "subtitle": "On screen only: no service, no background location. Positions and progress stay in memory; nothing is saved, logged or sent by itself (P012c2a, ADR 0022). Every state inside Following returns to On the route",
+  "direction": "TB",
+  "layout": {
+    "nodeWidth": 250
+  },
+  "groups": [
+    {
+      "id": "before",
+      "label": "Routes shown"
+    },
+    {
+      "id": "follow",
+      "label": "Following (screen kept on)"
+    },
+    {
+      "id": "after",
+      "label": "Not following (screen may switch off)"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "routes",
+      "label": "Routes in the sheet, one selected. Start",
+      "role": "app",
+      "group": "before",
+      "rank": 0
+    },
+    {
+      "id": "check",
+      "label": "Precise permission and a position from the last 10 s?",
+      "role": "security",
+      "group": "before",
+      "rank": 1
+    },
+    {
+      "id": "reason",
+      "label": "Says what is missing; offers the existing permission flows",
+      "role": "app",
+      "group": "before",
+      "rank": 2
+    },
+    {
+      "id": "onroute",
+      "label": "On the route: camera follows, distance and time left",
+      "role": "service",
+      "group": "follow",
+      "rank": 2
+    },
+    {
+      "id": "gps",
+      "label": "No position for 10 s: Searching for GPS, until a new position",
+      "role": "service",
+      "group": "follow",
+      "rank": 3
+    },
+    {
+      "id": "off",
+      "label": "Over max(50 m, 2 x accuracy) away for 10 s: off the route, until back near the line",
+      "role": "service",
+      "group": "follow",
+      "rank": 3
+    },
+    {
+      "id": "recalc",
+      "label": "Recalculate (tap only): one request, 20 s limit. New route: following goes on. Failed: says why",
+      "role": "external",
+      "group": "follow",
+      "rank": 4
+    },
+    {
+      "id": "paused",
+      "label": "App off screen: paused, no positions read. Returning continues, with a note once",
+      "role": "data",
+      "group": "follow",
+      "rank": 3
+    },
+    {
+      "id": "ask",
+      "label": "Back or End: End navigation? Cancel keeps following",
+      "role": "app",
+      "group": "follow",
+      "rank": 4
+    },
+    {
+      "id": "arrived",
+      "label": "Within max(30 m, accuracy) of the end: You've arrived, Done",
+      "role": "app",
+      "group": "after",
+      "rank": 5
+    },
+    {
+      "id": "ended",
+      "label": "Back to the routes (also when the permission or precise location is lost)",
+      "role": "app",
+      "group": "after",
+      "rank": 5
+    }
+  ],
+  "edges": [
+    {
+      "from": "routes",
+      "to": "check"
+    },
+    {
+      "from": "check",
+      "to": "reason",
+      "label": "no"
+    },
+    {
+      "from": "check",
+      "to": "onroute",
+      "label": "yes"
+    },
+    {
+      "from": "onroute",
+      "to": "gps"
+    },
+    {
+      "from": "onroute",
+      "to": "off"
+    },
+    {
+      "from": "onroute",
+      "to": "paused"
+    },
+    {
+      "from": "off",
+      "to": "recalc",
+      "label": "tap"
+    },
+    {
+      "from": "onroute",
+      "to": "ask"
+    },
+    {
+      "from": "ask",
+      "to": "ended",
+      "label": "End"
+    },
+    {
+      "from": "onroute",
+      "to": "arrived"
+    }
+  ]
+}
