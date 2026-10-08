@@ -27,6 +27,40 @@
 >   Quick Settings tile is a separate entry point and needs no place on this screen.
 > - This replaces "the emergency button always visible above the sheet" in the Decision below;
 >   the `sos` red is still used only by this control and the emergency dialog.
+>
+> **Note of 2026-10-08 (P012f1): emergency shortcuts outside the app, and their one
+> destination.**
+>
+> - **One destination.** Every shortcut outside the app opens `EmergencyActivity`, named in
+>   one place (`EmergencyShortcut`). Today it shows the same dialog as the in-app SOS control
+>   ("Call 112" through `ACTION_DIAL`, "SafeRoute is not an emergency service"). P014 changes
+>   what that destination does (the countdown); the shortcuts do not change.
+> - **A second activity, on purpose.** The app stays single-activity for everything a signed-in
+>   user sees. `EmergencyActivity` exists because it may be shown **over the lock screen**
+>   (`showWhenLocked`), which Android allows for a tile whose action is safe while locked. It
+>   shows fixed text and a button for the dialer: no account, no map, no position. It unlocks
+>   nothing, turns no screen on, is not exported, and needs no sign-in. `MainActivity` never
+>   shows over the lock screen; a test checks both.
+> - **The Quick Settings tile is the dependable shortcut** (addendum v7.1, B.1). It is a
+>   `TileService` in "active" mode: bound by the system for a tap, not a running service. It
+>   needs no permission from the user. On Android 14 and newer it starts the activity through
+>   an immutable `PendingIntent` (the `Intent` form throws there); before that through an
+>   `Intent`.
+> - **Adding the tile.** Settings has "Add the SOS tile". On Android 13 and newer it uses the
+>   system's own request (`StatusBarManager.requestAddTileService`), made only from that tap;
+>   on older versions, and when the request is refused or fails, it shows four steps for
+>   adding the tile by hand.
+> - **Honest limits, also said in the app.** A tile exists only if the user adds it, and some
+>   phones have no app tiles. What the dialer does on a locked phone is the phone's rule. The
+>   in-app SOS control always works.
+> - **The pinned notification is not built yet** (P012f2). Its limits are known from the
+>   documentation and recorded here so that nothing is promised: since Android 14 a user can
+>   swipe away an "ongoing" notification (except on the lock screen); the system or a phone
+>   maker's battery manager can remove it; it needs the notification permission on Android 13
+>   and newer; after a force-stop nothing of the app runs until the user opens it. It will be
+>   posted without a foreground service.
+> - **Colour.** A tile's icon is tinted by the system, so the tile is not red. The `sos` red
+>   is still used only by the SOS control and the emergency dialog.
 
 ## Context
 

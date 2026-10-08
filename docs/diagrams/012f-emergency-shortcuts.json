@@ -1,0 +1,139 @@
+{
+  "$schema": "../../tools/diagrams/diagram.schema.json",
+  "title": "Emergency entry points",
+  "subtitle": "Every entry opens the same options: a dialog that offers the dialer with 112. Nothing is dialled automatically. Grey: not built yet (P012f1, ADR 0008)",
+  "direction": "TB",
+  "layout": {
+    "nodeWidth": 230
+  },
+  "groups": [
+    {
+      "id": "inapp",
+      "label": "In the app"
+    },
+    {
+      "id": "outside",
+      "label": "Outside the app"
+    },
+    {
+      "id": "dest",
+      "label": "The same emergency options"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "control",
+      "label": "SOS control on Home and Search (48 dp, P012e2)",
+      "role": "security",
+      "group": "inapp",
+      "rank": 3
+    },
+    {
+      "id": "tile",
+      "label": "Quick Settings tile \"SafeRoute SOS\": the dependable shortcut",
+      "role": "security",
+      "group": "outside",
+      "rank": 0
+    },
+    {
+      "id": "notification",
+      "label": "Pinned notification, opt-in (P012f2, not built)",
+      "role": "external",
+      "group": "outside",
+      "rank": 0
+    },
+    {
+      "id": "addtile",
+      "label": "Settings: Add the SOS tile. Android 13+: system request; otherwise four steps by hand",
+      "role": "app",
+      "group": "inapp",
+      "rank": 0
+    },
+    {
+      "id": "lock",
+      "label": "Phone locked: Android shows the emergency screen over the lock screen; nothing is unlocked",
+      "role": "service",
+      "group": "outside",
+      "rank": 1
+    },
+    {
+      "id": "shortcut",
+      "label": "EmergencyShortcut: the one place that names the destination",
+      "role": "service",
+      "group": "dest",
+      "rank": 2
+    },
+    {
+      "id": "activity",
+      "label": "EmergencyActivity: fixed text only, no sign-in, no account, no location",
+      "role": "app",
+      "group": "dest",
+      "rank": 3
+    },
+    {
+      "id": "dialog",
+      "label": "Emergency dialog: \"SafeRoute is not an emergency service\", Call 112, Cancel",
+      "role": "security",
+      "group": "dest",
+      "rank": 4
+    },
+    {
+      "id": "dialer",
+      "label": "Phone dialer with 112 entered (ACTION_DIAL). The user starts the call",
+      "role": "app",
+      "group": "dest",
+      "rank": 5
+    },
+    {
+      "id": "countdown",
+      "label": "P014 (not built): the destination becomes the 5-second SOS countdown",
+      "role": "external",
+      "group": "dest",
+      "rank": 5
+    }
+  ],
+  "edges": [
+    {
+      "from": "control",
+      "to": "dialog",
+      "label": "tap"
+    },
+    {
+      "from": "tile",
+      "to": "lock"
+    },
+    {
+      "from": "lock",
+      "to": "shortcut",
+      "label": "tap"
+    },
+    {
+      "from": "notification",
+      "to": "shortcut",
+      "label": "later"
+    },
+    {
+      "from": "addtile",
+      "to": "tile",
+      "label": "adds"
+    },
+    {
+      "from": "shortcut",
+      "to": "activity"
+    },
+    {
+      "from": "activity",
+      "to": "dialog"
+    },
+    {
+      "from": "dialog",
+      "to": "dialer",
+      "label": "Call 112"
+    },
+    {
+      "from": "dialog",
+      "to": "countdown",
+      "label": "replaced in P014"
+    }
+  ]
+}
