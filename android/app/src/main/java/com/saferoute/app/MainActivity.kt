@@ -7,7 +7,9 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.saferoute.app.core.designsystem.theme.SafeRouteTheme
+import com.saferoute.app.feature.emergency.EmergencyNotificationController
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 /**
  * The single activity of the app. It owns the window; everything visible is Compose.
@@ -17,6 +19,17 @@ import dagger.hilt.android.AndroidEntryPoint
  */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject lateinit var emergencyNotification: EmergencyNotificationController
+
+    /**
+     * The app came to the front. If the user's notification shortcut is on and it was swiped
+     * away or removed in the meantime, it is put back here. Nothing is requested.
+     */
+    override fun onStart() {
+        super.onStart()
+        emergencyNotification.syncInBackground()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // Both calls must come before super.onCreate(): the first swaps the starting (splash)

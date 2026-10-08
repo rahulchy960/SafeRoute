@@ -86,6 +86,8 @@ import com.saferoute.app.feature.directions.DirectionsSheet
 import com.saferoute.app.feature.directions.DirectionsUiState
 import com.saferoute.app.feature.directions.DirectionsViewModel
 import com.saferoute.app.feature.directions.RouteIntroDialog
+import com.saferoute.app.feature.emergency.ShortcutOfferDialog
+import com.saferoute.app.feature.emergency.ShortcutOfferViewModel
 import kotlin.math.roundToInt
 
 /**
@@ -119,7 +121,9 @@ fun HomeRoute(
     viewModel: HomeViewModel = hiltViewModel(),
     permissionViewModel: LocationPermissionViewModel = hiltViewModel(),
     directionsViewModel: DirectionsViewModel = hiltViewModel(),
+    offerViewModel: ShortcutOfferViewModel = hiltViewModel(),
 ) {
+    val shortcutOffer by offerViewModel.offer.collectAsStateWithLifecycle()
     val directions by directionsViewModel.state.collectAsStateWithLifecycle()
     val emergencyDialog by viewModel.emergencyDialog.collectAsStateWithLifecycle()
     val mapState by viewModel.map.loadState.collectAsStateWithLifecycle()
@@ -238,13 +242,29 @@ fun HomeRoute(
         onCallEmergency = {
             if (openEmergencyDialer(context)) {
                 viewModel.onDialerOpened()
+                offerViewModel.onSosDialogClosed()
             } else {
                 viewModel.onDialerUnavailable()
             }
         },
-        onDismissEmergencyDialog = viewModel::onEmergencyDialogDismiss,
+        onDismissEmergencyDialog = {
+            viewModel.onEmergencyDialogDismiss()
+            offerViewModel.onSosDialogClosed()
+        },
         modifier = modifier,
     )
+
+    // Once, after the first use of the SOS control: the shortcuts outside the app exist. It
+    // leads to Settings and requests nothing itself.
+    if (shortcutOffer) {
+        ShortcutOfferDialog(
+            onSetUp = {
+                offerViewModel.onOfferDismiss()
+                onOpenSettings()
+            },
+            onNotNow = offerViewModel::onOfferDismiss,
+        )
+    }
 }
 
 /** The app's own page in system Settings, where a permission denied for good can be allowed. */

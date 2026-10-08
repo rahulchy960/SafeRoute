@@ -88,6 +88,12 @@ class MainActivityTest {
                 "com.google.android.providers.gsf.permission.READ_GSERVICES",
                 Manifest.permission.ACCESS_FINE_LOCATION,
                 Manifest.permission.ACCESS_COARSE_LOCATION,
+                // The pinned emergency notification (P012f2, ADR 0008), an optional shortcut.
+                // POST_NOTIFICATIONS is asked at runtime (Android 13+), only after the user
+                // switched the shortcut on. RECEIVE_BOOT_COMPLETED is granted at install: it
+                // lets the notification be put back after a restart, if the switch is on.
+                Manifest.permission.POST_NOTIFICATIONS,
+                Manifest.permission.RECEIVE_BOOT_COMPLETED,
             ),
             requested.toSet(),
         )

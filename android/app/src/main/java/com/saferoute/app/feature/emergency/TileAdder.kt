@@ -92,4 +92,13 @@ interface EmergencyShortcutsModule {
 
     @Binds
     fun bindTileAdder(adder: AndroidTileAdder): TileAdder
+
+    @Binds
+    fun bindPreferences(preferences: DataStoreEmergencyShortcutPreferences): EmergencyShortcutPreferences
+
+    @Binds
+    fun bindNotificationGate(gate: AndroidNotificationGate): NotificationGate
+
+    @Binds
+    fun bindNotifier(notifier: AndroidEmergencyNotifier): EmergencyNotifier
 }

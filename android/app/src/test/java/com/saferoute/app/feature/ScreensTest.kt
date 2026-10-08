@@ -104,12 +104,14 @@ class ScreensTest {
         compose.setContent { Settings() }
 
         compose.onNodeWithText(string(R.string.settings_title)).assertIsDisplayed()
+        // The list is longer than the screen since the emergency shortcuts were added.
         compose.onNodeWithText(context.getString(R.string.settings_version, "9.8.7", 42))
+            .performScrollTo()
             .assertIsDisplayed()
-        compose.onNodeWithText(string(R.string.settings_licence)).assertIsDisplayed()
-        compose.onNodeWithText(string(R.string.settings_source_code)).assertIsDisplayed()
-        compose.onNodeWithText(string(R.string.not_emergency_service)).assertIsDisplayed()
-        compose.onNodeWithText(string(R.string.settings_safety_notice_body)).assertIsDisplayed()
+        compose.onNodeWithText(string(R.string.settings_licence)).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(string(R.string.settings_source_code)).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(string(R.string.not_emergency_service)).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(string(R.string.settings_safety_notice_body)).performScrollTo().assertIsDisplayed()
 
         backButton().performClick()
         assertEquals(1, backPresses)
