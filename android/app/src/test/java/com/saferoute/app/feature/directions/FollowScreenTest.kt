@@ -68,7 +68,7 @@ class FollowScreenTest {
     private var view: View? = null
 
     private fun following(follow: FollowState?, problem: StartProblem? = null) =
-        DirectionsUiState.Open(place, TravelMode.Walking, results, follow, problem)
+        DirectionsUiState.Open(place, TravelMode.Walking, results, follow = follow, startProblem = problem)
 
     private fun show(state: DirectionsUiState, detent: SheetDetent = SheetDetent.Peek) {
         directions = state
@@ -97,6 +97,9 @@ class FollowScreenTest {
                             onEndConfirm = { events += "end-confirm" },
                             onRecalculate = { events += "recalculate" },
                             onPausedNoteDismiss = { events += "note-ok" },
+                            onChangeStart = { events += "change-start" },
+                            onUseMyLocationAsStart = { events += "from-my-location" },
+                            onPreview = { events += "preview" },
                         ),
                         recentreOffered = recentre,
                         onRecentre = { events += "recentre" },
@@ -236,6 +239,28 @@ class FollowScreenTest {
         set(following(null, StartProblem.NoRecentFix))
         compose.onNodeWithText(string(R.string.route_start_no_fix)).assertIsDisplayed()
         assertEquals(listOf("start", "precise", "my-location"), events)
+    }
+
+    @Test
+    fun `with a chosen start the sheet names it and offers Preview, the reason and the way back`() {
+        val market = SelectedPlace("Station Market", "Example Town", LatLng(10.25, 20.75))
+        show(DirectionsUiState.Open(place, TravelMode.Walking, results, origin = market), detent = SheetDetent.Full)
+        compose.onNodeWithText(string(R.string.route_from_place, "Station Market"), substring = true).assertIsDisplayed()
+        compose.onAllNodesWithText(string(R.string.route_start)).assertCountEquals(0)
+        compose.onNodeWithText(string(R.string.route_preview_note)).assertIsDisplayed()
+        compose.onNodeWithText(string(R.string.route_preview)).assertMinTouchTarget().performClick()
+        compose.onNodeWithText(string(R.string.route_start_from_my_location)).assertMinTouchTarget().performClick()
+        compose.onNodeWithText(string(R.string.route_change_start), substring = true).assertMinTouchTarget().performClick()
+        assertEquals(listOf("preview", "from-my-location", "change-start"), events)
+
+        // From the user's own location: Start, and no way "back" to offer.
+        set(following(null))
+        compose.onNodeWithText(string(R.string.route_from_my_location), substring = true).assertIsDisplayed()
+        compose.onAllNodesWithText(string(R.string.route_preview)).assertCountEquals(0)
+        compose.onAllNodesWithText(string(R.string.route_start_from_my_location)).assertCountEquals(0)
+        // While a route is followed its start cannot be changed.
+        set(following(onTheWay))
+        compose.onAllNodesWithText(string(R.string.route_change_start), substring = true).assertCountEquals(0)
     }
 
     @Test

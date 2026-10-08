@@ -86,6 +86,9 @@ class SearchViewModel @Inject constructor(
     private val _state = MutableStateFlow<SearchUiState>(SearchUiState.Idle)
     val state: StateFlow<SearchUiState> = _state.asStateFlow()
 
+    /** Opened from directions' "Change": the place chosen becomes the start of the route. */
+    val choosingStart: Boolean = selection.choosingStart
+
     /** The query the current [state] answers; a repeated "search now" for it does nothing. */
     private var answered: String? = null
 
@@ -145,8 +148,16 @@ class SearchViewModel @Inject constructor(
         requests.value = current.copy(submitted = current.submitted + 1)
     }
 
-    /** A result was tapped: hand it to the map. The caller then goes back to Home. */
+    /**
+     * A result was tapped: hand it to the map, as the place to show or as the start of the
+     * route. The caller then goes back to Home.
+     */
     fun onPlaceChosen(place: FoundPlace) {
-        selection.select(SelectedPlace(name = place.name, label = place.label, position = place.position))
+        selection.choose(SelectedPlace(name = place.name, label = place.label, position = place.position))
+    }
+
+    /** Search was left without a choice: the next search is an ordinary one again. */
+    override fun onCleared() {
+        selection.choosingStart = false
     }
 }

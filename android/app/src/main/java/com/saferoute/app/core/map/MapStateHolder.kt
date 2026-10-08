@@ -4,8 +4,11 @@ package com.saferoute.app.core.map
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
@@ -71,6 +74,10 @@ internal class MapStateHolder(
     private val _userGestures = MutableStateFlow(0)
     override val userGestures: StateFlow<Int> = _userGestures.asStateFlow()
 
+    // Room for one tap: reporting never waits, and a tap nobody listens for is dropped.
+    private val _routeTaps = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    override val routeTaps: SharedFlow<String> = _routeTaps.asSharedFlow()
+
     private var renderer: MapRenderer? = null
     private var variant = MapStyleVariant.Light
     private var padding = MapPadding()
@@ -134,6 +141,11 @@ internal class MapStateHolder(
     /** The user began to pan, zoom or rotate the map with their fingers. */
     fun onUserGesture() {
         _userGestures.value += 1
+    }
+
+    /** The user tapped the line of the route overlay with this id. */
+    fun onRouteTap(overlayId: String) {
+        _routeTaps.tryEmit(overlayId)
     }
 
     /** The map stopped moving. */

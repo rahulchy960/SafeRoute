@@ -17,6 +17,7 @@ import com.saferoute.app.core.map.MarkerStyle
 import com.saferoute.app.core.map.RouteDisplay
 import com.saferoute.app.core.map.SelectedPlace
 import com.saferoute.app.core.map.boundsOf
+import com.saferoute.app.core.map.routeIdOf
 import com.saferoute.app.core.map.routeOverlays
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -176,6 +177,13 @@ class HomeViewModel @Inject constructor(
             }
         }
         viewModelScope.launch { routes.following.collect(::onFollowView) }
+        // A tap on a route's line selects it, as a tap on its card does. Not while a route is
+        // followed: then there is only the one.
+        viewModelScope.launch {
+            map.routeTaps.collect { overlayId ->
+                if (routes.following.value == null) routeIdOf(overlayId)?.let(routes::select)
+            }
+        }
         viewModelScope.launch {
             var fitted: Int? = null
             routes.routes.collect { shown ->

@@ -71,6 +71,12 @@ class RouteDisplay @Inject constructor() {
         _routes.value = ShownRoutes(lines, selectedId, start, fitToken = ++fits)
     }
 
+    /** Show the selected route whole again, as when it arrived ("Preview"). */
+    fun refit() {
+        val current = _routes.value ?: return
+        _routes.value = current.copy(fitToken = ++fits)
+    }
+
     /** Another of the routes already shown was chosen. */
     fun select(routeId: String) {
         val current = _routes.value ?: return
@@ -82,6 +88,12 @@ class RouteDisplay @Inject constructor() {
         _routes.value = null
     }
 }
+
+private const val ROUTE_OVERLAY_PREFIX = "route-"
+
+/** The route a route overlay's id stands for, or null for any other overlay. */
+fun routeIdOf(overlayId: String): String? =
+    overlayId.takeIf { it.startsWith(ROUTE_OVERLAY_PREFIX) }?.removePrefix(ROUTE_OVERLAY_PREFIX)
 
 /** The box around a line, or null for an empty one. */
 fun boundsOf(points: List<LatLng>): LatLngBounds? {

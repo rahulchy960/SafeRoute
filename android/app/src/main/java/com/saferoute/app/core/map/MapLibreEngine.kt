@@ -202,8 +202,29 @@ private class MapLibreRenderer(
                     holder.onUserGesture()
                 }
             }
+            ready.addOnMapClickListener { point -> onTap(ready, point) }
             holder.attach(this)
         }
+    }
+
+    /**
+     * A tap on the map: if it landed on or near a route's line, report which. The routes'
+     * points are turned into screen pixels as the map shows them now, and [nearestLine] does
+     * the rest. Returns true when the tap was used.
+     */
+    private fun onTap(map: MapLibreMap, point: org.maplibre.android.geometry.LatLng): Boolean {
+        val routes = overlays.filterIsInstance<MapOverlay.Route>().filterNot { it.travelled }
+        if (routes.isEmpty()) return false
+        fun onScreen(latitude: Double, longitude: Double): ScreenPoint =
+            map.projection.toScreenLocation(org.maplibre.android.geometry.LatLng(latitude, longitude))
+                .let { ScreenPoint(it.x, it.y) }
+        val tapped = nearestLine(
+            tap = onScreen(point.latitude, point.longitude),
+            lines = routes.map { route -> ScreenLine(route.id, route.points.map { onScreen(it.latitude, it.longitude) }) },
+            tolerancePx = ROUTE_TAP_TOLERANCE_DP * mapView.resources.displayMetrics.density,
+        ) ?: return false
+        holder.onRouteTap(tapped)
+        return true
     }
 
     fun stop() {
