@@ -23,3 +23,22 @@ data object SearchDestination
 /** Settings and the About section. */
 @Serializable
 data object SettingsDestination
+
+/** The list of emergency contacts. */
+@Serializable
+data object ContactsDestination
+
+/** Add one contact (with the consent notice before the first one). */
+@Serializable
+data object AddContactDestination
+
+/**
+ * One contact. [contactId] is the server's id of the contact, an opaque UUID: never a name or
+ * a phone number, because a destination is saved with the screen's state.
+ */
+@Serializable
+data class ContactDetailDestination(val contactId: String)
+
+/** The invite step for one contact. */
+@Serializable
+data class InviteDestination(val contactId: String)

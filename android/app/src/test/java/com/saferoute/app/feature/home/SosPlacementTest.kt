@@ -39,6 +39,7 @@ import com.saferoute.app.core.designsystem.theme.SafeRouteTheme
 import com.saferoute.app.core.map.LatLng
 import com.saferoute.app.core.map.MapLoadState
 import com.saferoute.app.core.map.SelectedPlace
+import com.saferoute.app.feature.contacts.ContactsCard
 import com.saferoute.app.feature.directions.DirectionsStatus
 import com.saferoute.app.feature.directions.DirectionsUiState
 import com.saferoute.app.feature.directions.FAKE_ROUTE_CREDIT
@@ -87,7 +88,7 @@ class SosPlacementTest {
     )
 
     /** What the sheet holds. */
-    private enum class Content { HomeList, PlaceCard, RouteCards, RouteMessage }
+    private enum class Content { HomeList, ContactsCard, PlaceCard, RouteCards, RouteMessage }
 
     private val events = mutableListOf<String>()
     private var mapState: MapLoadState by mutableStateOf(MapLoadState.Ready)
@@ -106,7 +107,9 @@ class SosPlacementTest {
                     onDismissEmergencyDialog = {},
                     mapState = mapState,
                     sheetState = rememberSafeRouteSheetState(detent),
-                    selectedPlace = place.takeIf { content != Content.HomeList },
+                    selectedPlace = place.takeIf { content != Content.HomeList && content != Content.ContactsCard },
+                    // The "Add emergency contacts" card in the sheet (P013b2).
+                    sheetCard = { if (content == Content.ContactsCard) ContactsCard(onAdd = {}, onNotNow = {}) },
                     directions = when (content) {
                         Content.RouteCards -> DirectionsUiState.Open(place, TravelMode.Walking, routes)
                         Content.RouteMessage -> DirectionsUiState.Open(

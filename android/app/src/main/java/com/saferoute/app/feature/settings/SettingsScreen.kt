@@ -72,6 +72,7 @@ fun SettingsRoute(
     versionCode: Int,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenContacts: () -> Unit = {},
     developerEntry: @Composable () -> Unit = {},
     viewModel: AccountViewModel = hiltViewModel(),
     shortcutsViewModel: EmergencyShortcutsViewModel = hiltViewModel(),
@@ -111,6 +112,7 @@ fun SettingsRoute(
         versionCode = versionCode,
         onBack = onBack,
         modifier = modifier,
+        onOpenContacts = onOpenContacts,
         developerEntry = developerEntry,
         account = account,
         onRetryAccount = viewModel::load,
@@ -156,6 +158,7 @@ data class NotificationShortcutActions(
  * @param versionName The app's version as shown to people, from `BuildConfig.VERSION_NAME`.
  * @param versionCode The internal build number, from `BuildConfig.VERSION_CODE`.
  * @param onBack Called by the back arrow.
+ * @param onOpenContacts The "Emergency contacts" row was tapped.
  * @param developerEntry A slot under the language row. Debug builds put the "Developer" row
  * here; release builds leave it empty (see navigation/DeveloperNavigation.kt).
  * @param account What the Account and Privacy sections show; null leaves both out.
@@ -171,6 +174,7 @@ fun SettingsScreen(
     versionCode: Int,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenContacts: () -> Unit = {},
     developerEntry: @Composable () -> Unit = {},
     account: AccountUiState? = null,
     onRetryAccount: () -> Unit = {},
@@ -242,6 +246,14 @@ fun SettingsScreen(
             )
             HorizontalDivider()
             developerEntry()
+
+            // Opens the list of emergency contacts, where they are added, invited and removed.
+            ListItem(
+                headlineContent = { Text(text = stringResource(R.string.settings_contacts_title)) },
+                modifier = Modifier.clickable(role = Role.Button, onClick = onOpenContacts),
+                supportingContent = { Text(text = stringResource(R.string.settings_contacts_supporting)) },
+            )
+            HorizontalDivider()
 
             EmergencyShortcutsSection(
                 onAddTile = onAddTile,

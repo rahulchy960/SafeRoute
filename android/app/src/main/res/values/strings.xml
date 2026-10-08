@@ -393,4 +393,92 @@
     <string name="route_start_search_hint">Search for a start point</string>
     <string name="route_preview">Preview</string>
     <string name="route_preview_note">A route can be followed only from where you are. To follow this one, choose “Start from my location”.</string>
+
+    <!-- Emergency contacts (P013b2, ADR 0024). Nothing here may say that SafeRoute sends a message or calls for help. -->
+    <string name="settings_contacts_title">Emergency contacts</string>
+    <string name="settings_contacts_supporting">Add, invite or remove the people an emergency alert can reach</string>
+    <string name="contacts_title">Emergency contacts</string>
+    <string name="contacts_intro">Up to %1$d people your phone will be able to text when emergency alerts arrive in a later version. Today nothing is sent to them: you invite each one yourself, from your own phone.</string>
+    <string name="contacts_empty_title">No emergency contacts yet</string>
+    <string name="contacts_empty_body">Add someone you trust and who knows you.</string>
+    <string name="contacts_add">Add contact</string>
+    <string name="contacts_limit_reason">You have %1$d contacts, the most allowed. Remove one to add another.</string>
+    <string name="contacts_status_not_invited">Invite not sent</string>
+    <string name="contacts_status_invited">Invited</string>
+    <string name="contacts_status_opted_out">Opted out — won\'t be alerted</string>
+    <string name="contacts_offline">No connection. You can read the list; changes need the internet.</string>
+    <string name="contacts_refresh">Refresh the list</string>
+    <string name="contacts_refresh_failed">Couldn\'t update the list. Showing the copy on this phone.</string>
+    <string name="contacts_stop_button">Stop SOS alerts and remove all contacts</string>
+    <string name="contacts_stop_dialog_title">Remove all contacts?</string>
+    <string name="contacts_stop_dialog_body">This withdraws your agreement to SOS alerts and deletes every emergency contact, on this phone and on the server. It can\'t be undone. Calling 112 keeps working.</string>
+    <string name="contacts_stop_confirm">Remove all</string>
+    <string name="contacts_stop_done">All contacts were removed.</string>
+    <string name="contacts_cancel">Cancel</string>
+    <string name="contacts_try_again">Try again</string>
+    <string name="contacts_done">Done</string>
+    <string name="contacts_checking">Checking…</string>
+    <string name="contacts_error_offline">No connection. Try again when you are online.</string>
+    <string name="contacts_error_unavailable">SafeRoute can\'t be reached right now. Try again in a little while.</string>
+    <string name="contacts_error_rate_limited">Too many tries. Wait a little and try again.</string>
+    <string name="contacts_error_links_used">This contact already has the most invite links allowed.</string>
+    <string name="contacts_error_unexpected">Something went wrong. Try again.</string>
+    <string name="contacts_error_exists">This number is already one of your contacts.</string>
+    <string name="contacts_error_opted_out">This person has opted out, so they can\'t be added or invited.</string>
+    <string name="contacts_error_own_number">That is your own number. Add someone else.</string>
+    <string name="contacts_error_invalid">Check the name and the number.</string>
+    <string name="contacts_error_not_found">This contact no longer exists.</string>
+
+    <!-- The sos_alerts notice. Mirrored in docs/legal/sos-alerts-notice-v1.md (ContactsNoticeDocumentTest). Changing it means changing SOS_ALERTS_NOTICE_VERSION. DRAFT until a lawyer has reviewed it. -->
+    <string name="contacts_notice_title">Before you add a contact</string>
+    <string name="contacts_notice_p1">You are about to save other people\'s phone numbers in SafeRoute.</string>
+    <string name="contacts_notice_p2">Add only people you have a good reason to add and who know you.</string>
+    <string name="contacts_notice_p3">The app does not message them by itself. You send each one an invite from your own phone.</string>
+    <string name="contacts_notice_p4">Each invite has a link with which they can opt out. Someone who opted out is never alerted.</string>
+    <string name="contacts_notice_p5">In an emergency, in a later version of the app, your phone can text them your location.</string>
+    <string name="contacts_notice_p6">SafeRoute is not an emergency service. In an emergency, call 112.</string>
+    <string name="contacts_notice_p7">You can stop at any time: open Emergency contacts and choose \"Stop SOS alerts and remove all contacts\". That deletes them all.</string>
+    <string name="contacts_notice_agree">I agree</string>
+    <string name="contacts_notice_not_now">Not now</string>
+
+    <string name="contacts_add_title">Add a contact</string>
+    <string name="contacts_add_from_phone">From your contacts</string>
+    <string name="contacts_add_from_phone_help">Opens your phone\'s contact list. SafeRoute sees only the one number you pick.</string>
+    <string name="contacts_add_type_heading">Or type a number</string>
+    <string name="contacts_add_name_label">Name</string>
+    <string name="contacts_add_phone_label">Mobile number</string>
+    <string name="contacts_add_phone_help">Indian numbers: 10 digits. Other countries: start with + and the country code.</string>
+    <string name="contacts_add_name_error">Enter a name, up to 80 characters.</string>
+    <string name="contacts_add_phone_error">Enter a mobile number: 10 digits, or + and the country code.</string>
+    <string name="contacts_add_save">Save contact</string>
+    <string name="contacts_add_saving">Saving…</string>
+    <string name="contacts_pick_failed">Couldn\'t read that contact. Type the number instead.</string>
+    <string name="contacts_pick_unavailable">No contacts app was found. Type the number instead.</string>
+
+    <string name="contacts_invite_title">Send an invite</string>
+    <string name="contacts_invite_body">Tell %1$s that you added them. This opens your SMS app with a message ready. You send it; SafeRoute sends nothing.</string>
+    <string name="contacts_invite_open">Write the invite SMS</string>
+    <string name="contacts_invite_later">Later</string>
+    <string name="contacts_invite_preparing">Preparing the link…</string>
+    <string name="contacts_invite_message">Hi, I\'ve added you as an emergency contact in SafeRoute, a personal-safety app. If I ever trigger an emergency alert, my phone may text you my location. No problem if you\'d rather not: opt out here: %1$s</string>
+    <string name="contacts_invite_sent_question">Did you send the invite?</string>
+    <string name="contacts_invite_sent_yes">Yes, I sent it</string>
+    <string name="contacts_invite_no_sms_app">No SMS app was found on this phone. Tell them yourself that you added them.</string>
+
+    <string name="contacts_detail_title">Contact</string>
+    <string name="contacts_detail_rename">Rename</string>
+    <string name="contacts_detail_invite">Send invite</string>
+    <string name="contacts_detail_invite_again">Send invite again</string>
+    <string name="contacts_detail_remove">Remove contact</string>
+    <string name="contacts_detail_opted_out">This person opted out through the link in your invite. They won\'t be alerted and can\'t be invited again.</string>
+    <string name="contacts_remove_dialog_title">Remove this contact?</string>
+    <string name="contacts_remove_dialog_body">They will no longer be one of your emergency contacts.</string>
+    <string name="contacts_remove_confirm">Remove</string>
+    <string name="contacts_rename_title">Rename contact</string>
+    <string name="contacts_rename_save">Save</string>
+
+    <string name="contacts_card_title">Add emergency contacts</string>
+    <string name="contacts_card_body">People your phone will be able to text in an emergency, in a later version. It takes a minute.</string>
+    <string name="contacts_card_action">Add contacts</string>
+    <string name="contacts_card_not_now">Not now</string>
 </resources>

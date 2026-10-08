@@ -44,6 +44,19 @@
         tools:node="remove" />
 
     <!--
+        Package visibility (P013b2). Since Android 11 an app must say which other apps it
+        wants to be able to find. This entry lets the app hand an invite to the phone's SMS
+        app (ACTION_SENDTO, smsto:), where the user reads it and sends it. It is NOT a
+        permission: the app cannot send an SMS (no SEND_SMS) and cannot read any.
+    -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.SENDTO" />
+            <data android:scheme="smsto" />
+        </intent>
+    </queries>
+
+    <!--
         allowBackup=false + data_extraction_rules: nothing the app stores is copied to a cloud
         backup or to a new phone (ADR 0008). Restoring an old SOS record or session blindly
         would be worse than starting clean.

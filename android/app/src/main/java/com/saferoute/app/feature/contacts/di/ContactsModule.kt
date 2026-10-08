@@ -2,7 +2,9 @@
 package com.saferoute.app.feature.contacts.di
 
 import com.saferoute.app.feature.contacts.ApiContactsRepository
+import com.saferoute.app.feature.contacts.ContactsPreferences
 import com.saferoute.app.feature.contacts.ContactsRepository
+import com.saferoute.app.feature.contacts.DataStoreContactsPreferences
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -17,4 +19,7 @@ import dagger.hilt.components.SingletonComponent
 interface ContactsModule {
     @Binds
     fun bindContactsRepository(repository: ApiContactsRepository): ContactsRepository
+
+    @Binds
+    fun bindContactsPreferences(preferences: DataStoreContactsPreferences): ContactsPreferences
 }
