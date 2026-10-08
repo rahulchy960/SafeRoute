@@ -88,6 +88,13 @@
 >   - **Not verified on a device:** what phone makers' battery managers do to it, whether the
 >     dialer opens from the lock screen without the unlock, and that the two broadcasts arrive
 >     on every phone.
+>   - **Checked on one phone on 2026-10-08 (Samsung, Android 17), reported by Rahul:** the tile
+>     was added and opens the emergency dialog with the screen on and from the lock screen; the
+>     notification's switch and permission flow work; "Call 112" opens the dialer showing 112;
+>     a swiped-away notification is back when the app is reopened; it is back after a reboot;
+>     after a force-stop it is gone until the app is started. Still not recorded: battery
+>     managers over time, the dialer's behaviour from the lock screen, an app update, other
+>     phone makers and Android versions (the revisions of the two P012f prompt logs list them).
 > - **Colour.** A tile's icon is tinted by the system, so the tile is not red. The `sos` red
 >   is still used only by the SOS control and the emergency dialog.
 
