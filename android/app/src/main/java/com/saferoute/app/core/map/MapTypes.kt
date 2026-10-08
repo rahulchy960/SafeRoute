@@ -97,11 +97,15 @@ sealed interface MapOverlay {
      * One route. The [selected] one is drawn strong; the others are muted, so that the choice
      * shows in width and colour, not in colour alone. Every route has a light edge ("casing")
      * that keeps it readable on any map. List the selected route last: it is drawn on top.
+     *
+     * @property travelled the part of a followed route that lies behind the person: as wide as
+     * the selected route it is drawn on, in the muted colour.
      */
     data class Route(
         override val id: String,
         val points: List<LatLng>,
         val selected: Boolean,
+        val travelled: Boolean = false,
     ) : MapOverlay {
         override fun toString(): String = "Route(hidden)"
     }

@@ -337,4 +337,26 @@
     <string name="route_intro_estimate">সময় ও দূরত্ব আনুমানিক।</string>
     <string name="route_intro_continue">এগিয়ে যান</string>
     <string name="route_intro_not_now">এখন নয়</string>
+
+    <!-- পথ অনুসরণ (P012c2a)। খসড়া অনুবাদ: প্রকাশের আগে একজন মানুষের পর্যালোচনা দরকার। -->
+    <string name="route_start">শুরু করুন</string>
+    <string name="route_start_no_permission">পথ অনুসরণ করতে SafeRoute-এর আপনার অবস্থান দরকার।</string>
+    <string name="route_start_needs_precise">পথ অনুসরণ করতে আপনার সুনির্দিষ্ট অবস্থান দরকার। আনুমানিক অবস্থান এর জন্য যথেষ্ট নয়।</string>
+    <string name="route_start_use_precise">সুনির্দিষ্ট অবস্থান ব্যবহার করুন</string>
+    <string name="route_start_no_fix">আপনার বর্তমান অবস্থানের অপেক্ষায়। একটু পরে আবার চেষ্টা করুন।</string>
+    <string name="route_follow_remaining">%1$s · %2$s</string>
+    <string name="route_follow_arrival">আনুমানিক পৌঁছানো: %1$s</string>
+    <string name="route_follow_end">শেষ করুন</string>
+    <string name="route_follow_gps">GPS খোঁজা হচ্ছে…</string>
+    <string name="route_follow_off_route">মনে হচ্ছে আপনি পথের বাইরে আছেন</string>
+    <string name="route_follow_recalculate">নতুন করে পথ খুঁজুন</string>
+    <string name="route_follow_recalculating">নতুন পথ খোঁজা হচ্ছে…</string>
+    <string name="route_follow_arrived">আপনি পৌঁছে গেছেন</string>
+    <string name="route_follow_done">ঠিক আছে</string>
+    <string name="route_follow_recentre">মাঝখানে আনুন</string>
+    <string name="route_follow_paused">SafeRoute পর্দায় না থাকার সময় পথ অনুসরণ থেমে ছিল। এখন আবার চলছে।</string>
+    <string name="route_follow_paused_ok">ঠিক আছে</string>
+    <string name="route_follow_end_title">পথ অনুসরণ শেষ করবেন?</string>
+    <string name="route_follow_end_text">পথগুলি মানচিত্রে থাকবে। আপনি আবার শুরু করতে পারবেন।</string>
+    <string name="route_follow_end_cancel">বাতিল</string>
 </resources>
