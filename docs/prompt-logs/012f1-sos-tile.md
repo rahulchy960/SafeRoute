@@ -15,6 +15,9 @@
 > (requirement 2), its permission flow, its receivers and the two manifest permissions are
 > P012f2. **This part adds no permission.**
 >
+> **Since checked on a phone:** see the
+> [Revision](#revision-2026-10-08-phone-checks-reported-by-rahul) at the end.
+>
 > **Nothing ran on a phone.** A tile, the lock screen and Android's add-tile dialog cannot be
 > exercised in JVM tests. What is tested: where a tap leads, what the destination does, and
 > what the manifest declares. The manual checks in section 11 are for Rahul's phone.
@@ -286,3 +289,34 @@ P012c2. None is started.
   by the system, so only the system can talk to the tile service.
 - **Why a seam for the tile's launch.** The system part of a tap cannot run in a JVM test, so
   the decision ("which kind of launch, to where") lives in a plain function that can.
+
+## Revision 2026-10-08: phone checks reported by Rahul
+
+Recorded in the docs-only pull request `docs/012f-results`. One phone: **Samsung, Android 17**.
+These are Rahul's results as he reported them; Claude Code saw none of it.
+
+| Check (section 11) | Result |
+| --- | --- |
+| Tile added | Yes |
+| Tile tapped with the screen on | Good: the emergency dialog opened |
+| Tile tapped from the lock screen | Good: the emergency dialog opened |
+
+**What this settles** (sections 7 and 9 called these "not certain" or "not seen"):
+
+- On this phone the tile can be added and works with the screen on and from the lock screen.
+  This is the first time the Android 14+ path (the `PendingIntent` form of the tile's launch)
+  ran at all: no JVM test could follow it.
+
+**Not recorded** (not part of what was reported; each stays open):
+
+- Whether the tile was added through Android's own dialog or by hand.
+- Whether, from the lock screen, the dialer opened at once or the phone asked for the unlock
+  first.
+- "Add the SOS tile" a second time ("already there"); removing and re-adding the tile.
+- The tile after a reboot before the app was opened, after a force-stop, with battery saver on.
+- Dark mode and Bengali.
+- Any other phone maker or Android version. One device is one data point; the M3 device
+  shortfall recorded in the P010c log (one device against three) is unchanged.
+
+The Notion follow-up "Phone check of the SOS tile" is closed with these results; a new
+follow-up lists what is still not recorded.

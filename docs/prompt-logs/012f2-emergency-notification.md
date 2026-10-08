@@ -10,6 +10,9 @@
 | Date | 2026-10-08 |
 | Plan refs | Plan v7 §5.3, §7.1, §7.5; addendum v7.1 B.1; ADR 0008 |
 
+> **Since checked on a phone:** see the
+> [Revision](#revision-2026-10-08-phone-checks-reported-by-rahul) at the end.
+>
 > **Nothing ran on a phone.** A real notification shade, the lock screen, a reboot, an app
 > update, a force-stop and phone makers' battery managers cannot be exercised in JVM tests.
 > What is tested: what is in the notification, when the app decides to show or remove it, and
@@ -285,3 +288,45 @@ page: notes on the notification and the two failure-matrix rows.
   Hilt. `EntryPointAccessors.fromApplication` is the door through which such a class reaches
   the objects Hilt holds.
   [Hilt entry points](https://developer.android.com/training/dependency-injection/hilt-android#generated-components)
+
+## Revision 2026-10-08: phone checks reported by Rahul
+
+Recorded in the docs-only pull request `docs/012f-results`. One phone: **Samsung, Android 17**.
+These are Rahul's results as he reported them; Claude Code saw none of it.
+
+| Check (section 11) | Result |
+| --- | --- |
+| Pinned notification on and off | Works correctly |
+| Permission flow | Works correctly |
+| "Call 112" | The dialer opened showing 112 |
+| "Open SOS" | Works (reported together with "Call 112") |
+| Swiped away, then the app reopened | Re-posted |
+| After a reboot | Re-posted |
+| After a force-stop | The notification disappeared, and appeared again when the app was started |
+
+**What this settles** (sections 7 and 9 called these "not seen" or uncertain):
+
+- **Swipe, then reopen:** the app puts the notification back, as designed.
+- **Reboot:** it came back on this phone, so `BOOT_COMPLETED` reached the receiver there.
+- **Force-stop:** exactly the expected behaviour. Android removes the notification and runs
+  nothing of the app; opening the app posts it again. Section 7 of the P012f1 log recorded
+  this rule as known but not read in a fetched page; it is now observed on one phone.
+- **The permission flow** and both actions work on Android 17.
+
+**Not recorded** (not part of what was reported; each stays open):
+
+- After the reboot: whether the notification was back before the app was opened, and how long
+  after the unlock.
+- From the lock screen: whether the notification is shown in full, and whether "Call 112" or
+  "Open SOS" asked for the unlock first.
+- Which answers were tried in the permission flow (refuse once, refuse for good, the category
+  switched off in system settings, "Open system settings").
+- The one-time offer after the first use of the SOS control.
+- Battery saver and Samsung's own battery manager over an hour or a night.
+- After an app update; after signing out.
+- Dark mode and Bengali.
+- Any other phone maker or Android version.
+
+The Notion follow-up "Phone check of the pinned emergency notification" is closed with these
+results; a new follow-up lists what is still not recorded. The P014 failure-matrix notes in
+Notion were updated with the observed rows.
