@@ -161,6 +161,32 @@ log lines; it was derived from the contract and the tests, not read from the sta
 - **No permission.** Nothing in this part reads the phone's address book or sends a message.
   How a number is picked (the system contact picker) is decided with the screens, in P013b2.
 
+## Addendum (P013b2): the screens, the picker and the invite
+
+- **Picking a number needs no permission.** "From your contacts" starts the system's contact
+  picker (`ACTION_PICK` with the phone-number type). The user chooses one entry in the
+  system's own screen; the answer carries a temporary right to read that single entry. The app
+  declares no `READ_CONTACTS` and never sees the address book.
+  - Android's guide says both that this answer "grants your app temporary permissions to read
+    that contact data even if your app doesn't include the `READ_CONTACTS` permission" and, in
+    a note on the same page, that "in many cases" the permission is needed (read on
+    2026-10-09). The app follows the first statement, which is the documented example. If a
+    phone's picker does not grant access, the app says "Couldn't read that contact. Type the
+    number instead." **This is verified on a real phone by Rahul, not by a test.**
+- **The invite is an SMS the user sends.** The app opens the phone's SMS app
+  (`ACTION_SENDTO`, `smsto:`) with a text and the opt-out link. It declares no `SEND_SMS` and
+  cannot tell whether the SMS was sent; it asks, and records the answer.
+- **The link is built on the phone** from the API address the build was given and the token
+  the server returned. It is held in memory between the server's answer and the moment the SMS
+  app is opened, then dropped. After that it exists only in the user's SMS app.
+- **Consent is asked just in time and never cached.** The app asks the server when "Add a
+  contact" opens. Declining is leaving the screen; nothing is stored or sent.
+- **No pull-to-refresh.** Material's pull-to-refresh container is still an experimental API,
+  which production code here does not use (ADR 0008). The list has a refresh button instead.
+- **Rename is part of the contact's screen, not a dialog.**
+- **The Home card** appears only while the phone's copy has no contact, and "Not now" stores
+  a point in time (3 days ahead) in the app's settings file: nothing about a person.
+
 ## References
 
 - Plan v7 §6.3, §7.5, §11, §12.1; `backend/src/modules/contacts/`;

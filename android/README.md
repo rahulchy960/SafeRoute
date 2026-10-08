@@ -95,7 +95,8 @@ android/
       feature/search/              Search screen (layout only until P011)
       feature/directions/          routes to a chosen place: repository, states, sheet (P012c1)
       feature/contacts/            emergency contacts: repository, phone rules, session sync
-                                   (P013b1; the screens arrive with P013b2)
+                                   (P013b1); list, add, invite and contact screens, the
+                                   Home card (P013b2)
       core/data/                   the local Room database and ActiveSosContacts (P013b1)
       feature/settings/            Settings: account, privacy, About
       feature/onboarding/          welcome, age gate, consent notice, phone and code, blocked
@@ -638,10 +639,10 @@ another start arrive with P012c2.
 - Not checked without a phone: how the route lines, their light edge and the start ring look
   on the real map; the camera fit with the sheet half open; TalkBack reading the cards.
 
-## Emergency contacts (data layer, since P013b1)
+## Emergency contacts (since P013b1)
 
-Follows [ADR 0024](../docs/adr/0024-emergency-contacts-and-opt-out.md). **This part has no
-screen yet.** It is the storage and the rules the screens (P013b2) and SOS (P014) build on.
+Follows [ADR 0024](../docs/adr/0024-emergency-contacts-and-opt-out.md): the storage and the
+rules (P013b1), and the screens (P013b2). SOS (P014) will read `ActiveSosContacts`.
 
 - **The server holds the list; the phone keeps a copy** in a Room database
   (`core/data/local`, file `saferoute.db`, table `contacts`). The copy is replaced by the
@@ -659,7 +660,7 @@ screen yet.** It is the storage and the rules the screens (P013b2) and SOS (P014
   `withdrawConsent` makes the server delete every contact and then empties the copy.
 - **The invite link** is `<API address>/c#<token>`: the token is the URL fragment, lives in
   memory only (`InviteLink` hides it in `toString()`) and is never saved or logged. The app
-  sends no message; the user will send the SMS from their own SMS app (P013b2).
+  sends no message; the user sends the SMS from their own SMS app.
 - **Phone numbers** (`ContactPhone.kt`): without a `+` a number is read as an Indian mobile
   (ten digits starting 6 to 9, optional `0`, `91`, `0091`); other countries need an explicit
   `+`. The result always has the shape the server checks.
@@ -667,6 +668,55 @@ screen yet.** It is the storage and the rules the screens (P013b2) and SOS (P014
   `MainActivityTest`).
 - **Not encrypted at rest yet.** The table is in the app's private storage and is never backed
   up (`allowBackup=false`); encrypting the database is a recorded follow-up.
+
+### Screens (since P013b2)
+
+Opened from **Settings → Emergency contacts**, or from the **"Add emergency contacts" card** in
+the Home sheet (shown while the phone knows of no contact; "Not now" hides it for 3 days).
+
+| Screen | What it does |
+| --- | --- |
+| List (`ContactsScreen`) | The copy on the phone, each contact with its status in words ("Invite not sent", "Invited", "Opted out — won't be alerted"). Opens offline, read-only. "Add contact" is disabled with the reason at 5. A refresh button in the title bar. "Stop SOS alerts and remove all contacts" asks first |
+| Add (`AddContactScreen`) | Before the first contact: the `sos_alerts` notice ("I agree" / "Not now"). Then "From your contacts" (the system picker) or a typed name and number |
+| Invite (`InviteScreen`) | Opens the phone's SMS app with a message and the opt-out link. Back in the app: "Did you send the invite?" ("Yes, I sent it" / "Later") |
+| Contact (`ContactDetailScreen`) | Rename, send the invite (again), remove. For a contact who opted out, the reason replaces the invite button |
+
+- **The app sends no message.** `ACTION_SENDTO` with `smsto:` hands the text to the SMS app; the
+  user sends it. `invitedAt` records that the user said so.
+- **No permission.** The contact picker is the system's own screen (`ACTION_PICK` on phone
+  numbers); the app gets the one entry the user picked. The manifest has a `<queries>` entry
+  for the SMS app, which is not a permission.
+- **Consent just in time.** The server is asked whether `sos_alerts` is granted when "Add a
+  contact" opens, never earlier. The notice text is the `contacts_notice_*` strings, mirrored in
+  [`docs/legal/sos-alerts-notice-v1.md`](../docs/legal/sos-alerts-notice-v1.md)
+  (`ContactsNoticeDocumentTest`); changing it means changing `SOS_ALERTS_NOTICE_VERSION`.
+- **Nothing typed or picked is saved or logged.** The form, the contact and the invite link
+  live in the ViewModels' memory; their state classes hide them in `toString()`. A navigation
+  destination carries only the contact's id.
+- **Wording.** SOS alerts are not built yet (P014), so every text says "in a later version"
+  and never that a message is or will be sent.
+
+### Check it on a phone
+
+Use your OWN second phone as the contact. Never send an invite to a person who did not agree.
+
+1. Settings → Emergency contacts → Add contact: the notice appears; "Not now" goes back and
+   nothing was added. Again, "I agree": the form appears.
+2. "From your contacts": the system picker opens with **no permission dialog**; pick an entry;
+   name and number are filled in. Then try typing a number instead.
+3. Save: the invite screen. "Write the invite SMS": your SMS app opens with the text and a link
+   that ends in `/c#` and 22 characters. Send it to your second phone.
+4. Back in SafeRoute: "Did you send the invite?" → "Yes, I sent it": the list says "Invited".
+5. On the second phone open the link, tap "Opt out". In SafeRoute tap refresh: "Opted out —
+   won't be alerted", and the contact's screen has no invite button.
+6. Airplane mode: the list still opens and says changes need the internet; "Add contact"
+   explains that there is no connection.
+7. Add 5 contacts: "Add contact" is disabled and says why.
+8. "Stop SOS alerts and remove all contacts": after the confirmation the list is empty, and
+   adding again shows the notice again.
+9. Bengali, dark mode, largest font size, TalkBack: every button is reachable and named.
+10. Home: with no contacts, pull the sheet up: the card is there and the SOS control is still
+    in the sheet's header. "Not now": the card is gone.
 
 ### Changing a table
 

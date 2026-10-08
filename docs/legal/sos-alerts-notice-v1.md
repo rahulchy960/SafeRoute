@@ -40,7 +40,7 @@
 
 ## The notice, in English
 
-**Before you add a contact**
+Title: Before you add a contact
 
 - You are about to save other people's phone numbers in SafeRoute.
 - Add only people you have a good reason to add and who know you.
@@ -54,7 +54,7 @@ Buttons: "I agree" · "Not now"
 
 ## The notice, in Bengali (draft translation)
 
-**যোগাযোগ যোগ করার আগে**
+Title: যোগাযোগ যোগ করার আগে
 
 - আপনি SafeRoute-এ অন্য মানুষের ফোন নম্বর সংরক্ষণ করতে যাচ্ছেন।
 - কেবল তাঁদেরই যোগ করুন যাঁদের যোগ করার যথাযথ কারণ আছে এবং যাঁরা আপনাকে চেনেন।

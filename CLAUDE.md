@@ -553,7 +553,17 @@ and [`android/README.md`](android/README.md):
   `toString()`; the token is never stored. No `READ_CONTACTS`, `SEND_SMS` or message sent by
   the app without a prompt that asks for it. A table change needs a new database version, its
   committed schema file, a `Migration` and a migration test; never
-  `fallbackToDestructiveMigration`.
+  `fallbackToDestructiveMigration`. Screens (since P013b2): a number is picked only through
+  the system contact picker (`pickPhoneNumberIntent`), and an invite leaves the app only
+  through `openInviteSms` (`ACTION_SENDTO`); both live in `feature/contacts/ContactIntents.kt`.
+  The `sos_alerts` notice is the `contacts_notice_*` strings, mirrored in
+  `docs/legal/sos-alerts-notice-v1.md` (`ContactsNoticeDocumentTest`); changing it means
+  changing `SOS_ALERTS_NOTICE_VERSION`, and it is asked for only when "Add a contact" opens.
+  Until SOS alerts exist, no text may say that a contact is or will be messaged: "in a later
+  version". What a person typed or picked, a contact and the invite link stay in memory:
+  never in `rememberSaveable`, a `SavedStateHandle` or a navigation argument (an argument
+  carries the contact's id only). A Hilt test that needs the Home card calls
+  `FakeContactsPreferences.clearSnooze()`; it is hidden by default in tests.
 - `android/app/google-services.json` is never opened, printed or committed by Claude Code. CI and
   fresh clones use `android/scripts/write-dummy-google-services` (project `demo-saferoute`); a
   release build refuses the dummy or a missing file unless `-Psaferoute.allowDummyFirebase=true`
