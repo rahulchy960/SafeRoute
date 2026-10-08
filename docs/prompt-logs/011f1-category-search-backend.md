@@ -291,6 +291,35 @@ categories: bank, atm, pharmacy, hospital, fuel, restaurant, grocery, public_tra
    town's name, "Apollo pharmacy", "Bankura". Note what is found, what is missing and whether
    anything far away or merely similar in name still appears for a category word.
 
+## Note of 2026-10-09 (P011f0): what OpenStreetMap holds for one small town
+
+Section 1 said that Rahul was checking OpenStreetMap coverage separately and that no cause
+was assumed. His finding, recorded here and in addendum v7.3, section I:
+
+Rahul looked at OpenStreetMap for one small town in Uttar Dinajpur and reported:
+
+| Mapped | Not mapped |
+| --- | --- |
+| One hospital | Police station |
+| One railway station | Bus stop |
+| One petrol pump, without a brand name | Post office |
+| Roads and buildings: well mapped | Bank, ATM, pharmacy |
+
+- One town, looked at by one person on one day. It is **not** a measurement of West Bengal,
+  of the district or of small towns in general, and no share or count is derived from it.
+- **What it means for this prompt's evidence.** For that town, "bank", "pharmacy" and the bank
+  brand could not have been found by any search: the places are not on the map. Those are
+  **data gaps**, not search failures. The names that merely resembled "bank" were still a
+  search fault, and that part is what P011f1 changed.
+- **What it does not settle.** Whether the category search works where the places ARE mapped
+  is still unmeasured; the evaluation run is still owed. In the template, rows for this kind
+  of town can now be given `inOsm: no` or `yes` by Rahul from what he saw; Claude Code does
+  not fill them in.
+- **What follows.** Lists of essentials must say "may be incomplete" until a region is
+  verified (`CLAUDE.md` "Coverage claims"). Three ideas went into the Notion Ideas backlog: a
+  curated essentials dataset, an OpenStreetMap mapping effort for small towns, and a
+  comparison of place coverage across regions.
+
 ## 12. Learning notes
 
 No Android code in this part. Server-side ideas used:

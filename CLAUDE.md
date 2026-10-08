@@ -306,6 +306,12 @@ works: UI strings, docs, the README, PR text, pitch material, the website and th
   dropped silently. Overlays and the exposure metric cover published regions only. The list of
   regions and their statuses is server-side configuration, never an identifier.
 - Never show an unverified police number; unknown jurisdiction means 112 only.
+- **Essentials (since P011f0).** A list of police stations, hospitals or other essentials
+  carries a "may be incomplete" label until that region has been verified (named source, date,
+  verifier). Never imply completeness: no "all hospitals", "the nearest police station" or a
+  count for an unverified region, and an empty list never means that there is none. 112 stays
+  the first answer. Background: addendum v7.3, section I (the map of one small town had its
+  roads and buildings but no police station, bus stop, post office, bank, ATM or pharmacy).
 - Legal wording about coverage and advertising is a draft marked "to be verified by a lawyer".
 
 ## Product guardrails (since P012d, ADR 0021)

@@ -235,6 +235,15 @@ Next prompt: P013 (emergency contacts). Nothing here blocks it.
 10. Write down per search: town, what you tapped or typed, location on or off, what came
     first, what is missing. Those go into ADR 0018 as a dated note.
 
+## Note of 2026-10-09 (P011f0)
+
+Rahul's check of OpenStreetMap for one small town (no police station, bus stop, post office,
+bank, ATM or pharmacy mapped; roads and buildings well mapped) is recorded in
+[the P011f1 log](011f1-category-search-backend.md#note-of-2026-10-09-p011f0-what-openstreetmap-holds-for-one-small-town)
+and in addendum v7.3, section I. In such a town most chips will show "Nothing found within
+25 km." for a reason no app change can remove; the sentence about local shops and the link
+are there for that case.
+
 ## 12. Learning notes
 
 - **Chips.** A chip is a small rounded button from Material Design, used for choices and

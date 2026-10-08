@@ -134,6 +134,36 @@ This extends v7.2, section J. The three layers still apply.
 - No count, share or hit rate of places found is stated unless `pnpm search:eval` measured it
   and it is recorded ([ADR 0018](../adr/0018-search-and-geocoding.md)).
 
+**Essentials: police stations, hospitals and similar places (added in P011f0, 2026-10-09).**
+
+Rahul looked at OpenStreetMap for one small town in Uttar Dinajpur and reported:
+
+| Mapped | Not mapped |
+| --- | --- |
+| One hospital | Police station |
+| One railway station | Bus stop |
+| One petrol pump, without a brand name | Post office |
+| Roads and buildings: well mapped | Bank, ATM, pharmacy |
+
+- One town, looked at by one person on one day. It is **not** a measurement of West Bengal,
+  of the district or of small towns in general, and no share or count is derived from it.
+- What it does show: in such a town the map can lack the very places a person needs in a hurry,
+  while the streets are there. A search or a list built on the map alone would then be empty,
+  or would show one hospital as if it were the only one.
+
+The rule that follows, for every text and every screen:
+
+- **A list of police stations, hospitals or other essentials carries a "may be incomplete"
+  label until that region has been verified.** Verified means: checked against a named
+  source, with the date and the person who checked, as for police numbers (v7.2, section F).
+- **Never imply completeness.** Not "all hospitals", "the nearest police station" or "the
+  hospitals in this area", and no count, unless the region is verified. An empty list never
+  means that there is none.
+- 112 stays the first answer on every emergency surface, whatever a list shows.
+- A curated, verified essentials dataset is an idea in the backlog, not a commitment and not
+  in the MVP. An official source needs a terms check recorded in an ADR before it is used
+  (addendum v7.4, section D).
+
 `CLAUDE.md` "Coverage claims" and the `README.md` "Coverage" section follow this section.
 
 ## J. Plan edits
