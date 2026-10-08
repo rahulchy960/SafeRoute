@@ -15,7 +15,8 @@
     <string name="map_control_layers_unavailable">মানচিত্রের স্তর, এখনও উপলব্ধ নয়</string>
 
     <!-- Emergency button. Keep the number 112 in Latin digits in every language. -->
-    <string name="emergency_button_label">জরুরি 112</string>
+    <string name="sos_control_label">SOS</string>
+    <string name="sos_control_description">SOS এবং 112-এ কল</string>
     <string name="emergency_button_click_label">জরুরি বিকল্প দেখুন</string>
 
     <!-- Bottom sheet handle: description, states and actions read by TalkBack -->

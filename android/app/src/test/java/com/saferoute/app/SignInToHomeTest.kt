@@ -5,6 +5,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -114,7 +115,7 @@ class SignInToHomeTest {
 
         waitForText(R.string.home_sheet_title)
 
-        compose.onNodeWithText(string(R.string.emergency_button_label)).assertIsDisplayed()
+        compose.onNodeWithContentDescription(string(R.string.sos_control_description)).assertIsDisplayed()
         assertEquals(listOf(GET_ME, POST_BOOTSTRAP, GET_ME, GET_CONSENTS), api.calls)
         assertEquals(1, api.bootstrapBodies.size)
         assertEquals(SessionState.Ready, repository.state.value)

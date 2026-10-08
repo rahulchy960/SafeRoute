@@ -2,13 +2,14 @@
 package com.saferoute.app.feature.home
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -20,10 +21,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.saferoute.app.R
 import com.saferoute.app.core.designsystem.theme.MinTouchTarget
 import com.saferoute.app.core.designsystem.theme.SafeRouteTheme
@@ -107,25 +110,40 @@ fun MapStatusCard(state: MapLoadState, onRetry: () -> Unit, modifier: Modifier =
  * Tapping it opens [MapAttributionDialog]. It is the app's own element rather than the map
  * library's, so it is translated, large enough to tap, and placed where the sheet never
  * covers it (ADR 0015, "Attribution").
+ *
+ * It is always shown in full. It is NOT a button that reveals the credit on a tap: both
+ * providers ask for the credit itself to be visible without an interaction (ADR 0015, note of
+ * 2026-10-08).
  */
 @Composable
 fun MapAttributionChip(onClick: () -> Unit, modifier: Modifier = Modifier) {
-    Surface(
-        onClick = onClick,
-        modifier = modifier.heightIn(min = MinTouchTarget),
-        shape = MaterialTheme.shapes.small,
-        color = SafeRouteTheme.colors.mapOverlay,
-        contentColor = SafeRouteTheme.colors.mapOverlayVariant,
+    // Two sizes on purpose. What is SEEN is a small label, one line where it fits, so that it
+    // covers as little of the map as a credit can. What can be TAPPED is 48 dp tall: the box
+    // around the label is the button, and it has no background of its own.
+    Box(
+        modifier = modifier
+            .heightIn(min = MinTouchTarget)
+            .clickable(role = Role.Button, onClick = onClick),
+        contentAlignment = Alignment.CenterStart,
     ) {
-        Text(
-            text = stringResource(R.string.map_attribution),
-            modifier = Modifier
-                .padding(horizontal = SafeRouteTheme.spacing.xs)
-                .wrapContentHeight(Alignment.CenterVertically),
-            style = MaterialTheme.typography.labelSmall,
-        )
+        Surface(
+            shape = MaterialTheme.shapes.extraSmall,
+            color = SafeRouteTheme.colors.mapOverlay.copy(alpha = AttributionBackgroundAlpha),
+            contentColor = SafeRouteTheme.colors.onMapOverlay,
+        ) {
+            Text(
+                text = stringResource(R.string.map_attribution),
+                modifier = Modifier.padding(horizontal = SafeRouteTheme.spacing.xs, vertical = 2.dp),
+                // Always there and always whole: a second line at very large fonts, never "…".
+                maxLines = 2,
+                style = MaterialTheme.typography.labelSmall,
+            )
+        }
     }
 }
+
+/** Enough of a backdrop for the credit to be readable on any map, and no more. */
+private const val AttributionBackgroundAlpha = 0.8f
 
 /** Who made the map, with links to each licence page. */
 @Composable

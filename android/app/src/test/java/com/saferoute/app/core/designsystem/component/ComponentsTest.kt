@@ -16,13 +16,17 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertHeightIsAtLeast
+import androidx.compose.ui.test.assertHeightIsEqualTo
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertWidthIsAtLeast
+import androidx.compose.ui.test.assertWidthIsEqualTo
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -80,7 +84,7 @@ class ComponentsTest {
                         contentDescription = string(R.string.map_control_layers_unavailable),
                         onClick = { onEvent("layers") },
                     )
-                    EmergencyButton(onClick = { onEvent("emergency") })
+                    SosControl(onClick = { onEvent("emergency") })
                     SheetHandle(
                         stateDescription = string(R.string.sheet_state_half),
                         onClick = { onEvent("handle") },
@@ -126,13 +130,15 @@ class ComponentsTest {
     }
 
     @Test
-    fun `emergency button shows 112, has a spoken action and reports taps`() {
+    fun `the SOS control says SOS and 112 to TalkBack, has a spoken action and reports taps`() {
         val events = mutableListOf<String>()
         compose.setContent { Gallery(onEvent = events::add) }
 
-        val label = string(R.string.emergency_button_label)
-        assert(label.contains("112"))
-        compose.onNodeWithText(label)
+        val label = string(R.string.sos_control_description)
+        assert(label.contains("112") && label.contains("SOS"))
+        // The letters are shown, but the spoken name is the description: SOS is read once.
+        compose.onAllNodesWithText(string(R.string.sos_control_label)).assertCountEquals(0)
+        compose.onNodeWithContentDescription(label)
             .assertIsDisplayed()
             .assert(hasRole(Role.Button))
             .assertHasClickAction()
@@ -175,9 +181,12 @@ class ComponentsTest {
         compose.setContent { Gallery(fontScale = 2f) }
 
         compose.onNodeWithText(string(R.string.search_hint)).assertIsDisplayed().assertMinTouchTarget()
-        compose.onNodeWithText(string(R.string.emergency_button_label))
+        // Exactly 48 dp, also at 200%: a control that grew would cover its neighbours.
+        compose.onNodeWithContentDescription(string(R.string.sos_control_description))
             .assertIsDisplayed()
             .assertMinTouchTarget()
+            .assertWidthIsEqualTo(48.dp)
+            .assertHeightIsEqualTo(48.dp)
         compose.onNodeWithContentDescription(string(R.string.map_control_layers_unavailable))
             .assertIsDisplayed()
             .assertMinTouchTarget()
@@ -192,7 +201,7 @@ class ComponentsTest {
         compose.setContent { Gallery() }
 
         // Literal expected values: this must fail if the app fell back to English.
-        compose.onNodeWithText("জরুরি 112").assertIsDisplayed()
+        compose.onNodeWithContentDescription("SOS এবং 112-এ কল").assertIsDisplayed()
         compose.onNodeWithText("জায়গা খুঁজুন").assertIsDisplayed()
     }
 }

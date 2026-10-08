@@ -75,7 +75,7 @@ class HomeLocationScreenTest {
     }
 
     private fun button(description: Int) = compose.onNodeWithContentDescription(string(description))
-    private fun emergencyButton() = compose.onNodeWithText(string(R.string.emergency_button_label))
+    private fun emergencyButton() = compose.onNodeWithContentDescription(string(R.string.sos_control_description))
 
     @Test
     fun `the button is never disabled and names each state`() {

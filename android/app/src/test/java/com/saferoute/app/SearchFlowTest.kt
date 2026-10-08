@@ -101,7 +101,7 @@ class SearchFlowTest {
         compose.waitForIdle()
 
         // Home again, with the place: card in the sheet, pin on the map, camera on the place.
-        compose.onNodeWithText(string(R.string.emergency_button_label)).assertIsDisplayed()
+        compose.onNodeWithContentDescription(string(R.string.sos_control_description)).assertIsDisplayed()
         compose.onNodeWithText(FAKE_STATION.name).assertIsDisplayed()
         compose.onNodeWithText(FAKE_STATION.label).assertIsDisplayed()
         compose.onNodeWithText(string(R.string.home_sheet_title)).assertDoesNotExist()
@@ -163,7 +163,7 @@ class SearchFlowTest {
         assertEquals(SessionState.Ready, session.state.value)
 
         pressSystemBack()
-        compose.onNodeWithText(string(R.string.emergency_button_label)).performClick()
+        compose.onNodeWithContentDescription(string(R.string.sos_control_description)).performClick()
         compose.onNodeWithText(string(R.string.emergency_dialog_call)).performClick()
         compose.waitForIdle()
         val intent = shadowOf(RuntimeEnvironment.getApplication()).nextStartedActivity

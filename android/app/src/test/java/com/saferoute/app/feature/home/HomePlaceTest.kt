@@ -239,7 +239,7 @@ class HomePlaceTest {
     fun `with a place shown the emergency button and the search pill still work`() {
         setHome(place)
 
-        compose.onNodeWithText(string(R.string.emergency_button_label)).assertIsDisplayed().performClick()
+        compose.onNodeWithContentDescription(string(R.string.sos_control_description)).assertIsDisplayed().performClick()
         compose.onNodeWithText(string(R.string.search_hint)).assertIsDisplayed().performClick()
         assertEquals(1, emergencies)
         assertEquals(1, searchOpens)

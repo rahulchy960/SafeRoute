@@ -43,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
@@ -60,14 +61,19 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.saferoute.app.R
+import com.saferoute.app.core.designsystem.component.SosControl
 import com.saferoute.app.core.designsystem.preview.SafeRoutePreviews
 import com.saferoute.app.core.designsystem.theme.SafeRouteTheme
 import com.saferoute.app.core.map.LatLng
+import com.saferoute.app.feature.home.EmergencyDialog
+import com.saferoute.app.feature.home.EmergencyDialogState
+import com.saferoute.app.feature.home.openEmergencyDialer
 
 /** Test tags of the search screen. */
 internal object SearchTags {
     const val Field = "search-field"
     const val Results = "search-results"
+    const val Row = "search-result-row"
 }
 
 /**
@@ -90,6 +96,10 @@ fun SearchRoute(
     var query by rememberSaveable { mutableStateOf("") }
     val state by viewModel.state.collectAsStateWithLifecycle()
     LaunchedEffect(query) { viewModel.onQueryChange(query) }
+    // The same dialog as on Home. It is this screen's own state: nothing about a search can
+    // reach it, and it survives a rotation.
+    var emergencyDialog by rememberSaveable { mutableStateOf(EmergencyDialogState.Hidden) }
+    val context = LocalContext.current
 
     SearchScreen(
         query = query,
@@ -102,7 +112,22 @@ fun SearchRoute(
         },
         onBack = onBack,
         modifier = modifier,
+        onEmergencyClick = { emergencyDialog = EmergencyDialogState.OfferDialer },
     )
+
+    if (emergencyDialog != EmergencyDialogState.Hidden) {
+        EmergencyDialog(
+            state = emergencyDialog,
+            onCallEmergency = {
+                emergencyDialog = if (openEmergencyDialer(context)) {
+                    EmergencyDialogState.Hidden
+                } else {
+                    EmergencyDialogState.DialerUnavailable
+                }
+            },
+            onDismiss = { emergencyDialog = EmergencyDialogState.Hidden },
+        )
+    }
 }
 
 /**
@@ -121,6 +146,7 @@ fun SearchScreen(
     onPlaceClick: (FoundPlace) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    onEmergencyClick: () -> Unit = {},
 ) {
     val focusRequester = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
@@ -173,6 +199,12 @@ fun SearchScreen(
                                 keyboard?.hide()
                             },
                         ),
+                    )
+                    // A top-bar action: in the bar's own row, so it can not cover a result.
+                    SosControl(
+                        onClick = onEmergencyClick,
+                        modifier = Modifier.padding(horizontal = SafeRouteTheme.spacing.xs),
+                        elevated = false,
                     )
                 }
             }
@@ -342,6 +374,7 @@ private fun PlaceRow(place: FoundPlace, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .testTag(SearchTags.Row)
             // One TalkBack stop per result, announced as a button: "Main Station, Station Road".
             .clickable(role = Role.Button, onClick = onClick)
             .heightIn(min = 56.dp)

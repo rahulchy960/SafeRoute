@@ -53,7 +53,7 @@ class AppNavigationTest {
     private fun string(id: Int): String = compose.activity.getString(id)
 
     private fun assertOnHome() {
-        compose.onNodeWithText(string(R.string.emergency_button_label)).assertIsDisplayed()
+        compose.onNodeWithContentDescription(string(R.string.sos_control_description)).assertIsDisplayed()
         compose.onNodeWithText(string(R.string.home_sheet_title)).assertIsDisplayed()
         compose.onNodeWithText(string(R.string.search_empty_title)).assertDoesNotExist()
         compose.onNodeWithText(string(R.string.settings_about_title)).assertDoesNotExist()
@@ -76,10 +76,50 @@ class AppNavigationTest {
     fun `home to search and system back returns to home`() {
         compose.onNodeWithText(string(R.string.search_hint)).performClick()
         compose.onNodeWithText(string(R.string.search_empty_title)).assertIsDisplayed()
-        compose.onNodeWithText(string(R.string.emergency_button_label)).assertDoesNotExist()
+        // The search screen has the SOS control too, as an action in its top bar.
+        compose.onNodeWithContentDescription(string(R.string.sos_control_description)).assertIsDisplayed()
 
         pressSystemBack()
         assertOnHome()
+    }
+
+    @Test
+    fun `on the search screen SOS opens the same dialog, and call 112 opens the dialer and never calls`() {
+        compose.onNodeWithText(string(R.string.search_hint)).performClick()
+        compose.onNodeWithText(string(R.string.search_empty_title)).assertIsDisplayed()
+
+        compose.onNodeWithContentDescription(string(R.string.sos_control_description)).performClick()
+        compose.onNodeWithText(string(R.string.emergency_dialog_title)).assertIsDisplayed()
+        compose.onNodeWithText(string(R.string.not_emergency_service), substring = true).assertExists()
+        assertNull(nextStartedActivity())
+
+        compose.onNodeWithText(string(R.string.emergency_dialog_call)).performClick()
+        compose.waitForIdle()
+
+        val intent = nextStartedActivity()
+        assertEquals(Intent.ACTION_DIAL, intent?.action)
+        assertNotEquals(Intent.ACTION_CALL, intent?.action)
+        assertEquals("tel:112", intent?.dataString)
+        assertNull(nextStartedActivity())
+        compose.onNodeWithText(string(R.string.emergency_dialog_title)).assertDoesNotExist()
+        // Still on the search screen: the dialog did not navigate anywhere.
+        compose.onNodeWithText(string(R.string.search_empty_title)).assertIsDisplayed()
+    }
+
+    @Test
+    fun `on the search screen, cancel and a missing dialer behave as on Home`() {
+        compose.onNodeWithText(string(R.string.search_hint)).performClick()
+        compose.onNodeWithContentDescription(string(R.string.sos_control_description)).performClick()
+        compose.onNodeWithText(string(R.string.emergency_dialog_cancel)).performClick()
+        compose.onNodeWithText(string(R.string.emergency_dialog_title)).assertDoesNotExist()
+        assertNull(nextStartedActivity())
+
+        shadowOf(RuntimeEnvironment.getApplication()).checkActivities(true)
+        compose.onNodeWithContentDescription(string(R.string.sos_control_description)).performClick()
+        compose.onNodeWithText(string(R.string.emergency_dialog_call)).performClick()
+        compose.onNodeWithText(string(R.string.emergency_dialog_no_dialer)).assertIsDisplayed()
+        compose.onNodeWithText(string(R.string.emergency_dialog_close)).performClick()
+        compose.onNodeWithText(string(R.string.emergency_dialog_title)).assertDoesNotExist()
     }
 
     @Test
@@ -115,7 +155,7 @@ class AppNavigationTest {
 
     @Test
     fun `emergency button, then call 112, opens the dialer and never calls`() {
-        compose.onNodeWithText(string(R.string.emergency_button_label)).performClick()
+        compose.onNodeWithContentDescription(string(R.string.sos_control_description)).performClick()
         compose.onNodeWithText(string(R.string.emergency_dialog_title)).assertIsDisplayed()
         // Nothing may be started by the button itself.
         assertNull(nextStartedActivity())
@@ -134,7 +174,7 @@ class AppNavigationTest {
 
     @Test
     fun `cancel closes the dialog without starting anything`() {
-        compose.onNodeWithText(string(R.string.emergency_button_label)).performClick()
+        compose.onNodeWithContentDescription(string(R.string.sos_control_description)).performClick()
         compose.onNodeWithText(string(R.string.emergency_dialog_cancel)).performClick()
 
         compose.onNodeWithText(string(R.string.emergency_dialog_title)).assertDoesNotExist()
@@ -148,7 +188,7 @@ class AppNavigationTest {
         // throws ActivityNotFoundException.
         shadowOf(RuntimeEnvironment.getApplication()).checkActivities(true)
 
-        compose.onNodeWithText(string(R.string.emergency_button_label)).performClick()
+        compose.onNodeWithContentDescription(string(R.string.sos_control_description)).performClick()
         compose.onNodeWithText(string(R.string.emergency_dialog_call)).performClick()
 
         compose.onNodeWithText(string(R.string.emergency_dialog_no_dialer)).assertIsDisplayed()

@@ -6,6 +6,7 @@ import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.saferoute.app.core.session.FakeSession
@@ -52,7 +53,7 @@ class MainActivityTest {
         val activity = compose.activity
 
         compose.onNodeWithText(activity.getString(R.string.search_hint)).assertIsDisplayed()
-        compose.onNodeWithText(activity.getString(R.string.emergency_button_label)).assertIsDisplayed()
+        compose.onNodeWithContentDescription(activity.getString(R.string.sos_control_description)).assertIsDisplayed()
     }
 
     @Test

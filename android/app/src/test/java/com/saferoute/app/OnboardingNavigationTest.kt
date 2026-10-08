@@ -82,8 +82,12 @@ class OnboardingNavigationTest {
 
     private fun text(id: Int) = compose.onNodeWithText(string(id))
 
+    /** Home's emergency control: found by what TalkBack reads, it has no visible sentence. */
+    private fun sosControl() =
+        compose.onNodeWithContentDescription(string(R.string.sos_control_description))
+
     private fun assertHomeIsNotShown() {
-        text(R.string.emergency_button_label).assertDoesNotExist()
+        sosControl().assertDoesNotExist()
         text(R.string.home_sheet_title).assertDoesNotExist()
         text(R.string.search_hint).assertDoesNotExist()
     }
@@ -133,7 +137,7 @@ class OnboardingNavigationTest {
         text(R.string.code_verify).performScrollTo().performClick()
 
         // Home
-        text(R.string.emergency_button_label).assertIsDisplayed()
+        sosControl().assertIsDisplayed()
         text(R.string.home_sheet_title).assertIsDisplayed()
         assertEquals(
             listOf("refresh", "markWelcomeSeen", "confirmAdult", "acceptNotice(en)", "onSignedIn"),
@@ -232,7 +236,7 @@ class OnboardingNavigationTest {
         // "Try again" asks the session again; this time it works.
         fakeSession.afterRefresh = SessionState.Ready
         text(R.string.onboarding_try_again).performScrollTo().performClick()
-        text(R.string.emergency_button_label).assertIsDisplayed()
+        sosControl().assertIsDisplayed()
 
         fakeSession.setState(SessionState.Blocked(BlockReason.ACCOUNT_DELETED))
         compose.waitForIdle()

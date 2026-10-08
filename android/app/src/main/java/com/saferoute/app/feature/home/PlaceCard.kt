@@ -29,6 +29,8 @@ import com.saferoute.app.core.map.SelectedPlace
 /**
  * What the sheet shows for a place chosen in search: its name, where it is, a way to close it,
  * and a Directions button that asks for routes from the user's position to this place.
+ *
+ * @param headerEnd Drawn at the end of the first row, after the close button.
  */
 @Composable
 internal fun PlaceCard(
@@ -36,6 +38,7 @@ internal fun PlaceCard(
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
     onDirections: () -> Unit = {},
+    headerEnd: @Composable () -> Unit = {},
 ) {
     val spacing = SafeRouteTheme.spacing
     Column(
@@ -79,6 +82,8 @@ internal fun PlaceCard(
                     contentDescription = stringResource(R.string.place_card_close),
                 )
             }
+            // The end of the header row: where Home puts the SOS control while the sheet is up.
+            headerEnd()
         }
         // A Material button is at least 48 dp tall with its touch area.
         FilledTonalButton(onClick = onDirections) {

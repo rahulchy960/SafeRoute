@@ -157,7 +157,7 @@ class LocationFlowTest {
         compose.onNodeWithText(string(R.string.search_hint)).assertIsDisplayed()
         myLocation().assertIsDisplayed()
 
-        compose.onNodeWithText(string(R.string.emergency_button_label)).performClick()
+        compose.onNodeWithContentDescription(string(R.string.sos_control_description)).performClick()
         compose.onNodeWithText(string(R.string.emergency_dialog_call)).performClick()
         assertEquals(Intent.ACTION_DIAL, shadowOf(RuntimeEnvironment.getApplication()).nextStartedActivity?.action)
     }

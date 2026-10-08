@@ -197,7 +197,7 @@ class DirectionsScreenTest {
             compose.onNodeWithText(text).assertIsDisplayed()
             compose.onAllNodesWithText(retry).assertCountEquals(if (canRetry) 1 else 0)
 
-            compose.onNodeWithText(string(R.string.emergency_button_label)).assertIsDisplayed().performClick()
+            compose.onNodeWithContentDescription(string(R.string.sos_control_description)).assertIsDisplayed().performClick()
             compose.onNodeWithText(string(R.string.search_hint)).assertIsDisplayed().performClick()
             assertEquals("state $index", listOf("emergency", "search"), events.takeLast(2))
         }

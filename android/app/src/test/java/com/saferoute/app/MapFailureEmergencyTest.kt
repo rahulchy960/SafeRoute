@@ -5,6 +5,7 @@ import android.content.Intent
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -80,7 +81,7 @@ class MapFailureEmergencyTest {
             mapEngine.controller.loadState.value = state
             compose.waitForIdle()
 
-            compose.onNodeWithText(string(R.string.emergency_button_label)).assertIsDisplayed().performClick()
+            compose.onNodeWithContentDescription(string(R.string.sos_control_description)).assertIsDisplayed().performClick()
             compose.onNodeWithText(string(R.string.emergency_dialog_call)).performClick()
             compose.waitForIdle()
 

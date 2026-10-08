@@ -6,6 +6,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
@@ -134,7 +135,7 @@ class DirectionsFlowTest {
         assertEquals(listOf(boundsOf(FAKE_ROUTE_FAST.points)), map.fits)
 
         // The emergency button is where it always is.
-        compose.onNodeWithText(string(R.string.emergency_button_label)).assertIsDisplayed()
+        compose.onNodeWithContentDescription(string(R.string.sos_control_description)).assertIsDisplayed()
 
         // Back closes directions and leaves the place; the next back clears the place.
         pressSystemBack()
@@ -165,7 +166,7 @@ class DirectionsFlowTest {
         directionsToStation()
         compose.onNodeWithText(string(R.string.route_loading)).assertIsDisplayed()
 
-        compose.onNodeWithText(string(R.string.emergency_button_label)).performClick()
+        compose.onNodeWithContentDescription(string(R.string.sos_control_description)).performClick()
         compose.onNodeWithText(string(R.string.emergency_dialog_call)).performClick()
         compose.waitForIdle()
         val intent = shadowOf(RuntimeEnvironment.getApplication()).nextStartedActivity
