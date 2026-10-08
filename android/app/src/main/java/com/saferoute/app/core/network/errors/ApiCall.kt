@@ -44,6 +44,26 @@ suspend fun <T : Any> apiCall(block: suspend () -> Response<T>): ApiResult<T> =
         ApiResult.Failure(ApiFailure.Unexpected(status = null))
     }
 
+/**
+ * Like [apiCall], for an operation that answers `204 No Content`. Such an answer has no body,
+ * which [apiCall] would report as a failure; here any 2xx is a success.
+ */
+suspend fun apiCallNoContent(block: suspend () -> Response<Unit>): ApiResult<Unit> =
+    try {
+        val response = block()
+        if (response.isSuccessful) {
+            ApiResult.Success(Unit, response.code(), response.requestId())
+        } else {
+            ApiResult.Failure(response.toApiFailure())
+        }
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: IOException) {
+        ApiResult.Failure(ApiFailure.NoConnection)
+    } catch (e: Exception) {
+        ApiResult.Failure(ApiFailure.Unexpected(status = null))
+    }
+
 private fun Response<*>.requestId(): String? = headers()[REQUEST_ID_HEADER]
 
 /**

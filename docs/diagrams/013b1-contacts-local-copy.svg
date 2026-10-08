@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1332" height="947" viewBox="0 0 1332 947" font-family="Helvetica, Arial, sans-serif">
+<title>Emergency contacts on the phone: the local copy</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#495057"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="40" y="62" font-size="24" font-weight="700" fill="#1e1e1e">Emergency contacts on the phone: the local copy</text>
+<text x="40" y="86" font-size="14" fill="#495057">The server is the source of truth; the phone keeps a copy in Room that is read with no network. Every change goes to the server first (P013b1, ADR 0024)</text>
+<rect x="40" y="114" width="286" height="747" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="54" y="135" font-size="14" font-weight="700" fill="#495057">Readers (no network needed)</text>
+<rect x="362" y="114" width="286" height="747" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="376" y="135" font-size="14" font-weight="700" fill="#495057">Phone storage: core/data</text>
+<rect x="684" y="114" width="286" height="747" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="698" y="135" font-size="14" font-weight="700" fill="#495057">App: feature/contacts</text>
+<rect x="1006" y="114" width="286" height="747" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="1020" y="135" font-size="14" font-weight="700" fill="#495057">SafeRoute API</text>
+<line x1="827" y1="228" x2="827" y2="295" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="952" y1="328" x2="1024" y2="328" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="702" y1="328" x2="630" y2="328" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="380" y1="328" x2="308" y2="328" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="505" y1="382" x2="183" y2="438" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="952" y1="492" x2="1024" y2="492" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="827" y1="602" x2="505" y2="556" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="58" y="284.5" width="250" height="87" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="183" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="183" y="312.8">Contacts screens (P013b2):</tspan>
+<tspan x="183" y="333.6">ContactsRepository.contacts,</tspan>
+<tspan x="183" y="354.4">a Flow of the copy</tspan>
+</text>
+<rect x="58" y="438" width="250" height="108" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="183" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="183" y="466.4">SOS (P014):</tspan>
+<tspan x="183" y="487.2">ActiveSosContacts.current():</tspan>
+<tspan x="183" y="508">not opted out, at most 5,</tspan>
+<tspan x="183" y="528.8">oldest first. May be empty</tspan>
+</text>
+<rect x="380" y="274" width="250" height="108" rx="10" fill="#ffd8a8" stroke="#e8590c" stroke-width="2"/>
+<text x="505" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="505" y="302.4">Room table contacts: id,</tspan>
+<tspan x="505" y="323.2">name, phoneE164, createdAt,</tspan>
+<tspan x="505" y="344">invitedAt, optedOutAt. Private</tspan>
+<tspan x="505" y="364.8">storage, never backed up</tspan>
+</text>
+<rect x="380" y="428" width="250" height="128" rx="10" fill="#ffd8a8" stroke="#e8590c" stroke-width="2"/>
+<text x="505" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="505" y="456">Rules: a successful fetch</tspan>
+<tspan x="505" y="476.8">replaces the whole table; a</tspan>
+<tspan x="505" y="497.6">failed one changes nothing; an</tspan>
+<tspan x="505" y="518.4">answer that arrives after the</tspan>
+<tspan x="505" y="539.2">copy was emptied is dropped</tspan>
+</text>
+<rect x="702" y="162" width="250" height="66" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="827" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="827" y="190.2">ContactsSessionSync:</tspan>
+<tspan x="827" y="211">session Ready starts a fetch</tspan>
+</text>
+<rect x="702" y="295" width="250" height="66" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="827" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="827" y="323.2">refresh(): at Ready, after a</tspan>
+<tspan x="827" y="344">change, on pull to refresh</tspan>
+</text>
+<rect x="702" y="438" width="250" height="108" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="827" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="827" y="466.4">add, rename, remove, invite,</tspan>
+<tspan x="827" y="487.2">consent: server first. No</tspan>
+<tspan x="827" y="508">connection: NoConnection,</tspan>
+<tspan x="827" y="528.8">copy untouched</tspan>
+</text>
+<rect x="702" y="735" width="250" height="108" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="827" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="827" y="763.4">After an invite call: link = API</tspan>
+<tspan x="827" y="784.2">address + /c#token. In</tspan>
+<tspan x="827" y="805">memory only, hidden in</tspan>
+<tspan x="827" y="825.8">toString()</tspan>
+</text>
+<rect x="702" y="602" width="250" height="87" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="827" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="827" y="630.3">clearLocal(): signed out, back</tspan>
+<tspan x="827" y="651.1">at the start, blocked, or</tspan>
+<tspan x="827" y="671.9">sos_alerts withdrawn</tspan>
+</text>
+<rect x="1024" y="300" width="250" height="56" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="1149" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1149" y="333.6">GET /v1/contacts</tspan>
+</text>
+<rect x="1024" y="448.5" width="250" height="87" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="1149" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1149" y="476.8">POST, PATCH, DELETE</tspan>
+<tspan x="1149" y="497.6">/v1/contacts, invite,</tspan>
+<tspan x="1149" y="518.4">invite/confirm, PUT consent</tspan>
+</text>
+<rect x="626.6" y="317" width="78.8" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="666" y="332.5" font-size="13" fill="#1e1e1e" text-anchor="middle">on success</text>
+<rect x="609.4" y="568" width="113.1" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="666" y="583.5" font-size="13" fill="#1e1e1e" text-anchor="middle">empties the table</text>
+<rect x="40" y="882" width="16" height="16" rx="3" fill="#a5d8ff" stroke="#1971c2" stroke-width="1.5"/>
+<text x="62" y="895" font-size="13" fill="#495057">App / UI</text>
+<rect x="134.8" y="882" width="16" height="16" rx="3" fill="#b2f2bb" stroke="#2f9e44" stroke-width="1.5"/>
+<text x="156.8" y="895" font-size="13" fill="#495057">Service</text>
+<rect x="228.3" y="882" width="16" height="16" rx="3" fill="#ffd8a8" stroke="#e8590c" stroke-width="1.5"/>
+<text x="250.3" y="895" font-size="13" fill="#495057">Data</text>
+<rect x="303.1" y="882" width="16" height="16" rx="3" fill="#ffc9c9" stroke="#e03131" stroke-width="1.5"/>
+<text x="325.1" y="895" font-size="13" fill="#495057">Security / emergency</text>
+</svg>

@@ -541,6 +541,19 @@ and [`android/README.md`](android/README.md):
   be previewed but **never followed**. A tap on a route's line selects it: the hit test is
   `nearestLine` in `core/map/RouteHitTest.kt` (screen pixels, no map types), and the list
   and the map agree through `RouteDisplay`.
+- Emergency contacts follow [ADR 0024](docs/adr/0024-emergency-contacts-and-opt-out.md)
+  (since P013b1): the server is the source of truth and the phone keeps a copy in Room. Only
+  `core/data` uses Room (`ContactsBoundaryTest`); the rest of the app uses
+  `ContactsRepository` and `ActiveSosContacts`, and tests use `FakeContactsRepository`
+  (`FakeContactsModule` and `TestDatabaseModule` replace the real ones in every Hilt test).
+  A failed fetch never changes the copy; every change goes to the server first.
+  `ActiveSosContacts` reads the phone only and never returns an opted-out contact. The copy is
+  emptied when the session leaves the signed-in states (`ContactsSessionSync`). Names, numbers
+  and the invite token are never logged, and the types that hold them hide them in
+  `toString()`; the token is never stored. No `READ_CONTACTS`, `SEND_SMS` or message sent by
+  the app without a prompt that asks for it. A table change needs a new database version, its
+  committed schema file, a `Migration` and a migration test; never
+  `fallbackToDestructiveMigration`.
 - `android/app/google-services.json` is never opened, printed or committed by Claude Code. CI and
   fresh clones use `android/scripts/write-dummy-google-services` (project `demo-saferoute`); a
   release build refuses the dummy or a missing file unless `-Psaferoute.allowDummyFirebase=true`

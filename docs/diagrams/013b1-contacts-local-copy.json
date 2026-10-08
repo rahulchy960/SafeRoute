@@ -1,0 +1,139 @@
+{
+  "$schema": "../../tools/diagrams/diagram.schema.json",
+  "title": "Emergency contacts on the phone: the local copy",
+  "subtitle": "The server is the source of truth; the phone keeps a copy in Room that is read with no network. Every change goes to the server first (P013b1, ADR 0024)",
+  "direction": "TB",
+  "layout": {
+    "nodeWidth": 250,
+    "rankGap": 46
+  },
+  "groups": [
+    {
+      "id": "readers",
+      "label": "Readers (no network needed)"
+    },
+    {
+      "id": "store",
+      "label": "Phone storage: core/data"
+    },
+    {
+      "id": "app",
+      "label": "App: feature/contacts"
+    },
+    {
+      "id": "server",
+      "label": "SafeRoute API"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "screens",
+      "label": "Contacts screens (P013b2): ContactsRepository.contacts, a Flow of the copy",
+      "role": "app",
+      "group": "readers",
+      "rank": 1
+    },
+    {
+      "id": "sos",
+      "label": "SOS (P014): ActiveSosContacts.current(): not opted out, at most 5, oldest first. May be empty",
+      "role": "security",
+      "group": "readers",
+      "rank": 2
+    },
+    {
+      "id": "room",
+      "label": "Room table contacts: id, name, phoneE164, createdAt, invitedAt, optedOutAt. Private storage, never backed up",
+      "role": "data",
+      "group": "store",
+      "rank": 1
+    },
+    {
+      "id": "rules",
+      "label": "Rules: a successful fetch replaces the whole table; a failed one changes nothing; an answer that arrives after the copy was emptied is dropped",
+      "role": "data",
+      "group": "store",
+      "rank": 2
+    },
+    {
+      "id": "sync",
+      "label": "ContactsSessionSync: session Ready starts a fetch",
+      "role": "app",
+      "group": "app",
+      "rank": 0
+    },
+    {
+      "id": "refresh",
+      "label": "refresh(): at Ready, after a change, on pull to refresh",
+      "role": "app",
+      "group": "app",
+      "rank": 1
+    },
+    {
+      "id": "change",
+      "label": "add, rename, remove, invite, consent: server first. No connection: NoConnection, copy untouched",
+      "role": "app",
+      "group": "app",
+      "rank": 2
+    },
+    {
+      "id": "link",
+      "label": "After an invite call: link = API address + /c#token. In memory only, hidden in toString()",
+      "role": "security",
+      "group": "app",
+      "rank": 4
+    },
+    {
+      "id": "clear",
+      "label": "clearLocal(): signed out, back at the start, blocked, or sos_alerts withdrawn",
+      "role": "security",
+      "group": "app",
+      "rank": 3
+    },
+    {
+      "id": "list",
+      "label": "GET /v1/contacts",
+      "role": "service",
+      "group": "server",
+      "rank": 1
+    },
+    {
+      "id": "writes",
+      "label": "POST, PATCH, DELETE /v1/contacts, invite, invite/confirm, PUT consent",
+      "role": "service",
+      "group": "server",
+      "rank": 2
+    }
+  ],
+  "edges": [
+    {
+      "from": "sync",
+      "to": "refresh"
+    },
+    {
+      "from": "refresh",
+      "to": "list"
+    },
+    {
+      "from": "refresh",
+      "to": "room",
+      "label": "on success"
+    },
+    {
+      "from": "room",
+      "to": "screens"
+    },
+    {
+      "from": "room",
+      "to": "sos"
+    },
+    {
+      "from": "change",
+      "to": "writes"
+    },
+    {
+      "from": "clear",
+      "to": "rules",
+      "label": "empties the table"
+    }
+  ]
+}

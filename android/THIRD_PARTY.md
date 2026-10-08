@@ -41,6 +41,7 @@ No other Google or Apple logo, font or artwork is in the app.
 | Retrofit 3.0.0 and its kotlinx.serialization converter | Apache-2.0 |
 
 | AndroidX DataStore (Preferences) 1.2.1 | Apache-2.0 |
+| AndroidX Room 2.8.5 (runtime, compiler through KSP, testing in tests only) | Apache-2.0 |
 | kotlinx-coroutines-play-services 1.11.0 | Apache-2.0 |
 | Firebase common and components (through the Firebase BoM 34.19.0) | Apache-2.0 |
 

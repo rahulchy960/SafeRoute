@@ -81,6 +81,12 @@ object ProblemCodes {
     const val LOCATION_NOT_ROUTABLE = "location_not_routable"
     const val NO_ROUTE_FOUND = "no_route_found"
     const val ROUTING_UNAVAILABLE = "routing_unavailable"
+
+    // Emergency contacts (contract 0.9.0).
+    const val INVALID_CONTACT = "invalid_contact"
+    const val CONTACT_EXISTS = "contact_exists"
+    const val CONTACT_OPTED_OUT = "contact_opted_out"
+    const val CONTACT_LIMIT_REACHED = "contact_limit_reached"
 }
 
 private const val HTTP_FORBIDDEN = 403

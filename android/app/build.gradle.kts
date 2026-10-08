@@ -246,6 +246,15 @@ android {
         disable += "LogNotTimber"
     }
 
+    sourceSets {
+        // The exported Room schemas (app/schemas) are assets of the DEBUG build only, so the
+        // migration test can build a database of any past version and check each step up to
+        // the current one. Unit tests run on the JVM against the debug variant's merged
+        // assets; assets of the "test" source set are not part of them. The files describe
+        // table layouts and hold no data. A release build does not contain them.
+        getByName("debug").assets.srcDir("$projectDir/schemas")
+    }
+
     testOptions {
         unitTests {
             // Robolectric needs the merged resources and manifest to run UI tests on the JVM.
@@ -261,6 +270,13 @@ androidComponents {
         // always uses the current contract.
         variant.sources.kotlin?.addGeneratedSourceDirectory(generateApiClient, GenerateTask::outputDir)
     }
+}
+
+ksp {
+    // Room writes one JSON file per database version to app/schemas. They are committed: the
+    // history of the tables is what migrations are tested against.
+    arg("room.schemaLocation", "$projectDir/schemas")
+    arg("room.generateKotlin", "true")
 }
 
 kotlin {
@@ -303,6 +319,10 @@ dependencies {
     implementation(libs.kotlinx.coroutines.play.services)
     // Small key-value storage for the onboarding and session flags (core/session).
     implementation(libs.androidx.datastore.preferences)
+    // Local database. Only core/data uses Room; the offline copy of the emergency contacts
+    // is the first table (ADR 0024).
+    implementation(libs.androidx.room.runtime)
+    ksp(libs.androidx.room.compiler)
 
     // Networking. Only core/network uses these (ADR 0009).
     implementation(libs.okhttp)
@@ -317,6 +337,7 @@ dependencies {
 
     testImplementation(platform(libs.androidx.compose.bom))
     testImplementation(libs.androidx.compose.ui.test.junit4)
+    testImplementation(libs.androidx.room.testing)
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.androidx.test.ext.junit)
     testImplementation(libs.hilt.android.testing)

@@ -140,6 +140,27 @@ row and means nothing outside the database. Names, phone numbers and tokens trav
 and response bodies only. This statement is about the platform's request log and the API's own
 log lines; it was derived from the contract and the tests, not read from the staging logs.
 
+## Addendum (P013b1): the copy on the phone
+
+- **Storage.** A Room database in the app's private storage, one table, never backed up
+  (`allowBackup=false`). It is not encrypted at rest yet; that is a follow-up, to be decided
+  before SOS data joins it.
+- **Server wins.** The copy is replaced by the server's list after each successful fetch. A
+  failed fetch never changes it. A row the server answers with (create, rename) is stored at
+  once, so a new contact is on the phone even if the next fetch fails.
+- **Offline.** Reading needs no network. Every change needs one and is sent to the server
+  first; the app keeps no queue of pending changes, so the phone never shows a contact the
+  server does not have.
+- **SOS reads the phone only** (`ActiveSosContacts`): not opted out, at most 5, oldest first.
+- **Emptied with the session.** The copy is emptied when the user signs out, is back at the
+  start, or the account is blocked; and after the server confirmed a withdrawal of
+  `sos_alerts`. A list that arrives after the copy was emptied is not written.
+- **Known limit.** An opt-out reaches the phone with the next successful fetch. Between the
+  opt-out and that fetch the phone still lists the contact as active. P014 must take this into
+  account (fetch before alerting when a network exists).
+- **No permission.** Nothing in this part reads the phone's address book or sends a message.
+  How a number is picked (the system contact picker) is decided with the screens, in P013b2.
+
 ## References
 
 - Plan v7 §6.3, §7.5, §11, §12.1; `backend/src/modules/contacts/`;
