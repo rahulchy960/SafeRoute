@@ -305,6 +305,25 @@
     <string name="search_error_unavailable">Search is temporarily unavailable. Please try again later.</string>
     <string name="search_error_unexpected">Something went wrong. Please try again.</string>
     <string name="search_retry">Try again</string>
+    <string name="search_chips_label">Search nearby</string>
+    <string name="search_chip_bank">Banks</string>
+    <string name="search_chip_atm">ATMs</string>
+    <string name="search_chip_pharmacy">Pharmacies</string>
+    <string name="search_chip_hospital">Hospitals</string>
+    <string name="search_chip_fuel">Petrol</string>
+    <string name="search_chip_food">Food</string>
+    <string name="search_chip_grocery">Groceries</string>
+    <string name="search_chip_transit">Bus &amp; train</string>
+    <string name="search_within">Within %1$s km</string>
+    <string name="search_within_position">Within %1$s km of your location</string>
+    <string name="search_within_map">Within %1$s km of the centre of the map</string>
+    <string name="search_within_place">Within %1$s km of the place you typed</string>
+    <string name="search_distance_from_place">%1$s from the place you typed</string>
+    <string name="search_distance_note">Distances are approximate.</string>
+    <string name="search_nothing_within">Nothing found within %1$s km.</string>
+    <string name="search_missing_from_map">Local shops are often missing from the map. You can add a place on OpenStreetMap.</string>
+    <string name="search_open_osm">Open OpenStreetMap</string>
+    <string name="search_no_browser">No browser app was found on this phone.</string>
     <string name="place_card_close">Close this place</string>
     <string name="place_card_directions">Directions</string>
 

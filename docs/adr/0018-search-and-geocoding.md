@@ -233,6 +233,26 @@ Added in P011b.
     centre of the map. The label belongs to the answer: it is what that search was sent with.
   - **Not changed:** ranking on the server. Searches that still go wrong (brand aliases,
     category words) are collected as examples first; no fix is guessed.
+- **Added on 2026-10-09 (P011f2): quick-search chips, the searched circle, the empty state.**
+  - **Chips.** While the text field is empty the screen shows eight chips: Banks, ATMs,
+    Pharmacies, Hospitals, Petrol, Food, Groceries, Bus & train. A tap searches at once (no
+    debounce) with `category` and no text, from the same area as a typed search. Tapping the
+    chosen chip again takes it back. Typing ends a chip's search; typed category words and
+    brands are classified on the server, so the app holds no dictionary.
+  - **The circle.** When the answer carries `searchedRadiusKm`, one line above the results
+    says "Within N km of your location", "of the centre of the map" or "of the place you
+    typed", chosen from `searchedAround` and from what the request was sent with. An unknown
+    `searchedAround` gives "Within N km" and no claim about the centre. Around a typed place
+    the spoken distance of a row says "from the place you typed".
+  - **Nothing in the circle.** "Nothing found within N km." and "Local shops are often
+    missing from the map. You can add a place on OpenStreetMap.", with a button that opens
+    `https://www.openstreetmap.org/` in the browser (`ACTION_VIEW`, a fixed address, no
+    extras). The app sends nothing to that site and needs no permission. A phone without a
+    browser gets a line that says so. The wording states what was looked at, never that no
+    such place exists.
+  - **Unchanged:** the area rules, the rounding, no history, no logging, the emergency control
+    in the top bar, choosing a start point. `matchType` is read and not shown: a label such as
+    "brand" on a row would add nothing a person needs, and no ordering claim is made.
 - **Language** follows the app's language (`en` or `bn`); the limit is 6.
 - **No history.** The typed text lives in the screen's saved state (it survives a rotation) and
   nowhere else: not in a file, a log or analytics. There are no recent searches or saved places.
@@ -584,5 +604,6 @@ finds every bank, pharmacy or shop (addendum v7.3, section I; `CLAUDE.md` "Cover
   `backend/test/search-eval/`.
 - Diagram: [`011a-search-request-flow.svg`](../diagrams/011a-search-request-flow.svg);
   category and brand search:
-  [`011f1-category-search-flow.svg`](../diagrams/011f1-category-search-flow.svg).
+  [`011f1-category-search-flow.svg`](../diagrams/011f1-category-search-flow.svg); the screen:
+  [`011f2-nearby-search-screen.svg`](../diagrams/011f2-nearby-search-screen.svg).
 - Prompt log: [`docs/prompt-logs/011a-search-backend.md`](../prompt-logs/011a-search-backend.md).

@@ -520,13 +520,26 @@ at once. Tapping a result returns to Home: the map moves to the place, a pin mar
 sheet shows a card with its name. The card's close button, or the back gesture, removes the pin
 and the card; the next back is the normal one.
 
+**Nearby search (since P011f2).** While the field is empty the screen shows eight quick-search
+chips (Banks, ATMs, Pharmacies, Hospitals, Petrol, Food, Groceries, Bus & train). A tap searches
+that kind of place at once, near the user. Typed words for a kind of place ("pharmacy") or a
+well-known brand ("SBI") are recognised by the server, not by the app. For both, the line above
+the results says how far around what the server looked ("Within 10 km of your location"), and
+every row shows a distance. When the circle holds nothing the screen says "Nothing found within
+N km." and explains that local shops are often missing from the map, with a button that opens
+openstreetmap.org in the browser. That sentence is about the map, never about whether such a
+place exists.
+
 **What is sent, and to whom.**
 
 | Sent to the SafeRoute API | Not sent |
 | --- | --- |
-| The text you typed | Your own position (search needs no location permission and asks for none) |
-| The centre of the map, rounded to two decimals (about 1 km) | The exact map position, your phone number, your contacts |
+| The text you typed, or the chip's category (`bank`, `pharmacy`, …) | A precise position: only two decimals (about 1 km) ever leave the phone for a search |
+| Since P011e2: your position rounded to two decimals, when the permission is granted and the position is at most 5 minutes old; otherwise the centre of the map, rounded the same way; otherwise no area. Search asks for no permission and starts no location updates | Your phone number, your contacts, a search history (there is none) |
 | The app language (`en` or `bn`) | Anything to the geocoding provider directly: the app never talks to it |
+
+The OpenStreetMap button opens a fixed address in the browser; the app sends nothing to that
+site.
 
 The SafeRoute API forwards the text and the coarse area to the geocoding provider (Geoapify)
 with its own server key. The provider sees SafeRoute's server, not your phone. There is no
@@ -544,7 +557,9 @@ are never logged; the types that hold them print "hidden".
 | --- | --- |
 | `feature/search/SearchRepository.kt` | `SearchRepository`; `ApiSearchRepository` calls the generated `SearchApi` through `apiCall { }`. The search is sent as a POST body, never in the URL: servers and platforms log URLs ([ADR 0019](../docs/adr/0019-privacy-in-urls.md)) |
 | `feature/search/SearchViewModel.kt` | Debounce, "only the newest answer counts", the screen's states |
-| `feature/search/SearchScreen.kt` | `SearchRoute` (with the ViewModel) and the stateless `SearchScreen` |
+| `feature/search/SearchScreen.kt` | `SearchRoute` (with the ViewModel) and the stateless `SearchScreen`, the chips, the "within N km" line |
+| `feature/search/SearchArea.kt` | Where a search looks first: position, map centre or nothing |
+| `feature/search/MapSite.kt` | The intent that opens openstreetmap.org (`ACTION_VIEW`) |
 | `core/map/MapSelection.kt` | What Search and Home share: the chosen place and the map's centre |
 | `feature/home/PlaceCard.kt` | The card in the sheet |
 

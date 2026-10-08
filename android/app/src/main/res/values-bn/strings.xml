@@ -298,6 +298,25 @@
     <string name="search_error_unavailable">খোঁজার সুবিধা সাময়িকভাবে বন্ধ আছে। পরে আবার চেষ্টা করুন।</string>
     <string name="search_error_unexpected">কিছু একটা ভুল হয়েছে। আবার চেষ্টা করুন।</string>
     <string name="search_retry">আবার চেষ্টা করুন</string>
+    <string name="search_chips_label">কাছাকাছি খুঁজুন</string>
+    <string name="search_chip_bank">ব্যাংক</string>
+    <string name="search_chip_atm">এটিএম</string>
+    <string name="search_chip_pharmacy">ওষুধের দোকান</string>
+    <string name="search_chip_hospital">হাসপাতাল</string>
+    <string name="search_chip_fuel">পেট্রোল</string>
+    <string name="search_chip_food">খাবার</string>
+    <string name="search_chip_grocery">মুদি দোকান</string>
+    <string name="search_chip_transit">বাস ও ট্রেন</string>
+    <string name="search_within">%1$s কিমির মধ্যে</string>
+    <string name="search_within_position">আপনার অবস্থানের %1$s কিমির মধ্যে</string>
+    <string name="search_within_map">মানচিত্রের কেন্দ্রের %1$s কিমির মধ্যে</string>
+    <string name="search_within_place">আপনার লেখা জায়গার %1$s কিমির মধ্যে</string>
+    <string name="search_distance_from_place">আপনার লেখা জায়গা থেকে %1$s</string>
+    <string name="search_distance_note">দূরত্বগুলি আনুমানিক।</string>
+    <string name="search_nothing_within">%1$s কিমির মধ্যে কিছু পাওয়া যায়নি।</string>
+    <string name="search_missing_from_map">স্থানীয় দোকান অনেক সময় মানচিত্রে থাকে না। আপনি OpenStreetMap-এ জায়গা যোগ করতে পারেন।</string>
+    <string name="search_open_osm">OpenStreetMap খুলুন</string>
+    <string name="search_no_browser">এই ফোনে কোনো ব্রাউজার অ্যাপ পাওয়া যায়নি।</string>
     <string name="place_card_close">এই জায়গাটি বন্ধ করুন</string>
     <string name="place_card_directions">পথনির্দেশ</string>
 

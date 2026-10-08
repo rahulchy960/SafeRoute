@@ -459,7 +459,13 @@ and [`android/README.md`](android/README.md):
   experimental coroutine API (`debounce`, `flatMapLatest`) is used. The credit line from the
   API stays visible with the results. Search screens and Home talk through
   `core/map/MapSelection`, and a chosen place is drawn as an overlay description, so MapLibre
-  types stay in `MapLibreEngine.kt`.
+  types stay in `MapLibreEngine.kt`. Quick-search chips (since P011f2) send `category` and no
+  text; the app holds no dictionary of category words, the server classifies typed text. The
+  line above the results comes from the server's `searchedRadiusKm` and `searchedAround`, and
+  never says "your location" about a circle around a typed place or an unknown centre. An
+  empty circle reads "Nothing found within N km": never that no such place exists, and no
+  "best", "nearest" or rating wording on chips or rows. The OpenStreetMap link is
+  `feature/search/MapSite.kt` (`ACTION_VIEW`, a fixed address, no extras).
 - Following a route follows [ADR 0022](docs/adr/0022-follow-me-navigation.md) (since P012c2a):
   **on screen only**. No foreground service, background location, notification or new
   permission without a superseding ADR and a prompt that asks for it. It starts only with

@@ -23,7 +23,7 @@ const val FAKE_ATTRIBUTION = "Fake provider · © Fake map data"
  */
 class FakeSearchRepository : SearchRepository {
 
-    data class Call(val query: String, val near: LatLng?, val language: String)
+    data class Call(val query: String, val near: LatLng?, val language: String, val category: SearchCategory? = null)
 
     val calls = mutableListOf<Call>()
     val answers = mutableMapOf<String, SearchOutcome>()
@@ -35,11 +35,19 @@ class FakeSearchRepository : SearchRepository {
     /** How many searches ran to the end (were not cancelled). */
     var completed = 0
 
-    override suspend fun search(query: String, near: LatLng?, language: String): SearchOutcome {
-        calls += Call(query, near, language)
+    /** What a chip's search gets; a chip without a scripted answer gets [defaultAnswer]. */
+    val categoryAnswers = mutableMapOf<SearchCategory, SearchOutcome>()
+
+    override suspend fun search(
+        query: String,
+        near: LatLng?,
+        language: String,
+        category: SearchCategory?,
+    ): SearchOutcome {
+        calls += Call(query, near, language, category)
         gates[query]?.await()
         completed++
-        return answers[query] ?: defaultAnswer
+        return categoryAnswers[category] ?: answers[query] ?: defaultAnswer
     }
 }
 

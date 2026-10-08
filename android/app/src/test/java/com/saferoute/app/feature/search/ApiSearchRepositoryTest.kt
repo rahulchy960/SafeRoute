@@ -85,6 +85,65 @@ class ApiSearchRepositoryTest {
     }
 
     @Test
+    fun `a chip sends its category and no text, and typed text sends no category`() = runTest {
+        val api = ok()
+        val repository = ApiSearchRepository(api)
+        repository.search("", LatLng(10.123456, 20.987654), "en", SearchCategory.Pharmacy)
+        repository.search("", null, "bn", SearchCategory.Transit)
+        repository.search("bank", null, "en")
+
+        assertEquals(listOf("pharmacy", "public_transport", null), api.sent.map { it.category })
+        assertEquals(listOf(null, null, "bank"), api.sent.map { it.q })
+        // The area is rounded for a chip exactly as for typed text.
+        assertEquals(BigDecimal("10.12"), api.sent.first().nearLatitude)
+        // The words on the wire, as the request body carries them.
+        val body = networkJson.encodeToString(SearchRequest.serializer(), api.sent.first())
+        assertEquals(true, "\"category\":\"pharmacy\"" in body)
+        assertEquals(false, "\"q\"" in body)
+    }
+
+    @Test
+    fun `every chip has a category the server knows`() {
+        // The values of the contract's `category` (0.8.0) that the chips use.
+        assertEquals(
+            listOf("bank", "atm", "pharmacy", "hospital", "fuel", "restaurant", "grocery", "public_transport"),
+            SearchCategory.entries.map { it.key },
+        )
+    }
+
+    @Test
+    fun `reads the searched circle, and an unknown centre is not taken for the user's location`() = runTest {
+        fun answer(extra: String) = """{"results":[],"attribution":null$extra}"""
+        suspend fun circle(extra: String) = (search(ok(answer(extra))) as SearchOutcome.Found).circle
+
+        assertEquals(
+            SearchedCircle(10, CircleCentre.SentArea),
+            circle(""","searchedRadiusKm":10,"searchedAround":"near""""),
+        )
+        assertEquals(
+            SearchedCircle(25, CircleCentre.TypedPlace),
+            circle(""","searchedRadiusKm":25.0,"searchedAround":"placeHint""""),
+        )
+        assertEquals(
+            SearchedCircle(10, CircleCentre.Unknown),
+            circle(""","searchedRadiusKm":10,"searchedAround":"somethingNew""""),
+        )
+        assertEquals(SearchedCircle(10, CircleCentre.Unknown), circle(""","searchedRadiusKm":10"""))
+        // A search by name: no circle, whatever else is there.
+        assertNull(circle(""))
+        assertNull(circle(""","searchedAround":"near""""))
+    }
+
+    @Test
+    fun `matchType is accepted and an unknown value does not break the answer`() = runTest {
+        val json = """{"results":[
+            {"id":"a","name":"A","label":"","latitude":10.5,"longitude":20.5,"kind":"bank","matchType":"brand"},
+            {"id":"b","name":"B","label":"","latitude":10.5,"longitude":20.5,"kind":"bank","matchType":"future"}
+        ],"attribution":null,"searchedRadiusKm":10,"searchedAround":"near"}"""
+        assertEquals(listOf("a", "b"), (search(ok(json)) as SearchOutcome.Found).places.map { it.id })
+    }
+
+    @Test
     fun `a null or blank attribution is no attribution, and no results is an empty list`() = runTest {
         val none = search(ok("""{"results":[],"attribution":null}""")) as SearchOutcome.Found
         assertEquals(emptyList<FoundPlace>(), none.places)

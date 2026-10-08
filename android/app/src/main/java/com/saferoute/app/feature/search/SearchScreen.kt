@@ -2,6 +2,7 @@
 package com.saferoute.app.feature.search
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -24,6 +25,7 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -54,6 +56,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -79,6 +82,8 @@ internal object SearchTags {
     const val Results = "search-results"
     const val Row = "search-result-row"
     const val DistanceNote = "search-distance-note"
+    const val Chips = "search-chips"
+    const val Within = "search-within"
 }
 
 /**
@@ -100,7 +105,10 @@ fun SearchRoute(
 ) {
     var query by rememberSaveable { mutableStateOf("") }
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val category by viewModel.category.collectAsStateWithLifecycle()
     LaunchedEffect(query) { viewModel.onQueryChange(query) }
+    // Set when the phone has no app that can open a web page; shown under the link.
+    var browserMissing by rememberSaveable { mutableStateOf(false) }
     // The same dialog as on Home. It is this screen's own state: nothing about a search can
     // reach it, and it survives a rotation.
     var emergencyDialog by rememberSaveable { mutableStateOf(EmergencyDialogState.Hidden) }
@@ -119,6 +127,14 @@ fun SearchRoute(
         modifier = modifier,
         onEmergencyClick = { emergencyDialog = EmergencyDialogState.OfferDialer },
         choosingStart = viewModel.choosingStart,
+        category = category,
+        onCategoryClick = {
+            // A chip searches a kind of place, not the text: the field is emptied first.
+            query = ""
+            viewModel.onCategoryClick(it)
+        },
+        onOpenMapSite = { browserMissing = !openMapSite(context) },
+        browserMissing = browserMissing,
     )
 
     if (emergencyDialog != EmergencyDialogState.Hidden) {
@@ -154,6 +170,10 @@ fun SearchScreen(
     modifier: Modifier = Modifier,
     onEmergencyClick: () -> Unit = {},
     choosingStart: Boolean = false,
+    category: SearchCategory? = null,
+    onCategoryClick: (SearchCategory) -> Unit = {},
+    onOpenMapSite: () -> Unit = {},
+    browserMissing: Boolean = false,
 ) {
     val focusRequester = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
@@ -220,37 +240,122 @@ fun SearchScreen(
             }
         },
     ) { innerPadding ->
-        val bodyModifier = Modifier
-            .fillMaxSize()
-            .padding(innerPadding)
-            // Keeps the content above the keyboard.
-            .imePadding()
-        when (state) {
-            is SearchUiState.Results -> SearchResults(
-                results = state,
-                onPlaceClick = onPlaceClick,
-                modifier = bodyModifier,
-            )
-            SearchUiState.Idle -> SearchMessage(
-                title = stringResource(R.string.search_empty_title),
-                body = stringResource(R.string.search_empty_body),
-                modifier = bodyModifier,
-                announce = false,
-            )
-            SearchUiState.TooShort -> SearchMessage(
-                title = stringResource(R.string.search_too_short),
-                modifier = bodyModifier,
-            )
-            SearchUiState.Loading -> SearchLoading(bodyModifier)
-            SearchUiState.Empty -> SearchMessage(
-                title = stringResource(R.string.search_no_results_title),
-                body = stringResource(R.string.search_no_results_body),
-                modifier = bodyModifier,
-            )
-            is SearchUiState.Error -> SearchMessage(
-                title = searchErrorText(state.error),
-                modifier = bodyModifier,
-                onRetry = onSearch,
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                // Keeps the content above the keyboard.
+                .imePadding(),
+        ) {
+            // The chips are the screen's starting point: shown while the field is empty, which
+            // includes the whole of a chip's own search. Typing makes room for the results.
+            if (query.isEmpty()) {
+                CategoryChips(
+                    selected = category,
+                    onClick = {
+                        keyboard?.hide()
+                        onCategoryClick(it)
+                    },
+                )
+            }
+            val bodyModifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+            when (state) {
+                is SearchUiState.Results -> SearchResults(
+                    results = state,
+                    onPlaceClick = onPlaceClick,
+                    modifier = bodyModifier,
+                )
+                SearchUiState.Idle -> SearchMessage(
+                    title = stringResource(R.string.search_empty_title),
+                    body = stringResource(R.string.search_empty_body),
+                    modifier = bodyModifier,
+                    announce = false,
+                )
+                SearchUiState.TooShort -> SearchMessage(
+                    title = stringResource(R.string.search_too_short),
+                    modifier = bodyModifier,
+                )
+                SearchUiState.Loading -> SearchLoading(bodyModifier)
+                is SearchUiState.Empty -> {
+                    val circle = state.circle
+                    if (circle == null) {
+                        SearchMessage(
+                            title = stringResource(R.string.search_no_results_title),
+                            body = stringResource(R.string.search_no_results_body),
+                            modifier = bodyModifier,
+                        )
+                    } else {
+                        // Says what was looked at and nothing more: an empty circle on the map is
+                        // not a statement about the place itself.
+                        SearchMessage(
+                            title = stringResource(R.string.search_nothing_within, wholeNumber(circle.radiusKm)),
+                            body = stringResource(R.string.search_missing_from_map),
+                            modifier = bodyModifier,
+                            action = stringResource(R.string.search_open_osm) to onOpenMapSite,
+                            footnote = stringResource(R.string.search_no_browser).takeIf { browserMissing },
+                        )
+                    }
+                }
+                is SearchUiState.Error -> SearchMessage(
+                    title = searchErrorText(state.error),
+                    modifier = bodyModifier,
+                    action = stringResource(R.string.search_retry) to onSearch,
+                )
+            }
+        }
+    }
+}
+
+/** The app's words for each quick-search chip. */
+private fun SearchCategory.labelRes(): Int = when (this) {
+    SearchCategory.Bank -> R.string.search_chip_bank
+    SearchCategory.Atm -> R.string.search_chip_atm
+    SearchCategory.Pharmacy -> R.string.search_chip_pharmacy
+    SearchCategory.Hospital -> R.string.search_chip_hospital
+    SearchCategory.Fuel -> R.string.search_chip_fuel
+    SearchCategory.Food -> R.string.search_chip_food
+    SearchCategory.Grocery -> R.string.search_chip_grocery
+    SearchCategory.Transit -> R.string.search_chip_transit
+}
+
+/** A whole number in the app language's digits: "10", or "১০" in Bengali. */
+@Composable
+private fun wholeNumber(value: Int): String {
+    val locale = ConfigurationCompat.getLocales(LocalConfiguration.current)[0] ?: Locale.ROOT
+    return NumberFormat.getIntegerInstance(locale).format(value)
+}
+
+/**
+ * One row of quick searches. It scrolls sideways, so every chip keeps its full size at any
+ * font scale. Each chip is a button for TalkBack ("Banks, button"); the chosen one is also
+ * announced as selected. A chip is at least 48 dp tall to the touch (Material's default).
+ */
+@Composable
+private fun CategoryChips(
+    selected: SearchCategory?,
+    onClick: (SearchCategory) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val spacing = SafeRouteTheme.spacing
+    val label = stringResource(R.string.search_chips_label)
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = spacing.md, vertical = spacing.xxs)
+            .testTag(SearchTags.Chips)
+            .semantics { contentDescription = label },
+        horizontalArrangement = Arrangement.spacedBy(spacing.xs),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        SearchCategory.entries.forEach { category ->
+            FilterChip(
+                selected = category == selected,
+                onClick = { onClick(category) },
+                label = { Text(text = stringResource(category.labelRes())) },
+                modifier = Modifier.semantics { role = Role.Button },
             )
         }
     }
@@ -282,7 +387,8 @@ private fun SearchMessage(
     modifier: Modifier = Modifier,
     body: String? = null,
     announce: Boolean = true,
-    onRetry: (() -> Unit)? = null,
+    action: Pair<String, () -> Unit>? = null,
+    footnote: String? = null,
 ) {
     Column(
         modifier = modifier
@@ -316,8 +422,17 @@ private fun SearchMessage(
                 textAlign = TextAlign.Center,
             )
         }
-        if (onRetry != null) {
-            OutlinedButton(onClick = onRetry) { Text(text = stringResource(R.string.search_retry)) }
+        if (action != null) {
+            OutlinedButton(onClick = action.second) { Text(text = action.first) }
+        }
+        if (footnote != null) {
+            Text(
+                text = footnote,
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
         }
     }
 }
@@ -359,8 +474,24 @@ private fun SearchResults(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+        // A search by kind or brand: how far around what the server looked. Read out too.
+        results.circle?.let { circle ->
+            item(key = "within") {
+                Text(
+                    text = stringResource(withinRes(circle, results.distancesFrom), wholeNumber(circle.radiusKm)) +
+                        " " + stringResource(R.string.search_distance_note),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = spacing.md)
+                        .testTag(SearchTags.Within)
+                        .semantics { liveRegion = LiveRegionMode.Polite },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
         // Said once, in words, for everyone: what the distances are measured from.
-        if (results.distancesFrom != null && results.places.any { it.distanceMeters != null }) {
+        if (results.circle == null && results.distancesFrom != null && results.places.any { it.distanceMeters != null }) {
             item(key = "distance-note") {
                 Text(
                     text = stringResource(
@@ -379,7 +510,14 @@ private fun SearchResults(
             }
         }
         items(items = results.places, key = { it.id }) { place ->
-            PlaceRow(place = place, distancesFrom = results.distancesFrom, onClick = { onPlaceClick(place) })
+            PlaceRow(
+                place = place,
+                // A distance is shown only when the app knows it belongs to this answer: the
+                // search was sent with an area, or the server says it searched a circle.
+                showDistance = results.distancesFrom != null || results.circle != null,
+                spokenDistanceRes = spokenDistanceRes(results.circle, results.distancesFrom),
+                onClick = { onPlaceClick(place) },
+            )
         }
         results.attribution?.let { attribution ->
             item(key = "attribution") {
@@ -394,6 +532,31 @@ private fun SearchResults(
                 )
             }
         }
+    }
+}
+
+/** "Within N km of …": of what depends on what the circle was drawn around. */
+private fun withinRes(circle: SearchedCircle, sent: NearSource?): Int = when (circle.centre) {
+    CircleCentre.TypedPlace -> R.string.search_within_place
+    CircleCentre.Unknown -> R.string.search_within
+    CircleCentre.SentArea -> when (sent) {
+        NearSource.Position -> R.string.search_within_position
+        NearSource.MapCentre -> R.string.search_within_map
+        null -> R.string.search_within
+    }
+}
+
+/**
+ * The sentence TalkBack reads for a row's distance, or null when the app can not say what the
+ * distance is measured from (it then reads the bare figure).
+ */
+private fun spokenDistanceRes(circle: SearchedCircle?, sent: NearSource?): Int? = when (circle?.centre) {
+    CircleCentre.TypedPlace -> R.string.search_distance_from_place
+    CircleCentre.Unknown -> null
+    CircleCentre.SentArea, null -> when (sent) {
+        NearSource.Position -> R.string.search_distance_from_position
+        NearSource.MapCentre -> R.string.search_distance_from_map
+        null -> null
     }
 }
 
@@ -423,7 +586,7 @@ internal fun searchKilometres(distanceMeters: Int, locale: Locale): String {
 }
 
 @Composable
-private fun PlaceRow(place: FoundPlace, distancesFrom: NearSource?, onClick: () -> Unit) {
+private fun PlaceRow(place: FoundPlace, showDistance: Boolean, spokenDistanceRes: Int?, onClick: () -> Unit) {
     val spacing = SafeRouteTheme.spacing
     // Read from the configuration, so the numbers change with the app language at once.
     val locale = ConfigurationCompat.getLocales(LocalConfiguration.current)[0] ?: Locale.ROOT
@@ -458,16 +621,10 @@ private fun PlaceRow(place: FoundPlace, distancesFrom: NearSource?, onClick: () 
                 )
             }
         }
-        if (place.distanceMeters != null && distancesFrom != null) {
+        if (place.distanceMeters != null && showDistance) {
             val distance = searchDistanceText(place.distanceMeters, locale)
             // What TalkBack reads instead of the bare figure: "2.3 km from your location".
-            val spoken = stringResource(
-                when (distancesFrom) {
-                    NearSource.Position -> R.string.search_distance_from_position
-                    NearSource.MapCentre -> R.string.search_distance_from_map
-                },
-                distance,
-            )
+            val spoken = spokenDistanceRes?.let { stringResource(it, distance) } ?: distance
             Text(
                 text = distance,
                 modifier = Modifier.semantics { contentDescription = spoken },
