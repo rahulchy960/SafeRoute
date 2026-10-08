@@ -1,0 +1,141 @@
+{
+  "$schema": "../../tools/diagrams/diagram.schema.json",
+  "title": "Nearby search on the phone",
+  "subtitle": "A chip or typed text; the answer says how far around what was searched. An empty circle is about the map, never about the place. The emergency control stays in the top bar (P011f2, ADR 0018)",
+  "direction": "TB",
+  "layout": {
+    "nodeWidth": 240
+  },
+  "groups": [
+    {
+      "id": "screen",
+      "label": "Search screen"
+    },
+    {
+      "id": "logic",
+      "label": "SearchViewModel"
+    },
+    {
+      "id": "outside",
+      "label": "Outside the app"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "idle",
+      "label": "Empty field: eight chips (Banks, ATMs, Pharmacies, Hospitals, Petrol, Food, Groceries, Bus & train) and the typing hint",
+      "role": "app",
+      "group": "screen",
+      "rank": 0
+    },
+    {
+      "id": "chip",
+      "label": "Chip tapped: search at once with its category and no text. Tapped again: back to the empty screen",
+      "role": "service",
+      "group": "logic",
+      "rank": 1
+    },
+    {
+      "id": "typed",
+      "label": "Text typed: the chip ends; after 300 ms search with the text. The server decides if it is a kind, a brand or a name",
+      "role": "service",
+      "group": "logic",
+      "rank": 1
+    },
+    {
+      "id": "area",
+      "label": "Area, as before: the recent position, else the map centre, else none. Rounded to 2 decimals. No permission is asked",
+      "role": "security",
+      "group": "logic",
+      "rank": 2
+    },
+    {
+      "id": "api",
+      "label": "SafeRoute API: POST /v1/search. Answers with results and, for a kind or brand, searchedRadiusKm and searchedAround",
+      "role": "external",
+      "group": "outside",
+      "rank": 3
+    },
+    {
+      "id": "results",
+      "label": "Results: \"Within N km of your location / the centre of the map / the place you typed\", a distance on every row",
+      "role": "app",
+      "group": "screen",
+      "rank": 4
+    },
+    {
+      "id": "empty",
+      "label": "Empty circle: \"Nothing found within N km.\" and \"Local shops are often missing from the map\", with a link",
+      "role": "app",
+      "group": "screen",
+      "rank": 4
+    },
+    {
+      "id": "error",
+      "label": "Offline, 429 or 503: a calm message and Try again, which repeats the chip or the text",
+      "role": "app",
+      "group": "screen",
+      "rank": 4
+    },
+    {
+      "id": "browser",
+      "label": "Browser opens openstreetmap.org (ACTION_VIEW, a fixed address). No browser: a line says so",
+      "role": "external",
+      "group": "outside",
+      "rank": 5
+    },
+    {
+      "id": "chosen",
+      "label": "Row tapped: the place goes to the map, or becomes the start of the route",
+      "role": "app",
+      "group": "screen",
+      "rank": 5
+    }
+  ],
+  "edges": [
+    {
+      "from": "idle",
+      "to": "chip"
+    },
+    {
+      "from": "idle",
+      "to": "typed"
+    },
+    {
+      "from": "chip",
+      "to": "area"
+    },
+    {
+      "from": "typed",
+      "to": "area"
+    },
+    {
+      "from": "area",
+      "to": "api"
+    },
+    {
+      "from": "api",
+      "to": "results",
+      "label": "places"
+    },
+    {
+      "from": "api",
+      "to": "empty",
+      "label": "none in the circle"
+    },
+    {
+      "from": "api",
+      "to": "error",
+      "label": "failed"
+    },
+    {
+      "from": "empty",
+      "to": "browser",
+      "label": "Open OpenStreetMap"
+    },
+    {
+      "from": "results",
+      "to": "chosen"
+    }
+  ]
+}

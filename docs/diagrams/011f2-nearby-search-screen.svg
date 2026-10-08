@@ -1,0 +1,113 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1778" height="1314" viewBox="0 0 1778 1314" font-family="Helvetica, Arial, sans-serif">
+<title>Nearby search on the phone</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#495057"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="40" y="62" font-size="24" font-weight="700" fill="#1e1e1e">Nearby search on the phone</text>
+<text x="40" y="86" font-size="14" fill="#495057">A chip or typed text; the answer says how far around what was searched. An empty circle is about the map, never about the place. The emergency control stays in the top bar (P011f2, ADR 0018)</text>
+<rect x="40" y="114" width="808" height="1114" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="54" y="135" font-size="14" font-weight="700" fill="#495057">Search screen</text>
+<rect x="884" y="114" width="542" height="1114" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="898" y="135" font-size="14" font-weight="700" fill="#495057">SearchViewModel</text>
+<rect x="1462" y="114" width="276" height="1114" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="1476" y="135" font-size="14" font-weight="700" fill="#495057">Outside the app</text>
+<line x1="444" y1="290" x2="1022" y2="350" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="444" y1="290" x2="1288" y2="350" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1022" y1="458" x2="1155" y2="518" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1288" y1="458" x2="1155" y2="518" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1155" y1="646" x2="1600" y2="706" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1600" y1="834" x2="178" y2="894" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1600" y1="834" x2="444" y2="904" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1600" y1="834" x2="710" y2="904" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="444" y1="1012" x2="1600" y2="1082" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="178" y1="1022" x2="178" y2="1102.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="324" y="162" width="240" height="128" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="444" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="444" y="190">Empty field: eight chips</tspan>
+<tspan x="444" y="210.8">(Banks, ATMs, Pharmacies,</tspan>
+<tspan x="444" y="231.6">Hospitals, Petrol, Food,</tspan>
+<tspan x="444" y="252.4">Groceries, Bus &amp; train) and</tspan>
+<tspan x="444" y="273.2">the typing hint</tspan>
+</text>
+<rect x="902" y="350" width="240" height="108" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="1022" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1022" y="378.4">Chip tapped: search at once</tspan>
+<tspan x="1022" y="399.2">with its category and no text.</tspan>
+<tspan x="1022" y="420">Tapped again: back to the</tspan>
+<tspan x="1022" y="440.8">empty screen</tspan>
+</text>
+<rect x="1168" y="350" width="240" height="108" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="1288" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1288" y="378.4">Text typed: the chip ends;</tspan>
+<tspan x="1288" y="399.2">after 300 ms search with the</tspan>
+<tspan x="1288" y="420">text. The server decides if it</tspan>
+<tspan x="1288" y="440.8">is a kind, a brand or a name</tspan>
+</text>
+<rect x="1035" y="518" width="240" height="128" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="1155" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1155" y="546">Area, as before: the recent</tspan>
+<tspan x="1155" y="566.8">position, else the map</tspan>
+<tspan x="1155" y="587.6">centre, else none. Rounded</tspan>
+<tspan x="1155" y="608.4">to 2 decimals. No</tspan>
+<tspan x="1155" y="629.2">permission is asked</tspan>
+</text>
+<rect x="1480" y="706" width="240" height="128" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="1600" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1600" y="734">SafeRoute API: POST</tspan>
+<tspan x="1600" y="754.8">/v1/search. Answers with</tspan>
+<tspan x="1600" y="775.6">results and, for a kind or</tspan>
+<tspan x="1600" y="796.4">brand, searchedRadiusKm</tspan>
+<tspan x="1600" y="817.2">and searchedAround</tspan>
+</text>
+<rect x="58" y="894" width="240" height="128" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="178" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="178" y="922">Results: &quot;Within N km of</tspan>
+<tspan x="178" y="942.8">your location / the centre of</tspan>
+<tspan x="178" y="963.6">the map / the place you</tspan>
+<tspan x="178" y="984.4">typed&quot;, a distance on every</tspan>
+<tspan x="178" y="1005.2">row</tspan>
+</text>
+<rect x="324" y="904" width="240" height="108" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="444" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="444" y="932.4">Empty circle: &quot;Nothing found</tspan>
+<tspan x="444" y="953.2">within N km.&quot; and &quot;Local</tspan>
+<tspan x="444" y="974">shops are often missing from</tspan>
+<tspan x="444" y="994.8">the map&quot;, with a link</tspan>
+</text>
+<rect x="590" y="904" width="240" height="108" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="710" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="710" y="932.4">Offline, 429 or 503: a calm</tspan>
+<tspan x="710" y="953.2">message and Try again,</tspan>
+<tspan x="710" y="974">which repeats the chip or the</tspan>
+<tspan x="710" y="994.8">text</tspan>
+</text>
+<rect x="1480" y="1082" width="240" height="128" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="1600" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1600" y="1110">Browser opens</tspan>
+<tspan x="1600" y="1130.8">openstreetmap.org</tspan>
+<tspan x="1600" y="1151.6">(ACTION_VIEW, a fixed</tspan>
+<tspan x="1600" y="1172.4">address). No browser: a line</tspan>
+<tspan x="1600" y="1193.2">says so</tspan>
+</text>
+<rect x="58" y="1102.5" width="240" height="87" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="178" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="178" y="1130.8">Row tapped: the place goes</tspan>
+<tspan x="178" y="1151.6">to the map, or becomes the</tspan>
+<tspan x="178" y="1172.4">start of the route</tspan>
+</text>
+<rect x="863.5" y="853" width="51" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="889" y="868.5" font-size="13" fill="#1e1e1e" text-anchor="middle">places</text>
+<rect x="965.3" y="858" width="113.4" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="1022" y="873.5" font-size="13" fill="#1e1e1e" text-anchor="middle">none in the circle</text>
+<rect x="1132.6" y="858" width="44.8" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="1155" y="873.5" font-size="13" fill="#1e1e1e" text-anchor="middle">failed</text>
+<rect x="954" y="1036" width="136" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="1022" y="1051.5" font-size="13" fill="#1e1e1e" text-anchor="middle">Open OpenStreetMap</text>
+<rect x="40" y="1249" width="16" height="16" rx="3" fill="#a5d8ff" stroke="#1971c2" stroke-width="1.5"/>
+<text x="62" y="1262" font-size="13" fill="#495057">App / UI</text>
+<rect x="134.8" y="1249" width="16" height="16" rx="3" fill="#b2f2bb" stroke="#2f9e44" stroke-width="1.5"/>
+<text x="156.8" y="1262" font-size="13" fill="#495057">Service</text>
+<rect x="228.3" y="1249" width="16" height="16" rx="3" fill="#ffc9c9" stroke="#e03131" stroke-width="1.5"/>
+<text x="250.3" y="1262" font-size="13" fill="#495057">Security / emergency</text>
+<rect x="401.9" y="1249" width="16" height="16" rx="3" fill="#e9ecef" stroke="#495057" stroke-width="1.5"/>
+<text x="423.9" y="1262" font-size="13" fill="#495057">External</text>
+</svg>
