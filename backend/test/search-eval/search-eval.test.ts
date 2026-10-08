@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   GeocoderError,
+  type CategoryQuery,
   type GeocoderProvider,
   type GeocoderQuery,
   type PlaceResult,
@@ -24,6 +26,8 @@ import {
   scoreQuery,
 } from './harness.js';
 import { main, readSettings } from './run.js';
+
+const TEMPLATE_PATH = join(import.meta.dirname, 'small-town-template.json');
 
 const place = (name: string, label = '', latitude = 10, longitude = 20): PlaceResult => ({
   id: `fake-${name}`,
@@ -409,7 +413,18 @@ describe('pnpm search:eval settings', () => {
         apiKey: FAKE_KEY,
         rps: 1,
         timeoutMs: 5000,
+        fixture: 'fixture.json',
       });
+    }
+    // Another fixture is chosen by FILE NAME in this folder; a path is refused, not echoed.
+    const key = { GEOCODING_API_KEY: FAKE_KEY };
+    expect(readSettings({ ...key, SEARCH_EVAL_FIXTURE: 'small-town-template.json' })).toMatchObject(
+      { ok: true, fixture: 'small-town-template.json' },
+    );
+    for (const bad of ['../../.env', 'C:/somewhere/else.json', 'fixture', 'a b.json']) {
+      const refused = readSettings({ ...key, SEARCH_EVAL_FIXTURE: bad });
+      expect(refused.ok).toBe(false);
+      expect(JSON.stringify(refused)).not.toContain(bad);
     }
     expect(
       readSettings({
@@ -423,5 +438,183 @@ describe('pnpm search:eval settings', () => {
       ok: true,
       provider: 'geoapify',
     });
+  });
+});
+
+describe('category, brand and name intents (P011f1)', () => {
+  const NEAR = { latitude: 10, longitude: 20 };
+  const nearby = (
+    id: string,
+    query: string,
+    intent: 'category' | 'brand' | 'name',
+    extra: Partial<FixtureEntry> = {},
+  ) => entry({ id, query, intent, near: NEAR, expectedNameContains: ['Bank'], ...extra });
+  const at = (name: string, north: number) => place(name, '', 10 + north, 20);
+
+  it('the small-town template is valid: 20+ rows, 8+ districts, all for Rahul to review', () => {
+    const template = loadFixture(TEMPLATE_PATH);
+    expect(template.description).toMatch(/^TEMPLATE/);
+    expect(template.entries.length).toBeGreaterThanOrEqual(20);
+    expect(new Set(template.entries.map((item) => item.id)).size).toBe(template.entries.length);
+    expect(new Set(template.entries.map((item) => item.district)).size).toBeGreaterThanOrEqual(8);
+    for (const intent of ['category', 'brand']) {
+      expect(template.entries.some((item) => item.intent === intent)).toBe(true);
+    }
+    for (const item of template.entries) {
+      expect(item.addedBy, item.id).toBe('claude-known');
+      expect(item.inOsm, item.id).toBe('unknown');
+      expect(item.near?.latitude, item.id).toBeGreaterThan(21.4);
+      expect(item.near?.latitude, item.id).toBeLessThan(27.3);
+      expect(item.near?.longitude, item.id).toBeGreaterThan(85.8);
+      expect(item.near?.longitude, item.id).toBeLessThan(89.9);
+    }
+    const raw = readFileSync(TEMPLATE_PATH, 'utf8');
+    expect(raw).not.toMatch(/\d{5,}/);
+    expect(raw).not.toMatch(/@/);
+    expect(raw).not.toMatch(/\b(flat|house no|h\.?no|apartment|residence|mr\.?|mrs\.?|ms\.?)\b/i);
+  });
+
+  it('inOsm and radiusKm belong to these intents only; the radius never exceeds 25 km', () => {
+    expect(
+      FixtureEntrySchema.safeParse(nearby('n', 'bank', 'category', { inOsm: 'no' })).success,
+    ).toBe(true);
+    expect(
+      FixtureEntrySchema.safeParse(nearby('n', 'bank', 'brand', { radiusKm: 25 })).success,
+    ).toBe(true);
+    const bad: unknown[] = [
+      { ...entry(), inOsm: 'yes' },
+      { ...entry({ near: NEAR, intent: 'generic' }), inOsm: 'yes' },
+      { ...entry({ near: NEAR, intent: 'generic' }), radiusKm: 10 },
+      { ...nearby('n', 'bank', 'category'), radiusKm: 26 },
+      { ...nearby('n', 'bank', 'category'), inOsm: 'maybe' },
+      { ...entry(), intent: 'category' },
+    ];
+    for (const item of bad) expect(FixtureEntrySchema.safeParse(item).success).toBe(false);
+  });
+
+  it('searches like the endpoint, looks further away only after a miss, and counts gaps apart', async () => {
+    const categoryCalls: CategoryQuery[] = [];
+    const nameCalls: GeocoderQuery[] = [];
+    const provider: GeocoderProvider = {
+      name: 'fake',
+      attribution: null,
+      // Plain name search: a "Bank" 222 km away exists for every query but "pharmacy".
+      search: (query) => {
+        nameCalls.push(query);
+        return Promise.resolve(query.query === 'pharmacy' ? [] : [at('Far Bank', 2)]);
+      },
+      searchCategory: (query) => {
+        categoryCalls.push(query);
+        if (query.category === 'atm') return Promise.reject(new GeocoderError('upstream'));
+        if (query.category === 'bank' && query.nearLatitude === 10) {
+          return Promise.resolve([
+            at('Town Bank', 0.01),
+            at('SBI Bank', 0.02),
+            at('Old Bank', 0.03),
+          ]);
+        }
+        return Promise.resolve([]);
+      },
+    };
+    const pauses: number[] = [];
+    const outcomes = await runEvaluation({
+      provider,
+      entries: [
+        nearby('n1', 'bank', 'category', { inOsm: 'yes' }),
+        nearby('n2', 'pharmacy', 'category', { inOsm: 'no', district: 'District B' }),
+        nearby('n3', 'pnb', 'brand', { inOsm: 'yes', district: 'District B' }),
+        nearby('n4', 'atm', 'category', { district: 'District B' }),
+        nearby('n5', 'hospital', 'category', { radiusKm: 25, inOsm: 'unknown' }),
+      ],
+      requestsPerSecond: 1,
+      sleep: (ms) => {
+        pauses.push(ms);
+        return Promise.resolve();
+      },
+    });
+
+    // Default first radius 10 km, widened once; the entry's own radius of 25 km is not widened.
+    expect(categoryCalls.map((call) => [call.category, call.withinMeters])).toEqual([
+      ['bank', 10_000],
+      ['pharmacy', 10_000],
+      ['pharmacy', 25_000],
+      ['bank', 10_000],
+      ['bank', 25_000],
+      ['atm', 10_000],
+      ['hospital', 25_000],
+    ]);
+    // One plain name search after each miss, without an area.
+    expect(nameCalls.map((call) => [call.query, call.withinMeters])).toEqual([
+      ['pharmacy', undefined],
+      ['pnb', undefined],
+      ['hospital', undefined],
+    ]);
+    expect(
+      outcomes.map(({ id, nearby: found, providerCalls, error }) => ({
+        id,
+        found,
+        providerCalls,
+        error,
+      })),
+    ).toEqual([
+      { id: 'n1', found: 'within', providerCalls: 1 },
+      { id: 'n2', found: 'none', providerCalls: 3 },
+      // A bank is nearby, but not of this brand; only the far name search has the word.
+      { id: 'n3', found: 'far', providerCalls: 3 },
+      { id: 'n4', found: undefined, providerCalls: undefined, error: 'upstream' },
+      { id: 'n5', found: 'far', providerCalls: 2 },
+    ]);
+    // Paced: between entries (4), before each widening (2) and before each far search (3).
+    expect(pauses).toHaveLength(9);
+
+    const report = buildReport('fake', outcomes);
+    // These entries stay out of every earlier table.
+    expect(report.overall.queries).toBe(0);
+    expect(report.localIntent).toEqual([]);
+    expect(report.nearbyIntent).toEqual([
+      {
+        group: 'District A',
+        queries: 2,
+        errors: 0,
+        within: 1,
+        far: 1,
+        none: 0,
+        dataGap: 0,
+        searchFailure: 0,
+      },
+      {
+        group: 'District B',
+        queries: 3,
+        errors: 1,
+        within: 0,
+        far: 1,
+        none: 1,
+        dataGap: 1,
+        searchFailure: 1,
+      },
+      {
+        group: 'all districts',
+        queries: 5,
+        errors: 1,
+        within: 1,
+        far: 2,
+        none: 1,
+        dataGap: 1,
+        searchFailure: 1,
+      },
+    ]);
+    const text = formatReport(report);
+    expect(text).toContain('### Category/brand intent');
+    expect(text).toContain('| District B | 3 | 1 | 0 | 1 | 1 | 1 | 1 |');
+    // Counts only: no query, no result name.
+    for (const secret of ['pharmacy', 'Town Bank', 'Far Bank', 'pnb']) {
+      expect(text).not.toContain(secret);
+    }
+  });
+
+  it('prints no category table for a fixture without such entries', () => {
+    const report = buildReport('fake', [scoreQuery(entry(), [place('Main Station')])]);
+    expect(report.nearbyIntent).toEqual([]);
+    expect(formatReport(report)).not.toContain('Category/brand intent');
   });
 });

@@ -92,6 +92,7 @@ variable (never its value). Empty values count as unset. See [`.env.example`](.e
 | `SEARCH_PROVIDER_TIMEOUT_MS` | no / no / no | no | `3000` (200–20000) | Cloud Run env var |
 | `SEARCH_NEARBY_RADIUS_KM` | no / no / no | no | `50` (1–500) | Not set in the deploy workflow: the default applies. How far around the request's area the nearby pass of a search looks |
 | `SEARCH_MIN_LOCAL_RESULTS` | no / no / no | no | `3` (1–10) | Not set in the deploy workflow: the default applies. With fewer nearby results, a second, wide provider call follows |
+| `SEARCH_CATEGORY_RADIUS_KM` | no / no / no | no | `10` (1–25) | Not set in the deploy workflow: the default applies. First radius of a search by kind or brand ("bank", "SBI"); with fewer than `SEARCH_MIN_LOCAL_RESULTS` places it widens once to 25 km, never beyond |
 | `OSRM_WALKING_URL`, `OSRM_DRIVING_URL` | no / no / **yes** (https) | treated as one (a Cloud Run URL contains the project number; never logged, never in an error) | none (routes then answer 503 `routing_not_configured`) | GitHub environment **secrets** of the same names → Cloud Run env vars |
 | `ROUTING_AUTH` | no / no / no (`none` is refused in production) | no | `google_id_token` | A constant in `deploy-staging.yml`. `none` only for a local OSRM |
 | `ROUTING_TIMEOUT_MS` | no / no / no | no | `25000` (500–55000) | Optional GitHub environment **variable** of the same name → Cloud Run env var. Not measured yet: see "Routes" below |

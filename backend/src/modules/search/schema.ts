@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { z } from '@hono/zod-openapi';
+import { CATEGORY_KEYS, isCategoryKey } from './intents.js';
 import { normalizeQuery, QUERY_MAX_CODE_POINTS, QUERY_MIN_CODE_POINTS } from './normalize.js';
 
 export const SEARCH_DEFAULT_LIMIT = 6;
@@ -23,9 +24,12 @@ export const SearchRequestSchema = z
       // A generous cap on the raw text, in UTF-16 units; the real rule is in the refinement.
       .max(QUERY_MAX_CODE_POINTS * 4)
       .refine((value) => normalizeQuery(value) !== undefined, { message: 'invalid query' })
+      .optional()
       .openapi({
         description:
-          `What the user typed. After trimming, collapsing whitespace and Unicode NFC ` +
+          'What the user typed. Required unless `category` is sent. A word for a kind of ' +
+          'place, or a well-known brand, is searched as that kind or brand (see the ' +
+          `operation). After trimming, collapsing whitespace and Unicode NFC ` +
           `normalisation it must be ${String(QUERY_MIN_CODE_POINTS)} to ` +
           `${String(QUERY_MAX_CODE_POINTS)} Unicode code points with no control characters. ` +
           'Any script is accepted.',
@@ -65,8 +69,29 @@ export const SearchRequestSchema = z
       .max(SEARCH_MAX_LIMIT)
       .default(SEARCH_DEFAULT_LIMIT)
       .openapi({ description: 'Maximum number of results.', examples: [SEARCH_DEFAULT_LIMIT] }),
+    // Declared LAST on purpose: generated clients build this object positionally, and a new
+    // property in the middle shifts every argument after it (android-ci, P011f1).
+    category: z
+      .string()
+      .regex(/^[a-z][a-z_]{1,39}$/)
+      .optional()
+      .openapi({
+        description:
+          'A kind of place to look for near the point, for a quick-search button. When it is ' +
+          'sent, `q` may be left out and is ignored. Open set: the values this version knows ' +
+          `are ${CATEGORY_KEYS.join(', ')}; an unknown value is a 400. Send the point with it: ` +
+          'without `nearLatitude`/`nearLongitude` there is no circle to search, and the ' +
+          'answer is a plain name search for the word.',
+        examples: ['pharmacy'],
+      }),
   })
   .superRefine((value, ctx) => {
+    if (value.category !== undefined && !isCategoryKey(value.category)) {
+      ctx.addIssue({ code: 'custom', path: ['category'], message: 'unknown category' });
+    }
+    if (value.q === undefined && value.category === undefined) {
+      ctx.addIssue({ code: 'custom', path: ['q'], message: 'q or category is required' });
+    }
     if ((value.nearLatitude === undefined) !== (value.nearLongitude === undefined)) {
       const missing = value.nearLatitude === undefined ? 'nearLatitude' : 'nearLongitude';
       ctx.addIssue({ code: 'custom', path: [missing], message: 'both or neither' });
@@ -74,8 +99,8 @@ export const SearchRequestSchema = z
   })
   .openapi('SearchRequest', {
     description:
-      'A place search. Sent as a request body so that the text and the area never appear in a ' +
-      'URL.',
+      'A place search: `q`, `category` or both. Sent as a request body so that the text and ' +
+      'the area never appear in a URL.',
   });
 
 export const PlaceSchema = z
@@ -119,6 +144,17 @@ export const PlaceSchema = z
           'either way.',
         examples: [2300],
       }),
+    matchType: z
+      .string()
+      .optional()
+      .openapi({
+        description:
+          'Why the place is in the list: `name` (its name matched the text), `category` (it ' +
+          'is of the kind asked for) or `brand` (it is of that kind and carries the name of ' +
+          'the brand). Sent with every result since 0.8.0. Open set: clients must tolerate ' +
+          'unknown values. It says nothing about the quality or safety of a place.',
+        examples: ['category'],
+      }),
   })
   .openapi('Place', { description: 'One search result.' });
 
@@ -129,8 +165,9 @@ export const SearchResultsSchema = z
       .max(SEARCH_MAX_LIMIT)
       .openapi({
         description:
-          'Places near the requested point first, then places from further away; within each ' +
-          'group, best match first. Empty when nothing was found.',
+          'A name search: places near the requested point first, then places from further ' +
+          'away; within each group, best match first. A search by kind or brand: nearest ' +
+          'first, all inside the circle. Empty when nothing was found.',
       }),
     attribution: z
       .string()
@@ -140,6 +177,31 @@ export const SearchResultsSchema = z
           'Credit line the app must show next to the results when it is not null (required by ' +
           'the terms of the geocoding provider and of the map data).',
         examples: ['© OpenStreetMap contributors'],
+      }),
+    // After the older properties, for the same reason as `category` above.
+    searchedRadiusKm: z
+      .number()
+      .min(1)
+      .max(25)
+      .optional()
+      .openapi({
+        description:
+          'Present for a search by kind or brand around a point: the radius, in kilometres, ' +
+          'of the circle that was searched. The first circle is widened once when it holds ' +
+          'too few places, never beyond 25 km. Every result lies inside it, and nothing ' +
+          'outside it was looked at.',
+        examples: [10],
+      }),
+    searchedAround: z
+      .string()
+      .optional()
+      .openapi({
+        description:
+          'Present together with `searchedRadiusKm`: what the centre of the circle was. ' +
+          '`near`: the point of the request. `placeHint`: a place named in `q` ("pharmacy ' +
+          'near Exampletown"); `distanceMeters` is then measured from that place, not from the ' +
+          'point of the request. Open set.',
+        examples: ['near'],
       }),
   })
   .openapi('SearchResults', { description: 'Places that match a search.' });

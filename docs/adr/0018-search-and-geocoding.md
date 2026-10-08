@@ -400,9 +400,180 @@ map centre otherwise, and will show the distance. That changes the "Android beha
 above ("never the user's position"), the location disclosure and the `CLAUDE.md` search rule,
 in that prompt (**the disclosure wording is to be verified by a lawyer**).
 
+## Category and brand search: note of 2026-10-08 (P011f1)
+
+**Evidence.** On Rahul's phone against staging, in a small town in Uttar Dinajpur: "bank"
+returned places whose names merely resemble the word (Banka, Bankura); "sbi" with the town's
+name found nothing; "pharmacy" and a pharmacy chain's name returned distant results; many small
+shops were not found. One phone, no numbers. Rahul is checking OpenStreetMap coverage
+separately. **No cause is assumed here**: this section changes how such words are searched and
+gives the evaluation a way to tell a gap in the map from a failure of the search.
+
+**Why the name search could not do it.** A geocoder matches text against names. "bank" is not
+the name of any bank, so the best textual matches are places called something like it. The
+local-first passes of P011e order what the name search finds; they cannot make it find places
+by what they are.
+
+### Spike: the provider's Places API
+
+Read on 2026-10-08. Summaries in our own words; not legal advice, **to be verified by a lawyer**
+before commercial use. Nothing was called: Claude Code has no key.
+
+| Page | What it says |
+| --- | --- |
+| Geoapify API docs, "Places API" | `GET https://api.geoapify.com/v2/places`. `categories` is required (comma-separated; a parent key includes its children). One of `filter` or `bias` is required. Filters: `circle:lon,lat,radiusMeters`, `rect:lon1,lat1,lon2,lat2`, `place:`, `geometry:`. Bias: `proximity:lon,lat` (orders by distance). `limit`, `offset`, `lang`, `conditions`, and `name` ("places matching a given name", no matching rules given). The answer is GeoJSON; each feature has `name`, `formatted`, `address_line1`, `address_line2`, `categories`, `lat`, `lon`, `place_id` and `distance` (metres to the bias point) |
+| Same page, "Supported categories" | The keys used in the adapter: `service.financial.bank`, `service.financial.atm`, `healthcare.pharmacy`, `healthcare.hospital`, `healthcare.clinic_or_praxis`, `service.vehicle.fuel`, `catering.restaurant`, `commercial.supermarket`, `commercial.convenience`, `public_transport.bus`, `public_transport.train`, `service.police`, `service.post.office`, `education.school`, `education.college`, `education.university`. No separate key for a bus station was found |
+| Geoapify "Pricing details" | A Places request costs 1 credit while the limit is 20 places or fewer; above that, one more credit per 20 places. Geocoding and autocomplete: 1 credit per request |
+| Geoapify "Pricing" | Free plan: 3,000 credits a day, up to 5 requests a second, soft limits, commercial use in production allowed within the limits and with attribution |
+| Geoapify "Places API" product page, FAQ | OpenStreetMap is the primary data source. Results may be cached, stored and redistributed, with attribution to OpenStreetMap, and to Geoapify on the free plan |
+| Geoapify Terms and Conditions, version 5 of 2 February 2024 | Unchanged since ADR 0018 read them. Nothing specific to the Places API; no clause on proxying, on caching or on safety-critical use |
+| Geoapify API docs, "Forward Geocoding" and "Address Autocomplete" | A `type` parameter restricts results to one of `country`, `state`, `city`, `postcode`, `street`, `amenity`, `locality`. Nothing says several can be given, and there is no way to exclude a type |
+
+- **Certain (from the documentation):** the endpoint, the circle filter, the category keys as
+  listed, one credit per request at a limit of 20 or less, the same attribution as today, and
+  that storing results is allowed (we store nothing anyway).
+- **Not certain:**
+  - that the live service behaves as documented, including every category key. A key it
+    refuses makes the request fail; the user then sees "search is temporarily unavailable";
+  - the rate limit of the Places API: the product page mentions up to 30 requests a second
+    "varying by plan", the pricing page 5 a second for the free plan. We assume 5;
+  - how the `name` parameter matches. It is **not used** for that reason;
+  - **how often the provider's data is refreshed from OpenStreetMap: not stated on any page
+    read; not recorded.** A place added to OpenStreetMap appears in search after an unknown
+    delay (follow-up);
+  - whether a request that returns nothing is charged. We count it as charged.
+- **Verdict:** the terms and the cost do not stand in the way. The Places API is used through
+  the existing adapter boundary.
+
+### Decision
+
+1. **A classifier decides what a query asks for** (`src/modules/search/intents.ts`, pure
+   functions; the dictionary is `intents.json`, version 1).
+   - The text is folded (Unicode NFC, lower case, punctuation to spaces) and cut into words.
+     Bengali combining marks and the zero-width joiners are kept.
+   - **Whole words only, and no spelling tolerance** beyond the few misspellings listed in the
+     dictionary. Fuzzy matching is what turns "bank" into Bankura; with whole words "bankura"
+     is simply not in the dictionary and stays a name search.
+   - Three outcomes: a **category** (a kind of place), a **brand** (a canonical name with a
+     category and aliases, for example "sbi"), or a **name** (everything else).
+   - A brand may be followed by a category word ("sbi atm": that brand's cash machines).
+   - A **place hint** may follow: after a joining word for a category ("pharmacy near
+     exampletown"), or directly after a brand ("sbi exampletown"). A bare word after a category
+     is **not** a hint, because streets and neighbourhoods are named that way ("college
+     street", "hospital road"): those stay name searches.
+   - Words such as "near me" and "nearest" are dropped.
+2. **The dictionary is small and reviewable.** Every entry says who added it; all are
+   `claude-known` (written by Claude Code from general knowledge) until Rahul reviews them.
+   Bengali-script and transliterated entries carry `review: native-speaker`. A phrase belongs
+   in it only when people type it and it can mean nothing else. A brand alias must be
+   unmistakable alone, which is why "axis" and "apollo" are not aliases.
+3. **A category or brand is searched inside a circle** (`intent-search.ts`).
+   - Centre: the coarse `near` point of the request (two decimals, as before), or the place
+     hint's point, also rounded to two decimals.
+   - First radius `SEARCH_CATEGORY_RADIUS_KM` (default 10). With fewer than
+     `SEARCH_MIN_LOCAL_RESULTS` (3) places it is searched **once** more at 25 km. **Never
+     beyond 25 km**; the configuration refuses a first radius above it.
+   - Results are sorted by distance and cut to the limit (at most 10). Each carries
+     `distanceMeters` from the centre and `matchType`.
+   - A brand search asks for 20 places of the brand's category (the most one credit buys) and
+     keeps those whose name carries the brand's name or an alias, as whole words. A name that
+     carries two brands' names belongs to the longer one, so "State Bank of India" is not a
+     result for "Bank of India".
+   - The provider-neutral interface gains an optional `searchCategory`. A provider without it
+     (LocationIQ today) is asked for the category's English word, by name, inside the circle
+     and among places only.
+4. **No far fuzzy fallback. An empty list is a valid answer.**
+   - A category or brand search never adds anything from outside its circle, and never falls
+     back to a name search over the whole country.
+   - **Why:** a result 200 km away for "bank" is not help, it is noise that looks like an
+     answer, and a place whose name resembles the word is worse. "Nothing within 25 km" is
+     true and lets the app say something honest: the map data may be incomplete here.
+   - An empty list means **nothing of that kind is on the map there**. It does not mean there
+     is none. The app's wording must say so (P011f2).
+5. **Without a centre there is no circle.** When the app sent no point and the text has no
+   hint, the word is searched by name, restricted to named places (`type=amenity` at
+   Geoapify), so an administrative area is not an answer. The default area stays a bias only,
+   as in P011e. Results then carry `matchType: name` and no radius.
+6. **A hint the geocoder does not know** means the words were part of a name after all: the
+   whole text is then searched by name.
+7. **Every provider call is charged.** The user's burst and daily buckets and
+   `SEARCH_GLOBAL_DAILY_LIMIT` are taken before each call: the hint, the first circle, the
+   wider circle. A search costs one to three provider credits. When a limit refuses the
+   widening, or the provider fails on it, the first circle's places are returned alone; with
+   none, the search fails as before (429 or 503). **No new storage, no cache.**
+8. **Contract 0.8.0, additive** (oasdiff: no breaking change).
+   - Request: optional `category` (open string). With it `q` may be left out. An unknown value
+     is a 400. No radius is exposed: how far the server looks is the server's decision.
+   - Each result: `matchType` (`name`, `category`, `brand`; open string).
+   - Response: `searchedRadiusKm`, and `searchedAround` (`near` or `placeHint`). The second one
+     was not in the prompt. It is there so that the app never says "within 10 km of your
+     location" about a circle drawn around a town the user typed.
+   - All new fields are optional in the schema, so a client generated from 0.7.0 keeps working.
+9. **Logging.** Still one line per search: `outcome`, `match_type`, `latency_ms`,
+   `result_count`, `provider_calls`; for a name search `local_count` and `wide_pass` as before;
+   for a circle search `searched_radius_km`, which is a configured number. Never the text, the
+   category, the brand, the hint, a coordinate, a distance or a result. As in the correction of
+   2026-10-07, this is about the API's own log lines; the platform's request log holds the URL
+   `/v1/search` and no body.
+
+### Cost
+
+| Search | Provider credits |
+| --- | --- |
+| Category or brand, at least 3 places within 10 km | 1 |
+| Category or brand, fewer | 2 |
+| With a place hint | 1 more |
+| Name search | 1 or 2, as before |
+
+In small towns most category searches will cost two. How many searches the shared budget
+(2,500 a day) then allows is **not recorded** until it is measured on staging.
+
+### Known limits
+
+- **A brand in a dense area.** Only the 20 nearest places of the category are looked at. Where
+  more than 20 banks lie within 10 km, a brand's branch beyond the twentieth is not found, and
+  the wider circle asks for the same 20 nearest. To be measured in Kolkata; asking for more
+  costs more credits.
+- **Unnamed places.** A cash machine or shop without a name on the map is shown with its
+  address line as its name, and can never match a brand.
+- **A brand followed by other words** ("sbi life insurance") is read as a brand with a place
+  hint; an unknown hint falls back to the name search (decision 6), at the cost of one call.
+- **Bengali place hints** are not recognised: in Bengali the place comes first and carries a
+  case ending. Such a query is a name search, as before.
+- **What is not on OpenStreetMap is still not found.** Nothing here changes that.
+
+### Evaluation
+
+- The fixture's `intent` gains `category`, `brand` and `name`; entries with them may say
+  `inOsm` (`yes`, `no`, `unknown`: whether someone looked on OpenStreetMap) and `radiusKm`.
+  The earlier `generic` and `named` entries and their table are unchanged.
+- Such an entry is searched through the same function as the endpoint. When that finds no
+  place with a matching name, one plain name search without any area follows.
+- A new table, by district: found within the radius; found only far; not found; and, among
+  the entries where someone looked, **data gap** (not on the map) and **search failure** (on
+  the map, not found).
+- `test/search-eval/small-town-template.json` holds 27 placeholder rows in 11 towns of 9
+  districts, all `claude-known` and `inOsm: unknown`. It is a template for Rahul to review,
+  not a measurement set.
+- **What it proves:** for the reviewed rows, whether a place with a matching name came back
+  inside the circle; and, where `inOsm` is filled in, how many misses are gaps in the map.
+- **What it does not prove:** that the result is the right place (a name match is weak, and
+  for a category the expected words are generic); anything about towns that are not in the
+  fixture; anything about the rows nobody reviewed. No hit rate is recorded here: none has
+  been measured.
+
+### Wording
+
+Public text may say: "Maps and search cover West Bengal; local shops and small businesses are
+incomplete because the map data is community-maintained." It may not say or imply that search
+finds every bank, pharmacy or shop (addendum v7.3, section I; `CLAUDE.md` "Coverage claims").
+
 ## References
 
 - Plan v7 §3.2, §4, §6.2, §6.3, §12.2; addendum v7.2 E.
+- Provider documentation as read on 2026-10-08 for P011f1: Geoapify Places API (API docs and
+  product page), pricing and pricing details, Terms and Conditions version 5, Forward Geocoding
+  and Address Autocomplete pages (the `type` parameter).
 - Provider documentation as read on 2026-10-08 (parameters only): Geoapify Address
   Autocomplete API and Forward Geocoding API pages; LocationIQ Autocomplete API reference.
 - Provider terms and documentation as read on 2026-10-07: MapTiler Cloud Special Terms, pricing
@@ -411,5 +582,7 @@ in that prompt (**the disclosure wording is to be verified by a lawyer**).
   Autocomplete API and error reference; Stadia Maps Terms of Service.
 - Code: `backend/src/modules/search/`, `backend/src/lib/rate-limit.ts`,
   `backend/test/search-eval/`.
-- Diagram: [`011a-search-request-flow.svg`](../diagrams/011a-search-request-flow.svg).
+- Diagram: [`011a-search-request-flow.svg`](../diagrams/011a-search-request-flow.svg);
+  category and brand search:
+  [`011f1-category-search-flow.svg`](../diagrams/011f1-category-search-flow.svg).
 - Prompt log: [`docs/prompt-logs/011a-search-backend.md`](../prompt-logs/011a-search-backend.md).

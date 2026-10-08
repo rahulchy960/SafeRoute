@@ -276,6 +276,10 @@ works: UI strings, docs, the README, PR text, pitch material, the website and th
      sharing): statewide, wherever cellular signal and GPS exist.
   2. Navigation: map and search statewide; routing statewide only if the P012 measurements pass,
      otherwise the recorded extent and a "Routes aren't available here yet" state, never an error.
+     Wording for search (since P011f1): "Maps and search cover West Bengal; local shops and
+     small businesses are incomplete because the map data is community-maintained." Never say
+     or imply that search finds every bank, pharmacy or shop; "nothing found within N km" means
+     nothing is on the map there, never that none exists.
   3. Safety data (community reports, official aggregates, exposure metric): reports are
      **accepted** anywhere inside West Bengal; they are **shown** only in **published regions**.
      Elsewhere: map context and "No community data here yet".
@@ -352,6 +356,14 @@ Follow [ADR 0018](docs/adr/0018-search-and-geocoding.md):
 - Rate-limit numbers live in `SEARCH_LIMITS` and `SEARCH_GLOBAL_DAILY_LIMIT` only. New rate limits
   use `src/lib/rate-limit.ts`.
 - Never state a search hit rate that `pnpm search:eval` did not measure ("Coverage claims").
+- Category and brand search (since P011f1): the classifier matches **whole words** from
+  `backend/src/modules/search/intents.json` and nothing fuzzy; a new entry says who added it,
+  and a Bengali one keeps `review: native-speaker` until a native speaker confirmed it. Such a
+  search looks inside a circle (`SEARCH_CATEGORY_RADIUS_KM`, widened once to 25 km, never
+  beyond) and **never falls back to places further away or to a fuzzy name search**: an empty
+  list is a valid answer. No radius parameter in the contract. Every provider call takes the
+  rate-limit tokens. The log line carries the kind of match and counts, never the text, the
+  category or the brand.
 
 ## Android rules (since P007a, ADR 0008)
 

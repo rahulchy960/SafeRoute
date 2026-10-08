@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "SafeRoute API",
-    "version": "0.7.0",
+    "version": "0.8.0",
     "description": "SafeRoute is a personal-safety navigation API. Safety information is context, never a guarantee that a route or area is safe. SafeRoute is not an emergency service; in an emergency call your local emergency number (112 in India).",
     "license": {
       "name": "AGPL-3.0-only",
@@ -651,7 +651,7 @@
               "$ref": "#/components/schemas/Place"
             },
             "maxItems": 10,
-            "description": "Places near the requested point first, then places from further away; within each group, best match first. Empty when nothing was found."
+            "description": "A name search: places near the requested point first, then places from further away; within each group, best match first. A search by kind or brand: nearest first, all inside the circle. Empty when nothing was found."
           },
           "attribution": {
             "type": [
@@ -661,6 +661,22 @@
             "description": "Credit line the app must show next to the results when it is not null (required by the terms of the geocoding provider and of the map data).",
             "examples": [
               "© OpenStreetMap contributors"
+            ]
+          },
+          "searchedRadiusKm": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 25,
+            "description": "Present for a search by kind or brand around a point: the radius, in kilometres, of the circle that was searched. The first circle is widened once when it holds too few places, never beyond 25 km. Every result lies inside it, and nothing outside it was looked at.",
+            "examples": [
+              10
+            ]
+          },
+          "searchedAround": {
+            "type": "string",
+            "description": "Present together with `searchedRadiusKm`: what the centre of the circle was. `near`: the point of the request. `placeHint`: a place named in `q` (\"pharmacy near Exampletown\"); `distanceMeters` is then measured from that place, not from the point of the request. Open set.",
+            "examples": [
+              "near"
             ]
           }
         },
@@ -725,6 +741,13 @@
             "examples": [
               2300
             ]
+          },
+          "matchType": {
+            "type": "string",
+            "description": "Why the place is in the list: `name` (its name matched the text), `category` (it is of the kind asked for) or `brand` (it is of that kind and carries the name of the brand). Sent with every result since 0.8.0. Open set: clients must tolerate unknown values. It says nothing about the quality or safety of a place.",
+            "examples": [
+              "category"
+            ]
           }
         },
         "required": [
@@ -743,7 +766,7 @@
           "q": {
             "type": "string",
             "maxLength": 400,
-            "description": "What the user typed. After trimming, collapsing whitespace and Unicode NFC normalisation it must be 2 to 100 Unicode code points with no control characters. Any script is accepted.",
+            "description": "What the user typed. Required unless `category` is sent. A word for a kind of place, or a well-known brand, is searched as that kind or brand (see the operation). After trimming, collapsing whitespace and Unicode NFC normalisation it must be 2 to 100 Unicode code points with no control characters. Any script is accepted.",
             "examples": [
               "railway station"
             ]
@@ -787,12 +810,17 @@
             "examples": [
               6
             ]
+          },
+          "category": {
+            "type": "string",
+            "pattern": "^[a-z][a-z_]{1,39}$",
+            "description": "A kind of place to look for near the point, for a quick-search button. When it is sent, `q` may be left out and is ignored. Open set: the values this version knows are bank, atm, pharmacy, hospital, clinic, fuel, restaurant, grocery, bus, train, public_transport, police, post_office, school, college; an unknown value is a 400. Send the point with it: without `nearLatitude`/`nearLongitude` there is no circle to search, and the answer is a plain name search for the word.",
+            "examples": [
+              "pharmacy"
+            ]
           }
         },
-        "required": [
-          "q"
-        ],
-        "description": "A place search. Sent as a request body so that the text and the area never appear in a URL."
+        "description": "A place search: `q`, `category` or both. Sent as a request body so that the text and the area never appear in a URL."
       },
       "Routes": {
         "type": "object",
@@ -1302,8 +1330,8 @@
         "tags": [
           "search"
         ],
-        "summary": "Search for places by name",
-        "description": "Forwards the text to a geocoding provider and returns matching places. With `nearLatitude`/`nearLongitude`, places near that point come first and each result carries `distanceMeters`; when too few are found nearby, places from further away follow, so results are never limited to the area. Without them, results are biased towards a default area. The search travels in the request body, never in the URL, and is not stored or logged. Calling it again with the same body is safe (it changes nothing), so no `Idempotency-Key` is needed. Errors: `rate_limited` (429) and `search_unavailable` (503) may carry a `Retry-After` header in seconds; `search_not_configured` (503) means this instance has no geocoding key.",
+        "summary": "Search for places by name, kind or brand",
+        "description": "Forwards the search to a geocoding provider and returns matching places. **By name** (the default): with `nearLatitude`/`nearLongitude`, places near that point come first and each result carries `distanceMeters`; when too few are found nearby, places from further away follow. Without them, results are biased towards a default area. **By kind or brand**: when `category` is sent, or `q` is a word for a kind of place (\"bank\", \"pharmacy\") or a well-known brand, and the point is sent, only places inside a circle around the point are returned, nearest first, and the response says how wide the circle was (`searchedRadiusKm`). Such a search never adds places from outside the circle: an empty list means nothing of that kind is on the map there, which says nothing about whether one exists. The search travels in the request body, never in the URL, and is not stored or logged. Calling it again with the same body is safe (it changes nothing), so no `Idempotency-Key` is needed. Errors: `rate_limited` (429) and `search_unavailable` (503) may carry a `Retry-After` header in seconds; `search_not_configured` (503) means this instance has no geocoding key.",
         "security": [
           {
             "firebaseBearer": []

@@ -3,17 +3,13 @@ import type { Logger } from '../../lib/logger.js';
 import { AppError } from '../../lib/problem.js';
 import type { RateLimiter } from '../../lib/rate-limit.js';
 import {
-  searchLocalFirst,
-  WidePassRefused,
-  type LocalFirstOptions,
-  type LocalFirstOutcome,
-} from './local-first.js';
-import {
-  GeocoderError,
-  type GeocoderProvider,
-  type GeocoderQuery,
-  type PlaceResult,
-} from './types.js';
+  searchByIntent,
+  type IntentOutcome,
+  type IntentRequest,
+  type IntentSearchOptions,
+} from './intent-search.js';
+import { WidePassRefused } from './local-first.js';
+import { GeocoderError, type GeocoderProvider } from './types.js';
 
 const SECONDS_PER_DAY = 86_400;
 
@@ -35,8 +31,8 @@ export interface SearchDeps {
   limiter: RateLimiter;
   /** Provider calls per day for everyone together (SEARCH_GLOBAL_DAILY_LIMIT). */
   globalDailyLimit: number;
-  /** Set when the app sent an area: nearby places first, then a wide pass if needed. */
-  localFirst: LocalFirstOptions | undefined;
+  /** Radii and minimum of the name search around an area and of the category search. */
+  options: IntentSearchOptions;
 }
 
 /** Thrown for 429 and for 503 with a wait; the route turns `retryAfterSeconds` into a header. */
@@ -88,52 +84,48 @@ async function enforceLimits({ limiter, globalDailyLimit }: SearchDeps, userId: 
 /**
  * Checks the limits, calls the provider and writes one log line.
  *
- * With `deps.localFirst` there can be two provider calls (ADR 0018, "Local ranking"). EACH call
- * spends the user's limits and the shared daily budget, so a search can cost two of each. When
- * a limit refuses the second call, the nearby results are returned without it.
+ * A search can take up to three provider calls (a place hint, a circle, a wider circle; ADR
+ * 0018). EACH call spends the user's limits and the shared daily budget. When a limit refuses a
+ * call the search can do without, the results so far are returned.
  *
- * NEVER log the query, the coordinates, the distances or the results: together they say where a
- * person is or means to go (Plan v7 §12.2). The log line has the outcome, the latency and
- * counts, nothing else; `request_id` and `user_id` come from the request logger.
+ * NEVER log the query, the category, the coordinates, the distances or the results: together
+ * they say where a person is or means to go (Plan v7 §12.2). The log line has the outcome, the
+ * kind of match, the latency and counts, nothing else; `request_id` and `user_id` come from the
+ * request logger.
  */
 export async function searchPlaces(
   deps: SearchDeps,
   log: Logger,
   userId: string,
-  query: GeocoderQuery,
-): Promise<PlaceResult[]> {
-  await enforceLimits(deps, userId);
-
+  request: IntentRequest,
+): Promise<IntentOutcome> {
   const started = performance.now();
   const latency = () => Math.round(performance.now() - started);
   try {
-    const found: LocalFirstOutcome =
-      deps.localFirst === undefined
-        ? {
-            results: await deps.geocoder.search(query),
-            localCount: 0,
-            providerCalls: 1,
-            widePass: 'off',
-          }
-        : await searchLocalFirst(deps.geocoder, query, deps.localFirst, async () => {
-            try {
-              await enforceLimits(deps, userId);
-            } catch (err) {
-              throw err instanceof SearchLimitError ? new WidePassRefused(err) : err;
-            }
-          });
+    const found = await searchByIntent(deps.geocoder, request, deps.options, async () => {
+      try {
+        await enforceLimits(deps, userId);
+      } catch (err) {
+        throw err instanceof SearchLimitError ? new WidePassRefused(err) : err;
+      }
+    });
     log.info(
       {
         outcome: 'ok',
+        match_type: found.matchType,
         latency_ms: latency(),
         result_count: found.results.length,
-        local_count: found.localCount,
         provider_calls: found.providerCalls,
-        wide_pass: found.widePass,
+        // Name search: counts and a fixed word. Circle search: the radius, a configured number.
+        ...(found.localCount === undefined ? {} : { local_count: found.localCount }),
+        ...(found.widePass === undefined ? {} : { wide_pass: found.widePass }),
+        ...(found.searchedRadiusKm === undefined
+          ? {}
+          : { searched_radius_km: found.searchedRadiusKm }),
       },
       'geocoder call',
     );
-    return found.results;
+    return found;
   } catch (err) {
     if (!(err instanceof GeocoderError)) throw err;
     const fields = { outcome: err.kind, latency_ms: latency(), result_count: 0 };

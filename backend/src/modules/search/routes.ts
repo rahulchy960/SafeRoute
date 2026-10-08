@@ -6,7 +6,8 @@ import { createRateLimiter } from '../../lib/rate-limit.js';
 import { LAUNCH_REGION_CENTER } from '../../regions/defaults.js';
 import type { AppEnv } from '../../types.js';
 import { requireUser, type AuthDeps } from '../auth/middleware.js';
-import type { LocalFirstOptions } from './local-first.js';
+import type { IntentSearchOptions } from './intent-search.js';
+import { isCategoryKey } from './intents.js';
 import { coarsen, normalizeQuery } from './normalize.js';
 import { SearchRequestSchema, SearchResultsSchema } from './schema.js';
 import { SearchLimitError, searchPlaces } from './service.js';
@@ -17,13 +18,19 @@ export const searchPlacesRoute = createRoute({
   path: '/v1/search',
   operationId: 'searchPlaces',
   tags: ['search'],
-  summary: 'Search for places by name',
+  summary: 'Search for places by name, kind or brand',
   description:
-    'Forwards the text to a geocoding provider and returns matching places. With ' +
-    '`nearLatitude`/`nearLongitude`, places near that point come first and each result ' +
-    'carries `distanceMeters`; when too few are found nearby, places from further away follow, ' +
-    'so results are never limited to the area. Without them, results are biased towards a ' +
-    'default area. The search travels in the request body, never in the URL, and is not ' +
+    'Forwards the search to a geocoding provider and returns matching places. ' +
+    '**By name** (the default): with `nearLatitude`/`nearLongitude`, places near that point ' +
+    'come first and each result carries `distanceMeters`; when too few are found nearby, ' +
+    'places from further away follow. Without them, results are biased towards a default ' +
+    'area. **By kind or brand**: when `category` is sent, or `q` is a word for a kind of ' +
+    'place ("bank", "pharmacy") or a well-known brand, and the point is sent, only places ' +
+    'inside a circle around the point are returned, nearest first, and the response says how ' +
+    'wide the circle was (`searchedRadiusKm`). Such a search never adds places from outside ' +
+    'the circle: an empty list means nothing of that kind is on the map there, which says ' +
+    'nothing about whether one exists. The search travels in the request body, never in the ' +
+    'URL, and is not ' +
     'stored or logged. Calling it again with the same body is safe (it changes nothing), so ' +
     'no `Idempotency-Key` is needed. Errors: `rate_limited` (429) and ' +
     '`search_unavailable` (503) may carry a `Retry-After` header in seconds; ' +
@@ -49,12 +56,15 @@ export interface SearchRouteDeps extends AuthDeps {
   /** Undefined when GEOCODING_API_KEY is not set (dev/test only): the route answers 503. */
   geocoder: GeocoderProvider | undefined;
   globalDailyLimit: number;
-  /** Radius and minimum of the nearby pass (SEARCH_NEARBY_RADIUS_KM, SEARCH_MIN_LOCAL_RESULTS). */
-  localFirst: LocalFirstOptions;
+  /**
+   * Radii and minimum (SEARCH_NEARBY_RADIUS_KM, SEARCH_MIN_LOCAL_RESULTS,
+   * SEARCH_CATEGORY_RADIUS_KM).
+   */
+  options: IntentSearchOptions;
 }
 
 export function searchRoutes(deps: SearchRouteDeps) {
-  const { db, geocoder, globalDailyLimit, localFirst } = deps;
+  const { db, geocoder, globalDailyLimit, options } = deps;
   const limiter = db === undefined ? undefined : createRateLimiter(db);
 
   return new OpenAPIHono<AppEnv>().openapi(
@@ -83,7 +93,9 @@ export function searchRoutes(deps: SearchRouteDeps) {
 
       const input = c.req.valid('json');
       // The schema already accepted `q`; normalising again yields the value to send on.
-      const query = normalizeQuery(input.q) ?? '';
+      const text = input.q === undefined ? undefined : normalizeQuery(input.q);
+      const category =
+        input.category !== undefined && isCategoryKey(input.category) ? input.category : undefined;
       const sent =
         input.nearLatitude !== undefined && input.nearLongitude !== undefined
           ? { latitude: input.nearLatitude, longitude: input.nearLongitude }
@@ -91,21 +103,34 @@ export function searchRoutes(deps: SearchRouteDeps) {
       const near = sent ?? LAUNCH_REGION_CENTER;
 
       try {
-        const results = await searchPlaces(
-          // Local-first only around an area the app sent: the default area is a guess about
-          // where the user is, good for a bias and wrong for a filter or a distance.
-          { geocoder, limiter, globalDailyLimit, localFirst: sent && localFirst },
+        const found = await searchPlaces(
+          { geocoder, limiter, globalDailyLimit, options },
           c.get('logger'),
           c.get('currentUser').userId,
           {
-            query,
-            nearLatitude: coarsen(near.latitude),
-            nearLongitude: coarsen(near.longitude),
+            text,
+            category,
+            near: { latitude: coarsen(near.latitude), longitude: coarsen(near.longitude) },
+            // Only an area the app sent is searched around or measured from: the default area
+            // is a guess about where the user is, good for a bias and wrong for anything else.
+            hasArea: sent !== undefined,
             language: input.language,
             limit: input.limit,
           },
         );
-        return c.json({ results, attribution: geocoder.attribution }, 200);
+        return c.json(
+          {
+            results: found.results,
+            attribution: geocoder.attribution,
+            ...(found.searchedRadiusKm === undefined
+              ? {}
+              : {
+                  searchedRadiusKm: found.searchedRadiusKm,
+                  searchedAround: found.searchedAround,
+                }),
+          },
+          200,
+        );
       } catch (err) {
         if (err instanceof SearchLimitError) {
           c.header('Retry-After', String(err.retryAfterSeconds));

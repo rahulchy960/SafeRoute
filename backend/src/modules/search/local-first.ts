@@ -49,7 +49,10 @@ export class WidePassRefused extends Error {
 }
 
 /** Rounded to 100 m, from the coarse `near` point. */
-function withDistance(place: PlaceResult, query: GeocoderQuery): PlaceResult {
+export function withDistance(
+  place: PlaceResult,
+  query: Pick<GeocoderQuery, 'nearLatitude' | 'nearLongitude'>,
+): PlaceResult {
   const meters = distanceMeters(
     { latitude: query.nearLatitude, longitude: query.nearLongitude },
     place,
@@ -61,7 +64,7 @@ function withDistance(place: PlaceResult, query: GeocoderQuery): PlaceResult {
 }
 
 /** The same place can come back from both passes, with or without the same id. */
-function keysOf(place: PlaceResult): string[] {
+export function keysOf(place: PlaceResult): string[] {
   const name = place.name.normalize('NFC').toLowerCase();
   return [
     `id:${place.id}`,

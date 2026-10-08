@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 import { GEOCODING_PROVIDERS, type GeocodingProviderName } from '../../src/config.js';
 import { createGeocoder } from '../../src/modules/search/providers/index.js';
-import { loadFixture } from './fixture.js';
+import { FIXTURE_PATH, loadFixture } from './fixture.js';
 import { buildReport, formatReport, runEvaluation } from './harness.js';
 
 /**
@@ -23,10 +23,20 @@ export interface CliEnv {
   GEOCODING_API_KEY?: string | undefined;
   SEARCH_EVAL_RPS?: string | undefined;
   SEARCH_PROVIDER_TIMEOUT_MS?: string | undefined;
+  /** Another fixture file in this folder, by name: `small-town-template.json`. */
+  SEARCH_EVAL_FIXTURE?: string | undefined;
 }
 
 export type Settings =
-  | { ok: true; provider: GeocodingProviderName; apiKey: string; rps: number; timeoutMs: number }
+  | {
+      ok: true;
+      provider: GeocodingProviderName;
+      apiKey: string;
+      rps: number;
+      timeoutMs: number;
+      /** File name inside this folder; never a path. */
+      fixture: string;
+    }
   | { ok: false; reason: string };
 
 /** Names what is missing; never echoes a value. */
@@ -51,7 +61,21 @@ export function readSettings(env: CliEnv): Settings {
   if (!(timeoutMs >= 200 && timeoutMs <= 20_000)) {
     return { ok: false, reason: 'SEARCH_PROVIDER_TIMEOUT_MS must be between 200 and 20000.' };
   }
-  return { ok: true, provider: provider as GeocodingProviderName, apiKey, rps, timeoutMs };
+  const fixture = env.SEARCH_EVAL_FIXTURE ?? basename(FIXTURE_PATH);
+  if (!/^[a-z0-9]+(-[a-z0-9]+)*\.json$/.test(fixture)) {
+    return {
+      ok: false,
+      reason: 'SEARCH_EVAL_FIXTURE must be the name of a .json file in test/search-eval.',
+    };
+  }
+  return {
+    ok: true,
+    provider: provider as GeocodingProviderName,
+    apiKey,
+    rps,
+    timeoutMs,
+    fixture,
+  };
 }
 
 export async function main(env: CliEnv, print: (line: string) => void): Promise<void> {
@@ -60,12 +84,13 @@ export async function main(env: CliEnv, print: (line: string) => void): Promise<
     print(`search evaluation not run: ${settings.reason}`);
     return;
   }
-  const fixture = loadFixture();
+  const fixture = loadFixture(join(import.meta.dirname, settings.fixture));
   const provider = createGeocoder(settings.provider, settings.apiKey, {
     timeoutMs: settings.timeoutMs,
   });
   print(
-    `running ${String(fixture.entries.length)} queries against "${settings.provider}" at ` +
+    `running ${String(fixture.entries.length)} queries of ${settings.fixture} against ` +
+      `"${settings.provider}" at ` +
       `${String(settings.rps)} request(s) per second ...`,
   );
 
@@ -79,7 +104,11 @@ export async function main(env: CliEnv, print: (line: string) => void): Promise<
   });
 
   mkdirSync(DETAIL_DIR, { recursive: true });
-  const detailFile = join(DETAIL_DIR, `detail-${settings.provider}.json`);
+  const stem = settings.fixture.replace(/\.json$/, '');
+  const detailFile = join(
+    DETAIL_DIR,
+    `detail-${settings.provider}${stem === 'fixture' ? '' : `-${stem}`}.json`,
+  );
   writeFileSync(detailFile, `${JSON.stringify(outcomes, null, 2)}\n`, 'utf8');
 
   print('');

@@ -7,6 +7,7 @@ Measures how well a geocoding provider finds real places across West Bengal, bef
 | File | What |
 | --- | --- |
 | [`fixture.json`](fixture.json) | The queries. Committed, public |
+| [`small-town-template.json`](small-town-template.json) | Category and brand queries from small towns: a **template** for Rahul to review, not yet a measurement set |
 | `fixture.ts` | The fixture's schema |
 | `harness.ts` | Runs the queries through the real adapter and scores them |
 | `run.ts` | The `pnpm search:eval` command |
@@ -148,3 +149,79 @@ To add a town you know:
 6. Aim for at least three entries per town, and for towns in districts that have none yet.
 
 Then `pnpm test:unit`, `pnpm format`, and run the evaluation again.
+
+## Small towns: category and brand entries (since P011f1)
+
+Since P011f1 the API treats a word for a kind of place ("bank", "pharmacy") and a well-known
+brand ("SBI") differently from a name: it looks for places of that kind inside a circle of
+10 km around the point, once more at 25 km when it finds fewer than three, and **never
+further** ([ADR 0018](../../../docs/adr/0018-search-and-geocoding.md), "Category and brand
+search"). An entry whose `intent` is `category`, `brand` or `name` is searched exactly that
+way, through the same code as the endpoint.
+
+| `intent` | The query is | Example |
+| --- | --- | --- |
+| `category` | a kind of place | `pharmacy`, `ব্যাংক`, `petrol pump` |
+| `brand` | a chain with many branches | `sbi`, `apollo pharmacy` |
+| `name` | one particular public place that must still be found by its name | a named hospital or college |
+
+Two optional fields go with these intents:
+
+- `inOsm`: `yes` when **you looked** on [openstreetmap.org](https://www.openstreetmap.org) and
+  a place that answers the query is mapped within the radius; `no` when you looked and it is
+  not; `unknown` (or left out) when nobody looked. Never guess: it decides whether a miss
+  counts as a gap in the map or as a failure of the search.
+- `radiusKm`: the first radius for this entry, 1 to 25, when 10 km is wrong for the place.
+
+### The table
+
+"Category/brand intent", one row per district and one for all:
+
+| Column | Meaning |
+| --- | --- |
+| Found within radius | The search, run like the app runs it, returned a place with a matching name inside the circle it searched |
+| Found only far | It did not, but a plain name search without any area found a matching name somewhere |
+| Not found | Neither did |
+| Data gap (not on the map) | Not found within the radius, and `inOsm` is `no`: the map has no such place, so no search could find it |
+| Search failure (on the map) | Not found within the radius, although `inOsm` is `yes`: this is the number to bring down |
+
+What to look for: a high "search failure" count means the classifier, the categories or the
+radius are wrong and can be fixed in code. A high "data gap" count means the places must be
+added to OpenStreetMap first. Rows with `inOsm: unknown` are in neither column, so the two do
+not add up to the misses until the rows are reviewed. If **every** row is a provider error,
+the Places request itself is being refused: tell Claude Code, the adapter was written from
+documentation.
+
+A matching name is a weak test here too: for `category` rows the expected words are generic
+("Bank"), so "found" says a place of roughly that kind came back, not which one.
+
+### Run the template
+
+`small-town-template.json` has 27 rows from 11 towns in 9 districts. **All of it is a
+placeholder**: written by Claude Code from general knowledge, the town centres not checked
+against a map, every `inOsm` `unknown`.
+
+1. Review it. Correct each `near` (a town's centre, two decimals), delete rows you cannot
+   vouch for, and set `addedBy` to `rahul` on the rows you checked.
+2. For the towns you know (Kaliyaganj and others), add rows for **public places** you know
+   are there: bank branches, the post office, the hospital, pharmacies of a chain, petrol
+   pumps, the bus stand. Look each one up on openstreetmap.org and set `inOsm`.
+   - **Public places only.** Never a home, a person, a private address, a doctor's chamber in
+     a house, or a shop known only by its owner's name.
+   - `near` is the **town's centre rounded to two decimals**, never your own position.
+   - `expectedNameContains` holds words the right result would carry, in English and Bengali.
+3. In `backend/`:
+
+   ```sh
+   pnpm test:unit
+   pnpm format
+   SEARCH_EVAL_FIXTURE=small-town-template.json pnpm search:eval
+   ```
+
+   In PowerShell: `$env:SEARCH_EVAL_FIXTURE = 'small-town-template.json'; pnpm search:eval`,
+   then `Remove-Item Env:SEARCH_EVAL_FIXTURE`.
+
+   `SEARCH_EVAL_FIXTURE` is a file **name** in this folder, never a path. One run uses between
+   27 and 108 provider credits: each row takes one to four requests.
+4. Share the "Category/brand intent" table only. Rows that have been reviewed can later be
+   moved into `fixture.json`.

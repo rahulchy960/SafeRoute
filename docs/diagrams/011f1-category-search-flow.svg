@@ -1,0 +1,140 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1416" height="1566" viewBox="0 0 1416 1566" font-family="Helvetica, Arial, sans-serif">
+<title>Category and brand search</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#495057"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="40" y="62" font-size="24" font-weight="700" fill="#1e1e1e">Category and brand search</text>
+<text x="40" y="86" font-size="14" fill="#495057">A word for a kind of place, or a brand, is searched inside a circle: 10 km, widened once to 25 km, never beyond. Nothing from outside the circle is added. Every provider call spends the limits (P011f1, ADR 0018)</text>
+<rect x="40" y="114" width="271" height="1366" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="54" y="135" font-size="14" font-weight="700" fill="#495057">Phone</text>
+<rect x="347" y="114" width="532" height="1366" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="361" y="135" font-size="14" font-weight="700" fill="#495057">SafeRoute API</text>
+<rect x="915" y="114" width="271" height="1366" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="929" y="135" font-size="14" font-weight="700" fill="#495057">Outside SafeRoute</text>
+<line x1="175.5" y1="249" x2="613" y2="309" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="613" y1="437" x2="482.5" y2="528" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="613" y1="437" x2="743.5" y2="497" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="743.5" y1="646" x2="482.5" y2="737" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="743.5" y1="646" x2="743.5" y2="706" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="861" y1="791" x2="933" y2="791" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="743.5" y1="936" x2="1050.5" y2="865.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="743.5" y1="1085" x2="743.5" y2="1145" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="626" y1="1010.5" x2="293" y2="1010.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="743.5" y1="1253" x2="175.5" y2="1313" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="743.5" y1="1253" x2="743.5" y2="1313" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="743.5" y1="876" x2="743.5" y2="936" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="58" y="162" width="235" height="87" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="175.5" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="175.5" y="190.3">App: POST /v1/search with</tspan>
+<tspan x="175.5" y="211.1">q, or category, and a coarse</tspan>
+<tspan x="175.5" y="231.9">point in the body</tspan>
+</text>
+<rect x="495.5" y="309" width="235" height="128" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="613" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="613" y="337">Classify q with the</tspan>
+<tspan x="613" y="357.8">dictionary (intents.json):</tspan>
+<tspan x="613" y="378.6">whole words only, no fuzzy</tspan>
+<tspan x="613" y="399.4">match. category sent by the</tspan>
+<tspan x="613" y="420.2">app wins</tspan>
+</text>
+<rect x="365" y="528" width="235" height="87" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="482.5" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="482.5" y="556.3">NAME (anything else, e.g.</tspan>
+<tspan x="482.5" y="577.1">Bankura): the name search</tspan>
+<tspan x="482.5" y="597.9">as before, local-first</tspan>
+</text>
+<rect x="626" y="497" width="235" height="149" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="743.5" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="743.5" y="525.1">Place hint (&quot;sbi</tspan>
+<tspan x="743.5" y="545.9">exampletown&quot;): look it up</tspan>
+<tspan x="743.5" y="566.7">once, charged; its point</tspan>
+<tspan x="743.5" y="587.5">rounded to 2 decimals</tspan>
+<tspan x="743.5" y="608.3">becomes the centre.</tspan>
+<tspan x="743.5" y="629.1">Unknown hint: name search</tspan>
+</text>
+<rect x="365" y="737" width="235" height="108" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="482.5" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="482.5" y="765.4">No point and no hint: no</tspan>
+<tspan x="482.5" y="786.2">circle. Name search among</tspan>
+<tspan x="482.5" y="807">places only, so a town is</tspan>
+<tspan x="482.5" y="827.8">not an answer</tspan>
+</text>
+<rect x="626" y="706" width="235" height="170" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="743.5" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="743.5" y="734.2">Charge the limits, then</tspan>
+<tspan x="743.5" y="755">places of the category</tspan>
+<tspan x="743.5" y="775.8">within</tspan>
+<tspan x="743.5" y="796.6">SEARCH_CATEGORY_RADIUS_KM</tspan>
+<tspan x="743.5" y="817.4">(10). Brand: 20 candidates,</tspan>
+<tspan x="743.5" y="838.2">keep those with the brand's</tspan>
+<tspan x="743.5" y="859">name</tspan>
+</text>
+<rect x="626" y="936" width="235" height="149" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="743.5" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="743.5" y="964.1">Only with fewer than</tspan>
+<tspan x="743.5" y="984.9">SEARCH_MIN_LOCAL_RESULTS</tspan>
+<tspan x="743.5" y="1005.7">(3) in the circle: charge the</tspan>
+<tspan x="743.5" y="1026.5">limits again, then ONE</tspan>
+<tspan x="743.5" y="1047.3">wider circle of 25 km. Never</tspan>
+<tspan x="743.5" y="1068.1">beyond, and no name search</tspan>
+</text>
+<rect x="933" y="716.5" width="235" height="149" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="1050.5" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1050.5" y="744.6">Provider. Geoapify Places</tspan>
+<tspan x="1050.5" y="765.4">API: categories +</tspan>
+<tspan x="1050.5" y="786.2">filter=circle, one credit up to</tspan>
+<tspan x="1050.5" y="807">20 places. A provider</tspan>
+<tspan x="1050.5" y="827.8">without it: the word by name</tspan>
+<tspan x="1050.5" y="848.6">inside the circle</tspan>
+</text>
+<rect x="626" y="1145" width="235" height="108" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="743.5" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="743.5" y="1173.4">Sort by distance, drop</tspan>
+<tspan x="743.5" y="1194.2">anything outside the circle,</tspan>
+<tspan x="743.5" y="1215">cut to limit. An EMPTY list</tspan>
+<tspan x="743.5" y="1235.8">is a valid answer</tspan>
+</text>
+<rect x="58" y="1313" width="235" height="149" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="175.5" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="175.5" y="1341.1">200: results with</tspan>
+<tspan x="175.5" y="1361.9">matchType and</tspan>
+<tspan x="175.5" y="1382.7">distanceMeters,</tspan>
+<tspan x="175.5" y="1403.5">searchedRadiusKm (10 or</tspan>
+<tspan x="175.5" y="1424.3">25), searchedAround,</tspan>
+<tspan x="175.5" y="1445.1">attribution</tspan>
+</text>
+<rect x="626" y="1313" width="235" height="149" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="743.5" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="743.5" y="1341.1">ONE LOG LINE: outcome,</tspan>
+<tspan x="743.5" y="1361.9">match_type, latency,</tspan>
+<tspan x="743.5" y="1382.7">counts,</tspan>
+<tspan x="743.5" y="1403.5">searched_radius_km. Never</tspan>
+<tspan x="743.5" y="1424.3">the text, the category, a</tspan>
+<tspan x="743.5" y="1445.1">coordinate or a result</tspan>
+</text>
+<rect x="58" y="946.5" width="235" height="128" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="175.5" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="175.5" y="974.5">429 or 503 + Retry-After</tspan>
+<tspan x="175.5" y="995.3">when a limit refuses a</tspan>
+<tspan x="175.5" y="1016.1">needed call. A refused or</tspan>
+<tspan x="175.5" y="1036.9">failed widening keeps the</tspan>
+<tspan x="175.5" y="1057.7">first circle's places</tspan>
+</text>
+<rect x="483.6" y="471.5" width="128.2" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="547.8" y="487" font-size="13" fill="#1e1e1e" text-anchor="middle">not in the dictionary</text>
+<rect x="621" y="456" width="114.4" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="678.3" y="471.5" font-size="13" fill="#1e1e1e" text-anchor="middle">category or brand</text>
+<rect x="579.8" y="680.5" width="66.3" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="613" y="696" font-size="13" fill="#1e1e1e" text-anchor="middle">no centre</text>
+<rect x="652" y="665" width="183.1" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="743.5" y="680.5" font-size="13" fill="#1e1e1e" text-anchor="middle">centre: hint or the app's point</text>
+<rect x="388.6" y="999.5" width="141.7" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="459.5" y="1015" font-size="13" fill="#1e1e1e" text-anchor="middle">refused, nothing found</text>
+<rect x="40" y="1501" width="16" height="16" rx="3" fill="#a5d8ff" stroke="#1971c2" stroke-width="1.5"/>
+<text x="62" y="1514" font-size="13" fill="#495057">App / UI</text>
+<rect x="134.8" y="1501" width="16" height="16" rx="3" fill="#b2f2bb" stroke="#2f9e44" stroke-width="1.5"/>
+<text x="156.8" y="1514" font-size="13" fill="#495057">Service</text>
+<rect x="228.3" y="1501" width="16" height="16" rx="3" fill="#ffc9c9" stroke="#e03131" stroke-width="1.5"/>
+<text x="250.3" y="1514" font-size="13" fill="#495057">Security / emergency</text>
+<rect x="401.9" y="1501" width="16" height="16" rx="3" fill="#e9ecef" stroke="#495057" stroke-width="1.5"/>
+<text x="423.9" y="1514" font-size="13" fill="#495057">External</text>
+</svg>

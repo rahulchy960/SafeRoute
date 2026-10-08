@@ -122,6 +122,18 @@ This extends v7.2, section J. The three layers still apply.
 - any "safe area" claim;
 - unmeasured usage numbers.
 
+**Maps and search (added in P011f1, 2026-10-08).** Layer 2 may be described as:
+
+> Maps and search cover West Bengal; local shops and small businesses are incomplete because
+> the map data is community-maintained.
+
+- Do not say or imply that search finds every bank, pharmacy, shop or other business, or all
+  of them near the user.
+- "Nothing found within N km" means nothing of that kind is on the map there. It never means
+  that none exists, and the app's wording must not suggest it.
+- No count, share or hit rate of places found is stated unless `pnpm search:eval` measured it
+  and it is recorded ([ADR 0018](../adr/0018-search-and-geocoding.md)).
+
 `CLAUDE.md` "Coverage claims" and the `README.md` "Coverage" section follow this section.
 
 ## J. Plan edits

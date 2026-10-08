@@ -19,7 +19,7 @@ measured or verified in the field yet.
 | Layer | What it contains | Where |
 | --- | --- | --- |
 | 1. Core safety tools | Device-first SOS by SMS, the 112 dialer, emergency contacts, live location sharing | Statewide, wherever there is cellular signal and GPS. Signal gaps in rural areas limit this layer. |
-| 2. Navigation | Map, search, routes | Map and search statewide, with search quality still to be measured per district. Routes statewide only if the routing measurements pass; otherwise a smaller recorded extent, and "Routes aren't available here yet" outside it. |
+| 2. Navigation | Map, search, routes | Maps and search cover West Bengal; local shops and small businesses are incomplete because the map data is community-maintained. Search quality is still to be measured per district. Routes statewide only if the routing measurements pass; otherwise a smaller recorded extent, and "Routes aren't available here yet" outside it. |
 | 3. Safety data | Community reports, official aggregates, the exposure metric | Reports are **accepted** anywhere in West Bengal. They are **shown** only in **published regions**. |
 
 Collecting a report and showing it are separate steps:

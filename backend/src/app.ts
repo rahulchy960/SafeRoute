@@ -74,9 +74,12 @@ export function createApp({ config, logger, readiness, verifier, db, geocoder, r
       db,
       geocoder,
       globalDailyLimit: config.SEARCH_GLOBAL_DAILY_LIMIT,
-      localFirst: {
-        radiusMeters: config.SEARCH_NEARBY_RADIUS_KM * 1000,
-        minLocalResults: config.SEARCH_MIN_LOCAL_RESULTS,
+      options: {
+        localFirst: {
+          radiusMeters: config.SEARCH_NEARBY_RADIUS_KM * 1000,
+          minLocalResults: config.SEARCH_MIN_LOCAL_RESULTS,
+        },
+        categoryRadiusMeters: config.SEARCH_CATEGORY_RADIUS_KM * 1000,
       },
     }),
   );

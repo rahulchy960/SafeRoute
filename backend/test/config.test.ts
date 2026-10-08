@@ -43,6 +43,7 @@ describe('parseConfig', () => {
       SEARCH_PROVIDER_TIMEOUT_MS: 3000,
       SEARCH_NEARBY_RADIUS_KM: 50,
       SEARCH_MIN_LOCAL_RESULTS: 3,
+      SEARCH_CATEGORY_RADIUS_KM: 10,
       ROUTING_AUTH: 'google_id_token',
       ROUTING_TIMEOUT_MS: 25_000,
       ROUTING_ALTERNATIVES: 2,
@@ -228,6 +229,10 @@ describe('parseConfig', () => {
       ['SEARCH_NEARBY_RADIUS_KM', '501'],
       ['SEARCH_MIN_LOCAL_RESULTS', '0'],
       ['SEARCH_MIN_LOCAL_RESULTS', '2.5'],
+      ['SEARCH_CATEGORY_RADIUS_KM', '0'],
+      // The category search never looks beyond 25 km, so the first radius cannot be wider.
+      ['SEARCH_CATEGORY_RADIUS_KM', '26'],
+      ['SEARCH_CATEGORY_RADIUS_KM', 'wide'],
     ])('rejects an invalid %s without echoing it', (name, value) => {
       const err = configError({ ...GEOCODING, [name]: value });
       expect(err.issues).toHaveLength(1);

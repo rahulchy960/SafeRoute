@@ -226,17 +226,22 @@ describe('generated OpenAPI document', () => {
     });
     const request = components.schemas?.SearchRequest as {
       properties: Record<string, Json>;
-      required: string[];
+      required?: string[];
     };
     expect(Object.keys(request.properties).sort()).toEqual([
+      'category',
       'language',
       'limit',
       'nearLatitude',
       'nearLongitude',
       'q',
     ]);
-    // Only `q` is required: everything else has a default or is optional.
-    expect(request.required).toEqual(['q']);
+    // Since 0.8.0 (P011f1) nothing is required by the schema: `q` or `category` must be sent,
+    // which the server checks. A client generated from 0.7.0 always sends `q` and keeps working.
+    expect(request.required ?? []).toEqual([]);
+    // An open string, and no radius: how far the server looks is the server's decision.
+    expect(request.properties.category).not.toHaveProperty('enum');
+    expect(Object.keys(request.properties)).not.toContain('radiusKm');
     // Coordinates are JSON numbers, explicit latitude and longitude (ADR 0004).
     expect(request.properties.nearLatitude?.type).toBe('number');
     expect(request.properties.nearLongitude?.type).toBe('number');
@@ -249,14 +254,28 @@ describe('generated OpenAPI document', () => {
       'label',
       'latitude',
       'longitude',
+      'matchType',
       'name',
     ]);
+    // Added in 0.8.0 (P011f1): optional open strings and an optional number.
+    expect((place as unknown as { required: string[] }).required).not.toContain('matchType');
+    expect(place.properties.matchType).not.toHaveProperty('enum');
     // Added in 0.7.0 (P011e): optional, so a client generated from 0.6.0 keeps working.
     expect((place as unknown as { required: string[] }).required).not.toContain('distanceMeters');
     expect(place.properties.distanceMeters?.type).toBe('integer');
     expect(place.properties.kind).not.toHaveProperty('enum');
     const results = components.schemas?.SearchResults as { properties: Json; required: string[] };
-    expect(Object.keys(results.properties).sort()).toEqual(['attribution', 'results']);
+    expect(Object.keys(results.properties).sort()).toEqual([
+      'attribution',
+      'results',
+      'searchedAround',
+      'searchedRadiusKm',
+    ]);
+    expect(results.required.sort()).toEqual(['attribution', 'results']);
+    expect((results.properties as Record<string, Json>).searchedRadiusKm).toMatchObject({
+      type: 'number',
+      maximum: 25,
+    });
 
     const code = (components.schemas?.ProblemDetails as { properties: Record<string, Json> })
       .properties.code?.description as string;
@@ -403,7 +422,7 @@ describe('generated OpenAPI document', () => {
   });
 
   it('documents routes as a POST with a body and the routing problem codes (P012b, ADR 0020)', () => {
-    expect((doc.info as Json).version).toBe('0.7.0');
+    expect((doc.info as Json).version).toBe('0.8.0');
     const paths = doc.paths as Record<string, Record<string, Json>>;
     // Origin and destination travel in a request body. No GET, no parameters (ADR 0019).
     expect(Object.keys(paths['/v1/routes'] ?? {})).toEqual(['post']);
