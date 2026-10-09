@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 package com.saferoute.app.core.emergency
 
+import com.saferoute.app.core.data.ActiveSosContacts
+import com.saferoute.app.core.data.SosContact
 import com.saferoute.app.feature.emergency.SosDeviceModule
 import dagger.Module
 import dagger.Provides
@@ -139,6 +141,51 @@ class FakeSmsGateway(var fallback: SmsOutcome = SmsOutcome.Sent) : SmsGateway {
     }
 }
 
+/** The gate as a test sets it. Closed by default, as in the app today. */
+class FakeSosAlertPolicy(var allowed: Boolean = false) : SosAlertPolicy {
+    override suspend fun alertsAllowed(): Boolean = allowed
+}
+
+class FakeSosMessageSettings(var name: String? = "Test User", var language: SosLanguage = SosLanguage.EN) :
+    SosMessageSettings {
+    override suspend fun name(): String? = name
+    override suspend fun language(): SosLanguage = language
+}
+
+/** Answers after [delayMillis] of virtual time with [allowed]; null acts out "no network". */
+class FakeContactsFreshener(var allowed: Set<String>? = null, var delayMillis: Long = 0) : ContactsFreshener {
+    var calls = 0
+
+    override suspend fun allowedContactIds(): Set<String>? {
+        calls++
+        kotlinx.coroutines.delay(delayMillis)
+        return allowed
+    }
+}
+
+class FakeSmsModeSource(var mode: SmsMode = SmsMode.AUTOMATIC) : SmsModeSource {
+    override fun mode(): SmsMode = mode
+}
+
+/** Records what the SMS app would have been opened with. Fake numbers only. */
+class FakeSmsComposer : SmsComposer {
+    val shown = CopyOnWriteArrayList<Pair<List<String>, String>>()
+    var dismissed = 0
+
+    override fun show(phones: List<String>, text: String) {
+        shown += phones to text
+    }
+
+    override fun dismiss() {
+        dismissed++
+    }
+}
+
+/** The phone's contact list as a test sets it. Never holds an opted-out contact, as the real one. */
+class FakeActiveSosContacts(var list: List<SosContact> = emptyList()) : ActiveSosContacts {
+    override suspend fun current(): List<SosContact> = list
+}
+
 /** [SosActionStore] in a list, with the same "only while it is in one of these states" rule. */
 class InMemorySosActionStore : SosActionStore {
     private val list = mutableListOf<SosAction>()
@@ -213,4 +260,39 @@ object FakeSosDeviceModule {
 
     @Provides
     fun provideSmsGateway(fake: FakeSmsGateway): SmsGateway = fake
+
+    @Provides
+    @Singleton
+    fun provideFakePolicy(): FakeSosAlertPolicy = FakeSosAlertPolicy()
+
+    @Provides
+    fun providePolicy(fake: FakeSosAlertPolicy): SosAlertPolicy = fake
+
+    @Provides
+    @Singleton
+    fun provideFakeSettings(): FakeSosMessageSettings = FakeSosMessageSettings()
+
+    @Provides
+    fun provideSettings(fake: FakeSosMessageSettings): SosMessageSettings = fake
+
+    @Provides
+    @Singleton
+    fun provideFakeFreshener(): FakeContactsFreshener = FakeContactsFreshener()
+
+    @Provides
+    fun provideFreshener(fake: FakeContactsFreshener): ContactsFreshener = fake
+
+    @Provides
+    @Singleton
+    fun provideFakeModeSource(): FakeSmsModeSource = FakeSmsModeSource()
+
+    @Provides
+    fun provideModeSource(fake: FakeSmsModeSource): SmsModeSource = fake
+
+    @Provides
+    @Singleton
+    fun provideFakeComposer(): FakeSmsComposer = FakeSmsComposer()
+
+    @Provides
+    fun provideComposer(fake: FakeSmsComposer): SmsComposer = fake
 }

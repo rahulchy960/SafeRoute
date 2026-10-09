@@ -2,7 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-10-09
-- **Prompt:** P014a1 (records, state machine, recovery, retention); notes of P014a2 (runner, service, trail), P014a3 (screens) and P014b1 (SMS engine) below. P014b2 and P014c add notes here.
+- **Prompt:** P014a1 (records, state machine, recovery, retention); notes of P014a2 (runner, service, trail), P014a3 (screens), P014b1 (SMS engine) and P014b2 (sending, behind a gate) below. P014b3 and P014c add notes here.
 - **Plan refs:** Plan v7 §3.2 F-08, §5.3, §7.1–7.5, §12.2, §12.3; [addendum v7.1](../plan/addendum-v7.1.md), section B; [ADR 0008](0008-android-foundation.md), [ADR 0010](0010-adults-only-and-consent-records.md), [ADR 0015](0015-map-stack-and-location-policy.md), [ADR 0024](0024-emergency-contacts-and-opt-out.md)
 
 Legal statements here are drafts, **to be verified by a lawyer**.
@@ -220,6 +220,53 @@ groups".
 13. **No delivery reports** are requested: networks answer them unevenly, and "delivered"
     would be shown as a fact the app cannot stand behind.
 
+### Note of 2026-10-09 (P014b2): sending, behind a closed gate
+
+The engine is connected to a running SOS. **No alert can be sent yet**: the gate
+(`SosAlertPolicy`) answers "no" until the `sos_alerts` notice version 2 exists and the user
+has agreed to it (P014b3; ADR 0010, no processing before consent). Tests open the gate with
+a fake.
+
+1. **The messages never hold up the emergency.** `SosRunner` writes the trigger, starts the
+   host and the trail, and then tells `SosDispatch`, which works in the app's scope. Nothing
+   it does is waited for by the countdown or the trigger, and a failure changes nothing
+   about the SOS.
+2. **Order of an alert:** the gate; who (`SosAlerts.prepare`, once); at most 3 seconds for a
+   position taken since the countdown began; then send. Without a location permission or
+   with location off there is nothing to wait for.
+3. **One location update.** If the alert left without such a position and one arrives within
+   60 seconds of the trigger, one update goes to the contacts whose alert was sent. Never a
+   second one. A retried alert carries the newest position by itself.
+4. **The fresh contact list is never waited for.** The prompt asked for "a non-blocking
+   refresh with a 1.5 s limit". It is started at the trigger and limited to 1.5 seconds; if
+   its answer arrives while a message is still unsent (for example during the wait for a
+   position, or between retries), a contact who is no longer allowed is marked SKIPPED.
+   **Residual risk:** with a position ready, the messages leave at once, so an opt-out made
+   shortly before the trigger and not yet on the phone is missed. The phone's copy is
+   refreshed at every app start and on the contacts screen. A point for the lawyer.
+5. **Two ways of sending** (`SmsModeSource`): automatic when the build declares `SEND_SMS` and
+   the user granted it, otherwise the composer.
+6. **Composer mode.** The phone's SMS app is opened with all numbers (`smsto:` with `;`
+   between them) and the text; the user presses Send. Because Android does not let an app
+   open another app from the background, a high-importance notification "Send your SOS
+   alert" with the same destination is always posted as well, with Call 112 as its button;
+   the active screen has "Open SMS app again". The app records nothing as sent in this mode
+   and says so: "It is sent only when you press Send there." Which separator each SMS app
+   accepts for several recipients was **not verified** (B0); it is a phone check.
+7. **After the app was closed** (`resumed`): retries continue from the records; the SMS app is
+   not opened a second time; no second update is sent.
+8. **"I'm safe"** has a checkbox "Tell my contacts that I am safe", ticked, shown only when
+   a message was sent or handed to the SMS app. The emergency is written down as resolved
+   first; then the follow-up goes to the contacts whose alert was sent (in composer mode the
+   SMS app opens with it). The host stays up to 10 seconds so that the message can leave,
+   then ends; a follow-up that failed is retried for a while in the background.
+9. **The active screen shows counts**: sent of total, still trying, could not be sent, not
+   sent because the contact opted out, and the sentence that a sent message may still not
+   arrive. No name and no number of a contact is on the screen, locked or unlocked: the
+   prompt allowed names when unlocked, counts are enough and cannot leak.
+10. **The name is not asked for yet**: the message uses its wording for "no name" until the
+    SOS setup of P014c. The language is the app's language.
+
 ## Alternatives considered
 
 - **Keep the state in memory or in DataStore.** Simpler, but a killed process loses the
@@ -238,6 +285,11 @@ groups".
   The first ends after about three minutes; the second needs a Play declaration for a use
   Play has a type for. Rejected for now; the readiness checklist (P014c) asks for the
   permission instead.
+- **Wait up to 1.5 seconds for the fresh contact list before sending.** Fewer missed
+  opt-outs, but a device-side SOS action would wait for the server, which Plan v7 §7 and the
+  project rules forbid. Rejected (P014b2).
+- **Mark composer messages as sent.** The app cannot know; it would show a fact it does not
+  have. Rejected.
 - **A library for UUID version 7.** A dependency for 20 lines. Rejected.
 - **Store ARMING.** A write on every touch, and nothing to recover. Rejected.
 

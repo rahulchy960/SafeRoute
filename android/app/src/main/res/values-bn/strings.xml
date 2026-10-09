@@ -517,4 +517,19 @@
     <string name="sos_practice_finished_title">অনুশীলন শেষ</string>
     <string name="sos_practice_finished_body">এটি একটি অনুশীলন ছিল। কিছুই পাঠানো, সংরক্ষণ বা রেকর্ড করা হয়নি।</string>
     <string name="sos_practice_close">বন্ধ করুন</string>
+    <!-- SOS alerts by SMS (P014b2). Shown only when alerts are switched on for the user (the gate of SosAlertPolicy); until P014b3 that is never. Counts only: never a name or a number. -->
+    <string name="sos_alerts_preparing">আপনার জরুরি পরিচিতিদের জন্য সতর্কবার্তা তৈরি হচ্ছে…</string>
+    <string name="sos_alerts_no_contacts">সতর্ক করার মতো কোনো জরুরি পরিচিতি নেই। বিপদে পড়লে 112-এ কল করুন।</string>
+    <string name="sos_alerts_sent">SMS-এ সতর্কবার্তা পাঠানো হয়েছে: %2$d জন জরুরি পরিচিতির মধ্যে %1$d জনকে।</string>
+    <string name="sos_alerts_waiting">এখনও পাঠানোর চেষ্টা চলছে: %1$d।</string>
+    <string name="sos_alerts_failed">পাঠানো যায়নি: %1$d।</string>
+    <string name="sos_alerts_skipped">পরিচিতি বেরিয়ে যাওয়ায় পাঠানো হয়নি: %1$d।</string>
+    <string name="sos_alerts_caveat">পাঠানো বার্তাও না পৌঁছাতে বা না পড়া হতে পারে। বিপদে পড়লে 112-এ কল করুন।</string>
+    <string name="sos_alerts_composer">আপনার SMS অ্যাপে %1$d জন জরুরি পরিচিতির জন্য সতর্কবার্তা তৈরি আছে। সেখানে পাঠান চাপলে তবেই এটি যাবে।</string>
+    <string name="sos_alerts_composer_open">SMS অ্যাপ আবার খুলুন</string>
+    <string name="sos_alerts_tell_safe">আমার পরিচিতিদের জানান যে আমি নিরাপদ</string>
+    <string name="sos_composer_channel">SOS সতর্কবার্তা পাঠান</string>
+    <string name="sos_composer_channel_description">আপনার SMS অ্যাপে কোনো SOS সতর্কবার্তা পাঠানোর অপেক্ষায় থাকলে দেখানো হয়।</string>
+    <string name="sos_composer_title">আপনার SOS সতর্কবার্তা পাঠান</string>
+    <string name="sos_composer_text">SMS অ্যাপ খুলতে ট্যাপ করুন, তারপর পাঠান চাপুন।</string>
 </resources>

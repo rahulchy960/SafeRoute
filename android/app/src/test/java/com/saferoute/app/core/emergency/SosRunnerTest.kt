@@ -33,6 +33,16 @@ class SosRig(private val scope: TestScope, granted: GrantedLocation = GrantedLoc
     val environment = FakeLocationEnvironment(granted = granted)
     val battery = FakeBatteryLevel()
 
+    // The messages. The gate is closed unless a test opens it, as in the app today.
+    val contacts = FakeActiveSosContacts()
+    val actions = InMemorySosActionStore()
+    val gateway = FakeSmsGateway()
+    val policy = FakeSosAlertPolicy()
+    val settings = FakeSosMessageSettings()
+    val freshener = FakeContactsFreshener()
+    val smsMode = FakeSmsModeSource()
+    val composer = FakeSmsComposer()
+
     private var process: CoroutineScope? = null
 
     lateinit var source: FakeTrailLocationSource
@@ -41,6 +51,8 @@ class SosRig(private val scope: TestScope, granted: GrantedLocation = GrantedLoc
     lateinit var trail: SosTrail
     lateinit var engine: SosEngine
     lateinit var runner: SosRunner
+    lateinit var alerts: SosAlerts
+    lateinit var dispatch: SosDispatch
 
     /** The scope of the current "process": what an app-lifetime scope is on a phone. */
     lateinit var appScope: CoroutineScope
@@ -59,7 +71,9 @@ class SosRig(private val scope: TestScope, granted: GrantedLocation = GrantedLoc
         haptics = FakeSosHaptics()
         trail = SosTrail(source, environment, store, battery, clock, alive)
         engine = SosEngine(store, clock, UuidV7Generator(clock, Random(1)))
-        runner = SosRunner(engine, trail, host, haptics, clock, alive)
+        alerts = SosAlerts(contacts, actions, gateway, clock, UuidV7Generator(clock, Random(2)))
+        dispatch = SosDispatch(alerts, policy, settings, freshener, smsMode, composer, trail, battery, clock, alive)
+        runner = SosRunner(engine, trail, host, haptics, dispatch, clock, alive)
     }
 
     fun advance(millis: Long) {

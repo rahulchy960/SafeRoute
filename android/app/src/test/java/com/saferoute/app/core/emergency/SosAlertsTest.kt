@@ -4,7 +4,6 @@ package com.saferoute.app.core.emergency
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.saferoute.app.core.data.ActiveSosContacts
 import com.saferoute.app.core.data.RoomSosActionStore
 import com.saferoute.app.core.data.RoomSosStore
 import com.saferoute.app.core.data.SosContact
@@ -31,11 +30,6 @@ private const val SOS_ID = "00000000-0000-7000-8000-000000000001"
 private fun contact(n: Int) = SosContact("id-$n", "Test Contact $n", "+9190000100${n.toString().padStart(2, '0')}")
 
 private fun phone(n: Int) = contact(n).phoneE164
-
-/** The phone's contact list as a test sets it. Never holds an opted-out contact, as the real one. */
-private class FakeActiveSosContacts(var list: List<SosContact>) : ActiveSosContacts {
-    override suspend fun current(): List<SosContact> = list
-}
 
 @OptIn(ExperimentalCoroutinesApi::class)
 private class AlertsRig(scope: TestScope, vararg contacts: SosContact) {

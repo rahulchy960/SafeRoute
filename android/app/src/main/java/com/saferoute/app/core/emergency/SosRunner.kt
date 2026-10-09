@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withTimeoutOrNull
 
 /** What is running in this process right now. The database says what SHOULD be running. */
 sealed interface SosRunState {
@@ -48,6 +49,9 @@ interface SosHaptics {
 private const val MILLIS_PER_SECOND = 1_000L
 private const val RECHECK_MILLIS = 250L
 
+/** How long the host is kept after "I'm safe" so that the follow-up message can leave. */
+private const val SAFE_MESSAGE_HOST_MILLIS = 10_000L
+
 /**
  * Runs an emergency in this process: the countdown, the trigger at its end, the location
  * trail, and the end. It belongs to the app, **not to a screen**: a screen is destroyed by a
@@ -58,7 +62,8 @@ private const val RECHECK_MILLIS = 250L
  * rebuilt from the stored `countdownEndsAt`, so a new process continues the same countdown
  * instead of starting another five seconds.
  *
- * It reads no contact and sends nothing (messages arrive with P014b, at [onTriggered]).
+ * It reads no contact and sends nothing itself: once an emergency is active it tells
+ * [SosDispatch], which handles the messages on its own.
  */
 @Singleton
 class SosRunner @Inject constructor(
@@ -66,6 +71,7 @@ class SosRunner @Inject constructor(
     private val trail: SosTrail,
     private val host: SosHost,
     private val haptics: SosHaptics,
+    private val dispatch: SosDispatch,
     private val clock: Clock,
     @param:ApplicationScope private val scope: CoroutineScope,
 ) {
@@ -98,7 +104,7 @@ class SosRunner @Inject constructor(
         val recovery = engine.recovery()
         when (recovery) {
             is SosRecovery.ResumeCountdown -> runCountdown(recovery.record)
-            is SosRecovery.StillActive -> runActive(recovery.record)
+            is SosRecovery.StillActive -> runActive(recovery.record, resumed = true)
             is SosRecovery.AskSendOrCancel, SosRecovery.Nothing -> Unit
         }
         recovery
@@ -120,10 +126,24 @@ class SosRunner @Inject constructor(
         true
     }
 
-    /** "I'm safe". False when no alert had gone out. */
-    suspend fun markSafe(): Boolean = steps.withLock {
+    /**
+     * "I'm safe". False when no alert had gone out. With [tellContacts] the contacts who were
+     * alerted get the follow-up; the host stays for a moment so that it can leave the phone.
+     */
+    suspend fun markSafe(tellContacts: Boolean = false): Boolean = steps.withLock {
+        val id = engine.current()?.clientSosId
+        // Written down as resolved first: from here on nothing is retried for the alert.
         if (!engine.resolve()) return@withLock false
-        stopEverything()
+        if (!tellContacts || id == null) {
+            stopEverything()
+            return@withLock true
+        }
+        stopEverything(keepHost = true)
+        scope.launch {
+            withTimeoutOrNull(SAFE_MESSAGE_HOST_MILLIS) { dispatch.tellContactsSafe(id) }
+            // Unless a new emergency began in the meantime, which needs the host itself.
+            steps.withLock { if (_state.value == SosRunState.Idle) host.end() }
+        }
         true
     }
 
@@ -174,21 +194,27 @@ class SosRunner @Inject constructor(
     /** The state is TRIGGERED_LOCAL on disk. Now the phone acts. */
     private suspend fun onTriggered(record: SosRecord) {
         haptics.triggered()
-        runActive(record)
+        runActive(record, resumed = false)
     }
 
-    private suspend fun runActive(record: SosRecord) {
+    /** @param resumed this process found the emergency already triggered (after a restart). */
+    private suspend fun runActive(record: SosRecord, resumed: Boolean) {
         if (record.state == SosState.TRIGGERED_LOCAL) engine.markActive()
         _state.value = SosRunState.Active(engine.current() ?: record)
         host.begin()
         trail.start(record.clientSosId)
+        // The messages. Started in the app's scope and never waited for: an alert that cannot
+        // be sent does not hold up, or undo, the emergency.
+        val id = record.clientSosId
+        dispatch.start(id, resumed) { (_state.value as? SosRunState.Active)?.record?.clientSosId == id }
     }
 
-    private fun stopEverything() {
+    private fun stopEverything(keepHost: Boolean = false) {
         timer?.cancel()
         timer = null
+        dispatch.stop()
         trail.stop()
-        host.end()
+        if (!keepHost) host.end()
         _state.value = SosRunState.Idle
     }
 }

@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 package com.saferoute.app.feature.emergency
 
+import com.saferoute.app.core.data.SosContact
+import com.saferoute.app.core.emergency.SmsMode
+import com.saferoute.app.core.emergency.SmsOutcome
+import com.saferoute.app.core.emergency.SosAlertStatus
+import com.saferoute.app.core.emergency.SosAlertSummary
 import com.saferoute.app.core.emergency.SosEntryPoint
 import com.saferoute.app.core.emergency.SosLocationReport
 import com.saferoute.app.core.emergency.SosRecord
@@ -39,7 +44,7 @@ class SosViewModelTest {
         block(SosRig(this))
     }
 
-    private fun SosRig.viewModel() = SosViewModel(runner, trail, gate, haptics, appScope)
+    private fun SosRig.viewModel() = SosViewModel(runner, trail, gate, haptics, dispatch, appScope)
 
     private fun SosRig.open(mode: SosOpenMode, fresh: Boolean = true): SosViewModel =
         viewModel().also {
@@ -268,5 +273,102 @@ class SosViewModelTest {
         val active = viewModel.ui.value as SosUi.Active
         assertFalse(active.practice)
         assertEquals(SosState.ACTIVE, rig.stored())
+    }
+
+    // --- the messages (the gate is opened by these tests; in the app it is closed) ------------
+
+    private fun SosRig.withContacts(count: Int) {
+        contacts.list = (1..count).map {
+            SosContact("id-$it", "Test Contact $it", "+9190000100${it.toString().padStart(2, '0')}")
+        }
+        policy.allowed = true
+    }
+
+    private fun SosRig.safeMessages() = gateway.attempts.count { it.second.contains("safe now") }
+
+    @Test
+    fun `with alerts not switched on the screen says so and I am safe offers nothing to tell`() = test { rig ->
+        rig.contacts.list = listOf(SosContact("id-1", "Test Contact 1", "+919000010001"))
+        val viewModel = rig.open(SosOpenMode.START)
+        rig.advance(10_000)
+
+        val active = viewModel.ui.value as SosUi.Active
+        assertEquals(SosAlertStatus.NotEnabled, active.alerts)
+        assertFalse(active.canTellContacts)
+        assertEquals(0, rig.gateway.attempts.size)
+    }
+
+    @Test
+    fun `the active screen shows the counts of the alerts as they change`() = test { rig ->
+        rig.withContacts(2)
+        rig.gateway.answer("+919000010002", SmsOutcome.Retryable("no_service"))
+        val viewModel = rig.open(SosOpenMode.START)
+        rig.advance(2_000)
+        rig.source.emit()
+        rig.advance(3_000)
+
+        val first = viewModel.ui.value as SosUi.Active
+        assertEquals(SosAlertStatus.Automatic(SosAlertSummary(sent = 1, waiting = 1, failed = 0, skipped = 0)), first.alerts)
+        assertTrue(first.canTellContacts)
+
+        rig.advance(30_000)
+        val later = viewModel.ui.value as SosUi.Active
+        assertEquals(SosAlertSummary(sent = 2, waiting = 0, failed = 0, skipped = 0), (later.alerts as SosAlertStatus.Automatic).summary)
+    }
+
+    @Test
+    fun `I am safe tells the alerted contacts by default`() = test { rig ->
+        rig.withContacts(2)
+        val viewModel = rig.open(SosOpenMode.START)
+        rig.advance(2_000)
+        rig.source.emit()
+        rig.advance(3_000)
+
+        viewModel.onSafeClick()
+        rig.advance(0)
+        assertTrue((viewModel.ui.value as SosUi.Active).tellContacts)
+        viewModel.onSafeConfirm()
+        rig.advance(0)
+
+        assertEquals(SosUi.Closed, viewModel.ui.value)
+        assertEquals(SosState.RESOLVED, rig.stored())
+        assertEquals(2, rig.safeMessages())
+    }
+
+    @Test
+    fun `with tell my contacts unticked I am safe sends nothing more`() = test { rig ->
+        rig.withContacts(2)
+        val viewModel = rig.open(SosOpenMode.START)
+        rig.advance(2_000)
+        rig.source.emit()
+        rig.advance(3_000)
+
+        viewModel.onSafeClick()
+        viewModel.onTellContactsChange(false)
+        rig.advance(0)
+        assertFalse((viewModel.ui.value as SosUi.Active).tellContacts)
+        viewModel.onSafeConfirm()
+        rig.advance(600_000)
+
+        assertEquals(SosState.RESOLVED, rig.stored())
+        assertEquals(0, rig.safeMessages())
+    }
+
+    @Test
+    fun `in composer mode the screen offers the SMS app again`() = test { rig ->
+        rig.withContacts(2)
+        rig.smsMode.mode = SmsMode.COMPOSER
+        val viewModel = rig.open(SosOpenMode.START)
+        rig.advance(2_000)
+        rig.source.emit()
+        rig.advance(3_000)
+
+        assertEquals(SosAlertStatus.Composer(contacts = 2), (viewModel.ui.value as SosUi.Active).alerts)
+        assertEquals(1, rig.composer.shown.size)
+
+        viewModel.onOpenComposer()
+
+        assertEquals(2, rig.composer.shown.size)
+        assertEquals(0, rig.gateway.attempts.size)
     }
 }

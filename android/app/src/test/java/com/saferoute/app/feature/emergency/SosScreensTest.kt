@@ -346,7 +346,12 @@ class SosScreensTest {
 
     @Test
     fun `no SOS text promises that a contact is or will be messaged`() {
-        val ids = R.string::class.java.fields.filter { it.name.startsWith("sos_") }.map { it.getInt(null) }
+        // The texts about real alerts (sos_alerts_*, sos_composer_*) are shown only when the
+        // gate is open; every other SOS text must hold whether or not anyone is messaged.
+        val ids = R.string::class.java.fields
+            .filter { it.name.startsWith("sos_") }
+            .filterNot { it.name.startsWith("sos_alerts_") || it.name.startsWith("sos_composer_") }
+            .map { it.getInt(null) }
         assertTrue(ids.size > 30)
         val promising = Regex("(will be|are being|have been|has been) (messaged|alerted|notified|told)|contacts (alerted|notified)")
 
