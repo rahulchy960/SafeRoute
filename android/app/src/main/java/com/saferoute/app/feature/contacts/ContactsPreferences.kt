@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import java.io.IOException
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
@@ -15,7 +16,7 @@ import kotlinx.coroutines.flow.map
 /** How long "Not now" on the Home card keeps the card away. */
 const val CARD_SNOOZE_DAYS = 3L
 
-/** The one thing the contacts feature remembers on the phone besides the contacts themselves. */
+/** The flags the contacts feature remembers on the phone besides the contacts themselves. */
 interface ContactsPreferences {
 
     /**
@@ -25,6 +26,16 @@ interface ContactsPreferences {
     val cardSnoozedUntil: Flow<Long>
 
     suspend fun snoozeCardUntil(epochMillis: Long)
+
+    /**
+     * The version of the `sos_alerts` notice the user has agreed to, as last heard from the
+     * server or as just granted on this phone; null when none or withdrawn. A flag, not
+     * personal data. It is what lets an SOS decide WITHOUT the network whether alerts may be
+     * sent (ADR 0010, ADR 0027).
+     */
+    val alertsNoticeVersion: Flow<String?>
+
+    suspend fun setAlertsNoticeVersion(version: String?)
 }
 
 /**
@@ -44,7 +55,17 @@ class DataStoreContactsPreferences @Inject constructor(
         dataStore.edit { it[SNOOZED_UNTIL] = epochMillis }
     }
 
+    override val alertsNoticeVersion: Flow<String?> = dataStore.data
+        // An unreadable file means "not agreed": alerts stay off, which is the careful side.
+        .catch { e -> if (e is IOException) emit(emptyPreferences()) else throw e }
+        .map { it[ALERTS_NOTICE_VERSION] }
+
+    override suspend fun setAlertsNoticeVersion(version: String?) {
+        dataStore.edit { if (version == null) it.remove(ALERTS_NOTICE_VERSION) else it[ALERTS_NOTICE_VERSION] = version }
+    }
+
     private companion object {
         val SNOOZED_UNTIL = longPreferencesKey("contacts_card_snoozed_until")
+        val ALERTS_NOTICE_VERSION = stringPreferencesKey("alerts_notice_version_agreed")
     }
 }

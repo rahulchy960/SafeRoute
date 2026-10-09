@@ -594,10 +594,12 @@ and [`android/README.md`](android/README.md):
   the system contact picker (`pickPhoneNumberIntent`), and an invite leaves the app only
   through `openInviteSms` (`ACTION_SENDTO`); both live in `feature/contacts/ContactIntents.kt`.
   The `sos_alerts` notice is the `contacts_notice_*` strings, mirrored in
-  `docs/legal/sos-alerts-notice-v1.md` (`ContactsNoticeDocumentTest`); changing it means
-  changing `SOS_ALERTS_NOTICE_VERSION`, and it is asked for only when "Add a contact" opens.
-  Until SOS alerts exist, no text may say that a contact is or will be messaged: "in a later
-  version". What a person typed or picked, a contact and the invite link stay in memory:
+  `docs/legal/sos-alerts-notice-v2.md` (`ContactsNoticeDocumentTest`; version 1 stays as the
+  record of what earlier users saw); changing it means changing `SOS_ALERTS_NOTICE_VERSION`,
+  and it is asked for only when "Add a contact" or "Read how SOS alerts work" opens. Consent
+  counts only for the version the app shows today (`hasConsent`); that version is noted on
+  the phone (`ContactsPreferences.alertsNoticeVersion`, a flag) only after the server recorded
+  or reported it, and removed on withdrawal and sign-out. What a person typed or picked, a contact and the invite link stay in memory:
   never in `rememberSaveable`, a `SavedStateHandle` or a navigation argument (an argument
   carries the contact's id only). A Hilt test that needs the Home card calls
   `FakeContactsPreferences.clearSnooze()`; it is hidden by default in tests.
@@ -628,8 +630,8 @@ and [`android/README.md`](android/README.md):
   the runner in the **app** scope and never starts an emergency from a re-created screen
   (`fresh`). Back is not Cancel. "I'm safe" always goes through the unlock
   (`requestDismissKeyguard`) and a confirmation; a notification action may only open the
-  screen. **No SOS text says that a contact is or will be messaged** until the SMS alerts
-  exist (P014b): "start", not "send" (`SosScreensTest`). Every SOS screen shows "SafeRoute
+  screen. **No SOS text calls a message delivered or read, promises help, or calls the user
+  safe** (`SosScreensTest`): "sent" is all the phone knows. Every SOS screen shows "SafeRoute
   is not an emergency service. Call 112." and a Call 112 button; Cancel is at least 72 dp
   and never red. Anything shown on the lock screen is a status in words or a count, never a
   name, a number or a place. A practice run lives in the ViewModel only: no runner, record,
@@ -660,6 +662,14 @@ and [`android/README.md`](android/README.md):
   of messages, never a contact's name or number, and never calls a sent message delivered.
   A follow-up goes only to contacts whose alert was sent, and only if the user left "Tell my
   contacts" ticked.
+  Switch-on (since P014b3): the gate is `ConsentSosAlertPolicy`. **Without consent to the
+  current notice no SOS can be started from the app** (the dialog offers Call 112, practice
+  and the way to the notice; `SosViewModel` asks the gate again). The SMS permission is
+  requested in one file only, `feature/emergency/SmsPermissionCard.kt`, after the app's own
+  disclosure (`sms_disclosure_*`), **never during an SOS, at app start or in onboarding**
+  (`SmsPermissionCardTest`). Changing what an SOS sends, costs or stores means changing the
+  notice and its version in the same prompt. Play declarations are drafts in `docs/play/`;
+  Claude Code never submits anything to Google Play.
   Every SOS change updates [`docs/sos/failure-matrix.md`](docs/sos/failure-matrix.md):
   "Automated pass" only for rows with passing tests, with the level it was tested at.
 - `android/app/google-services.json` is never opened, printed or committed by Claude Code. CI and

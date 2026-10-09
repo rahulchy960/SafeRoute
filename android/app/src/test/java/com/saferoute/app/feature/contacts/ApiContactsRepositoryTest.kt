@@ -76,6 +76,7 @@ class ApiContactsRepositoryTest {
     private val api = FakeApi()
     private val database = inMemoryDatabase(ApplicationProvider.getApplicationContext())
     private val dao = database.contactDao()
+    private val preferences = FakeContactsPreferences()
     private lateinit var config: ApiConfig
     private lateinit var repository: ApiContactsRepository
 
@@ -97,6 +98,7 @@ class ApiContactsRepositoryTest {
             retrofit.create(MeApi::class.java),
             dao,
             config,
+            preferences,
         )
     }
 
@@ -332,15 +334,63 @@ class ApiContactsRepositoryTest {
     // Consent ----------------------------------------------------------------------------
 
     @Test
-    fun `consent is granted only when the latest sos_alerts decision says so`() = runTest {
+    fun `consent counts only when it is granted for the notice the app shows today`() = runTest {
+        val current = SOS_ALERTS_NOTICE_VERSION
         api.on(CONSENTS, ok(consentsJson(consentJson())))
         assertEquals(ContactsResult.Ok(false), repository.hasConsent())
 
-        api.on(CONSENTS, ok(consentsJson(consentJson(), consentJson("sos_alerts", "withdrawn"))))
+        api.on(CONSENTS, ok(consentsJson(consentJson(), consentJson("sos_alerts", "withdrawn", current))))
         assertEquals(ContactsResult.Ok(false), repository.hasConsent())
 
-        api.on(CONSENTS, ok(consentsJson(consentJson(), consentJson("sos_alerts", "granted"))))
+        // Granted, but for the older notice that did not describe the alerts: asked again.
+        api.on(CONSENTS, ok(consentsJson(consentJson(), consentJson("sos_alerts", "granted", "2026-10-alerts-draft1"))))
+        assertEquals(ContactsResult.Ok(false), repository.hasConsent())
+        assertNull(preferences.alertsNoticeVersion.value)
+
+        api.on(CONSENTS, ok(consentsJson(consentJson(), consentJson("sos_alerts", "granted", current))))
         assertEquals(ContactsResult.Ok(true), repository.hasConsent())
+        assertEquals("the phone now knows it without the network", current, preferences.alertsNoticeVersion.value)
+    }
+
+    @Test
+    fun `the phone's note of the consent follows the server, and a failed check changes nothing`() = runTest {
+        val current = SOS_ALERTS_NOTICE_VERSION
+        api.on(CONSENTS, ok(consentsJson(consentJson("sos_alerts", "granted", current))))
+        repository.hasConsent()
+        assertEquals(current, preferences.alertsNoticeVersion.value)
+
+        // No answer: neither given nor taken.
+        api.on(CONSENTS, problemResponse(503, "db_unavailable"))
+        assertEquals(ContactsResult.Failed(ContactsError.Unavailable), repository.hasConsent())
+        assertEquals(current, preferences.alertsNoticeVersion.value)
+
+        // Withdrawn elsewhere (another phone): the next check takes it away here too.
+        api.on(CONSENTS, ok(consentsJson(consentJson("sos_alerts", "withdrawn", current))))
+        repository.hasConsent()
+        assertNull(preferences.alertsNoticeVersion.value)
+    }
+
+    @Test
+    fun `granting notes the consent on the phone only after the server recorded it`() = runTest {
+        api.on(PUT_SOS, problemResponse(503, "db_unavailable"))
+        repository.grantConsent("en")
+        assertNull(preferences.alertsNoticeVersion.value)
+
+        api.on(PUT_SOS, ok(consentJson("sos_alerts", "granted", SOS_ALERTS_NOTICE_VERSION)))
+        repository.grantConsent("en")
+        assertEquals(SOS_ALERTS_NOTICE_VERSION, preferences.alertsNoticeVersion.value)
+    }
+
+    @Test
+    fun `withdrawing and signing out take the note of the consent away`() = runTest {
+        preferences.setAlertsNoticeVersion(SOS_ALERTS_NOTICE_VERSION)
+        api.on(PUT_SOS, ok(consentJson("sos_alerts", "withdrawn")))
+        repository.withdrawConsent("en")
+        assertNull(preferences.alertsNoticeVersion.value)
+
+        preferences.setAlertsNoticeVersion(SOS_ALERTS_NOTICE_VERSION)
+        repository.clearLocal()
+        assertNull(preferences.alertsNoticeVersion.value)
     }
 
     @Test

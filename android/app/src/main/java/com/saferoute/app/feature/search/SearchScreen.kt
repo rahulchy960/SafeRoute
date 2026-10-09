@@ -71,6 +71,7 @@ import com.saferoute.app.core.designsystem.preview.SafeRoutePreviews
 import com.saferoute.app.core.designsystem.theme.SafeRouteTheme
 import com.saferoute.app.core.map.LatLng
 import com.saferoute.app.feature.emergency.EmergencyShortcut
+import com.saferoute.app.feature.emergency.SosArmViewModel
 import com.saferoute.app.feature.emergency.SosOpenMode
 import com.saferoute.app.feature.home.EmergencyArm
 import com.saferoute.app.feature.home.EmergencyDialog
@@ -105,6 +106,7 @@ fun SearchRoute(
     onPlaceChosen: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SearchViewModel = hiltViewModel(),
+    armViewModel: SosArmViewModel = hiltViewModel(),
 ) {
     var query by rememberSaveable { mutableStateOf("") }
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -115,6 +117,7 @@ fun SearchRoute(
     // The same dialog as on Home. It is this screen's own state: nothing about a search can
     // reach it, and it survives a rotation.
     var emergencyDialog by rememberSaveable { mutableStateOf(EmergencyDialogState.Hidden) }
+    val alertsEnabled by armViewModel.alertsEnabled.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     SearchScreen(
@@ -155,7 +158,7 @@ fun SearchRoute(
                 onArmed = {
                     emergencyDialog = EmergencyDialogState.Hidden
                     context.startActivity(EmergencyShortcut.modeIntent(context, SosOpenMode.START))
-                },
+                }.takeIf { alertsEnabled },
                 onPractice = {
                     emergencyDialog = EmergencyDialogState.Hidden
                     context.startActivity(EmergencyShortcut.modeIntent(context, SosOpenMode.PRACTICE))

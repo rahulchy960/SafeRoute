@@ -32,7 +32,7 @@ const val PURPOSE_SOS_ALERTS = "sos_alerts"
  * Version of the `sos_alerts` notice the app shows before the first contact is added. Change it
  * when the notice text changes. The notice is a DRAFT until a lawyer has reviewed it.
  */
-const val SOS_ALERTS_NOTICE_VERSION = "2026-10-alerts-draft1"
+const val SOS_ALERTS_NOTICE_VERSION = "2026-10-alerts-draft2"
 
 /** Where a contact stands. Decided from the two times, opt-out first. */
 enum class ContactStatus {
@@ -184,6 +184,7 @@ class ApiContactsRepository @Inject constructor(
     private val meApi: MeApi,
     private val dao: ContactDao,
     private val config: ApiConfig,
+    private val preferences: ContactsPreferences,
 ) : ContactsRepository {
 
     /** One writer of the copy at a time. */
@@ -218,16 +219,33 @@ class ApiContactsRepository @Inject constructor(
         }
     }
 
+    /**
+     * True only when the user's consent is granted **for the notice the app shows today**. A
+     * consent given for an older notice counts as "not yet": the user is shown the current
+     * notice again. The answer is also written to the phone, so that an SOS can decide
+     * without the network whether alerts may be sent.
+     */
     override suspend fun hasConsent(): ContactsResult<Boolean> =
         when (val result = apiCall { meApi.getMyConsents() }) {
-            is ApiResult.Success -> ContactsResult.Ok(
-                result.value.items.any { it.purpose == PURPOSE_SOS_ALERTS && it.status == STATUS_GRANTED },
-            )
+            is ApiResult.Success -> {
+                val current = result.value.items.any {
+                    it.purpose == PURPOSE_SOS_ALERTS &&
+                        it.status == STATUS_GRANTED &&
+                        it.noticeVersion == SOS_ALERTS_NOTICE_VERSION
+                }
+                preferences.setAlertsNoticeVersion(SOS_ALERTS_NOTICE_VERSION.takeIf { current })
+                ContactsResult.Ok(current)
+            }
+            // The phone keeps what it knew: a failed check neither gives nor takes consent.
             is ApiResult.Failure -> ContactsResult.Failed(result.failure.toContactsError())
         }
 
-    override suspend fun grantConsent(noticeLocale: String): ContactsResult<Unit> =
-        setConsent(SetConsentRequest.Status.granted, noticeLocale)
+    override suspend fun grantConsent(noticeLocale: String): ContactsResult<Unit> {
+        val result = setConsent(SetConsentRequest.Status.granted, noticeLocale)
+        // Only after the server recorded it.
+        if (result is ContactsResult.Ok) preferences.setAlertsNoticeVersion(SOS_ALERTS_NOTICE_VERSION)
+        return result
+    }
 
     override suspend fun withdrawConsent(noticeLocale: String): ContactsResult<Unit> {
         val result = setConsent(SetConsentRequest.Status.withdrawn, noticeLocale)
@@ -319,6 +337,8 @@ class ApiContactsRepository @Inject constructor(
             cleared++
             dao.clear()
         }
+        // No contacts on this phone, no alerts from it.
+        preferences.setAlertsNoticeVersion(null)
     }
 
     /** The server's answer IS the truth for this row: store it at once, no second request. */

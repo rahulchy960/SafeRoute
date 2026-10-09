@@ -154,7 +154,7 @@ interface SosDeviceModule {
     fun bindSmsGateway(gateway: AndroidSmsGateway): SmsGateway
 
     @Binds
-    fun bindSosAlertPolicy(policy: ClosedSosAlertPolicy): SosAlertPolicy
+    fun bindSosAlertPolicy(policy: ConsentSosAlertPolicy): SosAlertPolicy
 
     @Binds
     fun bindSosMessageSettings(settings: AppSosMessageSettings): SosMessageSettings

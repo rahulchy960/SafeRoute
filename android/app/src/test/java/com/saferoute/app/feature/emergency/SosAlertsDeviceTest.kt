@@ -34,7 +34,9 @@ import com.saferoute.app.core.emergency.SosLanguage
 import com.saferoute.app.core.emergency.SosLocationReport
 import com.saferoute.app.core.session.AppLocale
 import com.saferoute.app.feature.contacts.ContactsError
+import com.saferoute.app.feature.contacts.FakeContactsPreferences
 import com.saferoute.app.feature.contacts.FakeContactsRepository
+import com.saferoute.app.feature.contacts.SOS_ALERTS_NOTICE_VERSION
 import com.saferoute.app.testing.assertMinTouchTarget
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -61,8 +63,26 @@ class SosAlertsDeviceTest {
     private fun string(id: Int): String = application.getString(id)
 
     @Test
-    fun `the gate is closed - until the notice version 2 exists no alert may be sent`() {
-        assertFalse(runBlocking { ClosedSosAlertPolicy().alertsAllowed() })
+    fun `the gate opens only for consent to the notice the app shows today`() {
+        val preferences = FakeContactsPreferences()
+        val policy = ConsentSosAlertPolicy(preferences)
+
+        assertFalse("nothing agreed", runBlocking { policy.alertsAllowed() })
+
+        runBlocking { preferences.setAlertsNoticeVersion("2026-10-alerts-draft1") }
+        assertFalse("the older notice did not describe the alerts", runBlocking { policy.alertsAllowed() })
+
+        runBlocking { preferences.setAlertsNoticeVersion(SOS_ALERTS_NOTICE_VERSION) }
+        assertTrue(runBlocking { policy.alertsAllowed() })
+
+        // Withdrawn or signed out.
+        runBlocking { preferences.setAlertsNoticeVersion(null) }
+        assertFalse(runBlocking { policy.alertsAllowed() })
+    }
+
+    @Test
+    fun `the notice version is the second one, and differs from the first`() {
+        assertEquals("2026-10-alerts-draft2", SOS_ALERTS_NOTICE_VERSION)
     }
 
     @Test

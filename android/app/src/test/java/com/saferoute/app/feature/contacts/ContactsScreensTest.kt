@@ -218,13 +218,26 @@ class ContactsScreensTest {
     }
 
     @Test
-    fun `the notice says the app sends nothing and is not an emergency service`() {
+    fun `the notice says what an SOS sends, that it may cost, and that it is not an emergency service`() {
         val text = ALERTS_NOTICE_PARAGRAPHS.joinToString(" ") { string(it) }
 
-        assertTrue(text.contains("does not message them by itself"))
-        assertTrue(text.contains("SafeRoute is not an emergency service. In an emergency, call 112."))
-        assertTrue(text.contains("later version"))
-        assertFalse(Regex("""\bsafe\b|guarantee""", RegexOption.IGNORE_CASE).containsMatchIn(text))
+        // Version 2: the alerts are real, so the notice describes them.
+        assertTrue(text.contains("sends each of them an SMS from your own SIM"))
+        assertTrue(text.contains("a map link to where your phone is"))
+        assertTrue(text.contains("Your mobile plan may charge you"))
+        assertTrue(text.contains("Nothing is sent unless you start an SOS"))
+        assertTrue(text.contains("opens your SMS app with the message and you press Send"))
+        assertTrue(text.contains("stays on this phone for up to 30 days"))
+        assertTrue(text.contains("Someone who opted out is never alerted"))
+        assertTrue(text.contains("SafeRoute is not an emergency service."))
+        assertTrue(text.contains("In an emergency, call 112."))
+        assertFalse(text.contains("later version"))
+        // It promises no delivery and no safety. ("if you say you are safe" is the user's own
+        // statement, the only place the word appears.)
+        assertTrue(text.contains("A message can arrive late or not at all"))
+        assertFalse(text.contains("guarantee", ignoreCase = true))
+        assertEquals(1, Regex("""\bsafe\b""", RegexOption.IGNORE_CASE).findAll(text).count())
+        assertTrue(text.contains("if you say you are safe"))
     }
 
     @Test

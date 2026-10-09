@@ -1,0 +1,142 @@
+{
+  "$schema": "../../tools/diagrams/diagram.schema.json",
+  "title": "SOS alerts: consent, the permission, and what an SOS may do",
+  "subtitle": "No SOS from the app without consent to the notice that describes alerts; no SMS by the app itself without the permission, asked after the app's own explanation (P014b3, ADR 0027)",
+  "direction": "TB",
+  "layout": {
+    "nodeWidth": 250,
+    "rankGap": 46
+  },
+  "groups": [
+    {
+      "id": "consent",
+      "label": "Consent (ADR 0010)"
+    },
+    {
+      "id": "permission",
+      "label": "Send alerts automatically"
+    },
+    {
+      "id": "sos",
+      "label": "What the SOS control offers"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "notice",
+      "label": "Notice version 2, How SOS alerts work: I agree, or Not now",
+      "role": "app",
+      "group": "consent",
+      "rank": 1
+    },
+    {
+      "id": "server",
+      "label": "Server records the consent with the notice version (PUT /v1/me/consents/sos_alerts)",
+      "role": "service",
+      "group": "consent",
+      "rank": 2
+    },
+    {
+      "id": "flag",
+      "label": "Phone notes the agreed version (a flag). Removed on withdrawal and sign-out",
+      "role": "data",
+      "group": "consent",
+      "rank": 3
+    },
+    {
+      "id": "gate",
+      "label": "Gate: agreed version = today's version? Read on the phone, no network",
+      "role": "security",
+      "group": "consent",
+      "rank": 4
+    },
+    {
+      "id": "card",
+      "label": "Card under Emergency contacts: On, Off, Blocked, or not in this build",
+      "role": "app",
+      "group": "permission",
+      "rank": 2
+    },
+    {
+      "id": "disclosure",
+      "label": "The app's explanation first: SMS from your SIM, to your contacts, may cost, only in an SOS",
+      "role": "app",
+      "group": "permission",
+      "rank": 3
+    },
+    {
+      "id": "android",
+      "label": "Android's permission dialog (SEND_SMS). Never during an SOS",
+      "role": "external",
+      "group": "permission",
+      "rank": 4
+    },
+    {
+      "id": "closed",
+      "label": "No consent: Call 112, Practice SOS, Set up SOS alerts. No hold button",
+      "role": "app",
+      "group": "sos",
+      "rank": 5
+    },
+    {
+      "id": "auto",
+      "label": "Consent and permission: Hold to send SOS, the phone sends the SMS itself",
+      "role": "security",
+      "group": "sos",
+      "rank": 6
+    },
+    {
+      "id": "composer",
+      "label": "Consent, no permission: Hold to send SOS, the SMS app opens and the user presses Send",
+      "role": "security",
+      "group": "sos",
+      "rank": 5
+    }
+  ],
+  "edges": [
+    {
+      "from": "notice",
+      "to": "server",
+      "label": "I agree"
+    },
+    {
+      "from": "server",
+      "to": "flag",
+      "label": "recorded or reported"
+    },
+    {
+      "from": "flag",
+      "to": "gate"
+    },
+    {
+      "from": "gate",
+      "to": "closed",
+      "label": "no"
+    },
+    {
+      "from": "gate",
+      "to": "composer",
+      "label": "yes"
+    },
+    {
+      "from": "card",
+      "to": "disclosure",
+      "label": "Allow sending SMS"
+    },
+    {
+      "from": "disclosure",
+      "to": "android",
+      "label": "Continue"
+    },
+    {
+      "from": "android",
+      "to": "auto",
+      "label": "granted"
+    },
+    {
+      "from": "gate",
+      "to": "auto",
+      "label": "yes"
+    }
+  ]
+}

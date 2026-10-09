@@ -135,11 +135,11 @@ class ContactsSessionSyncTest {
         assertEquals(emptyList<String>(), repository.calls)
 
         session.setState(SessionState.Ready)
-        assertEquals(listOf("refresh"), repository.calls)
+        assertEquals(listOf("refresh", "hasConsent"), repository.calls)
 
         session.setState(SessionState.SignedOut)
         session.setState(SessionState.Ready)
-        assertEquals(listOf("refresh", "clearLocal", "refresh"), repository.calls)
+        assertEquals(listOf("refresh", "hasConsent", "clearLocal", "refresh", "hasConsent"), repository.calls)
     }
 
     @Test
@@ -187,7 +187,7 @@ class ContactsSessionSyncTest {
 
         syncFor(session).start()
 
-        assertEquals(listOf("refresh"), repository.calls)
+        assertEquals(listOf("refresh", "hasConsent"), repository.calls)
         assertEquals(1, repository.current.size)
     }
 
@@ -199,7 +199,7 @@ class ContactsSessionSyncTest {
         sync.start()
         sync.start()
 
-        assertEquals(listOf("refresh"), repository.calls)
+        assertEquals(listOf("refresh", "hasConsent"), repository.calls)
     }
 }
 
@@ -272,11 +272,13 @@ class ContactsBoundaryTest {
     }
 
     @Test
-    fun `the settings file gets one number from the contacts feature and nothing about a person`() {
+    fun `the settings file gets two flags from the contacts feature and nothing about a person`() {
         val keys = Regex("""PreferencesKey\("([^"]+)"\)""")
             .findAll(File("src/main/java/com/saferoute/app/feature/contacts/ContactsPreferences.kt").readText())
             .map { it.groupValues[1] }.toList()
 
-        assertEquals(listOf("contacts_card_snoozed_until"), keys)
+        // A point in time for the Home card, and the version of the alerts notice the user
+        // agreed to (P014b3): what lets an SOS check consent without the network.
+        assertEquals(listOf("contacts_card_snoozed_until", "alerts_notice_version_agreed"), keys)
     }
 }

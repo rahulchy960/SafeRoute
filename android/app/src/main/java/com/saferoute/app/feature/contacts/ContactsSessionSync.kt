@@ -42,7 +42,12 @@ class ContactsSessionSync @Inject constructor(
             session.state.collect { state ->
                 when (state) {
                     // Its own coroutine: a slow fetch must not delay the reaction to a sign-out.
-                    SessionState.Ready -> launch { repository.refresh() }
+                    SessionState.Ready -> launch {
+                        repository.refresh()
+                        // Also brings the "agreed to the alerts notice" flag to this phone, for
+                        // example after a reinstall; a failure leaves the flag as it was.
+                        repository.hasConsent()
+                    }
 
                     SessionState.SignedOut,
                     SessionState.NeedsAge,

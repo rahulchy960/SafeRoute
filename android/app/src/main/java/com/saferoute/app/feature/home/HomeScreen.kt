@@ -96,6 +96,7 @@ import com.saferoute.app.feature.contacts.ContactsHomeCard
 import com.saferoute.app.feature.emergency.EmergencyShortcut
 import com.saferoute.app.feature.emergency.ShortcutOfferDialog
 import com.saferoute.app.feature.emergency.ShortcutOfferViewModel
+import com.saferoute.app.feature.emergency.SosArmViewModel
 import com.saferoute.app.feature.emergency.SosOpenMode
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
@@ -133,10 +134,12 @@ fun HomeRoute(
     permissionViewModel: LocationPermissionViewModel = hiltViewModel(),
     directionsViewModel: DirectionsViewModel = hiltViewModel(),
     offerViewModel: ShortcutOfferViewModel = hiltViewModel(),
+    armViewModel: SosArmViewModel = hiltViewModel(),
 ) {
     val shortcutOffer by offerViewModel.offer.collectAsStateWithLifecycle()
     val directions by directionsViewModel.state.collectAsStateWithLifecycle()
     val emergencyDialog by viewModel.emergencyDialog.collectAsStateWithLifecycle()
+    val alertsEnabled by armViewModel.alertsEnabled.collectAsStateWithLifecycle()
     val mapState by viewModel.map.loadState.collectAsStateWithLifecycle()
     val myLocation by viewModel.myLocation.collectAsStateWithLifecycle()
     val locationState by viewModel.locationState.collectAsStateWithLifecycle()
@@ -290,6 +293,10 @@ fun HomeRoute(
             onArmed = {
                 viewModel.onEmergencyDialogDismiss()
                 context.startActivity(EmergencyShortcut.modeIntent(context, SosOpenMode.START))
+            }.takeIf { alertsEnabled },
+            onSetUp = {
+                viewModel.onEmergencyDialogDismiss()
+                onOpenContacts()
             },
             onPractice = {
                 viewModel.onEmergencyDialogDismiss()

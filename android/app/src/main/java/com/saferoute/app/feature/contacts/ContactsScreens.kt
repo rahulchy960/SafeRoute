@@ -26,6 +26,8 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import com.saferoute.app.feature.emergency.SmsAlertModeCard
+import com.saferoute.app.feature.emergency.SosArmViewModel
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -155,8 +157,10 @@ fun ContactsRoute(
     onOpenContact: (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ContactsViewModel = hiltViewModel(),
+    armViewModel: SosArmViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val alertsEnabled by armViewModel.alertsEnabled.collectAsStateWithLifecycle()
     ContactsScreen(
         state = state,
         onBack = onBack,
@@ -165,7 +169,21 @@ fun ContactsRoute(
         onRefresh = viewModel::onRefresh,
         onStopConfirmed = viewModel::onStopConfirmed,
         modifier = modifier,
+        // How alerts leave this phone, once the user has agreed to them; before that, the
+        // way to the notice. ("Add contact" shows the notice first when it is still owed.)
+        alertsCard = {
+            if (alertsEnabled) SmsAlertModeCard() else AlertsNotSetUpCard(onReadNotice = onAdd)
+        },
     )
+}
+
+/** Shown while the user has not agreed to the current notice: SOS alerts are off. */
+@Composable
+fun AlertsNotSetUpCard(onReadNotice: () -> Unit, modifier: Modifier = Modifier) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(SafeRouteTheme.spacing.xs)) {
+        ContactsMessage(stringResource(R.string.contacts_alerts_off), isError = false)
+        OutlinedButton(onClick = onReadNotice) { Text(text = stringResource(R.string.contacts_alerts_read_notice)) }
+    }
 }
 
 /**
@@ -182,6 +200,7 @@ fun ContactsScreen(
     onRefresh: () -> Unit,
     onStopConfirmed: () -> Unit,
     modifier: Modifier = Modifier,
+    alertsCard: @Composable () -> Unit = {},
 ) {
     var confirmingStop by remember { mutableStateOf(false) }
     val contacts = state.contacts.orEmpty()
@@ -205,6 +224,7 @@ fun ContactsScreen(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        alertsCard()
         if (state.offline) ContactsMessage(stringResource(R.string.contacts_offline), isError = false)
         state.error?.let {
             // A failed refresh by hand: say what is on screen. Anything else: the error itself.
