@@ -213,6 +213,28 @@ class SosDeviceTest {
         assertEquals("asking again started no second run", 1, cleanUps.started.size)
     }
 
+    /**
+     * The order of events that failed in CI (P014b5), held still: the plan is asked for again
+     * while the first clean-up is still at work. The earlier version of the test above let
+     * the real job run on a thread of its own and expected it to have finished already.
+     */
+    @Test
+    fun `a clean-up that is still running when the plan is asked for again is neither doubled nor restarted`() {
+        startTestWorkManager()
+        val scheduler = WorkManagerPurgeScheduler(context)
+        scheduler.scheduleDaily()
+        val running = plannedJobs().single()
+        assertEquals(WorkInfo.State.RUNNING, running.state)
+
+        scheduler.scheduleDaily()
+        scheduler.scheduleDaily()
+
+        val after = plannedJobs().single()
+        assertEquals(running.id, after.id)
+        assertEquals(WorkInfo.State.RUNNING, after.state)
+        assertEquals(1, cleanUps.started.size)
+    }
+
     @Test
     fun `the clean-up job itself runs and reports success`() {
         // Called directly: it works on this thread, and the test waits for its answer.
