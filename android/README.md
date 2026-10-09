@@ -162,6 +162,7 @@ Chosen on 2026-10-02 from Google Maven and Maven Central metadata; all are stabl
 | Google Services Gradle plugin | 4.5.0 | build time only; reads `google-services.json` |
 | DataStore Preferences | 1.2.1 | the stored onboarding flags |
 | Room (runtime, compiler, testing) | 2.8.5 | the local database: the offline copy of the emergency contacts (P013b1) |
+| WorkManager (runtime, testing) | 2.12.0 | the daily clean-up of old SOS records (P014a2); brings `WAKE_LOCK` into the merged manifest |
 | kotlinx-coroutines-play-services | 1.11.0 | `await()` for Play services tasks |
 | OkHttp MockWebServer | 5.5.0 | tests only |
 | JUnit 4 · Robolectric · AndroidX Test · Turbine | 4.13.2 · 4.17 · core 1.7.0, ext-junit 1.3.0 · 1.2.1 | tests only |

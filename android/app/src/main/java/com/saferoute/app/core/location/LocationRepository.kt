@@ -110,6 +110,21 @@ interface LocationSource {
     fun stop()
 }
 
+/**
+ * Positions for the trail kept during an emergency the user started (ADR 0027). A second
+ * source on purpose: the map's source stops when the map leaves the screen, and an emergency
+ * must not stop with it. It runs only between [start] and [stop], which the SOS runner calls.
+ */
+interface TrailLocationSource {
+    /** @param precise ask for GPS-level accuracy; otherwise what approximate permission gives. */
+    fun start(precise: Boolean, intervalMillis: Long, onFix: (RawFix) -> Unit)
+
+    /** As [LocationSource.lastKnown]: what the phone already has, at most one call. */
+    fun lastKnown(onResult: (fix: RawFix, ageMillis: Long) -> Unit)
+
+    fun stop()
+}
+
 /** Facts about the phone that decide whether a position can be had at all. */
 interface LocationEnvironment {
     fun granted(): GrantedLocation

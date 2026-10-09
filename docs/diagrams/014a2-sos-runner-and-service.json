@@ -1,0 +1,169 @@
+{
+  "$schema": "../../tools/diagrams/diagram.schema.json",
+  "title": "SOS on the device: what runs an emergency",
+  "subtitle": "The runner belongs to the app's process, not to a screen. It asks the engine for every step and acts only on a yes; the foreground service is its host (P014a2, ADR 0027)",
+  "direction": "TB",
+  "layout": {
+    "nodeWidth": 250,
+    "rankGap": 46
+  },
+  "groups": [
+    {
+      "id": "entry",
+      "label": "Who starts it"
+    },
+    {
+      "id": "core",
+      "label": "core/emergency (plain Kotlin)"
+    },
+    {
+      "id": "device",
+      "label": "The phone's parts: feature/emergency, core/location"
+    },
+    {
+      "id": "store",
+      "label": "Phone storage: Room"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "screens",
+      "label": "SOS screens and shortcuts (P014a3, P014c): start, cancel, I'm safe, resume when visible",
+      "role": "app",
+      "group": "entry",
+      "rank": 1
+    },
+    {
+      "id": "runner",
+      "label": "SosRunner: countdown rebuilt from countdownEndsAt, trigger at its end, app-lifetime scope",
+      "role": "security",
+      "group": "core",
+      "rank": 2
+    },
+    {
+      "id": "engine",
+      "label": "SosEngine: writes the new state first, answers once",
+      "role": "security",
+      "group": "core",
+      "rank": 3
+    },
+    {
+      "id": "trail",
+      "label": "SosTrail: every 5 s (15 s below 10% battery); last known, approximate, stale, none. Never blocks",
+      "role": "security",
+      "group": "core",
+      "rank": 3
+    },
+    {
+      "id": "housekeeping",
+      "label": "SosHousekeeping: purge after 30 days, wipe on sign-out",
+      "role": "data",
+      "group": "core",
+      "rank": 6
+    },
+    {
+      "id": "host",
+      "label": "SosHost: with a location permission, the foreground service; otherwise a plain notification",
+      "role": "app",
+      "group": "device",
+      "rank": 2
+    },
+    {
+      "id": "service",
+      "label": "SosForegroundService (type location, not sticky) + notification: fixed text, Call 112",
+      "role": "infra",
+      "group": "device",
+      "rank": 3
+    },
+    {
+      "id": "haptics",
+      "label": "Vibration: one tick per second, a pattern at the trigger",
+      "role": "app",
+      "group": "device",
+      "rank": 3
+    },
+    {
+      "id": "source",
+      "label": "TrailLocationSource (Fused Location), running only during an SOS",
+      "role": "external",
+      "group": "device",
+      "rank": 4
+    },
+    {
+      "id": "worker",
+      "label": "WorkManager: SosPurgeWorker, once a day",
+      "role": "infra",
+      "group": "device",
+      "rank": 6
+    },
+    {
+      "id": "records",
+      "label": "sos_records: the emergency and its state",
+      "role": "data",
+      "group": "store",
+      "rank": 5
+    },
+    {
+      "id": "points",
+      "label": "sos_points: the trail. Stays on the phone",
+      "role": "data",
+      "group": "store",
+      "rank": 4
+    }
+  ],
+  "edges": [
+    {
+      "from": "screens",
+      "to": "runner"
+    },
+    {
+      "from": "runner",
+      "to": "engine",
+      "label": "every step"
+    },
+    {
+      "from": "engine",
+      "to": "records"
+    },
+    {
+      "from": "runner",
+      "to": "host",
+      "label": "begin / end"
+    },
+    {
+      "from": "host",
+      "to": "service"
+    },
+    {
+      "from": "service",
+      "to": "runner",
+      "label": "follows its state"
+    },
+    {
+      "from": "runner",
+      "to": "haptics",
+      "label": "after a yes"
+    },
+    {
+      "from": "runner",
+      "to": "trail",
+      "label": "start / stop"
+    },
+    {
+      "from": "source",
+      "to": "trail"
+    },
+    {
+      "from": "trail",
+      "to": "points"
+    },
+    {
+      "from": "worker",
+      "to": "housekeeping"
+    },
+    {
+      "from": "housekeeping",
+      "to": "records"
+    }
+  ]
+}

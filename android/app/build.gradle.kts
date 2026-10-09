@@ -323,6 +323,8 @@ dependencies {
     // is the first table (ADR 0024).
     implementation(libs.androidx.room.runtime)
     ksp(libs.androidx.room.compiler)
+    // Runs the daily clean-up of old SOS records, also when the app is not opened (ADR 0027).
+    implementation(libs.androidx.work.runtime)
 
     // Networking. Only core/network uses these (ADR 0009).
     implementation(libs.okhttp)
@@ -339,6 +341,7 @@ dependencies {
     testImplementation(libs.androidx.compose.ui.test.junit4)
     testImplementation(libs.androidx.room.testing)
     testImplementation(libs.androidx.test.core)
+    testImplementation(libs.androidx.work.testing)
     testImplementation(libs.androidx.test.ext.junit)
     testImplementation(libs.hilt.android.testing)
     testImplementation(libs.junit)

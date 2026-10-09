@@ -227,6 +227,16 @@ proprietary ("Android Software Development Kit License").
   background or without a request the user made. Changing what location is used for meant
   changing the disclosure in the same prompt, as this policy requires; the wording is a draft
   until a lawyer has reviewed it.
+- **Changed in P014a2 (2026-10-09, [ADR 0027](0027-sos-device-flow.md)):** during an SOS the
+  user started, and only then, a foreground service of the type `location` keeps positions
+  arriving while the SOS screen is not in front, and the positions are **stored on the phone**
+  (`sos_points`) for up to 30 days. The manifest gains `FOREGROUND_SERVICE` and
+  `FOREGROUND_SERVICE_LOCATION`. Still no `ACCESS_BACKGROUND_LOCATION`; the service can only
+  be started while a screen of the app is visible; nothing is sent anywhere (the alert
+  message of P014b will be the first thing that carries a position, and it names it). The
+  map's own location use is unchanged. The SOS never asks for the location permission:
+  without it, it runs without positions. The disclosure for this use arrives with the SOS
+  screens (P014a3), before anything can start an SOS; a draft for the lawyer.
 - **Disclosure first, and only on request.** The system dialog is requested only after the
   user tapped "my location" and chose "Continue" on the app's own explanation (what is
   collected, why, what is not done, how to stop). Never at app start or during onboarding.

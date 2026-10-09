@@ -42,6 +42,7 @@ No other Google or Apple logo, font or artwork is in the app.
 
 | AndroidX DataStore (Preferences) 1.2.1 | Apache-2.0 |
 | AndroidX Room 2.8.5 (runtime, compiler through KSP, testing in tests only) | Apache-2.0 |
+| AndroidX WorkManager 2.12.0 (runtime; testing in tests only) | Apache-2.0 |
 | kotlinx-coroutines-play-services 1.11.0 | Apache-2.0 |
 | Firebase common and components (through the Firebase BoM 34.19.0) | Apache-2.0 |
 

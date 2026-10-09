@@ -35,6 +35,23 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <!--
+        A running SOS (P014a2, ADR 0027). All three are "normal" permissions: granted at
+        install, no dialog.
+        FOREGROUND_SERVICE and FOREGROUND_SERVICE_LOCATION: let the app run a foreground
+        service of the type "location". It runs ONLY during an SOS the user started, shows a
+        notification the whole time, and ends with the SOS. It is what lets Android keep
+        delivering positions while the SOS screen is not in front. This is NOT background
+        location: ACCESS_BACKGROUND_LOCATION stays absent, and the service can only be started
+        while a screen of the app is visible.
+        VIBRATE: the countdown vibrates once per second so that it can be felt.
+        (WAKE_LOCK is not listed here: the WorkManager library, which runs the daily clean-up
+        of old SOS records, brings it in its own manifest.)
+    -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <!--
         The map library (MapLibre, P010a) declares this one in its own manifest, and Android
         merges library manifests into the app's. The app does not need it, so it is taken out
         again. tools:node="remove" means "leave this out of the merged manifest".
@@ -139,6 +156,17 @@
                 android:name="android.service.quicksettings.ACTIVE_TILE"
                 android:value="true" />
         </service>
+
+        <!--
+            Keeps a running SOS alive and visible (P014a2). foregroundServiceType="location":
+            Android 14 and newer require every foreground service to say what it is for, and
+            only this type receives positions while the app is not on screen.
+            exported=false: only this app starts it.
+        -->
+        <service
+            android:name=".feature.emergency.SosForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="location" />
 
         <!--
             Puts the pinned emergency notification back after a restart of the phone and after

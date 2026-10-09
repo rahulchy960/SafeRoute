@@ -14,7 +14,8 @@ import kotlinx.coroutines.launch
 /**
  * Keeps the emergency records on the phone no longer than promised:
  *
- * - **Every app start**: records and points older than [SOS_RETENTION] are deleted.
+ * - **Every app start, and once a day**: records and points older than [SOS_RETENTION] are
+ *   deleted.
  * - **Signed out, back at the start, or blocked**: everything is deleted. The records belong
  *   to the account that was signed in.
  *
@@ -22,11 +23,17 @@ import kotlinx.coroutines.launch
  * the server forced, and a wipe the process did not live to finish happens at the next start.
  * Runs in the app-lifetime scope.
  */
+/** Plans the daily clean-up for phones on which the app is rarely opened (WorkManager). */
+fun interface PurgeScheduler {
+    fun scheduleDaily()
+}
+
 @Singleton
 class SosHousekeeping @Inject constructor(
     private val session: Session,
     private val store: SosStore,
     private val clock: Clock,
+    private val scheduler: PurgeScheduler,
     @param:ApplicationScope private val appScope: CoroutineScope,
 ) {
     private val started = AtomicBoolean(false)
@@ -35,6 +42,7 @@ class SosHousekeeping @Inject constructor(
     fun start() {
         if (!started.compareAndSet(false, true)) return
         appScope.launch { purgeExpired() }
+        scheduler.scheduleDaily()
         appScope.launch {
             session.state.collect { state ->
                 when (state) {

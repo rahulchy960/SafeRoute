@@ -521,8 +521,12 @@ and [`android/README.md`](android/README.md):
   provider needs a superseding ADR and a parity test suite at `MapController`. Never weaken
   `checkReleaseMapKey`.
 - Location follows ADR 0015, "Location policy" (since P010b): **foreground only** (no
-  `ACCESS_BACKGROUND_LOCATION` and no foreground-service permission without a prompt that asks
-  for it; `MainActivityTest` pins the list); positions are never stored, logged or printed,
+  `ACCESS_BACKGROUND_LOCATION`, ever, without a prompt that asks for it; `MainActivityTest`
+  pins the list). The one exception (since P014a2, ADR 0027): during an SOS the user started,
+  the foreground service `SosForegroundService` (type `location`) keeps positions arriving,
+  and `SosTrail` stores them in `sos_points` on the phone. No other code may start a
+  foreground service, use `TrailLocationSource` or store a position. Outside an SOS,
+  positions are never stored, logged or printed,
   and the types that hold one hide it in `toString()`; a position leaves the phone only in a
   request the user started and the disclosure names (directions: the start of the route;
   search, since P011e2: the position rounded to two decimals); the system permission dialog is
@@ -609,6 +613,16 @@ and [`android/README.md`](android/README.md):
   touch the network and hold no means to send a message (`SosCoreBoundaryTest`); the types
   that hold a position or a contact hide it in `toString()`. Records and points are purged
   after 30 days and wiped when the session leaves the signed-in states (`SosHousekeeping`).
+  Since P014a2 the emergency is run by `core/emergency/SosRunner` in the app-lifetime scope
+  (never a screen's scope, never logic inside the service class): the service is only its
+  host (`SosHost`), is `START_NOT_STICKY`, and is skipped when there is no location
+  permission or Android refuses the start. **Location never blocks an SOS** and the SOS never
+  asks for a permission: every way of not getting a position ends in a `SosTrailMode`, not
+  in a wait or an error. The running-SOS notification holds fixed text only. Nothing resumes
+  an emergency in the background; `SosRunner.resume()` is called when a screen is visible.
+  A Hilt test never starts the real service, vibration or WorkManager
+  (`FakeSosDeviceModule`); a test of the runner uses `SchedulerClock` so that the clock and
+  virtual time agree.
   Every SOS change updates [`docs/sos/failure-matrix.md`](docs/sos/failure-matrix.md):
   "Automated pass" only for rows with passing tests, with the level it was tested at.
 - `android/app/google-services.json` is never opened, printed or committed by Claude Code. CI and
