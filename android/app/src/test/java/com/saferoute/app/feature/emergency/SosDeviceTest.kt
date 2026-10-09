@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 package com.saferoute.app.feature.emergency
 
+import android.annotation.SuppressLint
 import android.app.Application
 import android.app.Notification
 import android.app.NotificationManager
@@ -11,12 +12,19 @@ import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.os.BatteryManager
 import androidx.test.core.app.ApplicationProvider
+import androidx.concurrent.futures.CallbackToFutureAdapter
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.work.Configuration
+import androidx.work.ListenableWorker
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
+import androidx.work.WorkerFactory
+import androidx.work.WorkerParameters
+import androidx.work.impl.WorkManagerImpl
+import androidx.work.testing.SynchronousExecutor
 import androidx.work.testing.TestListenableWorkerBuilder
 import androidx.work.testing.WorkManagerTestInitHelper
-import androidx.work.ListenableWorker
+import com.google.common.util.concurrent.ListenableFuture
 import com.saferoute.app.R
 import com.saferoute.app.core.emergency.FakeSosHaptics
 import com.saferoute.app.core.emergency.FakeSosHost
@@ -36,6 +44,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -51,6 +60,37 @@ class SosDeviceTest {
     private val context: Context = ApplicationProvider.getApplicationContext()
     private val manager = context.getSystemService(NotificationManager::class.java)
     private fun string(id: Int): String = context.getString(id)
+
+    private val cleanUps = HeldCleanUps()
+
+    /**
+     * A WorkManager for one test: everything it does happens on the test's own thread, and
+     * the job it starts is a stand-in that the test finishes itself ([HeldCleanUps]).
+     */
+    private fun startTestWorkManager() = WorkManagerTestInitHelper.initializeTestWorkManager(
+        context,
+        Configuration.Builder().setExecutor(SynchronousExecutor()).setWorkerFactory(cleanUps).build(),
+    )
+
+    private fun plannedJobs(): List<WorkInfo> =
+        WorkManager.getInstance(context).getWorkInfosForUniqueWork(SosPurgeWorker.UNIQUE_NAME).get()
+
+    /**
+     * WorkManager lives in a static field, which outlives a test. Left behind, it would be
+     * found by the app start of the next test, which would then plan the real clean-up on it.
+     */
+    @Before
+    fun `no WorkManager is left behind by an earlier test`() {
+        assertFalse("a test left its WorkManager behind", WorkManager.isInitialized())
+    }
+
+    @After
+    @SuppressLint("RestrictedApi") // The only way to take a test WorkManager away again.
+    fun removeTestWorkManager() {
+        if (!WorkManager.isInitialized()) return
+        WorkManagerTestInitHelper.closeWorkDatabase()
+        WorkManagerImpl.setDelegate(null)
+    }
 
     @Test
     fun `the channel is silent and of low importance`() {
@@ -148,18 +188,36 @@ class SosDeviceTest {
 
     @Test
     fun `the daily clean-up is planned once, however often it is asked for, and runs`() {
-        WorkManagerTestInitHelper.initializeTestWorkManager(context)
+        startTestWorkManager()
         val scheduler = WorkManagerPurgeScheduler(context)
 
         scheduler.scheduleDaily()
         scheduler.scheduleDaily()
 
-        val jobs = WorkManager.getInstance(context).getWorkInfosForUniqueWork(SosPurgeWorker.UNIQUE_NAME).get()
-        assertEquals(1, jobs.size)
-        assertEquals(WorkInfo.State.ENQUEUED, jobs.single().state)
-        assertEquals(24 * 60 * 60 * 1_000L, jobs.single().periodicityInfo?.repeatIntervalMillis)
+        // It runs: the first run of a periodic job starts as soon as it is planned.
+        assertEquals(listOf(SosPurgeWorker::class.java.name), cleanUps.started)
+        val running = plannedJobs().single()
+        assertEquals(WorkInfo.State.RUNNING, running.state)
+        assertEquals(24 * 60 * 60 * 1_000L, running.periodicityInfo?.repeatIntervalMillis)
 
+        cleanUps.finish()
+
+        // Afterwards the same job waits for its next day.
+        val waiting = plannedJobs().single()
+        assertEquals(WorkInfo.State.ENQUEUED, waiting.state)
+        assertEquals(running.id, waiting.id)
+
+        scheduler.scheduleDaily()
+
+        assertEquals(waiting.id, plannedJobs().single().id)
+        assertEquals("asking again started no second run", 1, cleanUps.started.size)
+    }
+
+    @Test
+    fun `the clean-up job itself runs and reports success`() {
+        // Called directly: it works on this thread, and the test waits for its answer.
         val result = runBlocking { TestListenableWorkerBuilder<SosPurgeWorker>(context).build().doWork() }
+
         assertEquals(ListenableWorker.Result.success(), result)
     }
 
@@ -171,6 +229,36 @@ class SosDeviceTest {
             .flatMap { file -> file.readLines().filter { line -> forbidden.any(line::contains) }.map { file.name to it } }
 
         assertEquals(emptyList<Pair<String, String>>(), offenders)
+    }
+}
+
+/**
+ * Stands in for [SosPurgeWorker] inside a test WorkManager. The real job is a coroutine
+ * worker, which works on a background thread; a test that reads the job's state would then
+ * depend on how fast that thread is. This one does nothing until the test finishes it, on
+ * the test's own thread, so every state the test reads is decided by the test.
+ */
+private class HeldCleanUps : WorkerFactory() {
+
+    /** The class name of every job WorkManager started, in order. */
+    val started = mutableListOf<String>()
+    private val unfinished = ArrayDeque<CallbackToFutureAdapter.Completer<ListenableWorker.Result>>()
+
+    override fun createWorker(
+        appContext: Context,
+        workerClassName: String,
+        workerParameters: WorkerParameters,
+    ): ListenableWorker = object : ListenableWorker(appContext, workerParameters) {
+        override fun startWork(): ListenableFuture<Result> = CallbackToFutureAdapter.getFuture { completer ->
+            started += workerClassName
+            unfinished += completer
+            "a held clean-up"
+        }
+    }
+
+    /** Lets the oldest unfinished run end with success. */
+    fun finish() {
+        unfinished.removeFirst().set(ListenableWorker.Result.success())
     }
 }
 
