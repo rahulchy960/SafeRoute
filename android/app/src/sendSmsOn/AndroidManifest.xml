@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+        Merged into a build only when the Gradle property saferoute.sendSmsEnabled says so
+        (app/build.gradle.kts; ADR 0027, note of P014b1). By default: debug builds yes, release
+        builds no.
+        SEND_SMS is a "dangerous" permission: declaring it only makes it possible to ASK. The
+        app asks after its own explanation, never during an SOS, and uses it for one thing:
+        the alert messages of an SOS the user started, sent from the user's SIM to the user's
+        own emergency contacts. Google Play restricts this permission; a build that carries it
+        may be uploaded only after the use has been declared and approved.
+        It cannot read messages: there is no READ_SMS or RECEIVE_SMS.
+    -->
+    <uses-permission android:name="android.permission.SEND_SMS" />
+
+    <!--
+        SEND_SMS implies that the phone must have telephony unless this says otherwise. The
+        app works without it (a tablet): alerts then go through the SMS app, or not at all.
+    -->
+    <uses-feature
+        android:name="android.hardware.telephony"
+        android:required="false" />
+</manifest>

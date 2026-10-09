@@ -24,6 +24,11 @@ name: android-ci
 # with an obviously fake key; the steps below build one release that way, prove that the
 # refusal works, and check that the native libraries in the APKs support 16 KB memory pages.
 #
+# Since P014b1 (ADR 0027) a build carries the SEND_SMS permission only when it is made with
+# the Gradle property saferoute.sendSmsEnabled (by default: debug yes, release no). Google Play
+# restricts that permission, so the steps below check that the release APK does not ask for it,
+# with the debug APK as the control.
+#
 # No secrets, no signing, no cloud login: it behaves the same for pull requests from forks. The
 # APK is thrown away with the runner.
 # Not a required check in the ruleset yet: a path-filtered check would block unrelated PRs.
@@ -106,6 +111,7 @@ jobs:
           -Psaferoute.allowDummyFirebase=true
           -Psaferoute.mapTilerKey=dummy-map-key-for-ci
           -Psaferoute.allowDummyMapKey=true
+          -Psaferoute.sendSmsEnabled=false
 
       # Two cases: no key at all (the placeholder is used), and the dummy key without the flag.
       - name: A release build without a real map key fails without the allow flag
@@ -183,6 +189,28 @@ jobs:
           fi
           if [ "$release_classes" -ne 0 ] || [ "$release_strings" -ne 0 ]; then
             echo "::error::The release APK contains the debug-only developer tools."
+            exit 1
+          fi
+
+      # SEND_SMS may be in a debug build (to try SMS alerts on a phone) and must not be in the
+      # release APK built above. aapt2 prints the permissions an APK asks for. The debug APK is
+      # the control: if it shows no SEND_SMS, the check is not looking in the right place.
+      - name: The release APK does not ask for SEND_SMS
+        run: |
+          build_tools=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)
+          asks() { "$build_tools/aapt2" dump permissions "$1" | grep -c "android.permission.$2" || true; }
+          debug_apk=app/build/outputs/apk/debug/app-debug.apk
+          release_apk=app/build/outputs/apk/release/app-release-unsigned.apk
+          debug_send=$(asks "$debug_apk" SEND_SMS)
+          release_send=$(asks "$release_apk" SEND_SMS)
+          release_read=$(asks "$release_apk" READ_SMS)
+          echo "SEND_SMS: debug $debug_send, release $release_send; READ_SMS in release: $release_read"
+          if [ "$debug_send" -eq 0 ]; then
+            echo "::error::SEND_SMS not found in the debug APK: this check is not looking in the right place."
+            exit 1
+          fi
+          if [ "$release_send" -ne 0 ] || [ "$release_read" -ne 0 ]; then
+            echo "::error::The release APK asks for an SMS permission."
             exit 1
           fi
 

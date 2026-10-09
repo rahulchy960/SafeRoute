@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<!--
+    Merged into a build made WITHOUT the SEND_SMS permission (the Gradle property
+    saferoute.sendSmsEnabled; app/build.gradle.kts). Empty on purpose: such a build cannot send
+    an SMS by itself, and an alert opens the phone's SMS app instead.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" />

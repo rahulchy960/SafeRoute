@@ -2,7 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-10-09
-- **Prompt:** P014a1 (records, state machine, recovery, retention); notes of P014a2 (runner, service, trail) and P014a3 (screens) below. P014b and P014c add notes here.
+- **Prompt:** P014a1 (records, state machine, recovery, retention); notes of P014a2 (runner, service, trail), P014a3 (screens) and P014b1 (SMS engine) below. P014b2 and P014c add notes here.
 - **Plan refs:** Plan v7 §3.2 F-08, §5.3, §7.1–7.5, §12.2, §12.3; [addendum v7.1](../plan/addendum-v7.1.md), section B; [ADR 0008](0008-android-foundation.md), [ADR 0010](0010-adults-only-and-consent-records.md), [ADR 0015](0015-map-stack-and-location-policy.md), [ADR 0024](0024-emergency-contacts-and-opt-out.md)
 
 Legal statements here are drafts, **to be verified by a lawyer**.
@@ -156,6 +156,69 @@ location permission, and location must never block an SOS.**
     draft for the lawyer.
 12. **Not built here:** the sound setting for the countdown (vibration only is the default
     and, for now, the only mode); it belongs to the readiness screen of P014c.
+
+### Note of 2026-10-09 (P014b1): the SMS engine
+
+Built and tested, **not connected to a running SOS**: no build sends a message yet. The
+connection, the permission flow and the notice version 2 are P014b2.
+
+**What the spike found (B0, read on 2026-10-09).** Sources: the platform sources of API
+level 37 (`SmsManager`) and Google Play's policy page "Use of SMS or Call Log permission
+groups".
+
+| Topic | Finding | Certainty |
+| --- | --- | --- |
+| Getting the SMS service | `Context.getSystemService(SmsManager.class)` since Android 12, then `createForSubscriptionId`; `SmsManager.getDefault()` and `getSmsManagerForSubscriptionId` are deprecated and still needed below Android 12 | Certain (sources) |
+| Which SIM | `getDefaultSmsSubscriptionId()` returns the SIM the user chose for SMS, or the only active one, or "invalid". Listing the SIMs to offer a choice needs `READ_PHONE_STATE` | Certain (sources) |
+| Sending | `sendMultipartTextMessage(destination, null, parts, sentIntents, deliveryIntents)` with the parts from `divideMessage`; one "sent" PendingIntent per part; throws `UnsupportedOperationException` on a device without telephony messaging | Certain (sources) |
+| Results | The "sent" broadcast carries `RESULT_OK` or one of about 60 error codes (`RESULT_ERROR_*`, `RESULT_RIL_*`: radio off, no service, limit exceeded, SIM absent, short code refused, invalid format ...). `RESULT_OK` means "handed to the network", not "delivered" | Certain (sources) |
+| No SIM, no service, airplane mode | Reported through those codes; which code each phone gives is not stated | Uncertain; every such code is treated as "try again" |
+| Message length | 160 characters of the SMS alphabet in one part, 153 per part when split; one other character (any Bengali letter) makes it 70 and 67 | Certain (GSM 03.38); implemented and tested |
+| Google Play | SMS permissions are restricted. The policy page lists an exception "Physical safety/emergency alerts to send SMS: apps that send SMS alerts in emergency situations", eligible permission `SEND_SMS`; it is temporary, "subject to Google Play review and approval", and must be declared in the Play Console's Permissions Declaration Form; the use must be core functionality | Certain (policy page) |
+| Play: demo video, closed testing | The page read does not say whether a video is required or whether internal and closed test tracks are exempt | Not recorded; to be checked in the Play Console when the declaration is made |
+| The composer (`ACTION_SENDTO` with several recipients) | Not examined in this half | P014b2 |
+
+1. **One file may send an SMS**: `feature/emergency/SosSms.kt` (`AndroidSmsGateway`). The
+   rest of the app sees `SmsGateway`. A test fails if another file names the platform's SMS
+   service.
+2. **`SEND_SMS` is a build switch.** The main manifest never declares it. The Gradle
+   property `saferoute.sendSmsEnabled` merges a small extra manifest: by default debug builds
+   have the permission and release builds do not. `BuildConfig.SEND_SMS_DECLARED` tells the
+   code; CI checks that the release APK does not ask for it. A release with the permission
+   is made on purpose, after Play approved the declaration.
+3. **Who is told is decided once** (`SosAlerts.prepare`): the contacts the phone knows when
+   the alert is prepared, with a copy of name and number in `sos_actions`. Later changes of
+   the list add nobody. A contact who is no longer allowed after a fresh fetch is marked
+   SKIPPED if their message has not left.
+4. **Write first, act second, again.** PENDING → IN_PROGRESS is written before the phone is
+   asked; SENT only on the phone's `RESULT_OK`. A SENT message is never sent again.
+5. **Retries**: every 30 seconds, at most 20 tries, only while the caller says the emergency
+   is still wanted. A code that cannot pass (invalid number, refused by the network, no
+   permission) is final at once.
+6. **A message that was IN_PROGRESS when the process died is tried again.** The phone may
+   have sent it, so that contact can get the alert twice. Accepted: a second alert is the
+   smaller harm than none.
+7. **Follow-ups go only to contacts whose alert was sent.**
+8. **The message** (`SosMessage.kt`, mirrored in
+   [`docs/legal/sos-sms-text-v1.md`](../legal/sos-sms-text-v1.md)): who, a map link, accuracy,
+   the clock time in India, the age if a minute or more, the battery, "Sent by the SafeRoute
+   app", "call 112". At most three SMS parts; when longer, the battery goes, then the sender
+   line, then the name is shortened. Numbers in Latin digits in both languages.
+9. **Why a plain map link.** `https://maps.google.com/?q=<lat>,<lng>` is opened by the map
+   app of nearly every phone, and the coordinates can be read in the link by someone whose
+   phone opens nothing. The app sends nothing to that service; it writes text. Alternatives:
+   a `geo:` link (not a link in most SMS apps), an OpenStreetMap link (longer, and fewer
+   phones open it in a navigation app), SafeRoute's own live link (P016, needs the server),
+   a link shortener (a third party would see every alert; never).
+10. **The coordinates are not repeated outside the link.** The prompt asked for them "in
+    text as well"; a second copy would push a Bengali message past three parts.
+11. **No SIM choice in the app.** It would need `READ_PHONE_STATE`. The phone's own default
+    SIM for SMS is used.
+12. **The message texts are Kotlin constants, not string resources**: they are sent in the
+    language the sender chose, not in the language the phone displays, and they are not
+    shown on a screen.
+13. **No delivery reports** are requested: networks answer them unevenly, and "delivered"
+    would be shown as a fact the app cannot stand behind.
 
 ## Alternatives considered
 

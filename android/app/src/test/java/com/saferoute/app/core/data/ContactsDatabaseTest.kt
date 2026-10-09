@@ -85,7 +85,7 @@ class ContactsDatabaseTest {
         dao.insertAll(listOf(row(1), row(2, optedOut = true), row(3)))
 
         assertEquals(
-            listOf(SosContact("Test Contact 1", "+919000010001"), SosContact("Test Contact 3", "+919000010003")),
+            listOf(SosContact("id-1", "Test Contact 1", "+919000010001"), SosContact("id-3", "Test Contact 3", "+919000010003")),
             active.current(),
         )
     }
@@ -110,7 +110,7 @@ class ContactsDatabaseTest {
 
     @Test
     fun `the types that hold a contact never print it`() {
-        val printed = "${row(1)} ${SosContact("Test Contact 1", "+919000010001")}"
+        val printed = "${row(1)} ${SosContact("id-1", "Test Contact 1", "+919000010001")}"
 
         assertFalse(printed.contains("Test Contact"))
         assertFalse(printed.contains("9000010001"))

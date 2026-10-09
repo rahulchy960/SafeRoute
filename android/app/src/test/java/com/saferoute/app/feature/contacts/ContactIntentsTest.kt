@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 package com.saferoute.app.feature.contacts
 
+import com.saferoute.app.BuildConfig
 import android.app.Activity
 import android.app.Application
 import android.content.ContentProvider
@@ -148,13 +149,20 @@ class ContactIntentsTest {
     }
 
     @Test
-    fun `sending needs no permission, and the app holds none for sms or contacts`() {
+    fun `an invite needs no permission, and the app can never read sms or the address book`() {
         val info = application.packageManager.getPackageInfo(application.packageName, PackageManager.GET_PERMISSIONS)
         val requested = info.requestedPermissions.orEmpty().toList()
 
-        for (permission in listOf("SEND_SMS", "READ_SMS", "RECEIVE_SMS", "READ_CONTACTS", "WRITE_CONTACTS")) {
+        for (permission in listOf("READ_SMS", "RECEIVE_SMS", "READ_CONTACTS", "WRITE_CONTACTS")) {
             assertFalse(permission, requested.any { it.endsWith(".$permission") })
         }
+        // SEND_SMS exists since P014b1 in builds made with it, for SOS alerts only (ADR 0027).
+        // An invite never uses it: it is handed to the phone's SMS app, where the user sends it.
+        assertEquals(BuildConfig.SEND_SMS_DECLARED, requested.any { it.endsWith(".SEND_SMS") })
+        val inviteCode = File("src/main/java/com/saferoute/app/feature/contacts").walkTopDown()
+            .filter { it.isFile }.joinToString("\n") { it.readText() }
+        assertFalse(inviteCode.contains("SmsGateway"))
+        assertFalse(inviteCode.contains("SmsManager"))
     }
 
     @Test

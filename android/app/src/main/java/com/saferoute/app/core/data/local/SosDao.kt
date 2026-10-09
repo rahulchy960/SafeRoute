@@ -50,8 +50,24 @@ interface SosDao {
     @Insert
     suspend fun insertActions(actions: List<SosActionEntity>)
 
-    @Query("SELECT * FROM sos_actions WHERE clientSosId = :id ORDER BY updatedAt ASC, id ASC")
+    /** In the order they were created (SQLite numbers rows as they are inserted). */
+    @Query("SELECT * FROM sos_actions WHERE clientSosId = :id ORDER BY rowid ASC")
     suspend fun actions(id: String): List<SosActionEntity>
+
+    /** Changes one action only while it is in one of the states [from]; 1 when it did. */
+    @Query(
+        "UPDATE sos_actions SET state = :to, attemptCount = :attemptCount, " +
+            "lastErrorCategory = :errorCategory, updatedAt = :at " +
+            "WHERE id = :id AND state IN (:from)",
+    )
+    suspend fun moveActionIf(
+        id: String,
+        from: List<String>,
+        to: String,
+        attemptCount: Int,
+        errorCategory: String?,
+        at: Long,
+    ): Int
 
     @Query("DELETE FROM sos_records WHERE startedAt < :cutoff")
     suspend fun deleteRecordsBefore(cutoff: Long)

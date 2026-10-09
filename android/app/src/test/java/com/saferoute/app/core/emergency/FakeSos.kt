@@ -118,8 +118,62 @@ class FakePurgeScheduler : PurgeScheduler {
 }
 
 /**
+ * An SMS service that sends nothing. It records every attempt and answers what the test says:
+ * [outcomes] holds an answer per number, each used once in order; when a number has none
+ * left, [fallback] answers.
+ */
+class FakeSmsGateway(var fallback: SmsOutcome = SmsOutcome.Sent) : SmsGateway {
+    /** One entry per attempt: the number and the text. Fake numbers only. */
+    val attempts = CopyOnWriteArrayList<Pair<String, String>>()
+    val outcomes = mutableMapOf<String, ArrayDeque<SmsOutcome>>()
+
+    fun answer(phone: String, vararg results: SmsOutcome) {
+        outcomes.getOrPut(phone) { ArrayDeque() }.addAll(results)
+    }
+
+    fun attemptsTo(phone: String): Int = attempts.count { it.first == phone }
+
+    override suspend fun send(phoneE164: String, text: String): SmsOutcome {
+        attempts += phoneE164 to text
+        return outcomes[phoneE164]?.removeFirstOrNull() ?: fallback
+    }
+}
+
+/** [SosActionStore] in a list, with the same "only while it is in one of these states" rule. */
+class InMemorySosActionStore : SosActionStore {
+    private val list = mutableListOf<SosAction>()
+
+    val all: List<SosAction> get() = list.toList()
+
+    override suspend fun actions(sosId: String): List<SosAction> = list.filter { it.clientSosId == sosId }
+
+    override suspend fun insertAll(actions: List<SosAction>) {
+        list += actions
+    }
+
+    override suspend fun moveIf(
+        id: String,
+        from: Set<SosActionState>,
+        to: SosActionState,
+        attemptCount: Int,
+        errorCategory: String?,
+        at: Instant,
+    ): Boolean {
+        val index = list.indexOfFirst { it.id == id && it.state in from }
+        if (index < 0) return false
+        list[index] = list[index].copy(
+            state = to,
+            attemptCount = attemptCount,
+            lastErrorCategory = errorCategory,
+            updatedAt = at,
+        )
+        return true
+    }
+}
+
+/**
  * Replaces [SosDeviceModule] in every Hilt test: a test that starts the app never starts a
- * foreground service, never vibrates and never touches WorkManager.
+ * foreground service, never vibrates, never touches WorkManager and never sends an SMS.
  */
 @Module
 @TestInstallIn(components = [SingletonComponent::class], replaces = [SosDeviceModule::class])
@@ -152,4 +206,11 @@ object FakeSosDeviceModule {
 
     @Provides
     fun provideScheduler(fake: FakePurgeScheduler): PurgeScheduler = fake
+
+    @Provides
+    @Singleton
+    fun provideFakeSmsGateway(): FakeSmsGateway = FakeSmsGateway()
+
+    @Provides
+    fun provideSmsGateway(fake: FakeSmsGateway): SmsGateway = fake
 }

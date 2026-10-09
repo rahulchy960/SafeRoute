@@ -636,6 +636,20 @@ and [`android/README.md`](android/README.md):
   service, contact or position. The red may be used by `SosScreens.kt` as well
   (`SosColourUsageTest`). What location is used for during an SOS is said in
   `sos_arm_location_note`; changing the use means changing that text.
+  SMS alerts (since P014b1): only `feature/emergency/SosSms.kt` may name the platform's SMS
+  service (`SosSmsTest`); everything else uses `SmsGateway`, and tests use `FakeSmsGateway`.
+  **Never send a real SMS or place a call from a script or a test.** `SEND_SMS` is never in
+  the main manifest: it comes from `src/sendSmsOn/AndroidManifest.xml`, merged by the Gradle
+  property `saferoute.sendSmsEnabled` (default: debug yes, release no; CI's release build
+  passes false and checks the APK). Never add `READ_SMS`, `RECEIVE_SMS` or
+  `READ_PHONE_STATE`. Who is alerted is decided once per emergency (`SosAlerts.prepare`); a
+  SENT action is never sent again; an action is marked IN_PROGRESS before the phone is asked;
+  retry numbers live in `ALERT_RETRY_MILLIS` and `MAX_ALERT_ATTEMPTS` only. The message
+  texts live in `core/emergency/SosMessage.kt`, are mirrored in
+  `docs/legal/sos-sms-text-v1.md` (`SosSmsTextDocumentTest`), stay within three SMS parts,
+  use Latin digits, carry no shortened link, and are drafts until a lawyer and a native
+  speaker have reviewed them. An error category is a short fixed word, never a number, a
+  name or a text. Until P014b2 nothing calls `SosAlerts` from a running SOS.
   Every SOS change updates [`docs/sos/failure-matrix.md`](docs/sos/failure-matrix.md):
   "Automated pass" only for rows with passing tests, with the level it was tested at.
 - `android/app/google-services.json` is never opened, printed or committed by Claude Code. CI and

@@ -54,8 +54,9 @@ data class SosActionEntity(
     val contactLocalId: String,
     val phoneSnapshot: String,
     val nameSnapshot: String,
+    /** The name of a `SosActionType`: ALERT, LOCATION_UPDATE or SAFE. */
     val type: String,
-    /** PENDING, IN_PROGRESS, SENT, FAILED_RETRYABLE, FAILED_FINAL or SKIPPED. */
+    /** The name of a `SosActionState`. */
     val state: String,
     val attemptCount: Int,
     val lastErrorCategory: String?,
