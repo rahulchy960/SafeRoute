@@ -386,4 +386,92 @@
     <string name="route_start_search_hint">শুরুর জায়গা খুঁজুন</string>
     <string name="route_preview">পথটি দেখুন</string>
     <string name="route_preview_note">আপনি যেখানে আছেন শুধু সেখান থেকেই পথ অনুসরণ করা যায়। এই পথ অনুসরণ করতে “আমার অবস্থান থেকে শুরু” বেছে নিন।</string>
+
+    <!-- জরুরি যোগাযোগ (P013b2)। খসড়া অনুবাদ: প্রকাশের আগে একজন মাতৃভাষীর পর্যালোচনা দরকার। -->
+    <string name="settings_contacts_title">জরুরি যোগাযোগ</string>
+    <string name="settings_contacts_supporting">জরুরি সতর্কবার্তা যাঁদের কাছে পৌঁছাতে পারে, তাঁদের যোগ করুন, আমন্ত্রণ পাঠান বা সরান</string>
+    <string name="contacts_title">জরুরি যোগাযোগ</string>
+    <string name="contacts_intro">সর্বোচ্চ %1$d জন, যাঁদের কাছে পরের সংস্করণে জরুরি সতর্কবার্তা চালু হলে আপনার ফোন এসএমএস পাঠাতে পারবে। এখন তাঁদের কাছে কিছুই পাঠানো হয় না: প্রত্যেককে আপনি নিজেই, নিজের ফোন থেকে আমন্ত্রণ পাঠান।</string>
+    <string name="contacts_empty_title">এখনও কোনো জরুরি যোগাযোগ নেই</string>
+    <string name="contacts_empty_body">এমন কাউকে যোগ করুন যাঁকে আপনি বিশ্বাস করেন এবং যিনি আপনাকে চেনেন।</string>
+    <string name="contacts_add">যোগাযোগ যোগ করুন</string>
+    <string name="contacts_limit_reason">আপনার %1$d জন যোগাযোগ আছে, এর বেশি রাখা যায় না। নতুন কাউকে যোগ করতে একজনকে সরান।</string>
+    <string name="contacts_status_not_invited">আমন্ত্রণ পাঠানো হয়নি</string>
+    <string name="contacts_status_invited">আমন্ত্রণ পাঠানো হয়েছে</string>
+    <string name="contacts_status_opted_out">অপ্ট আউট করেছেন — সতর্কবার্তা পাবেন না</string>
+    <string name="contacts_offline">সংযোগ নেই। তালিকা দেখা যাবে; পরিবর্তনের জন্য ইন্টারনেট দরকার।</string>
+    <string name="contacts_refresh">তালিকা নতুন করে আনুন</string>
+    <string name="contacts_refresh_failed">তালিকা হালনাগাদ করা যায়নি। এই ফোনে রাখা কপি দেখানো হচ্ছে।</string>
+    <string name="contacts_stop_button">SOS সতর্কবার্তা বন্ধ করুন ও সব যোগাযোগ সরান</string>
+    <string name="contacts_stop_dialog_title">সব যোগাযোগ সরাবেন?</string>
+    <string name="contacts_stop_dialog_body">এতে SOS সতর্কবার্তার জন্য আপনার সম্মতি প্রত্যাহার হবে এবং এই ফোন ও সার্ভার থেকে সব জরুরি যোগাযোগ মুছে যাবে। এটি ফেরানো যাবে না। 112 নম্বরে ফোন করা চালু থাকবে।</string>
+    <string name="contacts_stop_confirm">সব সরান</string>
+    <string name="contacts_stop_done">সব যোগাযোগ সরানো হয়েছে।</string>
+    <string name="contacts_cancel">বাতিল</string>
+    <string name="contacts_try_again">আবার চেষ্টা করুন</string>
+    <string name="contacts_done">ঠিক আছে</string>
+    <string name="contacts_checking">দেখা হচ্ছে…</string>
+    <string name="contacts_error_offline">সংযোগ নেই। অনলাইনে এলে আবার চেষ্টা করুন।</string>
+    <string name="contacts_error_unavailable">এই মুহূর্তে SafeRoute-এ পৌঁছানো যাচ্ছে না। একটু পরে আবার চেষ্টা করুন।</string>
+    <string name="contacts_error_rate_limited">অনেকবার চেষ্টা করা হয়েছে। একটু অপেক্ষা করে আবার চেষ্টা করুন।</string>
+    <string name="contacts_error_links_used">এই যোগাযোগের জন্য সর্বোচ্চ সংখ্যক আমন্ত্রণ লিংক তৈরি হয়ে গেছে।</string>
+    <string name="contacts_error_unexpected">কিছু একটা ভুল হয়েছে। আবার চেষ্টা করুন।</string>
+    <string name="contacts_error_exists">এই নম্বরটি আগে থেকেই আপনার যোগাযোগের তালিকায় আছে।</string>
+    <string name="contacts_error_opted_out">এই ব্যক্তি অপ্ট আউট করেছেন, তাই তাঁকে যোগ করা বা আমন্ত্রণ পাঠানো যাবে না।</string>
+    <string name="contacts_error_own_number">এটি আপনার নিজের নম্বর। অন্য কাউকে যোগ করুন।</string>
+    <string name="contacts_error_invalid">নাম ও নম্বর মিলিয়ে দেখুন।</string>
+    <string name="contacts_error_not_found">এই যোগাযোগটি আর নেই।</string>
+
+    <!-- sos_alerts নোটিস। খসড়া: আইনজীবীর পর্যালোচনা বাকি। -->
+    <string name="contacts_notice_title">যোগাযোগ যোগ করার আগে</string>
+    <string name="contacts_notice_p1">আপনি SafeRoute-এ অন্য মানুষের ফোন নম্বর সংরক্ষণ করতে যাচ্ছেন।</string>
+    <string name="contacts_notice_p2">কেবল তাঁদেরই যোগ করুন যাঁদের যোগ করার যথাযথ কারণ আছে এবং যাঁরা আপনাকে চেনেন।</string>
+    <string name="contacts_notice_p3">অ্যাপ নিজে থেকে তাঁদের কোনো বার্তা পাঠায় না। প্রত্যেককে আপনি নিজের ফোন থেকে আমন্ত্রণ পাঠান।</string>
+    <string name="contacts_notice_p4">প্রতিটি আমন্ত্রণে একটি লিংক থাকে, যা দিয়ে তাঁরা অপ্ট আউট করতে পারেন। যিনি অপ্ট আউট করেছেন তাঁকে কখনও সতর্কবার্তা পাঠানো হয় না।</string>
+    <string name="contacts_notice_p5">জরুরি অবস্থায়, অ্যাপের পরের সংস্করণে, আপনার ফোন তাঁদের কাছে আপনার অবস্থান এসএমএস করতে পারবে।</string>
+    <string name="contacts_notice_p6">SafeRoute কোনো জরুরি পরিষেবা নয়। জরুরি অবস্থায় 112 নম্বরে ফোন করুন।</string>
+    <string name="contacts_notice_p7">আপনি যেকোনো সময় থামতে পারেন: জরুরি যোগাযোগ খুলে \"SOS সতর্কবার্তা বন্ধ করুন ও সব যোগাযোগ সরান\" বেছে নিন। তাতে সবাই মুছে যাবে।</string>
+    <string name="contacts_notice_agree">আমি সম্মত</string>
+    <string name="contacts_notice_not_now">এখন নয়</string>
+
+    <string name="contacts_add_title">যোগাযোগ যোগ করুন</string>
+    <string name="contacts_add_from_phone">আপনার কনট্যাক্ট থেকে</string>
+    <string name="contacts_add_from_phone_help">আপনার ফোনের কনট্যাক্ট তালিকা খোলে। আপনি যে একটি নম্বর বেছে নেন, SafeRoute কেবল সেটিই দেখে।</string>
+    <string name="contacts_add_type_heading">অথবা নম্বর লিখুন</string>
+    <string name="contacts_add_name_label">নাম</string>
+    <string name="contacts_add_phone_label">মোবাইল নম্বর</string>
+    <string name="contacts_add_phone_help">ভারতীয় নম্বর: ১০ সংখ্যা। অন্য দেশ: + ও দেশের কোড দিয়ে শুরু করুন।</string>
+    <string name="contacts_add_name_error">একটি নাম লিখুন, সর্বোচ্চ ৮০ অক্ষর।</string>
+    <string name="contacts_add_phone_error">একটি মোবাইল নম্বর লিখুন: ১০ সংখ্যা, অথবা + ও দেশের কোড।</string>
+    <string name="contacts_add_save">যোগাযোগ সংরক্ষণ করুন</string>
+    <string name="contacts_add_saving">সংরক্ষণ করা হচ্ছে…</string>
+    <string name="contacts_pick_failed">ওই কনট্যাক্টটি পড়া যায়নি। নম্বরটি লিখে দিন।</string>
+    <string name="contacts_pick_unavailable">কোনো কনট্যাক্ট অ্যাপ পাওয়া যায়নি। নম্বরটি লিখে দিন।</string>
+
+    <string name="contacts_invite_title">আমন্ত্রণ পাঠান</string>
+    <string name="contacts_invite_body">%1$s-কে জানান যে আপনি তাঁকে যোগ করেছেন। এতে আপনার এসএমএস অ্যাপ খুলবে, বার্তা লেখা থাকবে। পাঠাবেন আপনি; SafeRoute কিছুই পাঠায় না।</string>
+    <string name="contacts_invite_open">আমন্ত্রণের এসএমএস লিখুন</string>
+    <string name="contacts_invite_later">পরে</string>
+    <string name="contacts_invite_preparing">লিংক তৈরি হচ্ছে…</string>
+    <string name="contacts_invite_message">নমস্কার, আমি আপনাকে SafeRoute নামের একটি ব্যক্তিগত নিরাপত্তা অ্যাপে আমার জরুরি যোগাযোগ হিসেবে যোগ করেছি। আমি কখনও জরুরি সতর্কবার্তা চালু করলে আমার ফোন আপনাকে আমার অবস্থান এসএমএস করতে পারে। আপনি না চাইলে কোনো অসুবিধা নেই, এখানে অপ্ট আউট করুন: %1$s</string>
+    <string name="contacts_invite_sent_question">আপনি কি আমন্ত্রণটি পাঠিয়েছেন?</string>
+    <string name="contacts_invite_sent_yes">হ্যাঁ, পাঠিয়েছি</string>
+    <string name="contacts_invite_no_sms_app">এই ফোনে কোনো এসএমএস অ্যাপ পাওয়া যায়নি। আপনি নিজেই তাঁকে জানান যে তাঁকে যোগ করেছেন।</string>
+
+    <string name="contacts_detail_title">যোগাযোগ</string>
+    <string name="contacts_detail_rename">নাম বদলান</string>
+    <string name="contacts_detail_invite">আমন্ত্রণ পাঠান</string>
+    <string name="contacts_detail_invite_again">আবার আমন্ত্রণ পাঠান</string>
+    <string name="contacts_detail_remove">যোগাযোগ সরান</string>
+    <string name="contacts_detail_opted_out">এই ব্যক্তি আপনার আমন্ত্রণের লিংক দিয়ে অপ্ট আউট করেছেন। তিনি সতর্কবার্তা পাবেন না এবং তাঁকে আবার আমন্ত্রণ পাঠানো যাবে না।</string>
+    <string name="contacts_remove_dialog_title">এই যোগাযোগটি সরাবেন?</string>
+    <string name="contacts_remove_dialog_body">তিনি আর আপনার জরুরি যোগাযোগের তালিকায় থাকবেন না।</string>
+    <string name="contacts_remove_confirm">সরান</string>
+    <string name="contacts_rename_title">যোগাযোগের নাম বদলান</string>
+    <string name="contacts_rename_save">সংরক্ষণ</string>
+
+    <string name="contacts_card_title">জরুরি যোগাযোগ যোগ করুন</string>
+    <string name="contacts_card_body">যাঁদের কাছে জরুরি অবস্থায়, পরের সংস্করণে, আপনার ফোন এসএমএস পাঠাতে পারবে। এক মিনিট লাগবে।</string>
+    <string name="contacts_card_action">যোগাযোগ যোগ করুন</string>
+    <string name="contacts_card_not_now">এখন নয়</string>
 </resources>

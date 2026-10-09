@@ -126,6 +126,24 @@ class FakeContactsRepository : ContactsRepository {
     }
 }
 
+/** [ContactsPreferences] in memory. */
+class FakeContactsPreferences(snoozedUntil: Long = 0L) : ContactsPreferences {
+    private val value = MutableStateFlow(snoozedUntil)
+
+    val current: Long get() = value.value
+
+    override val cardSnoozedUntil: Flow<Long> = value
+
+    override suspend fun snoozeCardUntil(epochMillis: Long) {
+        value.value = epochMillis
+    }
+
+    /** Makes the Home card due again. */
+    fun clearSnooze() {
+        value.value = 0L
+    }
+}
+
 /**
  * Replaces [ContactsModule] in every Hilt test, so a test that starts `MainActivity` never
  * calls the server this machine's build points at.
@@ -140,6 +158,16 @@ object FakeContactsModule {
 
     @Provides
     fun provideContactsRepository(fake: FakeContactsRepository): ContactsRepository = fake
+
+    @Provides
+    @Singleton
+    // Snoozed for ever by default: tests of other features start MainActivity with no contacts,
+    // and the "Add emergency contacts" card is not what they are about. A test of the card
+    // calls clearSnooze().
+    fun provideFakeContactsPreferences(): FakeContactsPreferences = FakeContactsPreferences(Long.MAX_VALUE)
+
+    @Provides
+    fun provideContactsPreferences(fake: FakeContactsPreferences): ContactsPreferences = fake
 }
 
 /** A database in memory, gone when the test ends. */

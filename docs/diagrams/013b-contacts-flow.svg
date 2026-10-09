@@ -1,0 +1,125 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1292" height="1243" viewBox="0 0 1292 1243" font-family="Helvetica, Arial, sans-serif">
+<title>Emergency contacts in the app: screens and offline rules</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#495057"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="40" y="62" font-size="24" font-weight="700" fill="#1e1e1e">Emergency contacts in the app: screens and offline rules</text>
+<text x="40" y="86" font-size="14" fill="#495057">The app sends no message: the user sends each invite from their own SMS app. Reading works offline; every change needs the network (P013b2, ADR 0024)</text>
+<rect x="40" y="114" width="276" height="1043" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="54" y="135" font-size="14" font-weight="700" fill="#495057">Ways in</text>
+<rect x="352" y="114" width="276" height="1043" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="366" y="135" font-size="14" font-weight="700" fill="#495057">SafeRoute screens</text>
+<rect x="664" y="114" width="276" height="1043" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="678" y="135" font-size="14" font-weight="700" fill="#495057">Other apps on the phone</text>
+<rect x="976" y="114" width="276" height="1043" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="990" y="135" font-size="14" font-weight="700" fill="#495057">Offline rules</text>
+<line x1="178" y1="290" x2="490" y2="334" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="298" y1="388" x2="370" y2="388" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="490" y1="442" x2="490" y2="486" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="490" y1="594" x2="490" y2="648.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="610" y1="681.5" x2="682" y2="681.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="490" y1="714.5" x2="490" y2="779.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="610" y1="823" x2="682" y2="823" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="490" y1="866.5" x2="490" y2="921" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="490" y1="1008" x2="490" y2="1052" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="610" y1="388" x2="994" y2="388" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="58" y="162" width="240" height="128" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="178" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="178" y="190">Home sheet card &quot;Add</tspan>
+<tspan x="178" y="210.8">emergency contacts&quot;: only</tspan>
+<tspan x="178" y="231.6">while the phone has no</tspan>
+<tspan x="178" y="252.4">contact; &quot;Not now&quot; hides it</tspan>
+<tspan x="178" y="273.2">for 3 days</tspan>
+</text>
+<rect x="58" y="355" width="240" height="66" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="178" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="178" y="383.2">Settings: Emergency</tspan>
+<tspan x="178" y="404">contacts</tspan>
+</text>
+<rect x="370" y="334" width="240" height="108" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="490" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="490" y="362.4">List: status in words (Invite</tspan>
+<tspan x="490" y="383.2">not sent, Invited, Opted out).</tspan>
+<tspan x="490" y="404">Add is disabled at 5, with the</tspan>
+<tspan x="490" y="424.8">reason</tspan>
+</text>
+<rect x="370" y="486" width="240" height="108" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="490" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="490" y="514.4">Before the first contact:</tspan>
+<tspan x="490" y="535.2">sos_alerts notice. I agree</tspan>
+<tspan x="490" y="556">records the consent; Not now</tspan>
+<tspan x="490" y="576.8">goes back, nothing sent</tspan>
+</text>
+<rect x="370" y="648.5" width="240" height="66" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="490" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="490" y="676.7">Add: From your contacts, or</tspan>
+<tspan x="490" y="697.5">type a name and a number</tspan>
+</text>
+<rect x="370" y="779.5" width="240" height="87" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="490" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="490" y="807.8">Invite: Write the invite SMS;</tspan>
+<tspan x="490" y="828.6">back in the app: Did you</tspan>
+<tspan x="490" y="849.4">send the invite? Yes or Later</tspan>
+</text>
+<rect x="370" y="921" width="240" height="87" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="490" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="490" y="949.3">Contact: rename, send invite</tspan>
+<tspan x="490" y="970.1">again, remove. Opted out: no</tspan>
+<tspan x="490" y="990.9">invite, the reason is shown</tspan>
+</text>
+<rect x="370" y="1052" width="240" height="87" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="490" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="490" y="1080.3">Stop SOS alerts and remove</tspan>
+<tspan x="490" y="1101.1">all contacts: asks first, then</tspan>
+<tspan x="490" y="1121.9">everything is deleted</tspan>
+</text>
+<rect x="682" y="638" width="240" height="87" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="802" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="802" y="666.3">System contact picker: the</tspan>
+<tspan x="802" y="687.1">user picks ONE number. No</tspan>
+<tspan x="802" y="707.9">READ_CONTACTS</tspan>
+</text>
+<rect x="682" y="779.5" width="240" height="87" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="802" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="802" y="807.8">SMS app with the text and</tspan>
+<tspan x="802" y="828.6">the opt-out link. The USER</tspan>
+<tspan x="802" y="849.4">sends it. No SEND_SMS</tspan>
+</text>
+<rect x="994" y="334" width="240" height="108" rx="10" fill="#ffd8a8" stroke="#e8590c" stroke-width="2"/>
+<text x="1114" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1114" y="362.4">No connection: the list opens</tspan>
+<tspan x="1114" y="383.2">from the copy on the phone</tspan>
+<tspan x="1114" y="404">and says changes need the</tspan>
+<tspan x="1114" y="424.8">internet</tspan>
+</text>
+<rect x="994" y="638" width="240" height="87" rx="10" fill="#ffd8a8" stroke="#e8590c" stroke-width="2"/>
+<text x="1114" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1114" y="666.3">No connection: add, rename,</tspan>
+<tspan x="1114" y="687.1">remove, invite and consent</tspan>
+<tspan x="1114" y="707.9">say so and change nothing</tspan>
+</text>
+<rect x="994" y="769" width="240" height="108" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="1114" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1114" y="797.4">Typed text, the picked entry</tspan>
+<tspan x="1114" y="818.2">and the invite link stay in</tspan>
+<tspan x="1114" y="839">memory: never saved, never</tspan>
+<tspan x="1114" y="859.8">logged</tspan>
+</text>
+<rect x="449.3" y="453" width="81.4" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="490" y="468.5" font-size="13" fill="#1e1e1e" text-anchor="middle">Add contact</text>
+<rect x="463.9" y="610.3" width="52.3" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="490" y="625.8" font-size="13" fill="#1e1e1e" text-anchor="middle">I agree</text>
+<rect x="466.5" y="736" width="47.1" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="490" y="751.5" font-size="13" fill="#1e1e1e" text-anchor="middle">saved</text>
+<rect x="431.6" y="882.8" width="116.8" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="490" y="898.3" font-size="13" fill="#1e1e1e" text-anchor="middle">later, from the list</text>
+<rect x="455" y="1019" width="70" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="490" y="1034.5" font-size="13" fill="#1e1e1e" text-anchor="middle">on the list</text>
+<rect x="40" y="1178" width="16" height="16" rx="3" fill="#a5d8ff" stroke="#1971c2" stroke-width="1.5"/>
+<text x="62" y="1191" font-size="13" fill="#495057">App / UI</text>
+<rect x="134.8" y="1178" width="16" height="16" rx="3" fill="#ffd8a8" stroke="#e8590c" stroke-width="1.5"/>
+<text x="156.8" y="1191" font-size="13" fill="#495057">Data</text>
+<rect x="209.6" y="1178" width="16" height="16" rx="3" fill="#ffc9c9" stroke="#e03131" stroke-width="1.5"/>
+<text x="231.6" y="1191" font-size="13" fill="#495057">Security / emergency</text>
+<rect x="383.2" y="1178" width="16" height="16" rx="3" fill="#e9ecef" stroke="#495057" stroke-width="1.5"/>
+<text x="405.2" y="1191" font-size="13" fill="#495057">External</text>
+</svg>

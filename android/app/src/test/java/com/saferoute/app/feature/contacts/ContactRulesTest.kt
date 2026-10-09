@@ -251,6 +251,8 @@ class ContactsBoundaryTest {
             "src/main/java/com/saferoute/app/feature/contacts",
             "src/main/java/com/saferoute/app/core/data",
         )
+            // The one file that may use the settings file: it stores a point in time, see below.
+            .filterNot { it.name == "ContactsPreferences.kt" }
             .flatMap { file -> file.codeLines().map { file.name to it } }
             .filter { (_, line) -> forbidden.any(line::contains) }
 
@@ -259,10 +261,22 @@ class ContactsBoundaryTest {
 
     @Test
     fun `the manifest asks for no contacts or sms permission`() {
-        val manifest = File("src/main/AndroidManifest.xml").readText()
+        // The permissions it declares; a comment may name one to say that it is NOT asked for.
+        val declared = Regex("""<uses-permission[^>]*android:name="([^"]+)"""")
+            .findAll(File("src/main/AndroidManifest.xml").readText()).map { it.groupValues[1] }.toList()
+        assertTrue("permissions not found", declared.size >= 3)
 
         for (permission in listOf("READ_CONTACTS", "WRITE_CONTACTS", "SEND_SMS", "RECEIVE_SMS", "READ_SMS")) {
-            assertTrue(permission, !manifest.contains(permission))
+            assertTrue(permission, declared.none { it.endsWith(permission) })
         }
+    }
+
+    @Test
+    fun `the settings file gets one number from the contacts feature and nothing about a person`() {
+        val keys = Regex("""PreferencesKey\("([^"]+)"\)""")
+            .findAll(File("src/main/java/com/saferoute/app/feature/contacts/ContactsPreferences.kt").readText())
+            .map { it.groupValues[1] }.toList()
+
+        assertEquals(listOf("contacts_card_snoozed_until"), keys)
     }
 }

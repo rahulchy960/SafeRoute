@@ -8,6 +8,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.saferoute.app.BuildConfig
+import com.saferoute.app.feature.contacts.AddContactRoute
+import com.saferoute.app.feature.contacts.ContactDetailRoute
+import com.saferoute.app.feature.contacts.ContactsRoute
+import com.saferoute.app.feature.contacts.InviteRoute
 import com.saferoute.app.feature.home.HomeRoute
 import com.saferoute.app.feature.search.SearchRoute
 import com.saferoute.app.feature.settings.SettingsRoute
@@ -42,6 +46,9 @@ fun SafeRouteNavHost(
                 onOpenSettings = {
                     navController.navigate(SettingsDestination) { launchSingleTop = true }
                 },
+                onOpenContacts = {
+                    navController.navigate(ContactsDestination) { launchSingleTop = true }
+                },
             )
         }
         composable<SearchDestination> {
@@ -56,9 +63,41 @@ fun SafeRouteNavHost(
                 versionName = BuildConfig.VERSION_NAME,
                 versionCode = BuildConfig.VERSION_CODE,
                 onBack = { navController.popBackStack() },
+                onOpenContacts = {
+                    navController.navigate(ContactsDestination) { launchSingleTop = true }
+                },
                 // A row in debug builds, nothing in release builds.
                 developerEntry = { DeveloperSettingsEntry(navController) },
             )
+        }
+        composable<ContactsDestination> {
+            ContactsRoute(
+                onBack = { navController.popBackStack() },
+                onAdd = { navController.navigate(AddContactDestination) { launchSingleTop = true } },
+                onOpenContact = { id ->
+                    navController.navigate(ContactDetailDestination(id)) { launchSingleTop = true }
+                },
+            )
+        }
+        composable<AddContactDestination> {
+            AddContactRoute(
+                onBack = { navController.popBackStack() },
+                // The form is done: the invite takes its place, so back leads to the list.
+                onSaved = { id ->
+                    navController.navigate(InviteDestination(id)) {
+                        popUpTo<AddContactDestination> { inclusive = true }
+                    }
+                },
+            )
+        }
+        composable<ContactDetailDestination> {
+            ContactDetailRoute(
+                onBack = { navController.popBackStack() },
+                onInvite = { id -> navController.navigate(InviteDestination(id)) { launchSingleTop = true } },
+            )
+        }
+        composable<InviteDestination> {
+            InviteRoute(onDone = { navController.popBackStack() })
         }
         // Debug builds only: the server check screen. Release builds add nothing.
         developerDestinations(navController)

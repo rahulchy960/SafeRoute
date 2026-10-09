@@ -1,0 +1,40 @@
+{
+  "$schema": "../../tools/diagrams/diagram.schema.json",
+  "title": "Emergency contacts in the app: screens and offline rules",
+  "subtitle": "The app sends no message: the user sends each invite from their own SMS app. Reading works offline; every change needs the network (P013b2, ADR 0024)",
+  "direction": "TB",
+  "layout": { "nodeWidth": 240, "rankGap": 44 },
+  "groups": [
+    { "id": "entry", "label": "Ways in" },
+    { "id": "screens", "label": "SafeRoute screens" },
+    { "id": "other", "label": "Other apps on the phone" },
+    { "id": "rules", "label": "Offline rules" }
+  ],
+  "nodes": [
+    { "id": "card", "label": "Home sheet card \"Add emergency contacts\": only while the phone has no contact; \"Not now\" hides it for 3 days", "role": "app", "group": "entry", "rank": 0 },
+    { "id": "settings", "label": "Settings: Emergency contacts", "role": "app", "group": "entry", "rank": 1 },
+    { "id": "list", "label": "List: status in words (Invite not sent, Invited, Opted out). Add is disabled at 5, with the reason", "role": "app", "group": "screens", "rank": 1 },
+    { "id": "notice", "label": "Before the first contact: sos_alerts notice. I agree records the consent; Not now goes back, nothing sent", "role": "security", "group": "screens", "rank": 2 },
+    { "id": "form", "label": "Add: From your contacts, or type a name and a number", "role": "app", "group": "screens", "rank": 3 },
+    { "id": "invite", "label": "Invite: Write the invite SMS; back in the app: Did you send the invite? Yes or Later", "role": "app", "group": "screens", "rank": 4 },
+    { "id": "detail", "label": "Contact: rename, send invite again, remove. Opted out: no invite, the reason is shown", "role": "app", "group": "screens", "rank": 5 },
+    { "id": "stop", "label": "Stop SOS alerts and remove all contacts: asks first, then everything is deleted", "role": "security", "group": "screens", "rank": 6 },
+    { "id": "picker", "label": "System contact picker: the user picks ONE number. No READ_CONTACTS", "role": "external", "group": "other", "rank": 3 },
+    { "id": "sms", "label": "SMS app with the text and the opt-out link. The USER sends it. No SEND_SMS", "role": "external", "group": "other", "rank": 4 },
+    { "id": "offline-read", "label": "No connection: the list opens from the copy on the phone and says changes need the internet", "role": "data", "group": "rules", "rank": 1 },
+    { "id": "offline-write", "label": "No connection: add, rename, remove, invite and consent say so and change nothing", "role": "data", "group": "rules", "rank": 3 },
+    { "id": "memory", "label": "Typed text, the picked entry and the invite link stay in memory: never saved, never logged", "role": "security", "group": "rules", "rank": 4 }
+  ],
+  "edges": [
+    { "from": "card", "to": "list" },
+    { "from": "settings", "to": "list" },
+    { "from": "list", "to": "notice", "label": "Add contact" },
+    { "from": "notice", "to": "form", "label": "I agree" },
+    { "from": "form", "to": "picker" },
+    { "from": "form", "to": "invite", "label": "saved" },
+    { "from": "invite", "to": "sms" },
+    { "from": "invite", "to": "detail", "label": "later, from the list" },
+    { "from": "detail", "to": "stop", "label": "on the list" },
+    { "from": "list", "to": "offline-read" }
+  ]
+}

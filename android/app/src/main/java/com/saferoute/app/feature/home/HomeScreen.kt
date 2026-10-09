@@ -92,6 +92,7 @@ import com.saferoute.app.feature.directions.EndNavigationDialog
 import com.saferoute.app.feature.directions.FollowBanner
 import com.saferoute.app.feature.directions.KeepScreenOn
 import com.saferoute.app.feature.directions.RouteIntroDialog
+import com.saferoute.app.feature.contacts.ContactsHomeCard
 import com.saferoute.app.feature.emergency.ShortcutOfferDialog
 import com.saferoute.app.feature.emergency.ShortcutOfferViewModel
 import kotlin.math.roundToInt
@@ -125,6 +126,7 @@ fun HomeRoute(
     onOpenSearch: () -> Unit,
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenContacts: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
     permissionViewModel: LocationPermissionViewModel = hiltViewModel(),
     directionsViewModel: DirectionsViewModel = hiltViewModel(),
@@ -281,6 +283,8 @@ fun HomeRoute(
             offerViewModel.onSosDialogClosed()
         },
         modifier = modifier,
+        // While the phone knows of no emergency contact: a card that leads to adding one.
+        sheetCard = { ContactsHomeCard(onAdd = onOpenContacts) },
     )
 
     // Once, after the first use of the SOS control: the shortcuts outside the app exist. It
@@ -362,6 +366,7 @@ fun HomeScreen(
     directionsActions: DirectionsActions = DirectionsActions(),
     recentreOffered: Boolean = false,
     onRecentre: () -> Unit = {},
+    sheetCard: @Composable () -> Unit = {},
 ) {
     // Back with a place on the map takes the place away first; the next back leaves the app as
     // before. BackHandler is only active while there is a place, so normal back is untouched.
@@ -604,7 +609,7 @@ fun HomeScreen(
                     onDirections = directionsActions.onOpen,
                     headerEnd = sheetSos,
                 )
-                else -> HomeSheetContent(headerEnd = sheetSos)
+                else -> HomeSheetContent(headerEnd = sheetSos, card = sheetCard)
             }
         }
     }
@@ -660,7 +665,7 @@ internal fun mapBottomPaddingPx(
  * rows are not buttons; each says in words that it is not available yet.
  */
 @Composable
-private fun HomeSheetContent(headerEnd: @Composable () -> Unit = {}) {
+private fun HomeSheetContent(headerEnd: @Composable () -> Unit = {}, card: @Composable () -> Unit = {}) {
     val spacing = SafeRouteTheme.spacing
     Column(
         modifier = Modifier
@@ -683,6 +688,8 @@ private fun HomeSheetContent(headerEnd: @Composable () -> Unit = {}) {
             )
             headerEnd()
         }
+        // Below the header row, in the sheet's own content: it cannot reach the SOS control.
+        card()
         PlaceholderRow(icon = Icons.Filled.Star, title = stringResource(R.string.home_saved_places))
         PlaceholderRow(icon = Icons.Filled.Place, title = stringResource(R.string.home_recent))
     }
