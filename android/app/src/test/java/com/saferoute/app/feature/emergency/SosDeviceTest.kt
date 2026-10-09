@@ -84,10 +84,17 @@ class SosDeviceTest {
         assertFalse("a test left its WorkManager behind", WorkManager.isInitialized())
     }
 
+    /**
+     * Nothing may be left that could act later: a run the test never finished would be
+     * ended by WorkManager when the garbage collector finds it, during some other test, on a
+     * database that is closed by then. So: finish every run, cancel the plan, then close.
+     */
     @After
     @SuppressLint("RestrictedApi") // The only way to take a test WorkManager away again.
     fun removeTestWorkManager() {
         if (!WorkManager.isInitialized()) return
+        cleanUps.finishAll()
+        WorkManager.getInstance(context).cancelAllWork().result.get()
         WorkManagerTestInitHelper.closeWorkDatabase()
         WorkManagerImpl.setDelegate(null)
     }
@@ -281,6 +288,10 @@ private class HeldCleanUps : WorkerFactory() {
     /** Lets the oldest unfinished run end with success. */
     fun finish() {
         unfinished.removeFirst().set(ListenableWorker.Result.success())
+    }
+
+    fun finishAll() {
+        while (unfinished.isNotEmpty()) finish()
     }
 }
 
