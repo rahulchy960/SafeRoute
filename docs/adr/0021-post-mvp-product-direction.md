@@ -1,5 +1,11 @@
 # ADR 0021: Post-MVP product direction, journey engine and guardrails
 
+> **Note of 2026-10-09 (P012i).** The daily-use loop on top of the journey engine, the
+> "SafeCircle Plus" and "Teams" hypotheses, the Safe Date journey type and two rejected ideas (a
+> paid confession tab, a dating app) are recorded in
+> [ADR 0026](0026-daily-use-loop-and-plus-hypothesis.md) (Proposed) and
+> [addendum v7.7](../plan/addendum-v7.7.md). The text below is unchanged.
+
 - **Status:** Accepted
 - **Date:** 2026-10-08
 - **Prompt:** P012d
