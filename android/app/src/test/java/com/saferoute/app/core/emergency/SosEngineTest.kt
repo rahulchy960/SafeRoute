@@ -373,18 +373,26 @@ class SosHousekeepingTest {
     @Test
     fun `app start purges what is older than thirty days and wipes nothing while signed in`() = runTest {
         val session = FakeSession(SessionState.Ready)
-        val housekeeping = SosHousekeeping(session, store, clock, CoroutineScope(UnconfinedTestDispatcher(testScheduler)))
+        var scheduled = 0
+        val housekeeping = SosHousekeeping(
+            session,
+            store,
+            clock,
+            { scheduled++ },
+            CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
+        )
 
         housekeeping.start()
         housekeeping.start()
 
         assertEquals(listOf("purgeBefore(2026-09-09T09:00:00Z)"), store.calls.toList())
+        assertEquals("the daily job is planned once", 1, scheduled)
     }
 
     @Test
     fun `sign-out, the start screen and a blocked account wipe everything`() = runTest {
         val session = FakeSession(SessionState.Ready)
-        SosHousekeeping(session, store, clock, CoroutineScope(UnconfinedTestDispatcher(testScheduler))).start()
+        SosHousekeeping(session, store, clock, {}, CoroutineScope(UnconfinedTestDispatcher(testScheduler))).start()
         store.calls.clear()
 
         for (state in listOf(
@@ -415,7 +423,7 @@ class SosCoreBoundaryTest {
 
     @Test
     fun `it never logs, never touches the network and sends no message`() {
-        assertTrue(files.size >= 8 && files.all { it.isFile })
+        assertTrue(files.size >= 10 && files.all { it.isFile })
         val forbidden = listOf(
             "android.util.Log",
             "println(",

@@ -94,15 +94,27 @@ class MainActivityTest {
                 // lets the notification be put back after a restart, if the switch is on.
                 Manifest.permission.POST_NOTIFICATIONS,
                 Manifest.permission.RECEIVE_BOOT_COMPLETED,
+                // A running SOS (P014a2, ADR 0027): a foreground service of the type
+                // "location" that exists only during an SOS the user started, and the
+                // countdown's vibration. All granted at install.
+                Manifest.permission.FOREGROUND_SERVICE,
+                "android.permission.FOREGROUND_SERVICE_LOCATION",
+                Manifest.permission.VIBRATE,
+                // Merged in from WorkManager, which runs the daily clean-up of old SOS records.
+                Manifest.permission.WAKE_LOCK,
             ),
             requested.toSet(),
         )
-        // Foreground only (Plan v7 5.3): none of these may ever appear without a new prompt.
+        // None of these may ever appear without a new prompt: no background location, no
+        // sending or reading of SMS, no address book, no phone calls placed by the app.
         listOf(
             Manifest.permission.ACCESS_BACKGROUND_LOCATION,
-            Manifest.permission.FOREGROUND_SERVICE,
-            "android.permission.FOREGROUND_SERVICE_LOCATION",
             Manifest.permission.ACCESS_WIFI_STATE,
+            Manifest.permission.SEND_SMS,
+            Manifest.permission.READ_SMS,
+            Manifest.permission.READ_CONTACTS,
+            Manifest.permission.CALL_PHONE,
+            Manifest.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
         ).forEach { assertFalse(it, it in requested) }
     }
 

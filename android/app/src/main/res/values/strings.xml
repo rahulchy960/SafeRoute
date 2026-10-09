@@ -481,4 +481,10 @@
     <string name="contacts_card_body">People your phone will be able to text in an emergency, in a later version. It takes a minute.</string>
     <string name="contacts_card_action">Add contacts</string>
     <string name="contacts_card_not_now">Not now</string>
+    <!-- The notification of a running SOS (P014a2). Fixed text only: never a name, number or place. -->
+    <string name="sos_running_channel">Running SOS</string>
+    <string name="sos_running_channel_description">Shown while an SOS you started is running. Silent.</string>
+    <string name="sos_running_title_countdown">SOS countdown</string>
+    <string name="sos_running_title_active">SOS active</string>
+    <string name="sos_running_text">Tap to open. SafeRoute is not an emergency service: call 112.</string>
 </resources>

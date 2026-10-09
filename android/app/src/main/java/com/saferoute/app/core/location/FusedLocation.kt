@@ -98,26 +98,78 @@ class FusedLocationSource @Inject constructor(
         }
     }
 
-    private fun Location.toRawFix() = RawFix(
-        position = LatLng(latitude, longitude),
-        accuracyMeters = if (hasAccuracy()) accuracy else 0f,
-        headingDegrees = if (hasBearing() && hasSpeed() && speed >= MOVING_SPEED) bearing else null,
-        isMock = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            isMock
-        } else {
-            @Suppress("DEPRECATION")
-            isFromMockProvider
-        },
-    )
-
     private companion object {
         const val PRECISE_INTERVAL_MILLIS = 3_000L
         const val PRECISE_MIN_INTERVAL_MILLIS = 2_000L
         const val COARSE_INTERVAL_MILLIS = 10_000L
         const val NANOS_PER_MILLI = 1_000_000L
+    }
+}
 
-        /** Metres per second. Below walking pace the reported direction is noise. */
-        const val MOVING_SPEED = 0.5f
+/** Metres per second. Below walking pace the reported direction is noise. */
+private const val MOVING_SPEED = 0.5f
+
+private fun Location.toRawFix() = RawFix(
+    position = LatLng(latitude, longitude),
+    accuracyMeters = if (hasAccuracy()) accuracy else 0f,
+    headingDegrees = if (hasBearing() && hasSpeed() && speed >= MOVING_SPEED) bearing else null,
+    isMock = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        isMock
+    } else {
+        @Suppress("DEPRECATION")
+        isFromMockProvider
+    },
+)
+
+/**
+ * The trail of an emergency: its own request to the Fused Location Provider, at the interval
+ * the SOS runner asks for. Android delivers positions to it in the background only while the
+ * SOS foreground service of type "location" is running.
+ */
+@Singleton
+class FusedTrailLocationSource @Inject constructor(
+    @ApplicationContext private val context: Context,
+) : TrailLocationSource {
+
+    private val client by lazy { LocationServices.getFusedLocationProviderClient(context) }
+    private var callback: LocationCallback? = null
+
+    // The SOS trail checks the permission before every start().
+    @SuppressLint("MissingPermission")
+    override fun start(precise: Boolean, intervalMillis: Long, onFix: (RawFix) -> Unit) {
+        stop()
+        val priority = if (precise) Priority.PRIORITY_HIGH_ACCURACY else Priority.PRIORITY_BALANCED_POWER_ACCURACY
+        val request = LocationRequest.Builder(priority, intervalMillis).build()
+        val listener = object : LocationCallback() {
+            override fun onLocationResult(result: LocationResult) {
+                result.lastLocation?.let { onFix(it.toRawFix()) }
+            }
+        }
+        try {
+            client.requestLocationUpdates(request, listener, Looper.getMainLooper())
+            callback = listener
+        } catch (_: SecurityException) {
+            // The permission went away: the emergency goes on without a trail.
+        }
+    }
+
+    override fun stop() {
+        callback?.let(client::removeLocationUpdates)
+        callback = null
+    }
+
+    @SuppressLint("MissingPermission")
+    override fun lastKnown(onResult: (fix: RawFix, ageMillis: Long) -> Unit) {
+        try {
+            client.lastLocation.addOnSuccessListener { location: Location? ->
+                if (location != null) {
+                    val ageNanos = SystemClock.elapsedRealtimeNanos() - location.elapsedRealtimeNanos
+                    onResult(location.toRawFix(), ageNanos / 1_000_000L)
+                }
+            }
+        } catch (_: SecurityException) {
+            // As above.
+        }
     }
 }
 
@@ -154,6 +206,9 @@ interface LocationModule {
 
     @Binds
     fun bindLocationSource(source: FusedLocationSource): LocationSource
+
+    @Binds
+    fun bindTrailLocationSource(source: FusedTrailLocationSource): TrailLocationSource
 
     @Binds
     fun bindLocationEnvironment(environment: AndroidLocationEnvironment): LocationEnvironment

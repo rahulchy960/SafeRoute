@@ -78,6 +78,37 @@ class FakeLocationSource : LocationSource {
     fun lateCallback(): ((RawFix) -> Unit)? = listener
 }
 
+/** The trail's source: records how it was started and delivers what the test says. */
+class FakeTrailLocationSource : TrailLocationSource {
+    /** One entry per start: precise or not, and the interval asked for. */
+    val starts = mutableListOf<Pair<Boolean, Long>>()
+    var stops = 0
+    var lastKnown: Pair<RawFix, Long>? = null
+    private var listener: ((RawFix) -> Unit)? = null
+
+    val isRunning: Boolean get() = listener != null
+
+    override fun start(precise: Boolean, intervalMillis: Long, onFix: (RawFix) -> Unit) {
+        starts += precise to intervalMillis
+        listener = onFix
+    }
+
+    override fun lastKnown(onResult: (fix: RawFix, ageMillis: Long) -> Unit) {
+        lastKnown?.let { (fix, age) -> onResult(fix, age) }
+    }
+
+    override fun stop() {
+        stops++
+        listener = null
+    }
+
+    fun emit(accuracyMeters: Float = 12f, isMock: Boolean = false): Boolean {
+        val target = listener ?: return false
+        target(RawFix(FAKE_POSITION, accuracyMeters, headingDegrees = null, isMock = isMock))
+        return true
+    }
+}
+
 /** A repository a UI test can put into any state. */
 class FakeLocationRepository : LocationRepository {
     override val state = MutableStateFlow<LocationState>(LocationState.NoPermission)
@@ -120,4 +151,11 @@ object FakeLocationModule {
 
     @Provides
     fun provideEnvironment(fake: FakeLocationEnvironment): LocationEnvironment = fake
+
+    @Provides
+    @Singleton
+    fun provideFakeTrailSource(): FakeTrailLocationSource = FakeTrailLocationSource()
+
+    @Provides
+    fun provideTrailSource(fake: FakeTrailLocationSource): TrailLocationSource = fake
 }

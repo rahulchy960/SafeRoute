@@ -474,4 +474,10 @@
     <string name="contacts_card_body">যাঁদের কাছে জরুরি অবস্থায়, পরের সংস্করণে, আপনার ফোন এসএমএস পাঠাতে পারবে। এক মিনিট লাগবে।</string>
     <string name="contacts_card_action">যোগাযোগ যোগ করুন</string>
     <string name="contacts_card_not_now">এখন নয়</string>
+    <!-- The notification of a running SOS (P014a2). Fixed text only: never a name, number or place. -->
+    <string name="sos_running_channel">চলমান SOS</string>
+    <string name="sos_running_channel_description">আপনার শুরু করা SOS চলাকালীন দেখানো হয়। নিঃশব্দ।</string>
+    <string name="sos_running_title_countdown">SOS কাউন্টডাউন</string>
+    <string name="sos_running_title_active">SOS সক্রিয়</string>
+    <string name="sos_running_text">খুলতে ট্যাপ করুন। SafeRoute কোনো জরুরি পরিষেবা নয়: 112-এ কল করুন।</string>
 </resources>

@@ -259,17 +259,27 @@ class EmergencyShortcutsManifestTest {
     }
 
     @Test
-    fun `no foreground service is declared, and the shortcuts ask for two permissions only`() {
-        // The tile is the only service, and it is not a foreground service: the pinned
-        // notification is an ordinary notification with nothing running behind it.
+    fun `the shortcuts run no foreground service, and the only one belongs to a running SOS`() {
+        // The tile is not a foreground service, and the pinned notification is an ordinary
+        // notification with nothing running behind it. The one foreground service of the app
+        // is the running SOS (P014a2, ADR 0027): type "location", not exported.
         val services = elements("service")
-        assertEquals(1, services.size)
-        services.forEach { assertEquals("", it.attr("foregroundServiceType")) }
+        assertEquals(2, services.size)
+        val foreground = services.filter { it.attr("foregroundServiceType").isNotEmpty() }
+        assertEquals(1, foreground.size)
+        assertTrue(foreground.single().attr("name").endsWith("SosForegroundService"))
+        assertEquals("location", foreground.single().attr("foregroundServiceType"))
+        assertEquals("false", foreground.single().attr("exported"))
 
         val asked = elements("uses-permission").map { it.attr("name") }
         assertTrue("android.permission.POST_NOTIFICATIONS" in asked)
         assertTrue("android.permission.RECEIVE_BOOT_COMPLETED" in asked)
-        for (forbidden in listOf("FOREGROUND_SERVICE", "CALL_PHONE", "USE_FULL_SCREEN_INTENT", "SYSTEM_ALERT_WINDOW", "WAKE_LOCK", "BACKGROUND")) {
+        // The two foreground-service permissions are exactly these, for that one service.
+        assertEquals(
+            listOf("android.permission.FOREGROUND_SERVICE", "android.permission.FOREGROUND_SERVICE_LOCATION"),
+            asked.filter { it.contains("FOREGROUND_SERVICE") },
+        )
+        for (forbidden in listOf("CALL_PHONE", "USE_FULL_SCREEN_INTENT", "SYSTEM_ALERT_WINDOW", "WAKE_LOCK", "BACKGROUND", "SEND_SMS")) {
             assertTrue("$forbidden is not asked for", asked.none { it.contains(forbidden) })
         }
         // BIND_QUICK_SETTINGS_TILE is required OF the system by the service; the app does not

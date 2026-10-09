@@ -2,7 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-10-09
-- **Prompt:** P014a1 (records, state machine, recovery, retention). P014a2, P014b and P014c build on it and add notes here.
+- **Prompt:** P014a1 (records, state machine, recovery, retention); note of P014a2 below (runner, service, trail). P014a3, P014b and P014c add notes here.
 - **Plan refs:** Plan v7 §3.2 F-08, §5.3, §7.1–7.5, §12.2, §12.3; [addendum v7.1](../plan/addendum-v7.1.md), section B; [ADR 0008](0008-android-foundation.md), [ADR 0010](0010-adults-only-and-consent-records.md), [ADR 0015](0015-map-stack-and-location-policy.md), [ADR 0024](0024-emergency-contacts-and-opt-out.md)
 
 Legal statements here are drafts, **to be verified by a lawyer**.
@@ -79,6 +79,43 @@ restrictions and on the notification permission, and the platform sources of API
     every app start (and by a daily job from P014a2). Sign-out, the start screen and a
     blocked account delete everything. Never backed up (`allowBackup=false`).
 
+### Note of 2026-10-09 (P014a2): what runs the emergency
+
+Decision 8 said "the countdown is owned by the foreground service". Built slightly
+differently, for a reason the spike gave: **a `location` service cannot start without a
+location permission, and location must never block an SOS.**
+
+1. **The countdown is owned by `SosRunner`, an object of the app's process** (app-lifetime
+   scope), not by a screen and not by the service class. It rebuilds the timer from
+   `countdownEndsAt`, asks `SosEngine` for every step and acts only on a "yes".
+2. **The foreground service is the runner's host**: it keeps the process alive and in the
+   foreground, shows the notification and follows the runner's state. With a location
+   permission the host starts the service; without one, or when Android refuses the start,
+   the same notification is posted as a plain one and the emergency runs without the
+   service. Known limit of that case: Android may end the process sooner, and positions
+   arrive only while the app is on screen.
+3. **`START_NOT_STICKY`.** The system does not restart the service after killing the
+   process. Recovery from the record is the one way back (decision 7).
+4. **Nothing resumes by itself in the background.** `SosRunner.resume()` is called when a
+   screen of the app becomes visible (P014a3) and by a tap on the notification. A process
+   that Android starts for another reason leaves the record alone.
+5. **The trail** (`SosTrail`): a position every 5 s, every 15 s below 10 % battery, checked
+   again at every position. It starts with the countdown so that a position is ready when
+   the alert goes out. Fallbacks, none of which waits or fails: no permission → no trail;
+   location switched off or no Play services → unavailable; approximate permission → used
+   and reported as approximate; no fix yet → the phone's last known position, stored with
+   its real time so that its age shows; older than 30 s → reported as stale with its age.
+   A position from a mock provider is kept and flagged. The SOS never asks for a permission.
+6. **The notification** holds fixed text only ("SOS countdown" or "SOS active", "SafeRoute
+   is not an emergency service: call 112") and one button, Call 112. Low importance, silent,
+   public on the lock screen. "I'm safe" is added with the screen that can ask for the
+   unlock (P014a3).
+7. **Vibration** uses the alarm usage. The user's Do Not Disturb and silent settings still
+   decide; only privileged apps may override them. Not verified on a phone.
+8. **The daily clean-up** is a WorkManager job (KEEP policy, once a day), besides the one at
+   app start. WorkManager brings `WAKE_LOCK` into the merged manifest; the app's own
+   manifest gains `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_LOCATION` and `VIBRATE`.
+
 ## Alternatives considered
 
 - **Keep the state in memory or in DataStore.** Simpler, but a killed process loses the
@@ -90,6 +127,13 @@ restrictions and on the notification permission, and the platform sources of API
   record works in every case, so the flow uses that and nothing else.
 - **Send automatically when a countdown is found a few seconds late.** Fewer taps, but it
   sends an alert at a moment the user did not see. Rejected for now; revisit with test data.
+- **Put the countdown inside the service class.** Then an SOS without a location permission
+  has no countdown at all, and the logic can only be tested through Android. Rejected
+  (P014a2).
+- **A second service type for the case without location** (`shortService`, `specialUse`).
+  The first ends after about three minutes; the second needs a Play declaration for a use
+  Play has a type for. Rejected for now; the readiness checklist (P014c) asks for the
+  permission instead.
 - **A library for UUID version 7.** A dependency for 20 lines. Rejected.
 - **Store ARMING.** A write on every touch, and nothing to recover. Rejected.
 

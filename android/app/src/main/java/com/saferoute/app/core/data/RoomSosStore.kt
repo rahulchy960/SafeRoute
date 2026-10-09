@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 package com.saferoute.app.core.data
 
+import android.database.sqlite.SQLiteConstraintException
 import com.saferoute.app.core.data.local.SosDao
 import com.saferoute.app.core.data.local.SosPointEntity
 import com.saferoute.app.core.data.local.SosRecordEntity
@@ -29,16 +30,23 @@ class RoomSosStore @Inject constructor(private val dao: SosDao) : SosStore {
 
     override suspend fun deleteIf(id: String, state: SosState): Boolean = dao.deleteIf(id, state) == 1
 
-    override suspend fun addPoint(id: String, point: SosPoint) = dao.insertPoint(
-        SosPointEntity(
-            clientSosId = id,
-            lat = point.latitude,
-            lng = point.longitude,
-            accuracyM = point.accuracyMeters,
-            recordedAt = point.recordedAt.toEpochMilli(),
-            mockFlag = point.mock,
-        ),
-    )
+    override suspend fun addPoint(id: String, point: SosPoint) {
+        try {
+            dao.insertPoint(
+                SosPointEntity(
+                    clientSosId = id,
+                    lat = point.latitude,
+                    lng = point.longitude,
+                    accuracyM = point.accuracyMeters,
+                    recordedAt = point.recordedAt.toEpochMilli(),
+                    mockFlag = point.mock,
+                ),
+            )
+        } catch (_: SQLiteConstraintException) {
+            // The emergency was cancelled or wiped a moment ago: a point for a record that no
+            // longer exists is dropped, which is what cancelling means.
+        }
+    }
 
     override suspend fun points(id: String): List<SosPoint> = dao.points(id).map {
         SosPoint(it.lat, it.lng, it.accuracyM, Instant.ofEpochMilli(it.recordedAt), it.mockFlag)
