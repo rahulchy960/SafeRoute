@@ -31,6 +31,7 @@ Copy [`template.md`](template.md) to `NNNN-short-title.md`, and add a row to the
 | [0023](0023-live-local-context-staged-path.md) | Live local context: the map stays Home, four stages through the bottom sheet, what triggers each; a feed as Home rejected | Proposed |
 | [0024](0024-emergency-contacts-and-opt-out.md) | Emergency contacts and opt-out: server list with an offline copy, `sos_alerts` gating and erasure on withdrawal, no server messaging, opt-out token in the URL fragment, tombstone for an opted-out number | Accepted |
 | [0025](0025-credits-and-place-contributions.md) | Credits and verified place contributions (concept): never for safety reports, in-app photo as evidence, independent confirmation, gates before any build | Proposed |
+| [0026](0026-daily-use-loop-and-plus-hypothesis.md) | Daily-use loop (passive arrival and late notices), SafeCircle Plus and Teams as hypotheses, Safe Date as a journey type; a paid confession tab and a dating app rejected | Proposed |
 
 A breaking API change, new infrastructure, a new data store or the Android package name each need
 an ADR.

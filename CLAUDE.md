@@ -6,8 +6,9 @@ The full design lives in [`docs/plan/SafeRoute_Plan_v7_MVP.pdf`](docs/plan/SafeR
 [`docs/plan/addendum-v7.2.md`](docs/plan/addendum-v7.2.md),
 [`docs/plan/addendum-v7.3.md`](docs/plan/addendum-v7.3.md),
 [`docs/plan/addendum-v7.4.md`](docs/plan/addendum-v7.4.md),
-[`docs/plan/addendum-v7.5.md`](docs/plan/addendum-v7.5.md) and
-[`docs/plan/addendum-v7.6.md`](docs/plan/addendum-v7.6.md) (see "Plan addendum" below).
+[`docs/plan/addendum-v7.5.md`](docs/plan/addendum-v7.5.md),
+[`docs/plan/addendum-v7.6.md`](docs/plan/addendum-v7.6.md) and
+[`docs/plan/addendum-v7.7.md`](docs/plan/addendum-v7.7.md) (see "Plan addendum" below).
 
 ## Plan addendum (since P009a)
 
@@ -20,9 +21,10 @@ never edited; a full v8 comes after the MVP.
 Then read [`docs/plan/addendum-v7.2.md`](docs/plan/addendum-v7.2.md) (since P010c) and
 [`docs/plan/addendum-v7.3.md`](docs/plan/addendum-v7.3.md) (since P010d), then
 [`docs/plan/addendum-v7.4.md`](docs/plan/addendum-v7.4.md) (since P012d),
-[`docs/plan/addendum-v7.5.md`](docs/plan/addendum-v7.5.md) (since P012g) and
-[`docs/plan/addendum-v7.6.md`](docs/plan/addendum-v7.6.md) (since P012h). **Reading order: PDF →
-v7.1 → v7.2 → v7.3 → v7.4 → v7.5 → v7.6; where they differ, the later document wins.** v7.2 records the launch
+[`docs/plan/addendum-v7.5.md`](docs/plan/addendum-v7.5.md) (since P012g),
+[`docs/plan/addendum-v7.6.md`](docs/plan/addendum-v7.6.md) (since P012h) and
+[`docs/plan/addendum-v7.7.md`](docs/plan/addendum-v7.7.md) (since P012i). **Reading order: PDF →
+v7.1 → v7.2 → v7.3 → v7.4 → v7.5 → v7.6 → v7.7; where they differ, the later document wins.** v7.2 records the launch
 geography (West Bengal, with Kolkata as the first pilot area for community safety data), the
 three coverage layers, the region model, the changed scopes of P011, P012, P017 and P019, and the
 claims rule (see "Coverage claims" below). v7.3 replaces v7.2's "reports only in active regions":
@@ -33,7 +35,10 @@ engine) and the guardrails for every future feature (see "Product guardrails" be
 no MVP scope. v7.5 supplements v7.4 with a long-term direction (live local context) and a staged
 path to it (see "Live local context" below); it builds nothing and changes no MVP scope. v7.6
 records a concept, credits for verified place contributions, with its gates (see "Product
-guardrails" below); it is Proposed, builds nothing and changes no MVP scope.
+guardrails" below); it is Proposed, builds nothing and changes no MVP scope. v7.7 records a
+passive daily-use loop, monetization hypotheses without prices, a Safe Date journey type and two
+rejected ideas (see "Product guardrails" below); it is Proposed, builds nothing and changes no
+MVP scope.
 
 ## Project summary
 
@@ -71,7 +76,7 @@ moderation/     Moderator web app (P018)
 contracts/      openapi.json, generated, never hand-edited (from P004)
 infra/          GCP / Cloud Run / WIF configuration (from P006)
 tools/diagrams/ JSON → Excalidraw + SVG + PNG diagram generator
-docs/plan/      Plan v7 PDF (source of truth for design) + addenda v7.1 to v7.6 (the later one wins)
+docs/plan/      Plan v7 PDF (source of truth for design) + addenda v7.1 to v7.7 (the later one wins)
 docs/adr/       Architecture Decision Records (template.md, NNNN-title.md)
 docs/diagrams/  Diagram JSON specs + generated .excalidraw/.svg/.png
 docs/prompt-logs/ One log per prompt (NNN-core-work.md)
@@ -356,6 +361,18 @@ public text. The MVP prompts (P013–P022) keep their scope; v7.4 builds nothing
   - A place contribution follows the evidence and licence rules of addendum v7.6, sections C
     and E: the contributor's own photo or observation, never Google Maps or another
     protected source.
+- **Money, disclosures and dating** (since P012i, [addendum v7.7](docs/plan/addendum-v7.7.md),
+  [ADR 0026](docs/adr/0026-daily-use-loop-and-plus-hypothesis.md), Proposed: nothing is built,
+  and no prompt starts it on the strength of a Proposed ADR):
+  - Never paywall SOS, 112, basic live sharing or basic check-ins (as above), and never sell
+    a way around a Trusted Circle principle of ADR 0011, to a person or to an institution.
+  - Never charge to read other people's disclosures or safety reports.
+  - No confession or anonymous-story feed and no dating features (matching, profiles, chat)
+    without an ADR, the gates in addendum v7.7 and a lawyer's review.
+  - Dating-related wording says "safer", with the specific feature named; never "safe".
+  - Subscriptions, prices, revenue figures and competitor benchmark numbers stay out of the
+    repository and out of every public material until validated. They live in the private
+    Notion backlog, marked as hypotheses.
 - A feature that can't fit these rules needs a new ADR first.
 
 ## Live local context (since P012g, ADR 0023, Proposed)

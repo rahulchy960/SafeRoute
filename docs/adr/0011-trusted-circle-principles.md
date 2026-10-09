@@ -1,5 +1,12 @@
 # ADR 0011: Trusted Circle principles
 
+> **Note of 2026-10-09 (P012i).** A passive daily loop (automatic "arrived" and "running late"
+> notices) and a paid tier for circles are recorded as hypotheses in
+> [ADR 0026](0026-daily-use-loop-and-plus-hypothesis.md) and
+> [addendum v7.7](../plan/addendum-v7.7.md). They add nothing to and take nothing from the
+> principles below, and no principle below can be bought in any tier. The text below is
+> unchanged; this ADR stays Proposed until the lawyer review.
+>
 > **Note of 2026-10-08 (P012d).** The product idea document calls this feature "SafeCircle".
 > Journeys shared with a circle use the journey engine recorded in
 > [ADR 0021](0021-post-mvp-product-direction.md) and
