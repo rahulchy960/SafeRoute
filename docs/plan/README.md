@@ -20,7 +20,11 @@ order of features after the MVP, the journey engine, and the guardrails for ever
 [`addendum-v7.5.md`](addendum-v7.5.md) (since P012g) supplements v7.4 with a long-term direction,
 live local context, and a staged path to it. It builds nothing and changes no MVP scope.
 
-**Reading order: PDF → v7.1 → v7.2 → v7.3 → v7.4 → v7.5.** Where they differ, the later document wins. A full v8 will
+[`addendum-v7.6.md`](addendum-v7.6.md) (since P012h) records a concept: credits for verified
+place contributions, the decisions already taken about it, and the gates before any build. It
+is Proposed, builds nothing and changes no MVP scope.
+
+**Reading order: PDF → v7.1 → v7.2 → v7.3 → v7.4 → v7.5 → v7.6.** Where they differ, the later document wins. A full v8 will
 be written after the MVP and company registration.
 
 Do not edit the PDF. A new plan version is committed as a new file, and the change is noted in an ADR.
