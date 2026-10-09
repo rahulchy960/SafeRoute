@@ -391,7 +391,7 @@
     <string name="settings_contacts_title">জরুরি যোগাযোগ</string>
     <string name="settings_contacts_supporting">জরুরি সতর্কবার্তা যাঁদের কাছে পৌঁছাতে পারে, তাঁদের যোগ করুন, আমন্ত্রণ পাঠান বা সরান</string>
     <string name="contacts_title">জরুরি যোগাযোগ</string>
-    <string name="contacts_intro">সর্বোচ্চ %1$d জন, যাঁদের কাছে পরের সংস্করণে জরুরি সতর্কবার্তা চালু হলে আপনার ফোন এসএমএস পাঠাতে পারবে। এখন তাঁদের কাছে কিছুই পাঠানো হয় না: প্রত্যেককে আপনি নিজেই, নিজের ফোন থেকে আমন্ত্রণ পাঠান।</string>
+    <string name="contacts_intro">সর্বোচ্চ %1$d জন, যাঁদের আপনি SOS শুরু করলে আপনার ফোন SMS পাঠায়। প্রত্যেককে আপনি নিজেই, নিজের ফোন থেকে আমন্ত্রণ জানান।</string>
     <string name="contacts_empty_title">এখনও কোনো জরুরি যোগাযোগ নেই</string>
     <string name="contacts_empty_body">এমন কাউকে যোগ করুন যাঁকে আপনি বিশ্বাস করেন এবং যিনি আপনাকে চেনেন।</string>
     <string name="contacts_add">যোগাযোগ যোগ করুন</string>
@@ -423,13 +423,13 @@
     <string name="contacts_error_not_found">এই যোগাযোগটি আর নেই।</string>
 
     <!-- sos_alerts নোটিস। খসড়া: আইনজীবীর পর্যালোচনা বাকি। -->
-    <string name="contacts_notice_title">যোগাযোগ যোগ করার আগে</string>
-    <string name="contacts_notice_p1">আপনি SafeRoute-এ অন্য মানুষের ফোন নম্বর সংরক্ষণ করতে যাচ্ছেন।</string>
-    <string name="contacts_notice_p2">কেবল তাঁদেরই যোগ করুন যাঁদের যোগ করার যথাযথ কারণ আছে এবং যাঁরা আপনাকে চেনেন।</string>
-    <string name="contacts_notice_p3">অ্যাপ নিজে থেকে তাঁদের কোনো বার্তা পাঠায় না। প্রত্যেককে আপনি নিজের ফোন থেকে আমন্ত্রণ পাঠান।</string>
-    <string name="contacts_notice_p4">প্রতিটি আমন্ত্রণে একটি লিংক থাকে, যা দিয়ে তাঁরা অপ্ট আউট করতে পারেন। যিনি অপ্ট আউট করেছেন তাঁকে কখনও সতর্কবার্তা পাঠানো হয় না।</string>
-    <string name="contacts_notice_p5">জরুরি অবস্থায়, অ্যাপের পরের সংস্করণে, আপনার ফোন তাঁদের কাছে আপনার অবস্থান এসএমএস করতে পারবে।</string>
-    <string name="contacts_notice_p6">SafeRoute কোনো জরুরি পরিষেবা নয়। জরুরি অবস্থায় 112 নম্বরে ফোন করুন।</string>
+    <string name="contacts_notice_title">SOS সতর্কবার্তা কীভাবে কাজ করে</string>
+    <string name="contacts_notice_p1">আপনি SafeRoute-এ অন্য মানুষের ফোন নম্বর সংরক্ষণ করতে যাচ্ছেন। কেবল তাঁদেরই যোগ করুন যাঁরা আপনাকে চেনেন এবং যাঁদের যোগ করার যথাযথ কারণ আছে।</string>
+    <string name="contacts_notice_p2">প্রত্যেককে আপনি নিজের ফোন থেকে আমন্ত্রণ পাঠান। তাতে একটি লিংক থাকে, যা দিয়ে তাঁরা অপ্ট আউট করতে পারেন। যিনি অপ্ট আউট করেছেন তাঁকে কখনও সতর্কবার্তা পাঠানো হয় না।</string>
+    <string name="contacts_notice_p3">আপনি SOS শুরু করলে আপনার ফোন আপনার নিজের SIM থেকে তাঁদের প্রত্যেককে একটি SMS পাঠায়। তাতে বলা থাকে যে আপনার সাহায্য দরকার, এবং থাকে আপনার ফোনের অবস্থানের মানচিত্রের লিংক, সেই অবস্থান কতটা নির্ভুল ও কত পুরোনো, আর আপনার ব্যাটারির মাত্রা। আরও ভালো অবস্থান পেলে আরও একটি SMS যেতে পারে, এবং আপনি নিরাপদ বলে জানালে আরও একটি।</string>
+    <string name="contacts_notice_p4">এই SMS-গুলির জন্য আপনার মোবাইল প্ল্যান অনুযায়ী খরচ হতে পারে। আপনি SOS শুরু না করলে কিছুই পাঠানো হয় না। অ্যাপের SMS পাঠানোর অনুমতি না থাকলে সে আপনার SMS অ্যাপে বার্তাটি খুলে দেয়, আর আপনি পাঠান চাপেন।</string>
+    <string name="contacts_notice_p5">SOS চলাকালীন অ্যাপটি আপনার ফোন কোথায় আছে তাও রেকর্ড করে। সেই রেকর্ড সর্বোচ্চ 30 দিন এই ফোনেই থাকে। SafeRoute-এর সার্ভার আপনার সতর্কবার্তা বা আপনার অবস্থান কোনোটিই পায় না।</string>
+    <string name="contacts_notice_p6">SafeRoute কোনো জরুরি পরিষেবা নয়। বার্তা দেরিতে পৌঁছাতে পারে, বা একেবারেই না পৌঁছাতে পারে। জরুরি অবস্থায় 112 নম্বরে ফোন করুন।</string>
     <string name="contacts_notice_p7">আপনি যেকোনো সময় থামতে পারেন: জরুরি যোগাযোগ খুলে \"SOS সতর্কবার্তা বন্ধ করুন ও সব যোগাযোগ সরান\" বেছে নিন। তাতে সবাই মুছে যাবে।</string>
     <string name="contacts_notice_agree">আমি সম্মত</string>
     <string name="contacts_notice_not_now">এখন নয়</string>
@@ -471,7 +471,7 @@
     <string name="contacts_rename_save">সংরক্ষণ</string>
 
     <string name="contacts_card_title">জরুরি যোগাযোগ যোগ করুন</string>
-    <string name="contacts_card_body">যাঁদের কাছে জরুরি অবস্থায়, পরের সংস্করণে, আপনার ফোন এসএমএস পাঠাতে পারবে। এক মিনিট লাগবে।</string>
+    <string name="contacts_card_body">যাঁদের আপনি SOS শুরু করলে আপনার ফোন SMS পাঠায়। এক মিনিট লাগে।</string>
     <string name="contacts_card_action">যোগাযোগ যোগ করুন</string>
     <string name="contacts_card_not_now">এখন নয়</string>
     <!-- The notification of a running SOS (P014a2). Fixed text only: never a name, number or place. -->
@@ -481,19 +481,19 @@
     <string name="sos_running_title_active">SOS সক্রিয়</string>
     <string name="sos_running_text">খুলতে ট্যাপ করুন। SafeRoute কোনো জরুরি পরিষেবা নয়: 112-এ কল করুন।</string>
     <!-- The SOS screens (P014a3). Until the SMS alerts exist (P014b) no text may say that a contact is or will be messaged. The location note is the disclosure for the SOS trail: a DRAFT until a lawyer has reviewed it. -->
-    <string name="sos_arm_hold">SOS শুরু করতে ধরে রাখুন</string>
+    <string name="sos_arm_hold">SOS পাঠাতে ধরে রাখুন</string>
     <string name="sos_arm_hold_action">SOS কাউন্টডাউন শুরু করুন</string>
-    <string name="sos_arm_explain">2 সেকেন্ড ধরে রাখুন। এরপর 5 সেকেন্ডের কাউন্টডাউন হবে, যা আপনি বাতিল করতে পারবেন।</string>
-    <string name="sos_arm_location_note">SOS চলাকালীন SafeRoute এই ফোনটি কোথায় আছে তা রেকর্ড করে। রেকর্ডটি সর্বোচ্চ 30 দিন এই ফোনেই থাকে এবং কোথাও পাঠানো হয় না। এই সংস্করণে আপনার জরুরি পরিচিতিদের কোনো বার্তা পাঠানো হয় না।</string>
+    <string name="sos_arm_explain">2 সেকেন্ড ধরে রাখুন। এরপর 5 সেকেন্ডের কাউন্টডাউন হবে, যা আপনি বাতিল করতে পারবেন। তারপর আপনার জরুরি পরিচিতিদের SMS-এ সতর্ক করা হবে।</string>
+    <string name="sos_arm_location_note">SOS আপনার জরুরি পরিচিতিদের SMS-এ জানায় এই ফোনটি কোথায় আছে, এবং এর অবস্থানগুলি সর্বোচ্চ 30 দিন এই ফোনেই রেকর্ড করে। SafeRoute-এর সার্ভার এর কোনোটিই পায় না। SMS-এর জন্য আপনার মোবাইল প্ল্যান অনুযায়ী খরচ হতে পারে।</string>
     <string name="sos_arm_practice">SOS অনুশীলন করুন</string>
     <string name="sos_practice_banner">অনুশীলন: কিছুই পাঠানো বা সংরক্ষণ করা হচ্ছে না</string>
     <string name="sos_not_emergency_service_call">SafeRoute কোনো জরুরি পরিষেবা নয়। 112-এ কল করুন।</string>
     <string name="sos_countdown_title">SOS শুরু হবে</string>
     <string name="sos_countdown_seconds_description">%1$d সেকেন্ড বাকি</string>
-    <string name="sos_countdown_explain">থামাতে বাতিল-এ ট্যাপ করুন। এখনও কিছুই শুরু হয়নি।</string>
+    <string name="sos_countdown_explain">থামাতে বাতিল-এ ট্যাপ করুন। এখনও কিছুই পাঠানো হয়নি।</string>
     <string name="sos_countdown_cancel">বাতিল</string>
     <string name="sos_active_title">SOS সক্রিয়</string>
-    <string name="sos_active_contacts_none">এই সংস্করণে আপনার জরুরি পরিচিতিদের কোনো বার্তা পাঠানো হয় না। বিপদে পড়লে 112-এ কল করুন।</string>
+    <string name="sos_active_contacts_none">এই ফোনে SOS সতর্কবার্তা চালু করা নেই, তাই কাউকে বার্তা পাঠানো হচ্ছে না। বিপদে পড়লে 112-এ কল করুন।</string>
     <string name="sos_location_precise">অবস্থান: নির্ভুল, এই ফোনে রেকর্ড হচ্ছে।</string>
     <string name="sos_location_approximate">অবস্থান: শুধু আনুমানিক (নির্ভুল অবস্থানের অনুমতি নেই), এই ফোনে রেকর্ড হচ্ছে।</string>
     <string name="sos_location_searching">অবস্থান: আপনার অবস্থান খোঁজা হচ্ছে…</string>
@@ -505,15 +505,15 @@
     <string name="sos_active_safe">আমি নিরাপদ</string>
     <string name="sos_active_safe_locked">আমি নিরাপদ (আগে আনলক করুন)</string>
     <string name="sos_safe_confirm_title">SOS শেষ করবেন?</string>
-    <string name="sos_safe_confirm_body">SOS শেষ হবে এবং অবস্থান রেকর্ড বন্ধ হবে।</string>
+    <string name="sos_safe_confirm_body">SOS শেষ হবে, অবস্থান রেকর্ড বন্ধ হবে, এবং আর কোনো সতর্কবার্তা পাঠানো হবে না।</string>
     <string name="sos_safe_confirm_yes">হ্যাঁ, আমি নিরাপদ</string>
     <string name="sos_safe_confirm_no">এখনও না</string>
     <string name="sos_recovered_title">SOS এখনও সক্রিয়</string>
     <string name="sos_recovered_body">অ্যাপ বন্ধ হওয়ার সময় এটি চলছিল। অবস্থান রেকর্ড আবার শুরু হয়েছে।</string>
     <string name="sos_recovered_continue">চালিয়ে যান</string>
     <string name="sos_ask_title">অ্যাপ বন্ধ হওয়ার সময় SOS শুরু হচ্ছিল</string>
-    <string name="sos_ask_body">কাউন্টডাউন শেষ হয়নি এবং কিছুই শুরু হয়নি। এখন SOS শুরু করবেন, না বাতিল করবেন?</string>
-    <string name="sos_ask_send">এখনই SOS শুরু করুন</string>
+    <string name="sos_ask_body">কাউন্টডাউন শেষ হয়নি এবং কিছুই পাঠানো হয়নি। এখন SOS পাঠাবেন, না বাতিল করবেন?</string>
+    <string name="sos_ask_send">এখনই পাঠান</string>
     <string name="sos_practice_finished_title">অনুশীলন শেষ</string>
     <string name="sos_practice_finished_body">এটি একটি অনুশীলন ছিল। কিছুই পাঠানো, সংরক্ষণ বা রেকর্ড করা হয়নি।</string>
     <string name="sos_practice_close">বন্ধ করুন</string>
@@ -532,4 +532,24 @@
     <string name="sos_composer_channel_description">আপনার SMS অ্যাপে কোনো SOS সতর্কবার্তা পাঠানোর অপেক্ষায় থাকলে দেখানো হয়।</string>
     <string name="sos_composer_title">আপনার SOS সতর্কবার্তা পাঠান</string>
     <string name="sos_composer_text">SMS অ্যাপ খুলতে ট্যাপ করুন, তারপর পাঠান চাপুন।</string>
+    <!-- SOS alerts switched on (P014b3): the setup texts, and the "Send alerts automatically" card with its disclosure, shown BEFORE Android's permission dialog. Drafts until a lawyer has reviewed them. -->
+    <string name="sos_arm_not_set_up">SOS সতর্কবার্তা এখনও চালু করা হয়নি। ততক্ষণ এই ফোন শুধু আপনাকে 112-এ কল করতে সাহায্য করতে পারে।</string>
+    <string name="sos_arm_set_up">SOS সতর্কবার্তা চালু করুন</string>
+    <string name="contacts_alerts_off">SOS সতর্কবার্তা বন্ধ আছে: এগুলি কীভাবে কাজ করে তাতে আপনি এখনও সম্মতি দেননি। ততক্ষণ SOS শুরু করা যাবে না এবং কাউকে বার্তা পাঠানো হবে না।</string>
+    <string name="contacts_alerts_read_notice">SOS সতর্কবার্তা কীভাবে কাজ করে পড়ুন</string>
+    <string name="sms_mode_title">সতর্কবার্তা নিজে থেকে পাঠানো</string>
+    <string name="sms_mode_on">চালু। আপনি SOS শুরু করলে এই ফোন নিজেই সতর্কবার্তার SMS পাঠায়।</string>
+    <string name="sms_mode_on_how_to_stop">এটি বন্ধ করতে সেটিংস, অ্যাপ, SafeRoute, অনুমতি থেকে SMS-এর অনুমতি সরিয়ে দিন।</string>
+    <string name="sms_mode_off">বন্ধ। আপনি SOS শুরু করলে আপনার SMS অ্যাপে সতর্কবার্তাটি খুলবে এবং আপনাকে পাঠান চাপতে হবে। পাঠানোর অনুমতি দিন, যাতে আপনি ফোন ধরতে না পারলেও সতর্কবার্তা চলে যায়।</string>
+    <string name="sms_mode_blocked">বন্ধ, এবং Android আর জিজ্ঞাসা করে না। SafeRoute-কে নিজে থেকে সতর্কবার্তা পাঠাতে দিতে সেটিংস, অ্যাপ, SafeRoute, অনুমতি থেকে SMS-এর অনুমতি দিন। ততক্ষণ আপনার SMS অ্যাপে সতর্কবার্তাটি খুলবে এবং আপনি পাঠান চাপবেন।</string>
+    <string name="sms_mode_not_in_build">অ্যাপের এই সংস্করণ নিজে থেকে SMS পাঠাতে পারে না। আপনি SOS শুরু করলে আপনার SMS অ্যাপে সতর্কবার্তাটি খুলবে এবং আপনি পাঠান চাপবেন।</string>
+    <string name="sms_mode_allow">SMS পাঠানোর অনুমতি দিন</string>
+    <string name="sms_mode_open_settings">অ্যাপের সেটিংস খুলুন</string>
+    <string name="sms_disclosure_title">SafeRoute আপনার হয়ে SMS পাঠাবে</string>
+    <string name="sms_disclosure_p1">আপনি অনুমতি দিলে, আপনি SOS শুরু করলে SafeRoute আপনার SIM থেকে আপনার জরুরি পরিচিতিদের SMS পাঠায়, অ্যাপ বন্ধ থাকলে বা ফোন লক থাকলেও।</string>
+    <string name="sms_disclosure_p2">বার্তাগুলিতে বলা থাকে যে আপনার সাহায্য দরকার এবং আপনার ফোন কোথায় আছে। এগুলি কেবল আপনার যোগ করা জরুরি পরিচিতিদের কাছেই যায়।</string>
+    <string name="sms_disclosure_p3">প্রতিটি SMS-এর জন্য আপনার মোবাইল প্ল্যান অনুযায়ী খরচ হতে পারে। আপনি SOS শুরু না করলে কিছুই পাঠানো হয় না।</string>
+    <string name="sms_disclosure_p4">SafeRoute আপনার বার্তা পড়তে পারে না। আপনি যেকোনো সময় ফোনের সেটিংস থেকে এই অনুমতি ফিরিয়ে নিতে পারেন।</string>
+    <string name="sms_disclosure_continue">চালিয়ে যান</string>
+    <string name="sms_disclosure_not_now">এখন নয়</string>
 </resources>

@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1286" height="1106" viewBox="0 0 1286 1106" font-family="Helvetica, Arial, sans-serif">
+<title>SOS alerts: consent, the permission, and what an SOS may do</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#495057"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="40" y="62" font-size="24" font-weight="700" fill="#1e1e1e">SOS alerts: consent, the permission, and what an SOS may do</text>
+<text x="40" y="86" font-size="14" fill="#495057">No SOS from the app without consent to the notice that describes alerts; no SMS by the app itself without the permission, asked after the app's own explanation (P014b3, ADR 0027)</text>
+<rect x="40" y="114" width="286" height="906" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="54" y="135" font-size="14" font-weight="700" fill="#495057">Consent (ADR 0010)</text>
+<rect x="362" y="114" width="286" height="906" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="376" y="135" font-size="14" font-weight="700" fill="#495057">Send alerts automatically</text>
+<rect x="684" y="114" width="562" height="906" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="698" y="135" font-size="14" font-weight="700" fill="#495057">What the SOS control offers</text>
+<line x1="183" y1="295" x2="183" y2="341" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="183" y1="428" x2="183" y2="484.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="183" y1="571.5" x2="183" y2="628" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="183" y1="715" x2="827" y2="771.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="183" y1="715" x2="1103" y2="761" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="505" y1="428" x2="505" y2="474" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="505" y1="582" x2="505" y2="628" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="505" y1="715" x2="965" y2="915" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="183" y1="715" x2="965" y2="915" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="58" y="208" width="250" height="87" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="183" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="183" y="236.3">Notice version 2, How SOS</tspan>
+<tspan x="183" y="257.1">alerts work: I agree, or Not</tspan>
+<tspan x="183" y="277.9">now</tspan>
+</text>
+<rect x="58" y="341" width="250" height="87" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="183" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="183" y="369.3">Server records the consent</tspan>
+<tspan x="183" y="390.1">with the notice version (PUT</tspan>
+<tspan x="183" y="410.9">/v1/me/consents/sos_alerts)</tspan>
+</text>
+<rect x="58" y="484.5" width="250" height="87" rx="10" fill="#ffd8a8" stroke="#e8590c" stroke-width="2"/>
+<text x="183" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="183" y="512.8">Phone notes the agreed</tspan>
+<tspan x="183" y="533.6">version (a flag). Removed on</tspan>
+<tspan x="183" y="554.4">withdrawal and sign-out</tspan>
+</text>
+<rect x="58" y="628" width="250" height="87" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="183" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="183" y="656.3">Gate: agreed version = today's</tspan>
+<tspan x="183" y="677.1">version? Read on the phone,</tspan>
+<tspan x="183" y="697.9">no network</tspan>
+</text>
+<rect x="380" y="341" width="250" height="87" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="505" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="505" y="369.3">Card under Emergency</tspan>
+<tspan x="505" y="390.1">contacts: On, Off, Blocked, or</tspan>
+<tspan x="505" y="410.9">not in this build</tspan>
+</text>
+<rect x="380" y="474" width="250" height="108" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="505" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="505" y="502.4">The app's explanation first:</tspan>
+<tspan x="505" y="523.2">SMS from your SIM, to your</tspan>
+<tspan x="505" y="544">contacts, may cost, only in an</tspan>
+<tspan x="505" y="564.8">SOS</tspan>
+</text>
+<rect x="380" y="628" width="250" height="87" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="505" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="505" y="656.3">Android's permission dialog</tspan>
+<tspan x="505" y="677.1">(SEND_SMS). Never during an</tspan>
+<tspan x="505" y="697.9">SOS</tspan>
+</text>
+<rect x="702" y="771.5" width="250" height="87" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="827" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="827" y="799.8">No consent: Call 112, Practice</tspan>
+<tspan x="827" y="820.6">SOS, Set up SOS alerts. No</tspan>
+<tspan x="827" y="841.4">hold button</tspan>
+</text>
+<rect x="840" y="915" width="250" height="87" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="965" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="965" y="943.3">Consent and permission: Hold</tspan>
+<tspan x="965" y="964.1">to send SOS, the phone sends</tspan>
+<tspan x="965" y="984.9">the SMS itself</tspan>
+</text>
+<rect x="978" y="761" width="250" height="108" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="1103" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1103" y="789.4">Consent, no permission: Hold</tspan>
+<tspan x="1103" y="810.2">to send SOS, the SMS app</tspan>
+<tspan x="1103" y="831">opens and the user presses</tspan>
+<tspan x="1103" y="851.8">Send</tspan>
+</text>
+<rect x="156.9" y="307" width="52.3" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="183" y="322.5" font-size="13" fill="#1e1e1e" text-anchor="middle">I agree</text>
+<rect x="117.6" y="445.3" width="130.8" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="183" y="460.8" font-size="13" fill="#1e1e1e" text-anchor="middle">recorded or reported</text>
+<rect x="492" y="732.3" width="26" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="505" y="747.8" font-size="13" fill="#1e1e1e" text-anchor="middle">no</text>
+<rect x="626.5" y="727" width="33.1" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="643" y="742.5" font-size="13" fill="#1e1e1e" text-anchor="middle">yes</text>
+<rect x="440.5" y="440" width="129" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="505" y="455.5" font-size="13" fill="#1e1e1e" text-anchor="middle">Allow sending SMS</text>
+<rect x="473.1" y="594" width="63.7" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="505" y="609.5" font-size="13" fill="#1e1e1e" text-anchor="middle">Continue</text>
+<rect x="707.2" y="804" width="55.7" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="735" y="819.5" font-size="13" fill="#1e1e1e" text-anchor="middle">granted</text>
+<rect x="557.5" y="804" width="33.1" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="574" y="819.5" font-size="13" fill="#1e1e1e" text-anchor="middle">yes</text>
+<rect x="40" y="1041" width="16" height="16" rx="3" fill="#a5d8ff" stroke="#1971c2" stroke-width="1.5"/>
+<text x="62" y="1054" font-size="13" fill="#495057">App / UI</text>
+<rect x="134.8" y="1041" width="16" height="16" rx="3" fill="#b2f2bb" stroke="#2f9e44" stroke-width="1.5"/>
+<text x="156.8" y="1054" font-size="13" fill="#495057">Service</text>
+<rect x="228.3" y="1041" width="16" height="16" rx="3" fill="#ffd8a8" stroke="#e8590c" stroke-width="1.5"/>
+<text x="250.3" y="1054" font-size="13" fill="#495057">Data</text>
+<rect x="303.1" y="1041" width="16" height="16" rx="3" fill="#ffc9c9" stroke="#e03131" stroke-width="1.5"/>
+<text x="325.1" y="1054" font-size="13" fill="#495057">Security / emergency</text>
+<rect x="476.7" y="1041" width="16" height="16" rx="3" fill="#e9ecef" stroke="#495057" stroke-width="1.5"/>
+<text x="498.7" y="1054" font-size="13" fill="#495057">External</text>
+</svg>

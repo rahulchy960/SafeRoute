@@ -31,7 +31,7 @@ class SosDispatchTest {
         allowed: Boolean = true,
     ) = SosRig(this, granted).also { rig ->
         rig.contacts.list = (1..contacts).map(::person)
-        rig.policy.allowed = allowed
+        rig.policy.open = allowed
     }
 
     private fun SosRig.sentTo(n: Int): List<String> = gateway.attempts.filter { it.first == person(n).phoneE164 }.map { it.second }

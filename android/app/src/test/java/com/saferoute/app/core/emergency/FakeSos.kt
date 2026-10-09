@@ -14,6 +14,8 @@ import java.time.ZoneId
 import java.time.ZoneOffset
 import java.util.concurrent.CopyOnWriteArrayList
 import javax.inject.Singleton
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestCoroutineScheduler
 
 /*
@@ -142,8 +144,17 @@ class FakeSmsGateway(var fallback: SmsOutcome = SmsOutcome.Sent) : SmsGateway {
 }
 
 /** The gate as a test sets it. Closed by default, as in the app today. */
-class FakeSosAlertPolicy(var allowed: Boolean = false) : SosAlertPolicy {
-    override suspend fun alertsAllowed(): Boolean = allowed
+class FakeSosAlertPolicy(open: Boolean = false) : SosAlertPolicy {
+    private val state = MutableStateFlow(open)
+
+    /** Open means: the user has agreed to the alerts notice. */
+    var open: Boolean
+        get() = state.value
+        set(value) {
+            state.value = value
+        }
+
+    override val allowed: Flow<Boolean> = state
 }
 
 class FakeSosMessageSettings(var name: String? = "Test User", var language: SosLanguage = SosLanguage.EN) :

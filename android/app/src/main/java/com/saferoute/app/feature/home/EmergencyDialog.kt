@@ -27,10 +27,16 @@ import com.saferoute.app.feature.emergency.HoldToArmButton
 
 /** What the dialog offers besides Call 112 when an SOS can be started from where it is shown. */
 class EmergencyArm(
-    /** The 2-second hold was completed (or the accessibility action was used). */
-    val onArmed: () -> Unit,
+    /**
+     * The 2-second hold was completed (or the accessibility action was used). Null while SOS
+     * alerts are not set up: the user has not agreed to the notice that describes them. The
+     * dialog then says so and offers [onSetUp] instead of the hold.
+     */
+    val onArmed: (() -> Unit)?,
     /** "Practice SOS" was tapped. */
     val onPractice: () -> Unit,
+    /** "Set up SOS alerts" was tapped; null where the screen has no way to the setup. */
+    val onSetUp: (() -> Unit)? = null,
 )
 
 /**
@@ -86,16 +92,26 @@ fun EmergencyDialog(
                     )
                 }
                 if (arm != null) {
-                    HoldToArmButton(
-                        onArmed = arm.onArmed,
-                        modifier = Modifier.align(Alignment.CenterHorizontally),
-                    )
-                    Text(text = stringResource(R.string.sos_arm_explain))
-                    // The disclosure for this use of location (ADR 0015). A draft for the lawyer.
-                    Text(
-                        text = stringResource(R.string.sos_arm_location_note),
-                        style = MaterialTheme.typography.bodySmall,
-                    )
+                    val onArmed = arm.onArmed
+                    if (onArmed != null) {
+                        HoldToArmButton(
+                            onArmed = onArmed,
+                            modifier = Modifier.align(Alignment.CenterHorizontally),
+                        )
+                        Text(text = stringResource(R.string.sos_arm_explain))
+                        // The disclosure for this use of location (ADR 0015). A draft for the lawyer.
+                        Text(
+                            text = stringResource(R.string.sos_arm_location_note),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    } else {
+                        Text(text = stringResource(R.string.sos_arm_not_set_up))
+                        arm.onSetUp?.let { onSetUp ->
+                            Button(onClick = onSetUp, modifier = Modifier.align(Alignment.CenterHorizontally)) {
+                                Text(text = stringResource(R.string.sos_arm_set_up))
+                            }
+                        }
+                    }
                     TextButton(onClick = arm.onPractice, modifier = Modifier.align(Alignment.CenterHorizontally)) {
                         Text(text = stringResource(R.string.sos_arm_practice))
                     }

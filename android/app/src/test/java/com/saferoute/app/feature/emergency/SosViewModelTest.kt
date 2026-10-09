@@ -41,10 +41,11 @@ class SosViewModelTest {
 
     private fun test(block: suspend TestScope.(SosRig) -> Unit) = runTest(dispatcher) {
         Dispatchers.setMain(dispatcher)
-        block(SosRig(this))
+        // The user has agreed to the alerts notice, unless a test says otherwise.
+        block(SosRig(this).also { it.policy.open = true })
     }
 
-    private fun SosRig.viewModel() = SosViewModel(runner, trail, gate, haptics, dispatch, appScope)
+    private fun SosRig.viewModel() = SosViewModel(runner, trail, gate, haptics, dispatch, policy, appScope)
 
     private fun SosRig.open(mode: SosOpenMode, fresh: Boolean = true): SosViewModel =
         viewModel().also {
@@ -281,19 +282,32 @@ class SosViewModelTest {
         contacts.list = (1..count).map {
             SosContact("id-$it", "Test Contact $it", "+9190000100${it.toString().padStart(2, '0')}")
         }
-        policy.allowed = true
+        policy.open = true
     }
 
     private fun SosRig.safeMessages() = gateway.attempts.count { it.second.contains("safe now") }
 
     @Test
-    fun `with alerts not switched on the screen says so and I am safe offers nothing to tell`() = test { rig ->
+    fun `without consent to the alerts notice no SOS can be started from the screen`() = test { rig ->
+        rig.policy.open = false
         rig.contacts.list = listOf(SosContact("id-1", "Test Contact 1", "+919000010001"))
+
+        val viewModel = rig.open(SosOpenMode.START)
+        rig.advance(10_000)
+
+        assertEquals(SosUi.Options, viewModel.ui.value)
+        assertEquals(emptyList<SosRecord>(), rig.store.all)
+        assertEquals(0, rig.gateway.attempts.size)
+        assertEquals(emptyList<String>(), rig.host.events.toList())
+    }
+
+    @Test
+    fun `with no contact the active screen says so and I am safe offers nothing to tell`() = test { rig ->
         val viewModel = rig.open(SosOpenMode.START)
         rig.advance(10_000)
 
         val active = viewModel.ui.value as SosUi.Active
-        assertEquals(SosAlertStatus.NotEnabled, active.alerts)
+        assertEquals(SosAlertStatus.NoContacts, active.alerts)
         assertFalse(active.canTellContacts)
         assertEquals(0, rig.gateway.attempts.size)
     }

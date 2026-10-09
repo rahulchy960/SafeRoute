@@ -2,7 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-10-09
-- **Prompt:** P014a1 (records, state machine, recovery, retention); notes of P014a2 (runner, service, trail), P014a3 (screens), P014b1 (SMS engine) and P014b2 (sending, behind a gate) below. P014b3 and P014c add notes here.
+- **Prompt:** P014a1 (records, state machine, recovery, retention); notes of P014a2 (runner, service, trail), P014a3 (screens), P014b1 (SMS engine), P014b2 (sending, behind a gate) and P014b3 (consent and the switch-on) below. P014c adds notes here.
 - **Plan refs:** Plan v7 §3.2 F-08, §5.3, §7.1–7.5, §12.2, §12.3; [addendum v7.1](../plan/addendum-v7.1.md), section B; [ADR 0008](0008-android-foundation.md), [ADR 0010](0010-adults-only-and-consent-records.md), [ADR 0015](0015-map-stack-and-location-policy.md), [ADR 0024](0024-emergency-contacts-and-opt-out.md)
 
 Legal statements here are drafts, **to be verified by a lawyer**.
@@ -266,6 +266,48 @@ a fake.
    prompt allowed names when unlocked, counts are enough and cannot leak.
 10. **The name is not asked for yet**: the message uses its wording for "no name" until the
     SOS setup of P014c. The language is the app's language.
+
+### Note of 2026-10-09 (P014b3): consent, the permission, and the switch-on
+
+From this note on a user who has agreed to the notice version 2 can start an SOS that
+messages their emergency contacts. Nothing was verified on a phone.
+
+1. **The gate is the consent, read on the phone.** `ConsentSosAlertPolicy` is open only when
+   the version of the `sos_alerts` notice the user agreed to equals the one the app shows
+   today. That version is a flag in the app's DataStore, written when the server recorded the
+   consent (`grantConsent`) or reported it (`hasConsent`, also once after every sign-in), and
+   removed on withdrawal and sign-out. An SOS therefore needs no network to ask, and a
+   failed check neither gives nor takes consent.
+2. **Notice version 2** (`2026-10-alerts-draft2`,
+   [`docs/legal/sos-alerts-notice-v2.md`](../legal/sos-alerts-notice-v2.md)) describes what
+   happens: SMS from the user's SIM, the map link, a possible second and third SMS, the
+   possible cost, the SMS app as the fallback, the positions kept on the phone, not an
+   emergency service. Version 1 stays in the repository as the record of what earlier users
+   were shown.
+3. **A consent for version 1 does not count.** Such a user keeps their contacts, and is
+   shown the new notice at "Add contact" or "Read how SOS alerts work". Until they agree,
+   alerts are off.
+4. **Without the consent no SOS can be started from the app.** The emergency dialog then
+   shows Call 112, "Practice SOS", the sentence that alerts are not set up, and (on Home) a
+   button to the setup. The prompt says "declining leaves only Call 112 available"; a
+   practice run is kept because it touches nothing. The emergency screen asks the gate again
+   before it starts anything. This reverses P014a3, where any signed-in user could start an
+   SOS that messaged nobody.
+5. **The words changed with the facts**: "Hold to send SOS", "Send now", and the texts that
+   said "in a later version" or "not messaged in this version" are gone. A test fails on a
+   text that calls a message delivered or read, or the user safe.
+6. **"Send alerts automatically"** is a card under Emergency contacts, shown once alerts
+   are set up. States: on; off (with "Allow sending SMS"); blocked (Android no longer asks:
+   a button to the app's system settings); and "this version cannot send SMS by itself" for
+   a build without the permission. "Allow sending SMS" opens the app's own disclosure first;
+   only "Continue" leads to Android's dialog. The state is read again on every return to the
+   screen. The permission is never requested during an SOS, at app start or in onboarding;
+   a source test pins the one file that may request it.
+7. **Play declarations** are drafted in `docs/play/` for Rahul to adapt. Release builds stay
+   without `SEND_SMS` until a declaration is approved.
+
+**Still open after part b:** the name in the message and the SOS language setting (P014c);
+which separator SMS apps accept; every phone check.
 
 ## Alternatives considered
 

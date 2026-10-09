@@ -11,6 +11,8 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.drawable.Icon
 import android.net.Uri
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.saferoute.app.R
 import com.saferoute.app.core.data.ActiveSosContacts
 import com.saferoute.app.core.emergency.ContactsFreshener
@@ -22,10 +24,19 @@ import com.saferoute.app.core.emergency.SosLanguage
 import com.saferoute.app.core.emergency.SosMessageSettings
 import com.saferoute.app.core.session.AppLocale
 import com.saferoute.app.core.session.LOCALE_BENGALI
+import com.saferoute.app.feature.contacts.ContactsPreferences
 import com.saferoute.app.feature.contacts.ContactsRepository
 import com.saferoute.app.feature.contacts.ContactsResult
+import com.saferoute.app.feature.contacts.SOS_ALERTS_NOTICE_VERSION
+import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 
 /*
  * The phone's side of the SOS alerts (ADR 0027, note of P014b2): the gate, the way of
@@ -33,13 +44,29 @@ import javax.inject.Inject
  */
 
 /**
- * The gate for SOS alerts. **Closed**: the notice that describes the alerts (version 2 of the
- * `sos_alerts` notice) does not exist yet, so no user can have agreed to it, and no alert may
- * be sent (ADR 0010). P014b3 replaces this class with one that reads the user's recorded
- * consent from the phone. Until then an SOS messages nobody, and its screens say so.
+ * The gate for SOS alerts: open only when the user has agreed to the notice the app shows
+ * today (the version in [SOS_ALERTS_NOTICE_VERSION]). The answer is read from a flag on the
+ * phone, which is written when the server recorded or reported that consent, so an SOS needs
+ * no network to ask. A consent for an older notice, a withdrawal, a sign-out or an unreadable
+ * flag all mean "no" (ADR 0010: no processing before consent).
  */
-class ClosedSosAlertPolicy @Inject constructor() : SosAlertPolicy {
-    override suspend fun alertsAllowed(): Boolean = false
+class ConsentSosAlertPolicy @Inject constructor(preferences: ContactsPreferences) : SosAlertPolicy {
+    override val allowed: Flow<Boolean> =
+        preferences.alertsNoticeVersion.map { it == SOS_ALERTS_NOTICE_VERSION }.distinctUntilChanged()
+}
+
+/**
+ * For the screens that offer to start an SOS: is it set up? Without the consent the dialog
+ * shows Call 112 and a way to the notice, not the hold button.
+ */
+@HiltViewModel
+class SosArmViewModel @Inject constructor(policy: SosAlertPolicy) : ViewModel() {
+    val alertsEnabled: StateFlow<Boolean> =
+        policy.allowed.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_AFTER_MILLIS), false)
+
+    private companion object {
+        const val STOP_AFTER_MILLIS = 5_000L
+    }
 }
 
 /**

@@ -1,5 +1,9 @@
 # SOS alerts notice v1 (emergency contacts)
 
+> **Replaced by [version 2](sos-alerts-notice-v2.md) in P014b3 (2026-10-09).** Kept as the
+> record of what users who agreed before that date were shown. The app no longer shows this
+> text, and the test that compares the app with a document now reads version 2.
+>
 > **DRAFT. Not reviewed by a lawyer.** This text must be reviewed by a lawyer, and the Bengali
 > text by a native speaker, before any release. It is published here so that it can be
 > reviewed, not because it is final.

@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.saferoute.app.core.di.ApplicationScope
 import com.saferoute.app.core.emergency.SOS_COUNTDOWN
+import com.saferoute.app.core.emergency.SosAlertPolicy
 import com.saferoute.app.core.emergency.SosAlertStatus
 import com.saferoute.app.core.emergency.SosDispatch
 import com.saferoute.app.core.emergency.SosEntryPoint
@@ -118,6 +119,7 @@ class SosViewModel @Inject constructor(
     private val gate: NotificationGate,
     private val haptics: SosHaptics,
     private val dispatch: SosDispatch,
+    private val policy: SosAlertPolicy,
     @param:ApplicationScope private val appScope: CoroutineScope,
 ) : ViewModel() {
 
@@ -166,7 +168,11 @@ class SosViewModel @Inject constructor(
             return
         }
         appScope.launch {
-            if (first && fresh && mode == SosOpenMode.START) runner.start(SosEntryPoint.IN_APP)
+            // The dialog offers the hold only when alerts are set up; asked again here, so
+            // that no other way in can start an SOS the user has not agreed to.
+            if (first && fresh && mode == SosOpenMode.START && policy.alertsAllowed()) {
+                runner.start(SosEntryPoint.IN_APP)
+            }
             when (runner.resume()) {
                 is SosRecovery.AskSendOrCancel -> local.value = local.value.copy(asking = true)
                 is SosRecovery.StillActive -> local.value = local.value.copy(recovered = true)

@@ -18,7 +18,7 @@ import org.w3c.dom.Element
  */
 class ContactsNoticeDocumentTest {
 
-    private val document = File("../../docs/legal/sos-alerts-notice-v1.md")
+    private val document = File("../../docs/legal/sos-alerts-notice-v2.md")
     private val versionSource = File("src/main/java/com/saferoute/app/feature/contacts/ContactsRepository.kt")
     private val screenSource = File("src/main/java/com/saferoute/app/feature/contacts/AddContactScreens.kt")
 

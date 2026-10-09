@@ -29,6 +29,7 @@ import com.saferoute.app.MainActivity
 import com.saferoute.app.R
 import com.saferoute.app.core.designsystem.theme.SafeRouteTheme
 import com.saferoute.app.core.emergency.FakeSosHaptics
+import com.saferoute.app.core.emergency.FakeSosAlertPolicy
 import com.saferoute.app.core.emergency.FakeSosHost
 import com.saferoute.app.core.emergency.SosEngine
 import com.saferoute.app.core.emergency.SosLocationReport
@@ -158,6 +159,26 @@ class SosScreensTest {
             .performSemanticsAction(SemanticsActions.OnClick)
 
         assertEquals(listOf("armed"), events)
+    }
+
+    @Test
+    fun `without consent the dialog offers no hold, says why, and leads to the setup`() {
+        show {
+            EmergencyDialog(
+                state = EmergencyDialogState.OfferDialer,
+                onCallEmergency = { events += "call" },
+                onDismiss = {},
+                arm = EmergencyArm(onArmed = null, onPractice = { events += "practice" }, onSetUp = { events += "setup" }),
+            )
+        }
+
+        compose.onNodeWithTag(HoldToArmTag).assertDoesNotExist()
+        compose.onNodeWithText(string(R.string.sos_arm_not_set_up)).assertExists()
+        compose.onNodeWithText(string(R.string.sos_arm_set_up)).performScrollTo().performClick()
+        // Call 112 and a practice run need no consent.
+        compose.onNodeWithText(string(R.string.sos_arm_practice)).performScrollTo().performClick()
+        compose.onNodeWithText(string(R.string.emergency_dialog_call)).performClick()
+        assertEquals(listOf("setup", "practice", "call"), events)
     }
 
     @Test
@@ -345,17 +366,18 @@ class SosScreensTest {
     }
 
     @Test
-    fun `no SOS text promises that a contact is or will be messaged`() {
-        // The texts about real alerts (sos_alerts_*, sos_composer_*) are shown only when the
-        // gate is open; every other SOS text must hold whether or not anyone is messaged.
+    fun `no SOS text calls a message delivered or read, or the user safe`() {
         val ids = R.string::class.java.fields
-            .filter { it.name.startsWith("sos_") }
-            .filterNot { it.name.startsWith("sos_alerts_") || it.name.startsWith("sos_composer_") }
+            .filter { it.name.startsWith("sos_") || it.name.startsWith("sms_") || it.name.startsWith("contacts_notice_") }
             .map { it.getInt(null) }
-        assertTrue(ids.size > 30)
-        val promising = Regex("(will be|are being|have been|has been) (messaged|alerted|notified|told)|contacts (alerted|notified)")
+        assertTrue(ids.size > 60)
+        // "Sent" is what the phone knows. Delivery, reading, and anybody's safety it does not.
+        val overclaiming = Regex(
+            "(was|were|has been|have been|is|are) (delivered|received|read)\\b|help is (coming|on the way)|(?<!say )you are (now )?safe\\b",
+            RegexOption.IGNORE_CASE,
+        )
 
-        val offenders = ids.map { compose.activity.resources.getText(it).toString() }.filter { promising.containsMatchIn(it) }
+        val offenders = ids.map { compose.activity.resources.getText(it).toString() }.filter { overclaiming.containsMatchIn(it) }
 
         assertEquals(emptyList<String>(), offenders)
     }
@@ -389,8 +411,14 @@ class SosFlowTest {
 
     @Inject lateinit var haptics: FakeSosHaptics
 
+    @Inject lateinit var policy: FakeSosAlertPolicy
+
     @Before
-    fun setUp() = hilt.inject()
+    fun setUp() {
+        hilt.inject()
+        // The user has agreed to the alerts notice, unless a test says otherwise.
+        policy.open = true
+    }
 
     private fun string(id: Int): String = compose.activity.getString(id)
     private fun nextStarted(): Intent? = shadowOf(compose.activity.application).nextStartedActivity
@@ -426,6 +454,22 @@ class SosFlowTest {
         assertEquals(SosOpenMode.START.name, started?.getStringExtra(EmergencyShortcut.EXTRA_MODE))
         // The dialog is gone; the countdown belongs to the emergency screen.
         compose.onNodeWithTag(HoldToArmTag).assertDoesNotExist()
+    }
+
+    @Test
+    fun `without consent to the alerts notice the SOS control offers Call 112 and the way to the setup`() {
+        policy.open = false
+
+        compose.onNodeWithContentDescription(string(R.string.sos_control_description)).performClick()
+
+        compose.onNodeWithTag(HoldToArmTag).assertDoesNotExist()
+        compose.onNodeWithText(string(R.string.emergency_dialog_call)).assertIsDisplayed()
+        compose.onNodeWithText(string(R.string.sos_arm_set_up)).performScrollTo().performClick()
+        compose.waitForIdle()
+        // It leads to Emergency contacts, where the notice is; no emergency screen opened.
+        compose.onNodeWithText(string(R.string.contacts_title)).assertIsDisplayed()
+        assertNull(nextStarted())
+        assertNull(runBlocking { engine.current() })
     }
 
     @Test
@@ -478,11 +522,16 @@ class SosEmergencyScreenTest {
 
     @Inject lateinit var host: FakeSosHost
 
+    @Inject lateinit var policy: FakeSosAlertPolicy
+
     private val context: android.content.Context = ApplicationProvider.getApplicationContext()
     private fun string(id: Int): String = context.getString(id)
 
     @Before
-    fun setUp() = hilt.inject()
+    fun setUp() {
+        hilt.inject()
+        policy.open = true
+    }
 
     private fun launch(mode: SosOpenMode) =
         androidx.test.core.app.ActivityScenario.launch<EmergencyActivity>(EmergencyShortcut.modeIntent(context, mode))

@@ -398,7 +398,7 @@
     <string name="settings_contacts_title">Emergency contacts</string>
     <string name="settings_contacts_supporting">Add, invite or remove the people an emergency alert can reach</string>
     <string name="contacts_title">Emergency contacts</string>
-    <string name="contacts_intro">Up to %1$d people your phone will be able to text when emergency alerts arrive in a later version. Today nothing is sent to them: you invite each one yourself, from your own phone.</string>
+    <string name="contacts_intro">Up to %1$d people your phone texts when you start an SOS. You invite each one yourself, from your own phone.</string>
     <string name="contacts_empty_title">No emergency contacts yet</string>
     <string name="contacts_empty_body">Add someone you trust and who knows you.</string>
     <string name="contacts_add">Add contact</string>
@@ -430,13 +430,13 @@
     <string name="contacts_error_not_found">This contact no longer exists.</string>
 
     <!-- The sos_alerts notice. Mirrored in docs/legal/sos-alerts-notice-v1.md (ContactsNoticeDocumentTest). Changing it means changing SOS_ALERTS_NOTICE_VERSION. DRAFT until a lawyer has reviewed it. -->
-    <string name="contacts_notice_title">Before you add a contact</string>
-    <string name="contacts_notice_p1">You are about to save other people\'s phone numbers in SafeRoute.</string>
-    <string name="contacts_notice_p2">Add only people you have a good reason to add and who know you.</string>
-    <string name="contacts_notice_p3">The app does not message them by itself. You send each one an invite from your own phone.</string>
-    <string name="contacts_notice_p4">Each invite has a link with which they can opt out. Someone who opted out is never alerted.</string>
-    <string name="contacts_notice_p5">In an emergency, in a later version of the app, your phone can text them your location.</string>
-    <string name="contacts_notice_p6">SafeRoute is not an emergency service. In an emergency, call 112.</string>
+    <string name="contacts_notice_title">How SOS alerts work</string>
+    <string name="contacts_notice_p1">You are about to save other people\'s phone numbers in SafeRoute. Add only people who know you and whom you have a good reason to add.</string>
+    <string name="contacts_notice_p2">You send each one an invite from your own phone. It has a link with which they can opt out. Someone who opted out is never alerted.</string>
+    <string name="contacts_notice_p3">When you start an SOS, your phone sends each of them an SMS from your own SIM. It says that you need help and gives a map link to where your phone is, how exact and how old that position is, and your battery level. One more SMS may follow with a better position, and one if you say you are safe.</string>
+    <string name="contacts_notice_p4">Your mobile plan may charge you for these SMS. Nothing is sent unless you start an SOS. If the app is not allowed to send SMS, it opens your SMS app with the message and you press Send.</string>
+    <string name="contacts_notice_p5">During an SOS the app also records where your phone is. That record stays on this phone for up to 30 days. SafeRoute\'s server receives neither your alerts nor your position.</string>
+    <string name="contacts_notice_p6">SafeRoute is not an emergency service. A message can arrive late or not at all. In an emergency, call 112.</string>
     <string name="contacts_notice_p7">You can stop at any time: open Emergency contacts and choose \"Stop SOS alerts and remove all contacts\". That deletes them all.</string>
     <string name="contacts_notice_agree">I agree</string>
     <string name="contacts_notice_not_now">Not now</string>
@@ -478,7 +478,7 @@
     <string name="contacts_rename_save">Save</string>
 
     <string name="contacts_card_title">Add emergency contacts</string>
-    <string name="contacts_card_body">People your phone will be able to text in an emergency, in a later version. It takes a minute.</string>
+    <string name="contacts_card_body">People your phone texts when you start an SOS. It takes a minute.</string>
     <string name="contacts_card_action">Add contacts</string>
     <string name="contacts_card_not_now">Not now</string>
     <!-- The notification of a running SOS (P014a2). Fixed text only: never a name, number or place. -->
@@ -488,19 +488,19 @@
     <string name="sos_running_title_active">SOS active</string>
     <string name="sos_running_text">Tap to open. SafeRoute is not an emergency service: call 112.</string>
     <!-- The SOS screens (P014a3). Until the SMS alerts exist (P014b) no text may say that a contact is or will be messaged. The location note is the disclosure for the SOS trail: a DRAFT until a lawyer has reviewed it. -->
-    <string name="sos_arm_hold">Hold to start SOS</string>
+    <string name="sos_arm_hold">Hold to send SOS</string>
     <string name="sos_arm_hold_action">start the SOS countdown</string>
-    <string name="sos_arm_explain">Hold for 2 seconds. A 5-second countdown follows, and you can cancel it.</string>
-    <string name="sos_arm_location_note">During an SOS, SafeRoute records where this phone is. The record stays on this phone for up to 30 days and is not sent anywhere. In this version your emergency contacts are not messaged.</string>
+    <string name="sos_arm_explain">Hold for 2 seconds. A 5-second countdown follows, and you can cancel it. Then your emergency contacts are alerted by SMS.</string>
+    <string name="sos_arm_location_note">An SOS texts your emergency contacts where this phone is, and records its positions on this phone for up to 30 days. SafeRoute\'s server receives neither. Your mobile plan may charge for the SMS.</string>
     <string name="sos_arm_practice">Practice SOS</string>
     <string name="sos_practice_banner">PRACTICE: nothing is sent or stored</string>
     <string name="sos_not_emergency_service_call">SafeRoute is not an emergency service. Call 112.</string>
     <string name="sos_countdown_title">SOS starts in</string>
     <string name="sos_countdown_seconds_description">%1$d seconds left</string>
-    <string name="sos_countdown_explain">Tap Cancel to stop. Nothing has been started yet.</string>
+    <string name="sos_countdown_explain">Tap Cancel to stop. Nothing has been sent yet.</string>
     <string name="sos_countdown_cancel">Cancel</string>
     <string name="sos_active_title">SOS active</string>
-    <string name="sos_active_contacts_none">In this version your emergency contacts are not messaged. If you are in danger, call 112.</string>
+    <string name="sos_active_contacts_none">SOS alerts are not set up on this phone, so nobody is messaged. If you are in danger, call 112.</string>
     <string name="sos_location_precise">Location: precise, recorded on this phone.</string>
     <string name="sos_location_approximate">Location: approximate only (precise location is not allowed), recorded on this phone.</string>
     <string name="sos_location_searching">Location: looking for your position…</string>
@@ -512,15 +512,15 @@
     <string name="sos_active_safe">I\'m safe</string>
     <string name="sos_active_safe_locked">I\'m safe (unlock first)</string>
     <string name="sos_safe_confirm_title">End the SOS?</string>
-    <string name="sos_safe_confirm_body">The SOS ends and the location record stops.</string>
+    <string name="sos_safe_confirm_body">The SOS ends, the location record stops, and no more alerts are sent.</string>
     <string name="sos_safe_confirm_yes">Yes, I\'m safe</string>
     <string name="sos_safe_confirm_no">Not yet</string>
     <string name="sos_recovered_title">SOS is still active</string>
     <string name="sos_recovered_body">It was running when the app was closed. The location record has started again.</string>
     <string name="sos_recovered_continue">Continue</string>
     <string name="sos_ask_title">SOS was starting when the app closed</string>
-    <string name="sos_ask_body">The countdown did not finish, and nothing was started. Start the SOS now, or cancel it?</string>
-    <string name="sos_ask_send">Start SOS now</string>
+    <string name="sos_ask_body">The countdown did not finish, and nothing was sent. Send the SOS now, or cancel it?</string>
+    <string name="sos_ask_send">Send now</string>
     <string name="sos_practice_finished_title">Practice finished</string>
     <string name="sos_practice_finished_body">That was a practice run. Nothing was sent, stored or recorded.</string>
     <string name="sos_practice_close">Close</string>
@@ -539,4 +539,24 @@
     <string name="sos_composer_channel_description">Shown when an SOS alert is waiting in your SMS app for you to send it.</string>
     <string name="sos_composer_title">Send your SOS alert</string>
     <string name="sos_composer_text">Tap to open your SMS app, then press Send.</string>
+    <!-- SOS alerts switched on (P014b3): the setup texts, and the "Send alerts automatically" card with its disclosure, shown BEFORE Android's permission dialog. Drafts until a lawyer has reviewed them. -->
+    <string name="sos_arm_not_set_up">SOS alerts are not set up yet. Until then this phone can only help you call 112.</string>
+    <string name="sos_arm_set_up">Set up SOS alerts</string>
+    <string name="contacts_alerts_off">SOS alerts are off: you have not yet agreed to how they work. Until you do, an SOS cannot be started and nobody is messaged.</string>
+    <string name="contacts_alerts_read_notice">Read how SOS alerts work</string>
+    <string name="sms_mode_title">Send alerts automatically</string>
+    <string name="sms_mode_on">On. When you start an SOS, this phone sends the alert SMS by itself.</string>
+    <string name="sms_mode_on_how_to_stop">To turn this off, remove the SMS permission under Settings, Apps, SafeRoute, Permissions.</string>
+    <string name="sms_mode_off">Off. When you start an SOS, your SMS app opens with the alert and you have to press Send. Allow sending so that the alert goes out even if you cannot touch the phone.</string>
+    <string name="sms_mode_blocked">Off, and Android no longer asks. To let SafeRoute send the alerts itself, allow SMS under Settings, Apps, SafeRoute, Permissions. Until then your SMS app opens with the alert and you press Send.</string>
+    <string name="sms_mode_not_in_build">This version of the app cannot send SMS by itself. When you start an SOS, your SMS app opens with the alert and you press Send.</string>
+    <string name="sms_mode_allow">Allow sending SMS</string>
+    <string name="sms_mode_open_settings">Open app settings</string>
+    <string name="sms_disclosure_title">SafeRoute will send SMS for you</string>
+    <string name="sms_disclosure_p1">If you allow it, SafeRoute sends SMS from your SIM to your emergency contacts when you start an SOS, also while the app is closed or the phone is locked.</string>
+    <string name="sms_disclosure_p2">The messages say that you need help and where your phone is. They go only to the emergency contacts you added.</string>
+    <string name="sms_disclosure_p3">Your mobile plan may charge you for each SMS. Nothing is sent unless you start an SOS.</string>
+    <string name="sms_disclosure_p4">SafeRoute cannot read your messages. You can take this permission back at any time in the phone\'s settings.</string>
+    <string name="sms_disclosure_continue">Continue</string>
+    <string name="sms_disclosure_not_now">Not now</string>
 </resources>

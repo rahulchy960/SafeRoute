@@ -142,6 +142,12 @@ class FakeContactsPreferences(snoozedUntil: Long = 0L) : ContactsPreferences {
     fun clearSnooze() {
         value.value = 0L
     }
+
+    override val alertsNoticeVersion = MutableStateFlow<String?>(null)
+
+    override suspend fun setAlertsNoticeVersion(version: String?) {
+        alertsNoticeVersion.value = version
+    }
 }
 
 /**

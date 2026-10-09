@@ -8,6 +8,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,8 +30,12 @@ const val CONTACT_REFRESH_LIMIT_MILLIS = 1_500L
  * describes them (ADR 0010: no processing before consent). Asked on the phone, without the
  * network: an emergency cannot wait for a server.
  */
-fun interface SosAlertPolicy {
-    suspend fun alertsAllowed(): Boolean
+interface SosAlertPolicy {
+    /** Whether alerts are allowed, and every change of it (for screens). */
+    val allowed: Flow<Boolean>
+
+    /** The answer at this moment. */
+    suspend fun alertsAllowed(): Boolean = allowed.first()
 }
 
 /** What the sender chose for the messages. */
