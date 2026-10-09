@@ -112,6 +112,8 @@ class EmergencyActivity : ComponentActivity() {
                             onSafeDismiss = viewModel::onSafeDismiss,
                             onContinue = viewModel::onContinue,
                             onCall112 = call112,
+                            onOpenComposer = viewModel::onOpenComposer,
+                            onTellContactsChange = viewModel::onTellContactsChange,
                         )
                     }
 

@@ -524,4 +524,19 @@
     <string name="sos_practice_finished_title">Practice finished</string>
     <string name="sos_practice_finished_body">That was a practice run. Nothing was sent, stored or recorded.</string>
     <string name="sos_practice_close">Close</string>
+    <!-- SOS alerts by SMS (P014b2). Shown only when alerts are switched on for the user (the gate of SosAlertPolicy); until P014b3 that is never. Counts only: never a name or a number. -->
+    <string name="sos_alerts_preparing">Preparing the alert for your emergency contacts…</string>
+    <string name="sos_alerts_no_contacts">You have no emergency contact to alert. If you are in danger, call 112.</string>
+    <string name="sos_alerts_sent">Alert sent by SMS: %1$d of %2$d emergency contacts.</string>
+    <string name="sos_alerts_waiting">Still trying to send: %1$d.</string>
+    <string name="sos_alerts_failed">Could not be sent: %1$d.</string>
+    <string name="sos_alerts_skipped">Not sent because the contact opted out: %1$d.</string>
+    <string name="sos_alerts_caveat">A sent message may still not arrive or be read. If you are in danger, call 112.</string>
+    <string name="sos_alerts_composer">Your SMS app has the alert for %1$d emergency contacts. It is sent only when you press Send there.</string>
+    <string name="sos_alerts_composer_open">Open SMS app again</string>
+    <string name="sos_alerts_tell_safe">Tell my contacts that I am safe</string>
+    <string name="sos_composer_channel">Send SOS alert</string>
+    <string name="sos_composer_channel_description">Shown when an SOS alert is waiting in your SMS app for you to send it.</string>
+    <string name="sos_composer_title">Send your SOS alert</string>
+    <string name="sos_composer_text">Tap to open your SMS app, then press Send.</string>
 </resources>

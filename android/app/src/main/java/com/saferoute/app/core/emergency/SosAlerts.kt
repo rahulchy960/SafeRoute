@@ -225,16 +225,20 @@ class SosAlerts @Inject constructor(
 
     /**
      * Rounds every [ALERT_RETRY_MILLIS] until everything is sent or given up, or until
-     * [stillWanted] says no (the emergency ended).
+     * [stillWanted] says no (the emergency ended). [onRound] is called after each round, for
+     * a screen that shows the counts.
      */
     suspend fun sendUntilDone(
         sosId: String,
         type: SosActionType,
         stillWanted: suspend () -> Boolean,
+        onRound: suspend () -> Unit = {},
         text: () -> String,
     ) {
         while (stillWanted()) {
-            if (!sendDue(sosId, type, text)) return
+            val retryLater = sendDue(sosId, type, text)
+            onRound()
+            if (!retryLater) return
             delay(ALERT_RETRY_MILLIS)
         }
     }

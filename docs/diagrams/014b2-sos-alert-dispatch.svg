@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1010" height="1106" viewBox="0 0 1010 1106" font-family="Helvetica, Arial, sans-serif">
+<title>SOS alerts: from the trigger to the message</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#495057"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="40" y="62" font-size="24" font-weight="700" fill="#1e1e1e">SOS alerts: from the trigger to the message</text>
+<text x="40" y="86" font-size="14" fill="#495057">The emergency never waits for a message. The gate stays closed until the user has agreed to the notice that describes alerts (P014b2, ADR 0027)</text>
+<rect x="40" y="114" width="286" height="906" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="54" y="135" font-size="14" font-weight="700" fill="#495057">The emergency (never waits)</text>
+<rect x="362" y="114" width="286" height="906" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="376" y="135" font-size="14" font-weight="700" fill="#495057">core/emergency: SosDispatch (app scope)</text>
+<rect x="684" y="114" width="286" height="906" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="698" y="135" font-size="14" font-weight="700" fill="#495057">How it leaves the phone</text>
+<line x1="183" y1="295" x2="505" y2="341" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="630" y1="384.5" x2="702" y2="384.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="505" y1="428" x2="505" y2="474" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="505" y1="540" x2="505" y2="596.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="505" y1="683.5" x2="827" y2="740" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="630" y1="640" x2="702" y2="640" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="505" y1="683.5" x2="505" y2="750.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="630" y1="794" x2="702" y2="794" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="827" y1="848" x2="505" y2="894" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="183" y1="915" x2="827" y2="848" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="58" y="208" width="250" height="87" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="183" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="183" y="236.3">SosRunner: trigger written,</tspan>
+<tspan x="183" y="257.1">host and trail started, then</tspan>
+<tspan x="183" y="277.9">tells the dispatcher</tspan>
+</text>
+<rect x="58" y="915" width="250" height="66" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="183" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="183" y="943.2">I'm safe: resolved first, then</tspan>
+<tspan x="183" y="964">Tell my contacts (if ticked)</tspan>
+</text>
+<rect x="380" y="341" width="250" height="87" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="505" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="505" y="369.3">Gate: has the user agreed to</tspan>
+<tspan x="505" y="390.1">the alerts notice? Closed until</tspan>
+<tspan x="505" y="410.9">P014b3</tspan>
+</text>
+<rect x="702" y="351.5" width="250" height="66" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="827" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="827" y="379.7">Closed: nobody is messaged,</tspan>
+<tspan x="827" y="400.5">and the screen says so</tspan>
+</text>
+<rect x="380" y="474" width="250" height="66" rx="10" fill="#ffd8a8" stroke="#e8590c" stroke-width="2"/>
+<text x="505" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="505" y="502.2">Who: the contacts on the</tspan>
+<tspan x="505" y="523">phone, written down once</tspan>
+</text>
+<rect x="380" y="596.5" width="250" height="87" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="505" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="505" y="624.8">At most 3 s for a position. The</tspan>
+<tspan x="505" y="645.6">fresh contact list is started,</tspan>
+<tspan x="505" y="666.4">never waited for</tspan>
+</text>
+<rect x="702" y="740" width="250" height="108" rx="10" fill="#eebefa" stroke="#9c36b5" stroke-width="2"/>
+<text x="827" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="827" y="768.4">Automatic (build has</tspan>
+<tspan x="827" y="789.2">SEND_SMS and the user</tspan>
+<tspan x="827" y="810">allowed it): send, retry every</tspan>
+<tspan x="827" y="830.8">30 s</tspan>
+</text>
+<rect x="702" y="586" width="250" height="108" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="827" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="827" y="614.4">Composer: the SMS app is</tspan>
+<tspan x="827" y="635.2">opened, plus a notification.</tspan>
+<tspan x="827" y="656">Sent only when the user</tspan>
+<tspan x="827" y="676.8">presses Send</tspan>
+</text>
+<rect x="380" y="750.5" width="250" height="87" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="505" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="505" y="778.8">One location update, if the</tspan>
+<tspan x="505" y="799.6">alert had no position and one</tspan>
+<tspan x="505" y="820.4">arrives within 60 s</tspan>
+</text>
+<rect x="380" y="894" width="250" height="108" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="505" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="505" y="922.4">Active screen: counts only</tspan>
+<tspan x="505" y="943.2">(sent, still trying, failed, opted</tspan>
+<tspan x="505" y="964">out). Never a name or a</tspan>
+<tspan x="505" y="984.8">number</tspan>
+</text>
+<rect x="297.6" y="307" width="92.9" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="344" y="322.5" font-size="13" fill="#1e1e1e" text-anchor="middle">not waited for</text>
+<rect x="653" y="373.5" width="26" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="666" y="389" font-size="13" fill="#1e1e1e" text-anchor="middle">no</text>
+<rect x="488.5" y="440" width="33.1" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="505" y="455.5" font-size="13" fill="#1e1e1e" text-anchor="middle">yes</text>
+<rect x="627.1" y="700.8" width="77.8" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="666" y="716.3" font-size="13" fill="#1e1e1e" text-anchor="middle">permission</text>
+<rect x="618.3" y="629" width="95.5" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="666" y="644.5" font-size="13" fill="#1e1e1e" text-anchor="middle">no permission</text>
+<rect x="471.2" y="870.5" width="67.6" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="505" y="886" font-size="13" fill="#1e1e1e" text-anchor="middle">follow-up</text>
+<rect x="40" y="1041" width="16" height="16" rx="3" fill="#a5d8ff" stroke="#1971c2" stroke-width="1.5"/>
+<text x="62" y="1054" font-size="13" fill="#495057">App / UI</text>
+<rect x="134.8" y="1041" width="16" height="16" rx="3" fill="#ffd8a8" stroke="#e8590c" stroke-width="1.5"/>
+<text x="156.8" y="1054" font-size="13" fill="#495057">Data</text>
+<rect x="209.6" y="1041" width="16" height="16" rx="3" fill="#ffc9c9" stroke="#e03131" stroke-width="1.5"/>
+<text x="231.6" y="1054" font-size="13" fill="#495057">Security / emergency</text>
+<rect x="383.2" y="1041" width="16" height="16" rx="3" fill="#eebefa" stroke="#9c36b5" stroke-width="1.5"/>
+<text x="405.2" y="1054" font-size="13" fill="#495057">Infra / workflow</text>
+<rect x="524.8" y="1041" width="16" height="16" rx="3" fill="#e9ecef" stroke="#495057" stroke-width="1.5"/>
+<text x="546.8" y="1054" font-size="13" fill="#495057">External</text>
+</svg>

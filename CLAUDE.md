@@ -649,7 +649,17 @@ and [`android/README.md`](android/README.md):
   `docs/legal/sos-sms-text-v1.md` (`SosSmsTextDocumentTest`), stay within three SMS parts,
   use Latin digits, carry no shortened link, and are drafts until a lawyer and a native
   speaker have reviewed them. An error category is a short fixed word, never a number, a
-  name or a text. Until P014b2 nothing calls `SosAlerts` from a running SOS.
+  name or a text.
+  Sending (since P014b2): `SosRunner` tells `core/emergency/SosDispatch` once an emergency is
+  active, and **never waits for it**: no message, position or server answer may delay or undo
+  an SOS. An alert leaves only when `SosAlertPolicy` allows it (the user's consent to the
+  notice that describes alerts); never remove, bypass or default that gate to "yes". The
+  alert waits at most `ALERT_POSITION_WAIT_MILLIS` for a position and **never** for the
+  contact refresh; at most one location update follows. Without the permission the SMS app
+  is opened (`SmsComposer`) and nothing is recorded as sent. The active screen shows counts
+  of messages, never a contact's name or number, and never calls a sent message delivered.
+  A follow-up goes only to contacts whose alert was sent, and only if the user left "Tell my
+  contacts" ticked.
   Every SOS change updates [`docs/sos/failure-matrix.md`](docs/sos/failure-matrix.md):
   "Automated pass" only for rows with passing tests, with the level it was tested at.
 - `android/app/google-services.json` is never opened, printed or committed by Claude Code. CI and

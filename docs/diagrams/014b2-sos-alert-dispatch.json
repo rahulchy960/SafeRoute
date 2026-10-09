@@ -1,0 +1,144 @@
+{
+  "$schema": "../../tools/diagrams/diagram.schema.json",
+  "title": "SOS alerts: from the trigger to the message",
+  "subtitle": "The emergency never waits for a message. The gate stays closed until the user has agreed to the notice that describes alerts (P014b2, ADR 0027)",
+  "direction": "TB",
+  "layout": {
+    "nodeWidth": 250,
+    "rankGap": 46
+  },
+  "groups": [
+    {
+      "id": "sos",
+      "label": "The emergency (never waits)"
+    },
+    {
+      "id": "dispatch",
+      "label": "core/emergency: SosDispatch (app scope)"
+    },
+    {
+      "id": "ways",
+      "label": "How it leaves the phone"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "trigger",
+      "label": "SosRunner: trigger written, host and trail started, then tells the dispatcher",
+      "role": "security",
+      "group": "sos",
+      "rank": 1
+    },
+    {
+      "id": "safe",
+      "label": "I'm safe: resolved first, then Tell my contacts (if ticked)",
+      "role": "security",
+      "group": "sos",
+      "rank": 6
+    },
+    {
+      "id": "gate",
+      "label": "Gate: has the user agreed to the alerts notice? Closed until P014b3",
+      "role": "security",
+      "group": "dispatch",
+      "rank": 2
+    },
+    {
+      "id": "none",
+      "label": "Closed: nobody is messaged, and the screen says so",
+      "role": "app",
+      "group": "ways",
+      "rank": 2
+    },
+    {
+      "id": "who",
+      "label": "Who: the contacts on the phone, written down once",
+      "role": "data",
+      "group": "dispatch",
+      "rank": 3
+    },
+    {
+      "id": "wait",
+      "label": "At most 3 s for a position. The fresh contact list is started, never waited for",
+      "role": "app",
+      "group": "dispatch",
+      "rank": 4
+    },
+    {
+      "id": "auto",
+      "label": "Automatic (build has SEND_SMS and the user allowed it): send, retry every 30 s",
+      "role": "infra",
+      "group": "ways",
+      "rank": 5
+    },
+    {
+      "id": "composer",
+      "label": "Composer: the SMS app is opened, plus a notification. Sent only when the user presses Send",
+      "role": "external",
+      "group": "ways",
+      "rank": 4
+    },
+    {
+      "id": "update",
+      "label": "One location update, if the alert had no position and one arrives within 60 s",
+      "role": "app",
+      "group": "dispatch",
+      "rank": 5
+    },
+    {
+      "id": "screen",
+      "label": "Active screen: counts only (sent, still trying, failed, opted out). Never a name or a number",
+      "role": "app",
+      "group": "dispatch",
+      "rank": 6
+    }
+  ],
+  "edges": [
+    {
+      "from": "trigger",
+      "to": "gate",
+      "label": "not waited for"
+    },
+    {
+      "from": "gate",
+      "to": "none",
+      "label": "no"
+    },
+    {
+      "from": "gate",
+      "to": "who",
+      "label": "yes"
+    },
+    {
+      "from": "who",
+      "to": "wait"
+    },
+    {
+      "from": "wait",
+      "to": "auto",
+      "label": "permission"
+    },
+    {
+      "from": "wait",
+      "to": "composer",
+      "label": "no permission"
+    },
+    {
+      "from": "wait",
+      "to": "update"
+    },
+    {
+      "from": "update",
+      "to": "auto"
+    },
+    {
+      "from": "auto",
+      "to": "screen"
+    },
+    {
+      "from": "safe",
+      "to": "auto",
+      "label": "follow-up"
+    }
+  ]
+}

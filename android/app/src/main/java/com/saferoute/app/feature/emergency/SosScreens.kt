@@ -8,6 +8,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -15,11 +16,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -51,7 +54,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.saferoute.app.R
+import com.saferoute.app.core.designsystem.theme.MinTouchTarget
 import com.saferoute.app.core.designsystem.theme.SafeRouteTheme
+import com.saferoute.app.core.emergency.SosAlertStatus
 import com.saferoute.app.core.emergency.SosLocationReport
 import kotlinx.coroutines.launch
 
@@ -64,6 +69,7 @@ val SosCancelMinHeight: Dp = 72.dp
 const val HoldToArmTag = "sos-hold-to-arm"
 const val SosCancelTag = "sos-cancel"
 const val SosCountdownNumberTag = "sos-countdown-number"
+const val SosTellContactsTag = "sos-tell-contacts"
 
 private val HoldButtonSize = 168.dp
 private const val HAPTIC_STEPS = 4
@@ -297,10 +303,12 @@ fun SosActiveScreen(
     onSafeDismiss: () -> Unit,
     onContinue: () -> Unit,
     onCall112: () -> Unit,
+    onOpenComposer: () -> Unit = {},
+    onTellContactsChange: (Boolean) -> Unit = {},
 ) {
     SosFrame(practice = state.practice, dialerMissing = dialerMissing, onCall112 = onCall112) {
         SosTitle(stringResource(R.string.sos_active_title))
-        Text(text = stringResource(R.string.sos_active_contacts_none), textAlign = TextAlign.Center)
+        AlertLines(alerts = if (state.practice) SosAlertStatus.NotEnabled else state.alerts, onOpenComposer = onOpenComposer)
         if (!state.practice) {
             Text(text = locationLine(state.location), textAlign = TextAlign.Center)
             if (state.notificationsOff) {
@@ -322,7 +330,32 @@ fun SosActiveScreen(
         AlertDialog(
             onDismissRequest = onSafeDismiss,
             title = { Text(stringResource(R.string.sos_safe_confirm_title)) },
-            text = { Text(stringResource(R.string.sos_safe_confirm_body)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(SafeRouteTheme.spacing.sm)) {
+                    Text(stringResource(R.string.sos_safe_confirm_body))
+                    if (state.canTellContacts && !state.practice) {
+                        // The whole row is the switch: a 48 dp target with one spoken name.
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = MinTouchTarget)
+                                .toggleable(
+                                    value = state.tellContacts,
+                                    role = Role.Checkbox,
+                                    onValueChange = onTellContactsChange,
+                                )
+                                .testTag(SosTellContactsTag),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Checkbox(checked = state.tellContacts, onCheckedChange = null)
+                            Text(
+                                text = stringResource(R.string.sos_alerts_tell_safe),
+                                modifier = Modifier.padding(start = SafeRouteTheme.spacing.sm),
+                            )
+                        }
+                    }
+                }
+            },
             confirmButton = { Button(onClick = onSafeConfirm) { Text(stringResource(R.string.sos_safe_confirm_yes)) } },
             dismissButton = { TextButton(onClick = onSafeDismiss) { Text(stringResource(R.string.sos_safe_confirm_no)) } },
         )
@@ -334,6 +367,56 @@ fun SosActiveScreen(
             confirmButton = { Button(onClick = onContinue) { Text(stringResource(R.string.sos_recovered_continue)) } },
             dismissButton = { TextButton(onClick = onSafe) { Text(stringResource(R.string.sos_active_safe)) } },
         )
+    }
+}
+
+/**
+ * What is known about the messages, in counts. The same on the lock screen: no name and no
+ * number of a contact is ever on this screen.
+ */
+@Composable
+private fun AlertLines(alerts: SosAlertStatus, onOpenComposer: () -> Unit) {
+    when (alerts) {
+        SosAlertStatus.NotEnabled ->
+            Text(text = stringResource(R.string.sos_active_contacts_none), textAlign = TextAlign.Center)
+
+        SosAlertStatus.Preparing ->
+            Text(text = stringResource(R.string.sos_alerts_preparing), textAlign = TextAlign.Center)
+
+        SosAlertStatus.NoContacts ->
+            Text(text = stringResource(R.string.sos_alerts_no_contacts), textAlign = TextAlign.Center)
+
+        is SosAlertStatus.Automatic -> {
+            val summary = alerts.summary
+            Text(
+                text = stringResource(R.string.sos_alerts_sent, summary.sent, summary.total),
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center,
+            )
+            if (summary.waiting > 0) {
+                Text(text = stringResource(R.string.sos_alerts_waiting, summary.waiting), textAlign = TextAlign.Center)
+            }
+            if (summary.failed > 0) {
+                Text(text = stringResource(R.string.sos_alerts_failed, summary.failed), textAlign = TextAlign.Center)
+            }
+            if (summary.skipped > 0) {
+                Text(text = stringResource(R.string.sos_alerts_skipped, summary.skipped), textAlign = TextAlign.Center)
+            }
+            Text(text = stringResource(R.string.sos_alerts_caveat), textAlign = TextAlign.Center)
+        }
+
+        is SosAlertStatus.Composer -> {
+            Text(
+                text = stringResource(R.string.sos_alerts_composer, alerts.contacts),
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center,
+            )
+            Button(onClick = onOpenComposer, modifier = Modifier.fillMaxWidth().heightIn(min = MinTouchTarget)) {
+                Text(text = stringResource(R.string.sos_alerts_composer_open))
+            }
+            Text(text = stringResource(R.string.sos_alerts_caveat), textAlign = TextAlign.Center)
+        }
     }
 }
 

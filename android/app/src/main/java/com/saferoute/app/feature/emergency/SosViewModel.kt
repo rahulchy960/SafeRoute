@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.saferoute.app.core.di.ApplicationScope
 import com.saferoute.app.core.emergency.SOS_COUNTDOWN
+import com.saferoute.app.core.emergency.SosAlertStatus
+import com.saferoute.app.core.emergency.SosDispatch
 import com.saferoute.app.core.emergency.SosEntryPoint
 import com.saferoute.app.core.emergency.SosHaptics
 import com.saferoute.app.core.emergency.SosLocationReport
@@ -50,10 +52,16 @@ sealed interface SosUi {
      * @property recovered true when the app found this emergency after it had been closed:
      *   the screen then says "SOS is still active" first.
      * @property confirmingSafe the "I'm safe" confirmation is open.
+     * @property alerts what may be said about the messages: counts, never a name or a number.
+     * @property canTellContacts someone was alerted, so the confirmation offers to tell them.
+     * @property tellContacts the state of that checkbox.
      */
     data class Active(
         val location: SosLocationReport,
         val notificationsOff: Boolean,
+        val alerts: SosAlertStatus = SosAlertStatus.NotEnabled,
+        val canTellContacts: Boolean = false,
+        val tellContacts: Boolean = true,
         val recovered: Boolean = false,
         val confirmingSafe: Boolean = false,
         val practice: Boolean = false,
@@ -69,6 +77,13 @@ sealed interface SosUi {
     data object Closed : SosUi
 }
 
+/** Was a message sent, or handed to the SMS app? Then "I'm safe" may tell those contacts. */
+private fun SosAlertStatus.someoneWasTold(): Boolean = when (this) {
+    is SosAlertStatus.Automatic -> summary.sent > 0
+    is SosAlertStatus.Composer -> contacts > 0
+    SosAlertStatus.NotEnabled, SosAlertStatus.Preparing, SosAlertStatus.NoContacts -> false
+}
+
 private enum class Practice { NONE, COUNTDOWN, ACTIVE, FINISHED }
 
 private data class Local(
@@ -79,6 +94,8 @@ private data class Local(
     val practice: Practice = Practice.NONE,
     val practiceSeconds: Int = 0,
     val practiceConfirming: Boolean = false,
+    /** "Tell my contacts", on by default. */
+    val tellContacts: Boolean = true,
     /** Changes when the screen comes back, so that the location line is read again. */
     val refresh: Int = 0,
 )
@@ -100,6 +117,7 @@ class SosViewModel @Inject constructor(
     private val trail: SosTrail,
     private val gate: NotificationGate,
     private val haptics: SosHaptics,
+    private val dispatch: SosDispatch,
     @param:ApplicationScope private val appScope: CoroutineScope,
 ) : ViewModel() {
 
@@ -107,7 +125,7 @@ class SosViewModel @Inject constructor(
     private var practiceTimer: Job? = null
     private var opened = false
 
-    val ui: StateFlow<SosUi> = combine(runner.state, trail.state, local) { run, _, here ->
+    val ui: StateFlow<SosUi> = combine(runner.state, trail.state, dispatch.status, local) { run, _, alerts, here ->
         when {
             here.closed -> SosUi.Closed
             // A real emergency always wins over a practice run and over the question.
@@ -115,6 +133,9 @@ class SosViewModel @Inject constructor(
             run is SosRunState.Active -> SosUi.Active(
                 location = trail.report(),
                 notificationsOff = gate.block() != NotificationBlock.None,
+                alerts = alerts,
+                canTellContacts = alerts.someoneWasTold(),
+                tellContacts = here.tellContacts,
                 recovered = here.recovered,
                 confirmingSafe = here.confirmingSafe,
             )
@@ -193,13 +214,23 @@ class SosViewModel @Inject constructor(
         local.value = local.value.copy(confirmingSafe = false, practiceConfirming = false)
     }
 
+    /** The "Tell my contacts" checkbox of the confirmation. */
+    fun onTellContactsChange(tell: Boolean) {
+        local.value = local.value.copy(tellContacts = tell)
+    }
+
+    /** "Open SMS app again" on the active screen (composer mode). */
+    fun onOpenComposer() = dispatch.reopenComposer()
+
     fun onSafeConfirm() {
         if (local.value.practice == Practice.ACTIVE) {
             local.value = local.value.copy(practice = Practice.FINISHED, practiceConfirming = false)
             return
         }
+        // Only when someone was told anything, and the box is still ticked.
+        val tell = local.value.tellContacts && dispatch.status.value.someoneWasTold()
         appScope.launch {
-            runner.markSafe()
+            runner.markSafe(tellContacts = tell)
             local.value = local.value.copy(confirmingSafe = false, closed = true)
         }
     }
