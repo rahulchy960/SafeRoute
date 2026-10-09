@@ -5,14 +5,19 @@ import android.content.Context
 import androidx.room.Room
 import com.saferoute.app.core.data.ActiveSosContacts
 import com.saferoute.app.core.data.RoomActiveSosContacts
+import com.saferoute.app.core.data.RoomSosStore
 import com.saferoute.app.core.data.local.ContactDao
 import com.saferoute.app.core.data.local.SafeRouteDatabase
+import com.saferoute.app.core.data.local.SosDao
+import com.saferoute.app.core.emergency.SosStore
+import com.saferoute.app.core.emergency.UuidV7Generator
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import java.time.Clock
 import javax.inject.Singleton
 
 /**
@@ -31,7 +36,9 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): SafeRouteDatabase =
-        Room.databaseBuilder(context, SafeRouteDatabase::class.java, SafeRouteDatabase.FILE_NAME).build()
+        Room.databaseBuilder(context, SafeRouteDatabase::class.java, SafeRouteDatabase.FILE_NAME)
+            .addMigrations(*SafeRouteDatabase.MIGRATIONS)
+            .build()
 }
 
 @Module
@@ -41,8 +48,17 @@ interface DataModule {
     @Binds
     fun bindActiveSosContacts(contacts: RoomActiveSosContacts): ActiveSosContacts
 
+    @Binds
+    fun bindSosStore(store: RoomSosStore): SosStore
+
     companion object {
         @Provides
         fun provideContactDao(database: SafeRouteDatabase): ContactDao = database.contactDao()
+
+        @Provides
+        fun provideSosDao(database: SafeRouteDatabase): SosDao = database.sosDao()
+
+        @Provides
+        fun provideUuidV7Generator(clock: Clock): UuidV7Generator = UuidV7Generator(clock)
     }
 }

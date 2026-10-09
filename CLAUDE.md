@@ -597,6 +597,20 @@ and [`android/README.md`](android/README.md):
   never in `rememberSaveable`, a `SavedStateHandle` or a navigation argument (an argument
   carries the contact's id only). A Hilt test that needs the Home card calls
   `FakeContactsPreferences.clearSnooze()`; it is hidden by default in tests.
+- SOS on the device follows [ADR 0027](docs/adr/0027-sos-device-flow.md) (since P014a1): the
+  record in Room is the emergency. Only `core/emergency/SosEngine` changes its state, and it
+  **writes the new state first**; a side effect (vibration, a message, the location trail)
+  happens only after the engine said yes. Never keep an emergency's state only in memory, a
+  ViewModel or DataStore, and never run a timer that is not rebuilt from `countdownEndsAt`.
+  A countdown found after its end is **asked about** ("Send now or Cancel"), never sent or
+  dropped silently. Cancel exists only before the alert; afterwards only "I'm safe". The
+  package is `core/emergency` (a package named after the three letters would trip
+  `SosColourUsageTest`). `core/emergency` and the SOS files of `core/data` never log, never
+  touch the network and hold no means to send a message (`SosCoreBoundaryTest`); the types
+  that hold a position or a contact hide it in `toString()`. Records and points are purged
+  after 30 days and wiped when the session leaves the signed-in states (`SosHousekeeping`).
+  Every SOS change updates [`docs/sos/failure-matrix.md`](docs/sos/failure-matrix.md):
+  "Automated pass" only for rows with passing tests, with the level it was tested at.
 - `android/app/google-services.json` is never opened, printed or committed by Claude Code. CI and
   fresh clones use `android/scripts/write-dummy-google-services` (project `demo-saferoute`); a
   release build refuses the dummy or a missing file unless `-Psaferoute.allowDummyFirebase=true`

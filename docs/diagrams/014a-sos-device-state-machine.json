@@ -1,0 +1,168 @@
+{
+  "$schema": "../../tools/diagrams/diagram.schema.json",
+  "title": "SOS on the device: states, storage and recovery",
+  "subtitle": "Every state from COUNTDOWN on is written to Room before anything is done about it; a restarted app continues from the record (P014a1, ADR 0027)",
+  "direction": "TB",
+  "layout": {
+    "nodeWidth": 250,
+    "rankGap": 46
+  },
+  "groups": [
+    {
+      "id": "memory",
+      "label": "In memory only"
+    },
+    {
+      "id": "stored",
+      "label": "Stored in Room (sos_records)"
+    },
+    {
+      "id": "recovery",
+      "label": "Recovery: a record that nothing is running"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "idle",
+      "label": "IDLE: no record",
+      "role": "app",
+      "group": "memory",
+      "rank": 1
+    },
+    {
+      "id": "arming",
+      "label": "ARMING: finger holds the button for 2 s. Not stored",
+      "role": "app",
+      "group": "memory",
+      "rank": 2
+    },
+    {
+      "id": "countdown",
+      "label": "COUNTDOWN: 5 s, end time stored as countdownEndsAt",
+      "role": "security",
+      "group": "stored",
+      "rank": 3
+    },
+    {
+      "id": "triggered",
+      "label": "TRIGGERED_LOCAL: written once (conditional update), then the phone acts",
+      "role": "security",
+      "group": "stored",
+      "rank": 4
+    },
+    {
+      "id": "syncing",
+      "label": "SYNCING: unused until P015",
+      "role": "service",
+      "group": "stored",
+      "rank": 5
+    },
+    {
+      "id": "active",
+      "label": "ACTIVE: alerts and location trail (P014a2, P014b)",
+      "role": "security",
+      "group": "stored",
+      "rank": 5
+    },
+    {
+      "id": "resolved",
+      "label": "RESOLVED: kept 30 days, then purged. Wiped on sign-out",
+      "role": "data",
+      "group": "stored",
+      "rank": 6
+    },
+    {
+      "id": "resume",
+      "label": "Countdown with time left: show it again with what remains",
+      "role": "app",
+      "group": "recovery",
+      "rank": 3
+    },
+    {
+      "id": "ask",
+      "label": "Countdown past its end: ask Send now or Cancel. Never sent or dropped silently",
+      "role": "app",
+      "group": "recovery",
+      "rank": 4
+    },
+    {
+      "id": "still",
+      "label": "After a process death or a phone restart, triggered or active: SOS is still active. Continue or I'm safe",
+      "role": "app",
+      "group": "recovery",
+      "rank": 6
+    }
+  ],
+  "edges": [
+    {
+      "from": "idle",
+      "to": "arming",
+      "label": "hold starts"
+    },
+    {
+      "from": "arming",
+      "to": "idle",
+      "label": "early release"
+    },
+    {
+      "from": "arming",
+      "to": "countdown",
+      "label": "hold complete"
+    },
+    {
+      "from": "idle",
+      "to": "countdown",
+      "label": "tile, widget, notification"
+    },
+    {
+      "from": "countdown",
+      "to": "idle",
+      "label": "cancel: record deleted"
+    },
+    {
+      "from": "countdown",
+      "to": "triggered",
+      "label": "end time reached"
+    },
+    {
+      "from": "triggered",
+      "to": "active",
+      "label": "local actions started"
+    },
+    {
+      "from": "triggered",
+      "to": "syncing",
+      "label": "P015"
+    },
+    {
+      "from": "syncing",
+      "to": "active",
+      "label": "P015"
+    },
+    {
+      "from": "active",
+      "to": "resolved",
+      "label": "I'm safe"
+    },
+    {
+      "from": "countdown",
+      "to": "resume",
+      "label": "process died, time left"
+    },
+    {
+      "from": "countdown",
+      "to": "ask",
+      "label": "process died, end passed"
+    },
+    {
+      "from": "ask",
+      "to": "triggered",
+      "label": "Send now"
+    },
+    {
+      "from": "active",
+      "to": "still",
+      "label": "restart"
+    }
+  ]
+}
