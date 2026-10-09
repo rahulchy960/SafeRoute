@@ -5,8 +5,9 @@ The full design lives in [`docs/plan/SafeRoute_Plan_v7_MVP.pdf`](docs/plan/SafeR
 (cited as "Plan v7 §N"), amended by [`docs/plan/addendum-v7.1.md`](docs/plan/addendum-v7.1.md),
 [`docs/plan/addendum-v7.2.md`](docs/plan/addendum-v7.2.md),
 [`docs/plan/addendum-v7.3.md`](docs/plan/addendum-v7.3.md),
-[`docs/plan/addendum-v7.4.md`](docs/plan/addendum-v7.4.md) and
-[`docs/plan/addendum-v7.5.md`](docs/plan/addendum-v7.5.md) (see "Plan addendum" below).
+[`docs/plan/addendum-v7.4.md`](docs/plan/addendum-v7.4.md),
+[`docs/plan/addendum-v7.5.md`](docs/plan/addendum-v7.5.md) and
+[`docs/plan/addendum-v7.6.md`](docs/plan/addendum-v7.6.md) (see "Plan addendum" below).
 
 ## Plan addendum (since P009a)
 
@@ -18,9 +19,10 @@ never edited; a full v8 comes after the MVP.
 
 Then read [`docs/plan/addendum-v7.2.md`](docs/plan/addendum-v7.2.md) (since P010c) and
 [`docs/plan/addendum-v7.3.md`](docs/plan/addendum-v7.3.md) (since P010d), then
-[`docs/plan/addendum-v7.4.md`](docs/plan/addendum-v7.4.md) (since P012d) and
-[`docs/plan/addendum-v7.5.md`](docs/plan/addendum-v7.5.md) (since P012g). **Reading order: PDF →
-v7.1 → v7.2 → v7.3 → v7.4 → v7.5; where they differ, the later document wins.** v7.2 records the launch
+[`docs/plan/addendum-v7.4.md`](docs/plan/addendum-v7.4.md) (since P012d),
+[`docs/plan/addendum-v7.5.md`](docs/plan/addendum-v7.5.md) (since P012g) and
+[`docs/plan/addendum-v7.6.md`](docs/plan/addendum-v7.6.md) (since P012h). **Reading order: PDF →
+v7.1 → v7.2 → v7.3 → v7.4 → v7.5 → v7.6; where they differ, the later document wins.** v7.2 records the launch
 geography (West Bengal, with Kolkata as the first pilot area for community safety data), the
 three coverage layers, the region model, the changed scopes of P011, P012, P017 and P019, and the
 claims rule (see "Coverage claims" below). v7.3 replaces v7.2's "reports only in active regions":
@@ -29,7 +31,9 @@ reports are accepted anywhere inside West Bengal, and publication is gated regio
 v7.4 records the post-MVP product direction (the order of features after the MVP, the journey
 engine) and the guardrails for every future feature (see "Product guardrails" below); it changes
 no MVP scope. v7.5 supplements v7.4 with a long-term direction (live local context) and a staged
-path to it (see "Live local context" below); it builds nothing and changes no MVP scope.
+path to it (see "Live local context" below); it builds nothing and changes no MVP scope. v7.6
+records a concept, credits for verified place contributions, with its gates (see "Product
+guardrails" below); it is Proposed, builds nothing and changes no MVP scope.
 
 ## Project summary
 
@@ -67,7 +71,7 @@ moderation/     Moderator web app (P018)
 contracts/      openapi.json, generated, never hand-edited (from P004)
 infra/          GCP / Cloud Run / WIF configuration (from P006)
 tools/diagrams/ JSON → Excalidraw + SVG + PNG diagram generator
-docs/plan/      Plan v7 PDF (source of truth for design) + addenda v7.1 to v7.5 (the later one wins)
+docs/plan/      Plan v7 PDF (source of truth for design) + addenda v7.1 to v7.6 (the later one wins)
 docs/adr/       Architecture Decision Records (template.md, NNNN-title.md)
 docs/diagrams/  Diagram JSON specs + generated .excalidraw/.svg/.png
 docs/prompt-logs/ One log per prompt (NNN-core-work.md)
@@ -340,6 +344,18 @@ public text. The MVP prompts (P013–P022) keep their scope; v7.4 builds nothing
   community-feed gate in addendum v7.4, section F is met. Posts never become safety facts.
 - A places or events data source needs a terms check recorded in an ADR before its adapter.
 - No revenue claim in public materials until measured.
+- **Contributions and rewards** (since P012h, [addendum v7.6](docs/plan/addendum-v7.6.md),
+  [ADR 0025](docs/adr/0025-credits-and-place-contributions.md), Proposed: nothing is built, and
+  no prompt starts it on the strength of a Proposed ADR):
+  - No credits, points, rewards, badges with value or contests for incident or safety
+    reports. Safety data is never gamified.
+  - No gallery or file uploads for a contribution: a photo comes from the app's own camera
+    flow, with the location, its accuracy and the time of capture.
+  - Rewards are never paid in cash (or as a wallet transfer) without an ADR and a legal
+    review. No points-to-money rate appears in any public text.
+  - A place contribution follows the evidence and licence rules of addendum v7.6, sections C
+    and E: the contributor's own photo or observation, never Google Maps or another
+    protected source.
 - A feature that can't fit these rules needs a new ADR first.
 
 ## Live local context (since P012g, ADR 0023, Proposed)
