@@ -27,7 +27,7 @@ import org.junit.Test
  * new.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
-private class SosRig(private val scope: TestScope, granted: GrantedLocation = GrantedLocation.Precise) {
+class SosRig(private val scope: TestScope, granted: GrantedLocation = GrantedLocation.Precise) {
     val clock = SchedulerClock(scope.testScheduler)
     val store = InMemorySosStore()
     val environment = FakeLocationEnvironment(granted = granted)
@@ -42,6 +42,9 @@ private class SosRig(private val scope: TestScope, granted: GrantedLocation = Gr
     lateinit var engine: SosEngine
     lateinit var runner: SosRunner
 
+    /** The scope of the current "process": what an app-lifetime scope is on a phone. */
+    lateinit var appScope: CoroutineScope
+
     init {
         restartProcess()
     }
@@ -50,6 +53,7 @@ private class SosRig(private val scope: TestScope, granted: GrantedLocation = Gr
         // Everything the old process was running stops with it.
         process?.cancel()
         val alive = CoroutineScope(scope.backgroundScope.coroutineContext + Job()).also { process = it }
+        appScope = alive
         source = FakeTrailLocationSource()
         host = FakeSosHost()
         haptics = FakeSosHaptics()

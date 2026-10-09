@@ -7,7 +7,14 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.saferoute.app.core.designsystem.theme.SafeRouteTheme
+import androidx.lifecycle.lifecycleScope
+import com.saferoute.app.core.emergency.SosEngine
+import com.saferoute.app.core.emergency.SosRunState
+import com.saferoute.app.core.emergency.SosRunner
 import com.saferoute.app.feature.emergency.EmergencyNotificationController
+import com.saferoute.app.feature.emergency.EmergencyShortcut
+import com.saferoute.app.feature.emergency.SosOpenMode
+import kotlinx.coroutines.launch
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -22,6 +29,10 @@ class MainActivity : ComponentActivity() {
 
     @Inject lateinit var emergencyNotification: EmergencyNotificationController
 
+    @Inject lateinit var sosRunner: SosRunner
+
+    @Inject lateinit var sosEngine: SosEngine
+
     /**
      * The app came to the front. If the user's notification shortcut is on and it was swiped
      * away or removed in the meantime, it is put back here. Nothing is requested.
@@ -29,6 +40,22 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         emergencyNotification.syncInBackground()
+        showUnattendedEmergency()
+    }
+
+    /**
+     * Recovery (ADR 0027): if the phone remembers an emergency that nothing in this process
+     * is running (the app was closed or killed, or the phone was restarted), the emergency
+     * screen opens and says so: it continues a countdown, asks "start now or cancel" about
+     * one whose time has passed, or shows that the SOS is still active. Once the runner has
+     * picked it up this does nothing, so the user can come back to the map during an SOS.
+     */
+    private fun showUnattendedEmergency() {
+        lifecycleScope.launch {
+            if (sosRunner.state.value == SosRunState.Idle && sosEngine.current() != null) {
+                startActivity(EmergencyShortcut.modeIntent(this@MainActivity, SosOpenMode.OPEN))
+            }
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

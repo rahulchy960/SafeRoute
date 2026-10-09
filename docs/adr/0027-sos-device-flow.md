@@ -2,7 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-10-09
-- **Prompt:** P014a1 (records, state machine, recovery, retention); note of P014a2 below (runner, service, trail). P014a3, P014b and P014c add notes here.
+- **Prompt:** P014a1 (records, state machine, recovery, retention); notes of P014a2 (runner, service, trail) and P014a3 (screens) below. P014b and P014c add notes here.
 - **Plan refs:** Plan v7 §3.2 F-08, §5.3, §7.1–7.5, §12.2, §12.3; [addendum v7.1](../plan/addendum-v7.1.md), section B; [ADR 0008](0008-android-foundation.md), [ADR 0010](0010-adults-only-and-consent-records.md), [ADR 0015](0015-map-stack-and-location-policy.md), [ADR 0024](0024-emergency-contacts-and-opt-out.md)
 
 Legal statements here are drafts, **to be verified by a lawyer**.
@@ -115,6 +115,47 @@ location permission, and location must never block an SOS.**
 8. **The daily clean-up** is a WorkManager job (KEEP policy, once a day), besides the one at
    app start. WorkManager brings `WAKE_LOCK` into the merged manifest; the app's own
    manifest gains `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_LOCATION` and `VIBRATE`.
+
+### Note of 2026-10-09 (P014a3): what the user sees
+
+1. **The arm step is the emergency dialog**, the one the SOS control already opened on Home
+   and Search, with three additions: "Hold to start SOS" (2 seconds, a ring that fills, a
+   light vibration at each quarter, an early release cancels), a note on what an SOS does and
+   what location is used for, and "Practice SOS". Call 112 stays where it was. The prompt
+   says "arm sheet"; a dialog was kept because every screen and test already leads to it.
+2. **The words do not promise more than the app does.** Until the SMS alerts exist (P014b)
+   the button says "Hold to **start** SOS", the question says "**Start** SOS now", and the
+   arm note and the active screen say that the emergency contacts are not messaged in this
+   version. A test fails on a text that says a contact is or will be messaged.
+3. **The hold has an accessibility action.** A person who cannot keep a finger down
+   (TalkBack, a switch) starts the countdown with the button's action; the countdown and its
+   Cancel button are then the safeguard, as for the shortcuts.
+4. **The emergency screen is `EmergencyActivity`**: the countdown (the number, a Cancel
+   button of at least 72 dp, Call 112), the active emergency, and the questions after a
+   restart. It is shown over the lock screen and switches the screen on. It owns nothing:
+   every tap goes to `SosRunner`, in the app's scope.
+5. **Back is not Cancel.** During the countdown and on the question the back gesture does
+   nothing: only the Cancel button cancels, and only an answer answers.
+6. **"I'm safe" needs the unlock, then a confirmation.** On a locked phone the screen asks
+   Android to dismiss the lock (`requestDismissKeyguard`); the confirmation appears only
+   after a successful unlock. The notification's "I'm safe" only opens this screen.
+7. **The lock screen shows statuses in words.** The active screen holds no name, number or
+   place, so it is the same locked and unlocked. When the SMS alerts add a line per contact
+   (P014b), the locked screen must show counts only.
+8. **Recovery.** When the main screen comes to the front and the phone remembers an
+   emergency that the runner of this process is not running, the emergency screen opens: a
+   countdown with time left continues, one past its end is asked about, an active one says
+   "SOS is still active" with Continue and I'm safe. Once the runner has it, the main screen
+   stays usable. A screen that Android re-creates never starts a new emergency.
+9. **Practice mode lives in the screen's ViewModel**: the same screens with a PRACTICE
+   banner, the same vibration, and no runner, record, service, contact or position. A real
+   emergency always wins over a practice run.
+10. **The location line is read when the screen appears or the trail changes.** The age of a
+    stale position is therefore the age at that moment; it does not tick on the screen.
+11. **The location disclosure for the trail** is the note in the arm dialog (ADR 0015). A
+    draft for the lawyer.
+12. **Not built here:** the sound setting for the countdown (vibration only is the default
+    and, for now, the only mode); it belongs to the readiness screen of P014c.
 
 ## Alternatives considered
 

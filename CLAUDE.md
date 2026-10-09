@@ -623,6 +623,19 @@ and [`android/README.md`](android/README.md):
   A Hilt test never starts the real service, vibration or WorkManager
   (`FakeSosDeviceModule`); a test of the runner uses `SchedulerClock` so that the clock and
   virtual time agree.
+  Screens (since P014a3): the arm step is `EmergencyDialog` with `EmergencyArm`; the
+  emergency screen is `EmergencyActivity` with `SosViewModel`, which sends every command to
+  the runner in the **app** scope and never starts an emergency from a re-created screen
+  (`fresh`). Back is not Cancel. "I'm safe" always goes through the unlock
+  (`requestDismissKeyguard`) and a confirmation; a notification action may only open the
+  screen. **No SOS text says that a contact is or will be messaged** until the SMS alerts
+  exist (P014b): "start", not "send" (`SosScreensTest`). Every SOS screen shows "SafeRoute
+  is not an emergency service. Call 112." and a Call 112 button; Cancel is at least 72 dp
+  and never red. Anything shown on the lock screen is a status in words or a count, never a
+  name, a number or a place. A practice run lives in the ViewModel only: no runner, record,
+  service, contact or position. The red may be used by `SosScreens.kt` as well
+  (`SosColourUsageTest`). What location is used for during an SOS is said in
+  `sos_arm_location_note`; changing the use means changing that text.
   Every SOS change updates [`docs/sos/failure-matrix.md`](docs/sos/failure-matrix.md):
   "Automated pass" only for rows with passing tests, with the level it was tested at.
 - `android/app/google-services.json` is never opened, printed or committed by Claude Code. CI and

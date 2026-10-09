@@ -66,12 +66,14 @@ internal fun ensureSosRunningChannel(context: Context) {
 }
 
 /**
- * "SOS countdown" or "SOS active", with one button: Call 112 (the dialer; nothing is
- * dialled). A tap opens the emergency screen. Public on the lock screen: there is nothing
- * private in it.
+ * "SOS countdown" or "SOS active". A tap opens the emergency screen. Buttons: Call 112 (the
+ * dialer; nothing is dialled) and, once the SOS is active, "I'm safe", which opens the
+ * emergency screen and asks for the unlock and a confirmation there. Public on the lock
+ * screen: there is nothing private in it.
  */
-internal fun buildSosRunningNotification(context: Context, active: Boolean): Notification =
-    Notification.Builder(context, SOS_RUNNING_CHANNEL_ID)
+internal fun buildSosRunningNotification(context: Context, active: Boolean): Notification {
+    val icon = Icon.createWithResource(context, R.drawable.ic_sos_tile)
+    val builder = Notification.Builder(context, SOS_RUNNING_CHANNEL_ID)
         .setSmallIcon(R.drawable.ic_sos_tile)
         .setContentTitle(
             context.getString(if (active) R.string.sos_running_title_active else R.string.sos_running_title_countdown),
@@ -84,12 +86,22 @@ internal fun buildSosRunningNotification(context: Context, active: Boolean): Not
         .setVisibility(Notification.VISIBILITY_PUBLIC)
         .addAction(
             Notification.Action.Builder(
-                Icon.createWithResource(context, R.drawable.ic_sos_tile),
+                icon,
                 context.getString(R.string.emergency_notification_call),
                 dialPendingIntent(context),
             ).build(),
         )
-        .build()
+    if (active) {
+        builder.addAction(
+            Notification.Action.Builder(
+                icon,
+                context.getString(R.string.sos_active_safe),
+                EmergencyShortcut.safePendingIntent(context),
+            ).build(),
+        )
+    }
+    return builder.build()
+}
 
 private fun postPlain(context: Context, active: Boolean) {
     ensureSosRunningChannel(context)

@@ -60,5 +60,26 @@ object EmergencyShortcut {
             TileLaunch.WithIntent(intent(context, EmergencyEntry.QuickSettingsTile))
         }
 
+    /**
+     * The emergency screen opened for a reason of the app's own: the completed hold
+     * ([SosOpenMode.START]), a practice run, or to show what is running. Only this app can
+     * send it: the activity is not exported.
+     */
+    fun modeIntent(context: Context, mode: SosOpenMode): Intent =
+        Intent(context, EmergencyActivity::class.java)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            .putExtra(EXTRA_MODE, mode.name)
+
+    /** "I'm safe" on the running-SOS notification: the emergency screen, asking to confirm. */
+    fun safePendingIntent(context: Context): PendingIntent =
+        PendingIntent.getActivity(
+            context,
+            REQUEST_SAFE,
+            modeIntent(context, SosOpenMode.SAFE),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+
+    private const val REQUEST_SAFE = 200
     internal const val EXTRA_ENTRY = "com.saferoute.app.extra.EMERGENCY_ENTRY"
+    internal const val EXTRA_MODE = "com.saferoute.app.extra.EMERGENCY_MODE"
 }
