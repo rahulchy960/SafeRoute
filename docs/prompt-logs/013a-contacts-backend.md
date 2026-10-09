@@ -231,3 +231,19 @@ No Android in this part. Web and database concepts used:
   so "count, then insert" cannot run twice at once and pass the limit of 5.
 - **Tombstone.** A row kept only to remember that something was removed, here so that an
   opted-out number cannot be added again.
+
+## Revision (P014a1, 2026-10-09): staging checks reported
+
+Reported by Rahul in the P014 prompt; Claude Code cannot see the deployed service and did not
+repeat the checks.
+
+- `GET /c` returned 200 with the `Content-Security-Policy` header and the other headers of
+  section 11, step 2.
+- `POST /v1/contacts` without a token returned 401.
+- `POST /v1/public/contacts/opt-out` with a made-up token returned 404.
+- On the page, the fragment left the address bar.
+- The request-log paths held no token.
+
+Not recorded: the date of the checks, the browser and phone used, and the Bengali switch of the
+page. The phone checks of P013b2 (its section 11) are **not recorded**: the P014 prompt left
+their place empty.

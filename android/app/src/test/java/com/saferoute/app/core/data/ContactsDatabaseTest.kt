@@ -4,6 +4,7 @@ package com.saferoute.app.core.data
 import android.content.Context
 import androidx.room.testing.MigrationTestHelper
 import androidx.sqlite.driver.AndroidSQLiteDriver
+import androidx.sqlite.execSQL
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -119,8 +120,7 @@ class ContactsDatabaseTest {
 /**
  * The migration harness. `MigrationTestHelper` builds a database from an exported schema file
  * (`app/schemas`, which are test assets) and Room then checks that the tables it finds are the
- * ones the code expects. With one version there is nothing to migrate yet; the test proves the
- * harness works, so that version 2 only has to add its migration and one test here.
+ * ones the code expects. Each new version adds its migration and one test here.
  */
 @RunWith(AndroidJUnit4::class)
 class SafeRouteDatabaseMigrationTest {
@@ -142,10 +142,46 @@ class SafeRouteDatabaseMigrationTest {
         helper.createDatabase(1).close()
 
         // No migrations yet. A mismatch between the schema file and the entities throws here.
-        val connection = helper.runMigrationsAndValidate(SafeRouteDatabase.VERSION, emptyList())
+        val connection = helper.runMigrationsAndValidate(1, emptyList())
 
         connection.prepare("SELECT id, name, phoneE164, createdAt, invitedAt, optedOutAt FROM contacts").use {
             assertFalse("a new database has no contacts", it.step())
+        }
+        connection.close()
+    }
+
+    @Test
+    fun `version 1 to 2 keeps the contacts and adds the three empty emergency tables`() {
+        helper.createDatabase(1).use { old ->
+            old.execSQL(
+                "INSERT INTO contacts (id, name, phoneE164, createdAt, invitedAt, optedOutAt) " +
+                    "VALUES ('id-1', 'Test Contact 1', '+919000010001', 1000, NULL, NULL)",
+            )
+        }
+
+        // Throws if the tables the migration made differ from what the entities describe.
+        val connection = helper.runMigrationsAndValidate(2, SafeRouteDatabase.MIGRATIONS.toList())
+
+        connection.prepare("SELECT name, phoneE164 FROM contacts").use {
+            assertTrue(it.step())
+            assertEquals("Test Contact 1", it.getText(0))
+            assertEquals("+919000010001", it.getText(1))
+            assertFalse(it.step())
+        }
+        for (table in listOf("sos_records", "sos_actions", "sos_points")) {
+            connection.prepare("SELECT COUNT(*) FROM $table").use {
+                assertTrue(it.step())
+                assertEquals(table, 0L, it.getLong(0))
+            }
+        }
+        // The default of syncState is part of the table, not only of the Kotlin class.
+        connection.execSQL(
+            "INSERT INTO sos_records (clientSosId, state, entryPoint, practice, startedAt, countdownEndsAt) " +
+                "VALUES ('x', 'COUNTDOWN', 'TILE', 0, 1, 2)",
+        )
+        connection.prepare("SELECT syncState FROM sos_records").use {
+            assertTrue(it.step())
+            assertEquals("NOT_SYNCED", it.getText(0))
         }
         connection.close()
     }

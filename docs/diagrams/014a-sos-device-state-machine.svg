@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1286" height="1012" viewBox="0 0 1286 1012" font-family="Helvetica, Arial, sans-serif">
+<title>SOS on the device: states, storage and recovery</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#495057"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="40" y="62" font-size="24" font-weight="700" fill="#1e1e1e">SOS on the device: states, storage and recovery</text>
+<text x="40" y="86" font-size="14" fill="#495057">Every state from COUNTDOWN on is written to Room before anything is done about it; a restarted app continues from the record (P014a1, ADR 0027)</text>
+<rect x="40" y="114" width="286" height="812" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="54" y="135" font-size="14" font-weight="700" fill="#495057">In memory only</text>
+<rect x="362" y="114" width="562" height="812" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="376" y="135" font-size="14" font-weight="700" fill="#495057">Stored in Room (sos_records)</text>
+<rect x="960" y="114" width="286" height="812" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="974" y="135" font-size="14" font-weight="700" fill="#495057">Recovery: a record that nothing is running</text>
+<line x1="183" y1="264" x2="183" y2="310" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="183" y1="310" x2="183" y2="264" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="183" y1="376" x2="643" y2="432.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="183" y1="264" x2="643" y2="432.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="643" y1="432.5" x2="183" y2="264" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="643" y1="498.5" x2="643" y2="555" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="643" y1="642" x2="781" y2="688" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="643" y1="642" x2="505" y2="693" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="630" y1="721" x2="656" y2="721" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="781" y1="754" x2="781" y2="810.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="768" y1="465.5" x2="978" y2="465.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="643" y1="498.5" x2="1103" y2="555" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="978" y1="598.5" x2="768" y2="598.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="781" y1="754" x2="1103" y2="800" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="58" y="208" width="250" height="56" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="183" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="183" y="241.6">IDLE: no record</tspan>
+</text>
+<rect x="58" y="310" width="250" height="66" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="183" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="183" y="338.2">ARMING: finger holds the</tspan>
+<tspan x="183" y="359">button for 2 s. Not stored</tspan>
+</text>
+<rect x="518" y="432.5" width="250" height="66" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="643" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="643" y="460.7">COUNTDOWN: 5 s, end time</tspan>
+<tspan x="643" y="481.5">stored as countdownEndsAt</tspan>
+</text>
+<rect x="518" y="555" width="250" height="87" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="643" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="643" y="583.3">TRIGGERED_LOCAL: written</tspan>
+<tspan x="643" y="604.1">once (conditional update), then</tspan>
+<tspan x="643" y="624.9">the phone acts</tspan>
+</text>
+<rect x="380" y="693" width="250" height="56" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="505" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="505" y="726.6">SYNCING: unused until P015</tspan>
+</text>
+<rect x="656" y="688" width="250" height="66" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="781" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="781" y="716.2">ACTIVE: alerts and location</tspan>
+<tspan x="781" y="737">trail (P014a2, P014b)</tspan>
+</text>
+<rect x="656" y="810.5" width="250" height="87" rx="10" fill="#ffd8a8" stroke="#e8590c" stroke-width="2"/>
+<text x="781" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="781" y="838.8">RESOLVED: kept 30 days,</tspan>
+<tspan x="781" y="859.6">then purged. Wiped on</tspan>
+<tspan x="781" y="880.4">sign-out</tspan>
+</text>
+<rect x="978" y="422" width="250" height="87" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="1103" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1103" y="450.3">Countdown with time left:</tspan>
+<tspan x="1103" y="471.1">show it again with what</tspan>
+<tspan x="1103" y="491.9">remains</tspan>
+</text>
+<rect x="978" y="555" width="250" height="87" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="1103" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1103" y="583.3">Countdown past its end: ask</tspan>
+<tspan x="1103" y="604.1">Send now or Cancel. Never</tspan>
+<tspan x="1103" y="624.9">sent or dropped silently</tspan>
+</text>
+<rect x="978" y="800" width="250" height="108" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="1103" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1103" y="828.4">After a process death or a</tspan>
+<tspan x="1103" y="849.2">phone restart, triggered or</tspan>
+<tspan x="1103" y="870">active: SOS is still active.</tspan>
+<tspan x="1103" y="890.8">Continue or I'm safe</tspan>
+</text>
+<rect x="145.9" y="276" width="74.1" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="183" y="291.5" font-size="13" fill="#1e1e1e" text-anchor="middle">hold starts</text>
+<rect x="138.5" y="276" width="89" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="183" y="291.5" font-size="13" fill="#1e1e1e" text-anchor="middle">early release</text>
+<rect x="365.7" y="393.3" width="94.7" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="413" y="408.8" font-size="13" fill="#1e1e1e" text-anchor="middle">hold complete</text>
+<rect x="337.3" y="337.3" width="151.4" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="413" y="352.8" font-size="13" fill="#1e1e1e" text-anchor="middle">tile, widget, notification</text>
+<rect x="341.7" y="337.3" width="142.5" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="413" y="352.8" font-size="13" fill="#1e1e1e" text-anchor="middle">cancel: record deleted</text>
+<rect x="586.4" y="515.8" width="113.1" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="643" y="531.3" font-size="13" fill="#1e1e1e" text-anchor="middle">end time reached</text>
+<rect x="646.2" y="654" width="131.6" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="712" y="669.5" font-size="13" fill="#1e1e1e" text-anchor="middle">local actions started</text>
+<rect x="552.7" y="656.5" width="42.7" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="574" y="672" font-size="13" fill="#1e1e1e" text-anchor="middle">P015</text>
+<rect x="621.7" y="710" width="42.7" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="643" y="725.5" font-size="13" fill="#1e1e1e" text-anchor="middle">P015</text>
+<rect x="751.2" y="771.3" width="59.6" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="781" y="786.8" font-size="13" fill="#1e1e1e" text-anchor="middle">I'm safe</text>
+<rect x="801.4" y="454.5" width="143.3" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="873" y="470" font-size="13" fill="#1e1e1e" text-anchor="middle">process died, time left</text>
+<rect x="792.1" y="515.8" width="161.8" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="873" y="531.3" font-size="13" fill="#1e1e1e" text-anchor="middle">process died, end passed</text>
+<rect x="837.6" y="587.5" width="70.8" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="873" y="603" font-size="13" fill="#1e1e1e" text-anchor="middle">Send now</text>
+<rect x="916.9" y="766" width="50.2" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="942" y="781.5" font-size="13" fill="#1e1e1e" text-anchor="middle">restart</text>
+<rect x="40" y="947" width="16" height="16" rx="3" fill="#a5d8ff" stroke="#1971c2" stroke-width="1.5"/>
+<text x="62" y="960" font-size="13" fill="#495057">App / UI</text>
+<rect x="134.8" y="947" width="16" height="16" rx="3" fill="#b2f2bb" stroke="#2f9e44" stroke-width="1.5"/>
+<text x="156.8" y="960" font-size="13" fill="#495057">Service</text>
+<rect x="228.3" y="947" width="16" height="16" rx="3" fill="#ffd8a8" stroke="#e8590c" stroke-width="1.5"/>
+<text x="250.3" y="960" font-size="13" fill="#495057">Data</text>
+<rect x="303.1" y="947" width="16" height="16" rx="3" fill="#ffc9c9" stroke="#e03131" stroke-width="1.5"/>
+<text x="325.1" y="960" font-size="13" fill="#495057">Security / emergency</text>
+</svg>

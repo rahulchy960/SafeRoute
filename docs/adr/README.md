@@ -32,6 +32,7 @@ Copy [`template.md`](template.md) to `NNNN-short-title.md`, and add a row to the
 | [0024](0024-emergency-contacts-and-opt-out.md) | Emergency contacts and opt-out: server list with an offline copy, `sos_alerts` gating and erasure on withdrawal, no server messaging, opt-out token in the URL fragment, tombstone for an opted-out number | Accepted |
 | [0025](0025-credits-and-place-contributions.md) | Credits and verified place contributions (concept): never for safety reports, in-app photo as evidence, independent confirmation, gates before any build | Proposed |
 | [0026](0026-daily-use-loop-and-plus-hypothesis.md) | Daily-use loop (passive arrival and late notices), SafeCircle Plus and Teams as hypotheses, Safe Date as a journey type; a paid confession tab and a dating app rejected | Proposed |
+| [0027](0027-sos-device-flow.md) | SOS device flow: the record in Room is the emergency, write first and act second, timers as stored timestamps, recovery always asks, 30-day retention on the phone | Accepted |
 
 A breaking API change, new infrastructure, a new data store or the Android package name each need
 an ADR.

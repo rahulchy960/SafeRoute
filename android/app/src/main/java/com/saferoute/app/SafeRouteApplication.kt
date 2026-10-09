@@ -2,6 +2,7 @@
 package com.saferoute.app
 
 import android.app.Application
+import com.saferoute.app.core.emergency.SosHousekeeping
 import com.saferoute.app.feature.contacts.ContactsSessionSync
 import com.saferoute.app.feature.emergency.EmergencyNotificationController
 import dagger.hilt.android.HiltAndroidApp
@@ -21,6 +22,8 @@ class SafeRouteApplication : Application() {
 
     @Inject lateinit var contactsSync: ContactsSessionSync
 
+    @Inject lateinit var sosHousekeeping: SosHousekeeping
+
     override fun onCreate() {
         super.onCreate()
         // From now on the pinned emergency notification follows the user's switch: shown when
@@ -31,5 +34,8 @@ class SafeRouteApplication : Application() {
         // when the user is signed in and ready, emptied when they sign out. Nothing runs here;
         // it only starts listening.
         contactsSync.start()
+        // Deletes emergency records older than 30 days now, and all of them when the user signs
+        // out or the account is blocked. It starts no service.
+        sosHousekeeping.start()
     }
 }
