@@ -5,10 +5,12 @@ import android.content.Context
 import androidx.room.Room
 import com.saferoute.app.core.data.ActiveSosContacts
 import com.saferoute.app.core.data.RoomActiveSosContacts
+import com.saferoute.app.core.data.RoomSosActionStore
 import com.saferoute.app.core.data.RoomSosStore
 import com.saferoute.app.core.data.local.ContactDao
 import com.saferoute.app.core.data.local.SafeRouteDatabase
 import com.saferoute.app.core.data.local.SosDao
+import com.saferoute.app.core.emergency.SosActionStore
 import com.saferoute.app.core.emergency.SosStore
 import com.saferoute.app.core.emergency.UuidV7Generator
 import dagger.Binds
@@ -50,6 +52,9 @@ interface DataModule {
 
     @Binds
     fun bindSosStore(store: RoomSosStore): SosStore
+
+    @Binds
+    fun bindSosActionStore(store: RoomSosActionStore): SosActionStore
 
     companion object {
         @Provides

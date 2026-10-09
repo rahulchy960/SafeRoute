@@ -16,6 +16,7 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.saferoute.app.core.emergency.BatteryLevel
 import com.saferoute.app.core.emergency.PurgeScheduler
+import com.saferoute.app.core.emergency.SmsGateway
 import com.saferoute.app.core.emergency.SosHaptics
 import com.saferoute.app.core.emergency.SosHost
 import com.saferoute.app.core.emergency.SosHousekeeping
@@ -143,4 +144,7 @@ interface SosDeviceModule {
 
     @Binds
     fun bindPurgeScheduler(scheduler: WorkManagerPurgeScheduler): PurgeScheduler
+
+    @Binds
+    fun bindSmsGateway(gateway: AndroidSmsGateway): SmsGateway
 }

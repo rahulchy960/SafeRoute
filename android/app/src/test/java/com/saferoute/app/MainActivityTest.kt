@@ -102,7 +102,12 @@ class MainActivityTest {
                 Manifest.permission.VIBRATE,
                 // Merged in from WorkManager, which runs the daily clean-up of old SOS records.
                 Manifest.permission.WAKE_LOCK,
-            ),
+            ) +
+                // SMS alerts (P014b1, ADR 0027). Only in a build made with
+                // saferoute.sendSmsEnabled (by default: debug yes, release no). A "dangerous"
+                // permission: asked at runtime after the app's own explanation, never during
+                // an SOS.
+                if (BuildConfig.SEND_SMS_DECLARED) setOf(Manifest.permission.SEND_SMS) else emptySet(),
             requested.toSet(),
         )
         // None of these may ever appear without a new prompt: no background location, no
@@ -110,8 +115,9 @@ class MainActivityTest {
         listOf(
             Manifest.permission.ACCESS_BACKGROUND_LOCATION,
             Manifest.permission.ACCESS_WIFI_STATE,
-            Manifest.permission.SEND_SMS,
             Manifest.permission.READ_SMS,
+            Manifest.permission.RECEIVE_SMS,
+            Manifest.permission.READ_PHONE_STATE,
             Manifest.permission.READ_CONTACTS,
             Manifest.permission.CALL_PHONE,
             Manifest.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,

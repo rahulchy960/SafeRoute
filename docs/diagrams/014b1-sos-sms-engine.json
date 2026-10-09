@@ -1,0 +1,150 @@
+{
+  "$schema": "../../tools/diagrams/diagram.schema.json",
+  "title": "SOS alerts by SMS: the engine",
+  "subtitle": "One message per contact, written down before it is sent, never sent twice once the phone said OK. Not yet connected to a running SOS (P014b1, ADR 0027)",
+  "direction": "TB",
+  "layout": {
+    "nodeWidth": 250,
+    "rankGap": 46
+  },
+  "groups": [
+    {
+      "id": "inputs",
+      "label": "What it reads (the phone only)"
+    },
+    {
+      "id": "engine",
+      "label": "core/emergency: SosAlerts"
+    },
+    {
+      "id": "phone",
+      "label": "The phone: feature/emergency/SosSms.kt"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "contacts",
+      "label": "ActiveSosContacts: not opted out, at most 5",
+      "role": "data",
+      "group": "inputs",
+      "rank": 1
+    },
+    {
+      "id": "message",
+      "label": "SosMessage: who, map link, accuracy, time, battery, call 112. At most 3 SMS parts, EN or BN",
+      "role": "app",
+      "group": "inputs",
+      "rank": 3
+    },
+    {
+      "id": "prepare",
+      "label": "prepare: one PENDING action per contact, with a copy of name and number. Decided once",
+      "role": "security",
+      "group": "engine",
+      "rank": 2
+    },
+    {
+      "id": "progress",
+      "label": "IN_PROGRESS: written BEFORE the phone is asked",
+      "role": "security",
+      "group": "engine",
+      "rank": 3
+    },
+    {
+      "id": "sent",
+      "label": "SENT: never sent again",
+      "role": "data",
+      "group": "engine",
+      "rank": 5
+    },
+    {
+      "id": "retry",
+      "label": "FAILED_RETRYABLE: again after 30 s, at most 20 tries, only while the SOS is active",
+      "role": "security",
+      "group": "engine",
+      "rank": 5
+    },
+    {
+      "id": "final",
+      "label": "FAILED_FINAL: refused, no permission, or 20 tries used",
+      "role": "data",
+      "group": "engine",
+      "rank": 6
+    },
+    {
+      "id": "skipped",
+      "label": "SKIPPED: the contact opted out before the message left",
+      "role": "data",
+      "group": "engine",
+      "rank": 4
+    },
+    {
+      "id": "gateway",
+      "label": "AndroidSmsGateway: needs a build with SEND_SMS and the user's grant; default SIM for SMS; multipart",
+      "role": "infra",
+      "group": "phone",
+      "rank": 4
+    },
+    {
+      "id": "result",
+      "label": "The phone's answer per part: OK, or an error code",
+      "role": "external",
+      "group": "phone",
+      "rank": 5
+    }
+  ],
+  "edges": [
+    {
+      "from": "contacts",
+      "to": "prepare"
+    },
+    {
+      "from": "prepare",
+      "to": "progress",
+      "label": "each round"
+    },
+    {
+      "from": "prepare",
+      "to": "skipped",
+      "label": "opted out"
+    },
+    {
+      "from": "message",
+      "to": "gateway",
+      "label": "text of that moment"
+    },
+    {
+      "from": "progress",
+      "to": "gateway"
+    },
+    {
+      "from": "gateway",
+      "to": "result"
+    },
+    {
+      "from": "result",
+      "to": "sent",
+      "label": "OK"
+    },
+    {
+      "from": "result",
+      "to": "retry",
+      "label": "may pass"
+    },
+    {
+      "from": "result",
+      "to": "final",
+      "label": "cannot pass"
+    },
+    {
+      "from": "retry",
+      "to": "progress",
+      "label": "30 s"
+    },
+    {
+      "from": "retry",
+      "to": "final",
+      "label": "20 tries"
+    }
+  ]
+}

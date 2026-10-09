@@ -431,6 +431,22 @@ CI builds this way. A **release** build refuses to assemble without a real key
 (`checkReleaseMapKey`); CI's release check passes an obviously fake key together with
 `-Psaferoute.allowDummyMapKey=true`, which nobody else should use.
 
+### SMS alerts and the `SEND_SMS` switch (since P014b1)
+
+`SEND_SMS` is a permission Google Play restricts, so it is not in the main manifest. The
+Gradle property `saferoute.sendSmsEnabled` decides whether a build carries it:
+
+| Property | Debug build | Release build |
+| --- | --- | --- |
+| not set | has `SEND_SMS` | does not |
+| `-Psaferoute.sendSmsEnabled=true` | has it | has it (only after Play approved the declaration) |
+| `-Psaferoute.sendSmsEnabled=false` | does not | does not |
+
+A build without it cannot send an SMS by itself. `BuildConfig.SEND_SMS_DECLARED` tells the
+code which kind of build it is. CI builds the release with `false` and checks the APK with
+`aapt2 dump permissions`. Nothing sends an SMS yet: the engine is connected to a running
+SOS in P014b2.
+
 ### How the code is organised
 
 - `core/map/MapTypes.kt`: the map vocabulary of the app (`LatLng`, `CameraState`,

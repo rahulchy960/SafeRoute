@@ -8,7 +8,12 @@ import javax.inject.Inject
 const val MAX_SOS_CONTACTS = 5
 
 /** A person an SOS may text. */
-data class SosContact(val name: String, val phoneE164: String) {
+data class SosContact(
+    /** The contact's id on the server and in the phone's copy. Says nothing about the person. */
+    val id: String,
+    val name: String,
+    val phoneE164: String,
+) {
     override fun toString(): String = "SosContact(hidden)"
 }
 
@@ -29,5 +34,5 @@ interface ActiveSosContacts {
 class RoomActiveSosContacts @Inject constructor(private val dao: ContactDao) : ActiveSosContacts {
 
     override suspend fun current(): List<SosContact> =
-        dao.notOptedOut(MAX_SOS_CONTACTS).map { SosContact(it.name, it.phoneE164) }
+        dao.notOptedOut(MAX_SOS_CONTACTS).map { SosContact(it.id, it.name, it.phoneE164) }
 }

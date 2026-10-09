@@ -2,9 +2,14 @@
 package com.saferoute.app.core.data
 
 import android.database.sqlite.SQLiteConstraintException
+import com.saferoute.app.core.data.local.SosActionEntity
 import com.saferoute.app.core.data.local.SosDao
 import com.saferoute.app.core.data.local.SosPointEntity
 import com.saferoute.app.core.data.local.SosRecordEntity
+import com.saferoute.app.core.emergency.SosAction
+import com.saferoute.app.core.emergency.SosActionState
+import com.saferoute.app.core.emergency.SosActionStore
+import com.saferoute.app.core.emergency.SosActionType
 import com.saferoute.app.core.emergency.SosPoint
 import com.saferoute.app.core.emergency.SosRecord
 import com.saferoute.app.core.emergency.SosState
@@ -55,6 +60,57 @@ class RoomSosStore @Inject constructor(private val dao: SosDao) : SosStore {
     override suspend fun purgeBefore(cutoff: Instant) = dao.purgeBefore(cutoff.toEpochMilli())
 
     override suspend fun wipe() = dao.clear()
+}
+
+/** [SosActionStore] on the phone's Room database. */
+class RoomSosActionStore @Inject constructor(private val dao: SosDao) : SosActionStore {
+
+    override suspend fun actions(sosId: String): List<SosAction> = dao.actions(sosId).map {
+        SosAction(
+            id = it.id,
+            clientSosId = it.clientSosId,
+            contactId = it.contactLocalId,
+            phoneE164 = it.phoneSnapshot,
+            name = it.nameSnapshot,
+            type = SosActionType.valueOf(it.type),
+            state = SosActionState.valueOf(it.state),
+            attemptCount = it.attemptCount,
+            lastErrorCategory = it.lastErrorCategory,
+            updatedAt = Instant.ofEpochMilli(it.updatedAt),
+        )
+    }
+
+    override suspend fun insertAll(actions: List<SosAction>) {
+        try {
+            dao.insertActions(
+                actions.map {
+                    SosActionEntity(
+                        id = it.id,
+                        clientSosId = it.clientSosId,
+                        contactLocalId = it.contactId,
+                        phoneSnapshot = it.phoneE164,
+                        nameSnapshot = it.name,
+                        type = it.type.name,
+                        state = it.state.name,
+                        attemptCount = it.attemptCount,
+                        lastErrorCategory = it.lastErrorCategory,
+                        updatedAt = it.updatedAt.toEpochMilli(),
+                    )
+                },
+            )
+        } catch (_: SQLiteConstraintException) {
+            // The emergency was cancelled or wiped a moment ago: there is nobody to tell.
+        }
+    }
+
+    override suspend fun moveIf(
+        id: String,
+        from: Set<SosActionState>,
+        to: SosActionState,
+        attemptCount: Int,
+        errorCategory: String?,
+        at: Instant,
+    ): Boolean = dao.moveActionIf(id, from.map { it.name }, to.name, attemptCount, errorCategory, at.toEpochMilli()) == 1
 }
 
 private fun SosRecordEntity.toRecord() = SosRecord(

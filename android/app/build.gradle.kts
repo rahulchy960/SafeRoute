@@ -168,6 +168,20 @@ val checkReleaseMapKey = tasks.register("checkReleaseMapKey") {
 }
 tasks.matching { it.name == "preReleaseBuild" }.configureEach { dependsOn(checkReleaseMapKey) }
 
+// SEND_SMS is a permission Google Play restricts: a build may only carry it when its use has
+// been declared and approved (ADR 0027, note of P014b1). So it is not in the main manifest.
+// The Gradle property `saferoute.sendSmsEnabled` decides per build whether a small extra
+// manifest that declares it is merged in. Not set: debug builds have it (so that SMS alerts
+// can be tried on a phone), release builds do not (alerts then open the phone's SMS app
+// instead). Set to true or false: both build types follow it. CI's release build passes false.
+val sendSmsProperty = providers.gradleProperty("saferoute.sendSmsEnabled").orNull?.trim()
+if (sendSmsProperty != null && sendSmsProperty != "true" && sendSmsProperty != "false") {
+    throw GradleException("saferoute.sendSmsEnabled must be true or false.")
+}
+val sendSmsInDebug = sendSmsProperty?.toBoolean() ?: true
+val sendSmsInRelease = sendSmsProperty?.toBoolean() ?: false
+fun sendSmsManifest(enabled: Boolean) = if (enabled) "src/sendSmsOn/AndroidManifest.xml" else "src/sendSmsOff/AndroidManifest.xml"
+
 android {
     // `namespace` is the Kotlin/Java package of generated code (R, BuildConfig).
     // `applicationId` is the app's identity on a device and on Google Play; it can never change
@@ -200,6 +214,8 @@ android {
             optimization {
                 enable = false
             }
+            // Read by the SMS gateway: without the permission in the manifest it never tries.
+            buildConfigField("boolean", "SEND_SMS_DECLARED", sendSmsInDebug.toString())
         }
         // Unsigned on purpose: there is no keystore anywhere in this repository. Release signing
         // and code shrinking (R8) arrive with P022.
@@ -207,6 +223,7 @@ android {
             optimization {
                 enable = false
             }
+            buildConfigField("boolean", "SEND_SMS_DECLARED", sendSmsInRelease.toString())
         }
     }
 
@@ -253,6 +270,9 @@ android {
         // assets; assets of the "test" source set are not part of them. The files describe
         // table layouts and hold no data. A release build does not contain them.
         getByName("debug").assets.srcDir("$projectDir/schemas")
+        // The extra manifest with or without SEND_SMS (see the note above `android {`).
+        getByName("debug").manifest.srcFile(sendSmsManifest(sendSmsInDebug))
+        getByName("release").manifest.srcFile(sendSmsManifest(sendSmsInRelease))
     }
 
     testOptions {
