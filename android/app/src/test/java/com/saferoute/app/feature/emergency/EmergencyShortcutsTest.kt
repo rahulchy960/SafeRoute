@@ -197,7 +197,7 @@ class EmergencyActivityTest {
     @Test
     fun `it is not the main activity and carries nothing of the app's session`() {
         assertNotEquals(MainActivity::class.java, compose.activity.javaClass)
-        // No Hilt, no ViewModel, no extras needed: it opens with an empty intent as well.
+        // No extras needed: it opens with an empty intent as well, and then shows the dialog.
         assertTrue(compose.activity.intent.extras?.isEmpty ?: true)
     }
 }

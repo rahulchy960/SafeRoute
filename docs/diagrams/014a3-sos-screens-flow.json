@@ -1,0 +1,152 @@
+{
+  "$schema": "../../tools/diagrams/diagram.schema.json",
+  "title": "SOS on the device: what the user sees",
+  "subtitle": "From the SOS control to the emergency screen and back. Nobody is messaged until the SMS alerts exist (P014a3, ADR 0027)",
+  "direction": "TB",
+  "layout": {
+    "nodeWidth": 250,
+    "rankGap": 46
+  },
+  "groups": [
+    {
+      "id": "app",
+      "label": "In the app (Home, Search)"
+    },
+    {
+      "id": "screen",
+      "label": "Emergency screen (may show over the lock screen)"
+    },
+    {
+      "id": "recovery",
+      "label": "After the app was closed or the phone restarted"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "control",
+      "label": "SOS control",
+      "role": "security",
+      "group": "app",
+      "rank": 1
+    },
+    {
+      "id": "dialog",
+      "label": "Emergency dialog: Hold to start SOS (2 s), Practice SOS, Call 112, what location is used for",
+      "role": "app",
+      "group": "app",
+      "rank": 2
+    },
+    {
+      "id": "open",
+      "label": "App comes to the front and finds an emergency nobody is running",
+      "role": "app",
+      "group": "recovery",
+      "rank": 2
+    },
+    {
+      "id": "countdown",
+      "label": "Countdown 5 to 1: vibration, Call 112, Cancel (72 dp, closes and leaves nothing). Back is not Cancel",
+      "role": "security",
+      "group": "screen",
+      "rank": 3
+    },
+    {
+      "id": "practice",
+      "label": "Practice: the same screens with a PRACTICE banner, nothing real",
+      "role": "app",
+      "group": "screen",
+      "rank": 3
+    },
+    {
+      "id": "ask",
+      "label": "Countdown past its end: Start SOS now, or Cancel",
+      "role": "app",
+      "group": "recovery",
+      "rank": 3
+    },
+    {
+      "id": "active",
+      "label": "SOS active: statuses in words (contacts, location, notifications), Call 112, I'm safe",
+      "role": "security",
+      "group": "screen",
+      "rank": 4
+    },
+    {
+      "id": "still",
+      "label": "It was active: SOS is still active. Continue, or I'm safe",
+      "role": "app",
+      "group": "recovery",
+      "rank": 4
+    },
+    {
+      "id": "unlock",
+      "label": "I'm safe: unlock the phone if locked, then confirm",
+      "role": "security",
+      "group": "screen",
+      "rank": 5
+    },
+    {
+      "id": "closed",
+      "label": "Closed: cancelled (nothing remains) or resolved (kept 30 days)",
+      "role": "data",
+      "group": "screen",
+      "rank": 6
+    }
+  ],
+  "edges": [
+    {
+      "from": "control",
+      "to": "dialog",
+      "label": "tap"
+    },
+    {
+      "from": "dialog",
+      "to": "countdown",
+      "label": "hold complete"
+    },
+    {
+      "from": "dialog",
+      "to": "practice",
+      "label": "Practice SOS"
+    },
+    {
+      "from": "countdown",
+      "to": "active",
+      "label": "5 s"
+    },
+    {
+      "from": "active",
+      "to": "unlock",
+      "label": "I'm safe"
+    },
+    {
+      "from": "unlock",
+      "to": "closed",
+      "label": "confirmed"
+    },
+    {
+      "from": "open",
+      "to": "countdown",
+      "label": "time left"
+    },
+    {
+      "from": "open",
+      "to": "ask",
+      "label": "end passed"
+    },
+    {
+      "from": "open",
+      "to": "still"
+    },
+    {
+      "from": "ask",
+      "to": "active",
+      "label": "Start SOS now"
+    },
+    {
+      "from": "still",
+      "to": "active",
+      "label": "Continue"
+    }
+  ]
+}

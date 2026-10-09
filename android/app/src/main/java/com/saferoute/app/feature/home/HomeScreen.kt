@@ -93,8 +93,10 @@ import com.saferoute.app.feature.directions.FollowBanner
 import com.saferoute.app.feature.directions.KeepScreenOn
 import com.saferoute.app.feature.directions.RouteIntroDialog
 import com.saferoute.app.feature.contacts.ContactsHomeCard
+import com.saferoute.app.feature.emergency.EmergencyShortcut
 import com.saferoute.app.feature.emergency.ShortcutOfferDialog
 import com.saferoute.app.feature.emergency.ShortcutOfferViewModel
+import com.saferoute.app.feature.emergency.SosOpenMode
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 
@@ -282,6 +284,18 @@ fun HomeRoute(
             viewModel.onEmergencyDialogDismiss()
             offerViewModel.onSosDialogClosed()
         },
+        // The hold was completed, or a practice run was asked for: the dialog closes and the
+        // emergency screen takes over. It runs outside this screen and outlives it.
+        emergencyArm = EmergencyArm(
+            onArmed = {
+                viewModel.onEmergencyDialogDismiss()
+                context.startActivity(EmergencyShortcut.modeIntent(context, SosOpenMode.START))
+            },
+            onPractice = {
+                viewModel.onEmergencyDialogDismiss()
+                context.startActivity(EmergencyShortcut.modeIntent(context, SosOpenMode.PRACTICE))
+            },
+        ),
         modifier = modifier,
         // While the phone knows of no emergency contact: a card that leads to adding one.
         sheetCard = { ContactsHomeCard(onAdd = onOpenContacts) },
@@ -344,6 +358,7 @@ fun HomeScreen(
     onCallEmergency: () -> Unit,
     onDismissEmergencyDialog: () -> Unit,
     modifier: Modifier = Modifier,
+    emergencyArm: EmergencyArm? = null,
     mapState: MapLoadState = MapLoadState.Ready,
     onMapRetry: () -> Unit = {},
     onMapPaddingChange: (MapPadding) -> Unit = {},
@@ -639,6 +654,7 @@ fun HomeScreen(
             state = emergencyDialog,
             onCallEmergency = onCallEmergency,
             onDismiss = onDismissEmergencyDialog,
+            arm = emergencyArm,
         )
     }
 }

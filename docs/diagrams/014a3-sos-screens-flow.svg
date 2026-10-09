@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1286" height="1075" viewBox="0 0 1286 1075" font-family="Helvetica, Arial, sans-serif">
+<title>SOS on the device: what the user sees</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#495057"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="40" y="62" font-size="24" font-weight="700" fill="#1e1e1e">SOS on the device: what the user sees</text>
+<text x="40" y="86" font-size="14" fill="#495057">From the SOS control to the emergency screen and back. Nobody is messaged until the SMS alerts exist (P014a3, ADR 0027)</text>
+<rect x="40" y="114" width="286" height="875" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="54" y="135" font-size="14" font-weight="700" fill="#495057">In the app (Home, Search)</text>
+<rect x="362" y="114" width="562" height="875" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="376" y="135" font-size="14" font-weight="700" fill="#495057">Emergency screen (may show over the lock screen)</text>
+<rect x="960" y="114" width="286" height="875" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="974" y="135" font-size="14" font-weight="700" fill="#495057">After the app was closed or the phone restarted</text>
+<line x1="183" y1="264" x2="183" y2="310" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="183" y1="418" x2="505" y2="464" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="183" y1="418" x2="781" y2="474.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="505" y1="572" x2="505" y2="618" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="505" y1="726" x2="505" y2="772" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="505" y1="838" x2="505" y2="884" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1103" y1="407.5" x2="505" y2="464" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1103" y1="407.5" x2="1103" y2="485" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1103" y1="407.5" x2="1103" y2="639" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1103" y1="551" x2="505" y2="618" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="978" y1="672" x2="630" y2="672" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="58" y="208" width="250" height="56" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="183" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="183" y="241.6">SOS control</tspan>
+</text>
+<rect x="58" y="310" width="250" height="108" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="183" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="183" y="338.4">Emergency dialog: Hold to</tspan>
+<tspan x="183" y="359.2">start SOS (2 s), Practice SOS,</tspan>
+<tspan x="183" y="380">Call 112, what location is</tspan>
+<tspan x="183" y="400.8">used for</tspan>
+</text>
+<rect x="978" y="320.5" width="250" height="87" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="1103" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1103" y="348.8">App comes to the front and</tspan>
+<tspan x="1103" y="369.6">finds an emergency nobody is</tspan>
+<tspan x="1103" y="390.4">running</tspan>
+</text>
+<rect x="380" y="464" width="250" height="108" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="505" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="505" y="492.4">Countdown 5 to 1: vibration,</tspan>
+<tspan x="505" y="513.2">Call 112, Cancel (72 dp,</tspan>
+<tspan x="505" y="534">closes and leaves nothing).</tspan>
+<tspan x="505" y="554.8">Back is not Cancel</tspan>
+</text>
+<rect x="656" y="474.5" width="250" height="87" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="781" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="781" y="502.8">Practice: the same screens</tspan>
+<tspan x="781" y="523.6">with a PRACTICE banner,</tspan>
+<tspan x="781" y="544.4">nothing real</tspan>
+</text>
+<rect x="978" y="485" width="250" height="66" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="1103" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1103" y="513.2">Countdown past its end: Start</tspan>
+<tspan x="1103" y="534">SOS now, or Cancel</tspan>
+</text>
+<rect x="380" y="618" width="250" height="108" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="505" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="505" y="646.4">SOS active: statuses in words</tspan>
+<tspan x="505" y="667.2">(contacts, location,</tspan>
+<tspan x="505" y="688">notifications), Call 112, I'm</tspan>
+<tspan x="505" y="708.8">safe</tspan>
+</text>
+<rect x="978" y="639" width="250" height="66" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="1103" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1103" y="667.2">It was active: SOS is still</tspan>
+<tspan x="1103" y="688">active. Continue, or I'm safe</tspan>
+</text>
+<rect x="380" y="772" width="250" height="66" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="505" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="505" y="800.2">I'm safe: unlock the phone if</tspan>
+<tspan x="505" y="821">locked, then confirm</tspan>
+</text>
+<rect x="380" y="884" width="250" height="87" rx="10" fill="#ffd8a8" stroke="#e8590c" stroke-width="2"/>
+<text x="505" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="505" y="912.3">Closed: cancelled (nothing</tspan>
+<tspan x="505" y="933.1">remains) or resolved (kept 30</tspan>
+<tspan x="505" y="953.9">days)</tspan>
+</text>
+<rect x="168" y="276" width="29.9" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="183" y="291.5" font-size="13" fill="#1e1e1e" text-anchor="middle">tap</text>
+<rect x="296.7" y="430" width="94.7" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="344" y="445.5" font-size="13" fill="#1e1e1e" text-anchor="middle">hold complete</text>
+<rect x="436.2" y="435.3" width="91.6" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="482" y="450.8" font-size="13" fill="#1e1e1e" text-anchor="middle">Practice SOS</text>
+<rect x="490" y="584" width="29.9" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="505" y="599.5" font-size="13" fill="#1e1e1e" text-anchor="middle">5 s</text>
+<rect x="475.2" y="738" width="59.6" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="505" y="753.5" font-size="13" fill="#1e1e1e" text-anchor="middle">I'm safe</text>
+<rect x="469.6" y="850" width="70.8" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="505" y="865.5" font-size="13" fill="#1e1e1e" text-anchor="middle">confirmed</text>
+<rect x="773.8" y="424.8" width="60.4" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="804" y="440.3" font-size="13" fill="#1e1e1e" text-anchor="middle">time left</text>
+<rect x="1063.6" y="435.3" width="78.8" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="1103" y="450.8" font-size="13" fill="#1e1e1e" text-anchor="middle">end passed</text>
+<rect x="754.3" y="573.5" width="99.4" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="804" y="589" font-size="13" fill="#1e1e1e" text-anchor="middle">Start SOS now</text>
+<rect x="772.1" y="661" width="63.7" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="804" y="676.5" font-size="13" fill="#1e1e1e" text-anchor="middle">Continue</text>
+<rect x="40" y="1010" width="16" height="16" rx="3" fill="#a5d8ff" stroke="#1971c2" stroke-width="1.5"/>
+<text x="62" y="1023" font-size="13" fill="#495057">App / UI</text>
+<rect x="134.8" y="1010" width="16" height="16" rx="3" fill="#ffd8a8" stroke="#e8590c" stroke-width="1.5"/>
+<text x="156.8" y="1023" font-size="13" fill="#495057">Data</text>
+<rect x="209.6" y="1010" width="16" height="16" rx="3" fill="#ffc9c9" stroke="#e03131" stroke-width="1.5"/>
+<text x="231.6" y="1023" font-size="13" fill="#495057">Security / emergency</text>
+</svg>

@@ -84,8 +84,8 @@ class SosDeviceTest {
     }
 
     @Test
-    fun `its one button opens the dialer with 112 and a tap opens the emergency screen`() {
-        val notification = buildSosRunningNotification(context, active = true)
+    fun `during the countdown its one button opens the dialer with 112 and a tap opens the emergency screen`() {
+        val notification = buildSosRunningNotification(context, active = false)
 
         val action = notification.actions.single()
         assertEquals(string(R.string.emergency_notification_call), action.title.toString())
@@ -97,6 +97,23 @@ class SosDeviceTest {
         val open = shadowOf(notification.contentIntent)
         assertTrue(open.isImmutable)
         assertEquals(ComponentName(context, EmergencyActivity::class.java), open.savedIntent.component)
+    }
+
+    @Test
+    fun `once active it also offers I am safe, which only opens the emergency screen to confirm`() {
+        val notification = buildSosRunningNotification(context, active = true)
+
+        assertEquals(
+            listOf(string(R.string.emergency_notification_call), string(R.string.sos_active_safe)),
+            notification.actions.map { it.title.toString() },
+        )
+        val safe = shadowOf(notification.actions[1].actionIntent)
+        assertTrue(safe.isImmutable)
+        // An activity, not a broadcast or a service: nothing ends without the screen, the
+        // unlock and the confirmation.
+        assertTrue(safe.isActivity)
+        assertEquals(ComponentName(context, EmergencyActivity::class.java), safe.savedIntent.component)
+        assertEquals(SosOpenMode.SAFE.name, safe.savedIntent.getStringExtra(EmergencyShortcut.EXTRA_MODE))
     }
 
     @Test

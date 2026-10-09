@@ -235,8 +235,10 @@ proprietary ("Android Software Development Kit License").
   be started while a screen of the app is visible; nothing is sent anywhere (the alert
   message of P014b will be the first thing that carries a position, and it names it). The
   map's own location use is unchanged. The SOS never asks for the location permission:
-  without it, it runs without positions. The disclosure for this use arrives with the SOS
-  screens (P014a3), before anything can start an SOS; a draft for the lawyer.
+  without it, it runs without positions. The disclosure for this use is the note in the
+  dialog that arms an SOS (`sos_arm_location_note`, since P014a3): shown before anything
+  can start, it says that positions are recorded on the phone for up to 30 days and sent
+  nowhere. A draft for the lawyer.
 - **Disclosure first, and only on request.** The system dialog is requested only after the
   user tapped "my location" and chose "Continue" on the app's own explanation (what is
   collected, why, what is not done, how to stop). Never at app start or during onboarding.

@@ -70,6 +70,9 @@ import com.saferoute.app.core.designsystem.component.SosControl
 import com.saferoute.app.core.designsystem.preview.SafeRoutePreviews
 import com.saferoute.app.core.designsystem.theme.SafeRouteTheme
 import com.saferoute.app.core.map.LatLng
+import com.saferoute.app.feature.emergency.EmergencyShortcut
+import com.saferoute.app.feature.emergency.SosOpenMode
+import com.saferoute.app.feature.home.EmergencyArm
 import com.saferoute.app.feature.home.EmergencyDialog
 import com.saferoute.app.feature.home.EmergencyDialogState
 import com.saferoute.app.feature.home.openEmergencyDialer
@@ -148,6 +151,16 @@ fun SearchRoute(
                 }
             },
             onDismiss = { emergencyDialog = EmergencyDialogState.Hidden },
+            arm = EmergencyArm(
+                onArmed = {
+                    emergencyDialog = EmergencyDialogState.Hidden
+                    context.startActivity(EmergencyShortcut.modeIntent(context, SosOpenMode.START))
+                },
+                onPractice = {
+                    emergencyDialog = EmergencyDialogState.Hidden
+                    context.startActivity(EmergencyShortcut.modeIntent(context, SosOpenMode.PRACTICE))
+                },
+            ),
         )
     }
 }

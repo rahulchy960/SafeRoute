@@ -63,8 +63,8 @@
         Emergency dialog. It must never suggest that SafeRoute calls for help by itself:
         "Call 112" only opens the phone app.
     -->
-    <string name="emergency_dialog_title">SOS is not available yet</string>
-    <string name="emergency_dialog_body">SOS is not available in this build yet. In an emergency call 112.</string>
+    <string name="emergency_dialog_title">Emergency</string>
+    <string name="emergency_dialog_body">In an emergency call 112.</string>
     <string name="emergency_dialog_dialer_hint">“Call 112” opens your phone app with 112 entered. You start the call yourself.</string>
     <string name="emergency_dialog_no_dialer">No phone app was found on this device. Dial 112 from any phone.</string>
     <string name="emergency_dialog_call">Call 112</string>
@@ -487,4 +487,41 @@
     <string name="sos_running_title_countdown">SOS countdown</string>
     <string name="sos_running_title_active">SOS active</string>
     <string name="sos_running_text">Tap to open. SafeRoute is not an emergency service: call 112.</string>
+    <!-- The SOS screens (P014a3). Until the SMS alerts exist (P014b) no text may say that a contact is or will be messaged. The location note is the disclosure for the SOS trail: a DRAFT until a lawyer has reviewed it. -->
+    <string name="sos_arm_hold">Hold to start SOS</string>
+    <string name="sos_arm_hold_action">start the SOS countdown</string>
+    <string name="sos_arm_explain">Hold for 2 seconds. A 5-second countdown follows, and you can cancel it.</string>
+    <string name="sos_arm_location_note">During an SOS, SafeRoute records where this phone is. The record stays on this phone for up to 30 days and is not sent anywhere. In this version your emergency contacts are not messaged.</string>
+    <string name="sos_arm_practice">Practice SOS</string>
+    <string name="sos_practice_banner">PRACTICE: nothing is sent or stored</string>
+    <string name="sos_not_emergency_service_call">SafeRoute is not an emergency service. Call 112.</string>
+    <string name="sos_countdown_title">SOS starts in</string>
+    <string name="sos_countdown_seconds_description">%1$d seconds left</string>
+    <string name="sos_countdown_explain">Tap Cancel to stop. Nothing has been started yet.</string>
+    <string name="sos_countdown_cancel">Cancel</string>
+    <string name="sos_active_title">SOS active</string>
+    <string name="sos_active_contacts_none">In this version your emergency contacts are not messaged. If you are in danger, call 112.</string>
+    <string name="sos_location_precise">Location: precise, recorded on this phone.</string>
+    <string name="sos_location_approximate">Location: approximate only (precise location is not allowed), recorded on this phone.</string>
+    <string name="sos_location_searching">Location: looking for your position…</string>
+    <string name="sos_location_stale_seconds">Location: the last position is %1$d seconds old.</string>
+    <string name="sos_location_stale_minutes">Location: the last position is %1$d minutes old.</string>
+    <string name="sos_location_no_permission">Location: none. SafeRoute is not allowed to use location. You can allow it afterwards under Settings, Apps, SafeRoute, Permissions.</string>
+    <string name="sos_location_unavailable">Location: none. Location is switched off on this phone, or no position can be found.</string>
+    <string name="sos_active_notifications_off">Notifications are off for SafeRoute, so this screen is the only sign that SOS is active.</string>
+    <string name="sos_active_safe">I\'m safe</string>
+    <string name="sos_active_safe_locked">I\'m safe (unlock first)</string>
+    <string name="sos_safe_confirm_title">End the SOS?</string>
+    <string name="sos_safe_confirm_body">The SOS ends and the location record stops.</string>
+    <string name="sos_safe_confirm_yes">Yes, I\'m safe</string>
+    <string name="sos_safe_confirm_no">Not yet</string>
+    <string name="sos_recovered_title">SOS is still active</string>
+    <string name="sos_recovered_body">It was running when the app was closed. The location record has started again.</string>
+    <string name="sos_recovered_continue">Continue</string>
+    <string name="sos_ask_title">SOS was starting when the app closed</string>
+    <string name="sos_ask_body">The countdown did not finish, and nothing was started. Start the SOS now, or cancel it?</string>
+    <string name="sos_ask_send">Start SOS now</string>
+    <string name="sos_practice_finished_title">Practice finished</string>
+    <string name="sos_practice_finished_body">That was a practice run. Nothing was sent, stored or recorded.</string>
+    <string name="sos_practice_close">Close</string>
 </resources>

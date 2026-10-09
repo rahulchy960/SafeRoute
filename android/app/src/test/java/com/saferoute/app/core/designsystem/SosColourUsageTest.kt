@@ -16,7 +16,7 @@ import org.junit.Test
 class SosColourUsageTest {
 
     /** Files that may use the sos tokens. The theme package only defines them. */
-    private val allowedFiles = setOf("EmergencyButton.kt", "EmergencyDialog.kt")
+    private val allowedFiles = setOf("EmergencyButton.kt", "EmergencyDialog.kt", "SosScreens.kt")
     private val definitionPackage = "core/designsystem/theme"
 
     private val sosToken = Regex("""\b(sos|onSos|sosContainer|onSosContainer)\b""")
