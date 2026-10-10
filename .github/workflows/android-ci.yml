@@ -256,3 +256,17 @@ jobs:
           path: android/app/build/reports/lint-results-debug.html
           if-no-files-found: ignore
           retention-days: 7
+
+      # The log names a failed test and its line, not the values ("expected X but was Y").
+      # The HTML report (open index.html) and the XML files have them. Tests use fake
+      # values only (CLAUDE.md, "Android rules"), so the reports hold no personal data.
+      - name: Upload the unit-test reports (only when the job failed)
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: android-unit-test-reports
+          path: |
+            android/app/build/reports/tests/testDebugUnitTest/
+            android/app/build/test-results/testDebugUnitTest/
+          if-no-files-found: ignore
+          retention-days: 7
