@@ -10,7 +10,7 @@ import org.w3c.dom.Element
 
 /**
  * The `sos_alerts` notice and the invite SMS exist twice: as string resources in the app and
- * as a document a lawyer can read (`docs/legal/sos-alerts-notice-v3.md`; versions 1 and 2 stay
+ * as a document a lawyer can read (`docs/legal/sos-alerts-notice-v4.md`; versions 1 to 3 stay
  * as the record of what earlier users were shown). They must say the
  * same thing, word for word, and the document must name the notice version the code sends.
  *
@@ -19,7 +19,7 @@ import org.w3c.dom.Element
  */
 class ContactsNoticeDocumentTest {
 
-    private val document = File("../../docs/legal/sos-alerts-notice-v3.md")
+    private val document = File("../../docs/legal/sos-alerts-notice-v4.md")
     private val versionSource = File("src/main/java/com/saferoute/app/feature/contacts/ContactsRepository.kt")
     private val screenSource = File("src/main/java/com/saferoute/app/feature/contacts/AddContactScreens.kt")
 

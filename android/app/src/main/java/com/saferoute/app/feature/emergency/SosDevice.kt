@@ -3,6 +3,8 @@ package com.saferoute.app.feature.emergency
 
 import android.content.Context
 import android.media.AudioAttributes
+import android.media.AudioManager
+import android.media.ToneGenerator
 import android.os.BatteryManager
 import android.os.Build
 import android.os.VibrationAttributes
@@ -16,6 +18,7 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.saferoute.app.core.emergency.BatteryLevel
 import com.saferoute.app.core.emergency.ContactsFreshener
+import com.saferoute.app.core.emergency.CountdownTone
 import com.saferoute.app.core.emergency.PurgeScheduler
 import com.saferoute.app.core.emergency.RetrySignals
 import com.saferoute.app.core.emergency.SmsComposer
@@ -37,8 +40,13 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
+import javax.inject.Singleton
 
 private const val TICK_MILLIS = 150L
+private const val TONE_MILLIS = 150
+
+/** Percent of the alarm volume the user has set. */
+private const val TONE_VOLUME = 80
 private val TRIGGERED_PATTERN = longArrayOf(0, 400, 150, 400)
 
 /**
@@ -71,6 +79,30 @@ class AndroidSosHaptics @Inject constructor(
         } else {
             @Suppress("DEPRECATION")
             device.vibrate(effect, AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM).build())
+        }
+    }
+}
+
+/**
+ * The countdown's tone, played only when the user switched it on under "SOS setup".
+ *
+ * A TONE GENERATOR plays a short built-in beep without any sound file. It uses the ALARM
+ * volume, so it follows the phone's alarm slider and not the ringer; a phone whose alarm
+ * volume is at zero, or that silences alarms in Do Not Disturb, stays quiet. The generator
+ * is made when first needed and kept: making one per second can fail on some phones. If the
+ * phone refuses to make one, there is simply no tone: the countdown never depends on it.
+ * Needs no permission.
+ */
+@Singleton
+class AndroidCountdownTone @Inject constructor() : CountdownTone {
+
+    private var generator: ToneGenerator? = null
+
+    @Synchronized
+    override fun play() {
+        runCatching {
+            val tone = generator ?: ToneGenerator(AudioManager.STREAM_ALARM, TONE_VOLUME).also { generator = it }
+            tone.startTone(ToneGenerator.TONE_PROP_BEEP, TONE_MILLIS)
         }
     }
 }
@@ -146,6 +178,9 @@ interface SosDeviceModule {
 
     @Binds
     fun bindSosHaptics(haptics: AndroidSosHaptics): SosHaptics
+
+    @Binds
+    fun bindCountdownTone(tone: AndroidCountdownTone): CountdownTone
 
     @Binds
     fun bindBatteryLevel(battery: AndroidBatteryLevel): BatteryLevel

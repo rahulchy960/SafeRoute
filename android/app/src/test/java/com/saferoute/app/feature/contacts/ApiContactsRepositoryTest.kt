@@ -5,6 +5,8 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.saferoute.app.core.data.RoomActiveSosContacts
 import com.saferoute.app.core.network.ApiConfig
+import com.saferoute.app.core.emergency.FakeSosSettingsStore
+import com.saferoute.app.core.emergency.SosSettings
 import com.saferoute.app.core.network.FIXED_CLOCK
 import com.saferoute.app.core.network.FakeIdTokenProvider
 import com.saferoute.app.core.network.RecordingSleeper
@@ -77,6 +79,7 @@ class ApiContactsRepositoryTest {
     private val database = inMemoryDatabase(ApplicationProvider.getApplicationContext())
     private val dao = database.contactDao()
     private val preferences = FakeContactsPreferences()
+    private val alertSettings = FakeSosSettingsStore()
     private lateinit var config: ApiConfig
     private lateinit var repository: ApiContactsRepository
 
@@ -100,7 +103,19 @@ class ApiContactsRepositoryTest {
             config,
             preferences,
             FIXED_CLOCK,
+            alertSettings,
         )
+    }
+
+    @Test
+    fun `emptying the copy also erases the name for alerts and the two choices`() = runTest {
+        alertSettings.setName("Test User")
+        alertSettings.setCountdownSound(true)
+
+        repository.clearLocal()
+
+        assertEquals(SosSettings(), alertSettings.value)
+        assertEquals(1, alertSettings.clears)
     }
 
     // --- when the list was last fetched (P014c2a) ---------------------------------------

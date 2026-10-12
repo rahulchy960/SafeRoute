@@ -23,7 +23,9 @@ import com.saferoute.app.core.emergency.SmsMode
 import com.saferoute.app.core.emergency.SmsModeSource
 import com.saferoute.app.core.emergency.SosAlertPolicy
 import com.saferoute.app.core.emergency.SosLanguage
+import com.saferoute.app.core.emergency.AlertLanguageChoice
 import com.saferoute.app.core.emergency.SosMessageSettings
+import com.saferoute.app.core.emergency.SosSettingsStore
 import com.saferoute.app.core.session.AppLocale
 import com.saferoute.app.core.session.LOCALE_BENGALI
 import com.saferoute.app.feature.contacts.ContactsPreferences
@@ -80,15 +82,22 @@ class SosArmViewModel @Inject constructor(policy: SosAlertPolicy, notices: SmsLi
 }
 
 /**
- * The name and language of the messages. The app has no name for the user yet (the SOS setup
- * of P014c asks for one), so the message uses its wording for "no name". The language is the
- * one the app is shown in.
+ * The name and language of the messages, as the user set them under "SOS setup" (P014c2b).
+ * Without a name the message uses its wording for "no name"; without a choice of language
+ * it is written in the language the app is shown in. Read from the phone at the moment an
+ * alert is written: never from the network.
  */
-class AppSosMessageSettings @Inject constructor(private val locale: AppLocale) : SosMessageSettings {
-    override suspend fun name(): String? = null
+class AppSosMessageSettings @Inject constructor(
+    private val locale: AppLocale,
+    private val settings: SosSettingsStore,
+) : SosMessageSettings {
+    override suspend fun name(): String? = settings.current().name
 
-    override suspend fun language(): SosLanguage =
-        if (locale.current() == LOCALE_BENGALI) SosLanguage.BN else SosLanguage.EN
+    override suspend fun language(): SosLanguage = when (settings.current().language) {
+        AlertLanguageChoice.EN -> SosLanguage.EN
+        AlertLanguageChoice.BN -> SosLanguage.BN
+        AlertLanguageChoice.APP -> if (locale.current() == LOCALE_BENGALI) SosLanguage.BN else SosLanguage.EN
+    }
 }
 
 class AndroidSmsModeSource @Inject constructor(

@@ -14,7 +14,13 @@ import androidx.room.migration.Migration
  * committed. Never use `fallbackToDestructiveMigration`: it would silently delete the contacts.
  */
 @Database(
-    entities = [ContactEntity::class, SosRecordEntity::class, SosActionEntity::class, SosPointEntity::class],
+    entities = [
+        ContactEntity::class,
+        SosRecordEntity::class,
+        SosActionEntity::class,
+        SosPointEntity::class,
+        SosSettingsEntity::class,
+    ],
     version = SafeRouteDatabase.VERSION,
     exportSchema = true,
 )
@@ -24,11 +30,13 @@ abstract class SafeRouteDatabase : RoomDatabase() {
 
     abstract fun sosDao(): SosDao
 
+    abstract fun sosSettingsDao(): SosSettingsDao
+
     companion object {
-        const val VERSION = 2
+        const val VERSION = 3
         const val FILE_NAME = "saferoute.db"
 
         /** Every step from an older version to the current one, in order. */
-        val MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_1_2)
+        val MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3)
     }
 }

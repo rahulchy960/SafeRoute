@@ -10,6 +10,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
@@ -18,13 +22,17 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.unit.Density
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.saferoute.app.R
 import com.saferoute.app.core.data.SosContact
 import com.saferoute.app.core.designsystem.theme.SafeRouteTheme
+import com.saferoute.app.core.emergency.AlertLanguageChoice
 import com.saferoute.app.core.emergency.ContactsFreshness
+import com.saferoute.app.core.emergency.FakeSosSettingsStore
+import com.saferoute.app.core.emergency.SosSettings
 import com.saferoute.app.core.emergency.FakeActiveSosContacts
 import com.saferoute.app.core.emergency.FakeSmsModeSource
 import com.saferoute.app.core.emergency.FakeSosAlertPolicy
@@ -81,6 +89,33 @@ class SosSetupViewModelTest {
     private val environment = FakeLocationEnvironment(granted = GrantedLocation.Precise)
     private val gate = FakeNotificationGate()
     private var language = "en"
+    private val alertSettings = FakeSosSettingsStore()
+
+    @Test
+    fun `the name, the language and the sound are saved on the phone and shown at once`() = runTest(dispatcher) {
+        val viewModel = viewModel()
+        viewModel.onResume()
+        advanceUntilIdle()
+        assertEquals("nothing chosen: no name, the app's language, no sound", SosSettings(), viewModel.state.value!!.settings)
+
+        viewModel.onNameSave("  Test  User ")
+        viewModel.onLanguageChange(AlertLanguageChoice.BN)
+        viewModel.onCountdownSoundChange(true)
+        advanceUntilIdle()
+
+        val shown = viewModel.state.value!!.settings
+        assertEquals(SosSettings("Test User", AlertLanguageChoice.BN, countdownSound = true), shown)
+        assertEquals(shown, alertSettings.value)
+        // None of the three is a thing to fix.
+        assertEquals(0, viewModel.state.value!!.readiness.toFix)
+        // Saving a name asks no server.
+        assertEquals(emptyList<String>(), repository.calls.toList())
+
+        viewModel.onNameSave("   ")
+        advanceUntilIdle()
+        assertNull("a blank name removes it", viewModel.state.value!!.settings.name)
+        assertFalse(viewModel.state.value!!.settings.toString().contains("Test"))
+    }
 
     @After
     fun tearDown() = Dispatchers.resetMain()
@@ -90,7 +125,7 @@ class SosSetupViewModelTest {
         runBlocking { preferences.setContactsSyncedAt(NOW.minus(Duration.ofHours(2)).toEpochMilli()) }
         return SosSetupViewModel(
             policy, contacts, preferences, repository, smsMode, environment, gate,
-            AppLocale { language }, Clock.fixed(NOW, ZoneOffset.UTC),
+            AppLocale { language }, Clock.fixed(NOW, ZoneOffset.UTC), alertSettings,
         ).also { it.smsDeclared = true }
     }
 
@@ -263,14 +298,19 @@ class SosSetupScreenTest {
         notificationsAllowed = true,
     )
 
-    private fun state(facts: ReadinessFacts, bengali: Boolean = false, refreshFailed: Boolean = false) =
-        SosSetupUiState(
-            readiness = sosReadiness(facts, NOW),
-            activeContacts = facts.activeContacts,
-            location = facts.location,
-            bengali = bengali,
-            refreshFailed = refreshFailed,
-        )
+    private fun state(
+        facts: ReadinessFacts,
+        bengali: Boolean = false,
+        refreshFailed: Boolean = false,
+        settings: SosSettings = SosSettings(),
+    ) = SosSetupUiState(
+        readiness = sosReadiness(facts, NOW),
+        activeContacts = facts.activeContacts,
+        location = facts.location,
+        bengali = bengali,
+        settings = settings,
+        refreshFailed = refreshFailed,
+    )
 
     private val actions = SosSetupActions(
         onBack = { events += "back" },
@@ -280,6 +320,9 @@ class SosSetupScreenTest {
         onOpenNotificationSettings = { events += "notifications" },
         onOpenLocationSettings = { events += "location" },
         onPractice = { events += "practice" },
+        onNameSave = { events += "name:" + (it ?: "removed") },
+        onLanguageChange = { events += "language:" + it },
+        onCountdownSoundChange = { events += "sound:" + it },
     )
 
     // The content is set once per test; a second show() only changes the state it draws.
@@ -426,14 +469,92 @@ class SosSetupScreenTest {
     }
 
     @Test
-    fun `it says how an SOS behaves today and offers a practice run`() {
-        show(state(allGood, bengali = true))
+    fun `it offers a practice run`() {
+        show(state(allGood))
 
-        compose.onNodeWithText(string(R.string.sos_setup_fact_countdown)).assertExists()
-        compose.onNodeWithText(string(R.string.sos_setup_fact_language_bn)).assertExists()
-        compose.onNodeWithText(string(R.string.sos_setup_fact_name)).assertExists()
         compose.onAllNodesWithText(string(R.string.sos_arm_practice))[1].performScrollTo().performClick()
         assertEquals(listOf("practice"), events)
+    }
+
+    // --- the alert settings (P014c2b) ----------------------------------------------------
+
+    @Test
+    fun `without a name it says what the alert says instead, and a name can be typed and saved`() {
+        show(state(allGood))
+
+        compose.onNodeWithText(string(R.string.sos_setup_name_none)).assertExists()
+        compose.onNodeWithText(string(R.string.sos_setup_name_explain)).assertExists()
+        compose.onNodeWithText(string(R.string.sos_setup_name_edit)).performScrollTo().performClick()
+        // Nothing to remove yet.
+        compose.onAllNodesWithText(string(R.string.sos_setup_name_remove)).assertCountEquals(0)
+        compose.onNodeWithTag(SosSetupNameFieldTag).performScrollTo().performTextInput("Test User")
+        compose.onNodeWithText(string(R.string.sos_setup_name_save)).performScrollTo().performClick()
+
+        assertEquals(listOf("name:Test User"), events)
+        compose.onNodeWithTag(SosSetupNameFieldTag).assertDoesNotExist()
+    }
+
+    @Test
+    fun `with a name it shows how the alert begins, and the name can be changed or removed`() {
+        show(state(allGood, settings = SosSettings(name = "Test User")))
+
+        compose.onNodeWithText(string(R.string.sos_setup_name_set, "Test User")).assertExists()
+        compose.onNodeWithText(string(R.string.sos_setup_name_change)).performScrollTo().performClick()
+        compose.onNodeWithTag(SosSetupNameFieldTag).assertTextContains("Test User")
+        compose.onNodeWithText(string(R.string.sos_setup_name_remove)).performScrollTo().performClick()
+
+        assertEquals(listOf("name:removed"), events)
+    }
+
+    @Test
+    fun `cancel in the name dialog saves nothing, and a long name is cut to what a message carries`() {
+        show(state(allGood))
+
+        compose.onNodeWithText(string(R.string.sos_setup_name_edit)).performScrollTo().performClick()
+        compose.onNodeWithTag(SosSetupNameFieldTag).performScrollTo().performTextInput("x".repeat(80))
+        compose.onNodeWithTag(SosSetupNameFieldTag).assertTextContains("x".repeat(30))
+        compose.onNodeWithText(string(R.string.emergency_dialog_cancel)).performScrollTo().performClick()
+        assertEquals(emptyList<String>(), events)
+
+        compose.onNodeWithText(string(R.string.sos_setup_name_edit)).performScrollTo().performClick()
+        compose.onNodeWithTag(SosSetupNameFieldTag).performScrollTo().performTextInput("y".repeat(80))
+        compose.onNodeWithText(string(R.string.sos_setup_name_save)).performScrollTo().performClick()
+        assertEquals(listOf("name:" + "y".repeat(30)), events)
+    }
+
+    @Test
+    fun `the language of the alert is one of three choices, each a button of at least 48 dp`() {
+        show(state(allGood, bengali = true, settings = SosSettings(language = AlertLanguageChoice.EN)))
+
+        compose.onNodeWithText(string(R.string.sos_setup_language_en)).performScrollTo().assertIsSelected()
+        // "Same as SafeRoute" says which language that is right now.
+        val same = compose.onNodeWithText(string(R.string.sos_setup_language_app_bn))
+        same.performScrollTo().assertIsNotSelected().assertHasClickAction()
+        assertTrue(same.fetchSemanticsNode().size.height / same.fetchSemanticsNode().layoutInfo.density.density >= 48f)
+        same.performClick()
+        compose.onNodeWithText(string(R.string.sos_setup_language_bn)).performScrollTo().performClick()
+
+        assertEquals(listOf("language:APP", "language:BN"), events)
+    }
+
+    @Test
+    fun `the countdown sound is off unless switched on, and says the risk of a noise`() {
+        show(state(allGood))
+
+        compose.onNodeWithText(string(R.string.sos_setup_sound_off)).assertExists()
+        compose.onNodeWithText(string(R.string.sos_setup_sound_warning)).assertExists()
+        compose.onNodeWithTag(SosSetupSoundSwitchTag).performScrollTo().assertIsOff().performClick()
+        assertEquals(listOf("sound:true"), events)
+
+        show(state(allGood, settings = SosSettings(countdownSound = true)))
+        compose.onNodeWithText(string(R.string.sos_setup_sound_on)).assertExists()
+        compose.onNodeWithTag(SosSetupSoundSwitchTag).assertIsOn()
+    }
+
+    @Test
+    fun `the alert settings are never counted as things to fix`() {
+        show(state(allGood, settings = SosSettings()))
+        compose.onNodeWithTag(SosSetupSummaryTag).assertTextContains(string(R.string.sos_setup_ready))
     }
 
     @Test

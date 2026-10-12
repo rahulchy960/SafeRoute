@@ -47,6 +47,10 @@ class SosRig(private val scope: TestScope, granted: GrantedLocation = GrantedLoc
     val signals = FakeRetrySignals()
     val notices = SmsLimitNotices(limit, contacts, smsMode)
 
+    // What the user chose for their alerts: survives a new process, like the database.
+    val alertSettings = FakeSosSettingsStore()
+    val tone = FakeCountdownTone()
+
     private var process: CoroutineScope? = null
 
     lateinit var source: FakeTrailLocationSource
@@ -77,7 +81,7 @@ class SosRig(private val scope: TestScope, granted: GrantedLocation = GrantedLoc
         engine = SosEngine(store, clock, UuidV7Generator(clock, Random(1)))
         alerts = SosAlerts(contacts, actions, gateway, clock, UuidV7Generator(clock, Random(2)))
         dispatch = SosDispatch(alerts, policy, settings, freshener, smsMode, composer, limit, notifier, signals, trail, battery, clock, alive)
-        runner = SosRunner(engine, trail, host, haptics, dispatch, clock, alive)
+        runner = SosRunner(engine, trail, host, haptics, dispatch, alertSettings, tone, clock, alive)
     }
 
     fun advance(millis: Long) {
@@ -92,6 +96,44 @@ class SosRig(private val scope: TestScope, granted: GrantedLocation = GrantedLoc
 /** The countdown, the trigger, cancel, "I'm safe" and recovery, in virtual time. */
 @OptIn(ExperimentalCoroutinesApi::class)
 class SosRunnerTest {
+
+    @Test
+    fun `the countdown makes no sound unless the user switched the sound on`() = runTest {
+        val silent = SosRig(this)
+        silent.runner.start(SosEntryPoint.IN_APP)
+        silent.advance(5_000)
+        assertEquals("off by default", 0, silent.tone.played)
+        assertEquals(List(5) { "tick" } + "triggered", silent.haptics.events.toList())
+        silent.runner.markSafe()
+
+        val loud = SosRig(this)
+        loud.alertSettings.setCountdownSound(true)
+        loud.runner.start(SosEntryPoint.TILE)
+        loud.advance(5_000)
+        assertEquals("one tone per second of the countdown, none afterwards", 5, loud.tone.played)
+        assertEquals("the vibration stays", 5, loud.haptics.events.count { it == "tick" })
+        loud.advance(60_000)
+        assertEquals(5, loud.tone.played)
+        assertEquals(SosState.ACTIVE, loud.stored())
+        loud.runner.markSafe()
+    }
+
+    @Test
+    fun `a new process that continues a countdown keeps the sound setting`() = runTest {
+        val rig = SosRig(this)
+        rig.alertSettings.setCountdownSound(true)
+        rig.runner.start(SosEntryPoint.IN_APP)
+        rig.advance(2_000)
+        val before = rig.tone.played
+
+        rig.restartProcess()
+        rig.runner.resume()
+        rig.advance(3_000)
+
+        assertTrue("the rest of the countdown was heard", rig.tone.played > before)
+        assertEquals(SosState.ACTIVE, rig.stored())
+        rig.runner.markSafe()
+    }
 
     @Test
     fun `the countdown shows 5 to 1 with one vibration each and triggers once at the end`() = runTest {

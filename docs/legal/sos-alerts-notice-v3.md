@@ -1,5 +1,9 @@
 # SOS alerts notice v3 (emergency contacts and SMS alerts)
 
+> **Replaced by [version 4](sos-alerts-notice-v4.md) in P014c2b (2026-10-13).** Kept as the
+> record of what earlier users were shown. The app no longer shows this text, and its
+> third paragraph here is the old one. The test named below now checks version 4.
+>
 > **DRAFT. Not reviewed by a lawyer.** This text must be reviewed by a lawyer, and the Bengali
 > text by a native speaker, before any release. It is published here so that it can be
 > reviewed, not because it is final.

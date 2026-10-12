@@ -2,6 +2,7 @@
 package com.saferoute.app.feature.contacts
 
 import com.saferoute.app.core.data.local.ContactDao
+import com.saferoute.app.core.emergency.SosSettingsStore
 import com.saferoute.app.core.data.local.ContactEntity
 import com.saferoute.app.core.network.ApiConfig
 import com.saferoute.app.core.network.errors.ApiFailure
@@ -33,7 +34,7 @@ const val PURPOSE_SOS_ALERTS = "sos_alerts"
  * Version of the `sos_alerts` notice the app shows before the first contact is added. Change it
  * when the notice text changes. The notice is a DRAFT until a lawyer has reviewed it.
  */
-const val SOS_ALERTS_NOTICE_VERSION = "2026-10-alerts-draft3"
+const val SOS_ALERTS_NOTICE_VERSION = "2026-10-alerts-draft4"
 
 /** Where a contact stands. Decided from the two times, opt-out first. */
 enum class ContactStatus {
@@ -187,6 +188,7 @@ class ApiContactsRepository @Inject constructor(
     private val config: ApiConfig,
     private val preferences: ContactsPreferences,
     private val clock: Clock,
+    private val alertSettings: SosSettingsStore,
 ) : ContactsRepository {
 
     /** One writer of the copy at a time. */
@@ -346,6 +348,8 @@ class ApiContactsRepository @Inject constructor(
         // No contacts on this phone, no alerts from it.
         preferences.setAlertsNoticeVersion(null)
         preferences.setContactsSyncedAt(0L)
+        // The name for alerts and the two choices go with the contacts they were for.
+        alertSettings.clear()
     }
 
     /** The server's answer IS the truth for this row: store it at once, no second request. */

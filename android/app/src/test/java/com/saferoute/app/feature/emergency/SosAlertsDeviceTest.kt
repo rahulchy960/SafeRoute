@@ -31,6 +31,8 @@ import com.saferoute.app.core.emergency.FakeActiveSosContacts
 import com.saferoute.app.core.emergency.SmsMode
 import com.saferoute.app.core.emergency.SosAlertStatus
 import com.saferoute.app.core.emergency.SosAlertSummary
+import com.saferoute.app.core.emergency.AlertLanguageChoice
+import com.saferoute.app.core.emergency.FakeSosSettingsStore
 import com.saferoute.app.core.emergency.SosLanguage
 import com.saferoute.app.core.emergency.SosLocationReport
 import com.saferoute.app.core.session.AppLocale
@@ -77,6 +79,10 @@ class SosAlertsDeviceTest {
         runBlocking { preferences.setAlertsNoticeVersion("2026-10-alerts-draft2") }
         assertFalse("version 2 is asked again", runBlocking { policy.alertsAllowed() })
 
+        // Version 3 did not say that the alert can carry a name the user entered (P014c2b).
+        runBlocking { preferences.setAlertsNoticeVersion("2026-10-alerts-draft3") }
+        assertFalse("version 3 is asked again", runBlocking { policy.alertsAllowed() })
+
         runBlocking { preferences.setAlertsNoticeVersion(SOS_ALERTS_NOTICE_VERSION) }
         assertTrue(runBlocking { policy.alertsAllowed() })
 
@@ -86,8 +92,8 @@ class SosAlertsDeviceTest {
     }
 
     @Test
-    fun `the notice version is the third one, and differs from the first two`() {
-        assertEquals("2026-10-alerts-draft3", SOS_ALERTS_NOTICE_VERSION)
+    fun `the notice version is the fourth one, and differs from the first three`() {
+        assertEquals("2026-10-alerts-draft4", SOS_ALERTS_NOTICE_VERSION)
     }
 
     @Test
@@ -101,13 +107,48 @@ class SosAlertsDeviceTest {
     }
 
     @Test
-    fun `the messages use the app's language and have no name yet`() {
-        val english = AppSosMessageSettings(AppLocale { "en" })
-        val bengali = AppSosMessageSettings(AppLocale { "bn" })
+    fun `without a choice the messages use the app's language and have no name`() {
+        val english = AppSosMessageSettings(AppLocale { "en" }, FakeSosSettingsStore())
+        val bengali = AppSosMessageSettings(AppLocale { "bn" }, FakeSosSettingsStore())
 
         assertEquals(SosLanguage.EN, runBlocking { english.language() })
         assertEquals(SosLanguage.BN, runBlocking { bengali.language() })
         assertNull(runBlocking { english.name() })
+    }
+
+    @Test
+    fun `the messages carry the name the user set and the language the user chose`() {
+        val store = FakeSosSettingsStore()
+        val settings = AppSosMessageSettings(AppLocale { "en" }, store)
+
+        runBlocking { store.setName("  Test   User \n") }
+        assertEquals("one line, trimmed", "Test User", runBlocking { settings.name() })
+
+        // The alert's language need not be the app's: a contact may read Bengali only.
+        runBlocking { store.setLanguage(AlertLanguageChoice.BN) }
+        assertEquals(SosLanguage.BN, runBlocking { settings.language() })
+        runBlocking { store.setLanguage(AlertLanguageChoice.EN) }
+        assertEquals(SosLanguage.EN, runBlocking { AppSosMessageSettings(AppLocale { "bn" }, store).language() })
+        runBlocking { store.setLanguage(AlertLanguageChoice.APP) }
+        assertEquals(SosLanguage.BN, runBlocking { AppSosMessageSettings(AppLocale { "bn" }, store).language() })
+
+        // Read at the moment the alert is written: a removed name is gone from the next one.
+        runBlocking { store.setName(null) }
+        assertNull(runBlocking { settings.name() })
+    }
+
+    @Test
+    fun `the countdown tone needs no permission and never stops a countdown`() {
+        // Robolectric has no sound hardware: whatever the phone answers, play() returns.
+        val tone = AndroidCountdownTone()
+        repeat(3) { tone.play() }
+
+        val source = java.io.File("src/main/java/com/saferoute/app/feature/emergency/SosDevice.kt").readText()
+        assertTrue("the alarm volume, not the ringer", source.contains("AudioManager.STREAM_ALARM"))
+        val manifest = java.io.File("src/main/AndroidManifest.xml").readText()
+        for (permission in listOf("MODIFY_AUDIO_SETTINGS", "ACCESS_NOTIFICATION_POLICY", "RECORD_AUDIO")) {
+            assertFalse(permission, manifest.contains(permission))
+        }
     }
 
     @Test

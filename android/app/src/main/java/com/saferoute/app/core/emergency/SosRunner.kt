@@ -72,6 +72,8 @@ class SosRunner @Inject constructor(
     private val host: SosHost,
     private val haptics: SosHaptics,
     private val dispatch: SosDispatch,
+    private val settings: SosSettingsStore,
+    private val tone: CountdownTone,
     private val clock: Clock,
     @param:ApplicationScope private val scope: CoroutineScope,
 ) {
@@ -165,6 +167,9 @@ class SosRunner @Inject constructor(
         leftMillis(record).takeIf { it > 0 }?.let { ((it + MILLIS_PER_SECOND - 1) / MILLIS_PER_SECOND).toInt() }
 
     private suspend fun countDown(record: SosRecord) {
+        // Asked once, from the phone's own database. A setting that cannot be read means
+        // "no sound": the countdown itself never depends on it.
+        val sound = runCatching { settings.current().countdownSound }.getOrDefault(false)
         var shown = 0
         while (true) {
             val leftMillis = leftMillis(record)
@@ -174,6 +179,7 @@ class SosRunner @Inject constructor(
                     shown = seconds
                     _state.value = SosRunState.Countdown(record, seconds)
                     haptics.countdownTick()
+                    if (sound) tone.play()
                 }
                 // Until the next whole second.
                 delay(leftMillis - (seconds - 1) * MILLIS_PER_SECOND)

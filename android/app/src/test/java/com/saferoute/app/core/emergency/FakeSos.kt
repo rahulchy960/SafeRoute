@@ -109,6 +109,44 @@ class FakeSosHaptics : SosHaptics {
     }
 }
 
+/** [SosSettingsStore] in memory. It normalises a name as the real one does. */
+class FakeSosSettingsStore(initial: SosSettings = SosSettings()) : SosSettingsStore {
+    private val state = MutableStateFlow(initial)
+    var clears = 0
+
+    val value: SosSettings get() = state.value
+
+    override val settings: Flow<SosSettings> = state
+
+    override suspend fun current(): SosSettings = state.value
+
+    override suspend fun setName(name: String?) {
+        state.value = state.value.copy(name = messageName(name))
+    }
+
+    override suspend fun setLanguage(language: AlertLanguageChoice) {
+        state.value = state.value.copy(language = language)
+    }
+
+    override suspend fun setCountdownSound(on: Boolean) {
+        state.value = state.value.copy(countdownSound = on)
+    }
+
+    override suspend fun clear() {
+        clears++
+        state.value = SosSettings()
+    }
+}
+
+/** Counts the tones; plays nothing. */
+class FakeCountdownTone : CountdownTone {
+    var played = 0
+
+    override fun play() {
+        played++
+    }
+}
+
 class FakeBatteryLevel(var percent: Int? = 80) : BatteryLevel {
     override fun percent(): Int? = percent
 }
@@ -293,6 +331,13 @@ object FakeSosDeviceModule {
 
     @Provides
     fun provideHost(fake: FakeSosHost): SosHost = fake
+
+    @Provides
+    @Singleton
+    fun provideFakeTone(): FakeCountdownTone = FakeCountdownTone()
+
+    @Provides
+    fun provideTone(fake: FakeCountdownTone): CountdownTone = fake
 
     @Provides
     @Singleton
