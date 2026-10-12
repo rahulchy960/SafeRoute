@@ -89,6 +89,9 @@ class SosSetupViewModelTest {
     private val environment = FakeLocationEnvironment(granted = GrantedLocation.Precise)
     private val gate = FakeNotificationGate()
     private var language = "en"
+    private val reader = SosReadinessReader(
+        policy, contacts, preferences, smsMode, environment, gate, Clock.fixed(NOW, ZoneOffset.UTC),
+    ).also { it.smsDeclared = true }
     private val alertSettings = FakeSosSettingsStore()
 
     @Test
@@ -123,10 +126,7 @@ class SosSetupViewModelTest {
     private fun viewModel(): SosSetupViewModel {
         Dispatchers.setMain(dispatcher)
         runBlocking { preferences.setContactsSyncedAt(NOW.minus(Duration.ofHours(2)).toEpochMilli()) }
-        return SosSetupViewModel(
-            policy, contacts, preferences, repository, smsMode, environment, gate,
-            AppLocale { language }, Clock.fixed(NOW, ZoneOffset.UTC), alertSettings,
-        ).also { it.smsDeclared = true }
+        return SosSetupViewModel(reader, repository, AppLocale { language }, alertSettings)
     }
 
     @Test
@@ -204,12 +204,12 @@ class SosSetupViewModelTest {
             return viewModel.state.value!!.readiness.status(ReadinessItem.SMS)
         }
 
-        viewModel.smsDeclared = true
+        reader.smsDeclared = true
         assertEquals(ReadinessStatus.NEEDS_ACTION, sms())
-        viewModel.smsDeclared = false
+        reader.smsDeclared = false
         assertEquals(ReadinessStatus.INFO, sms())
         smsMode.mode = SmsMode.AUTOMATIC
-        viewModel.smsDeclared = true
+        reader.smsDeclared = true
         assertEquals(ReadinessStatus.OK, sms())
     }
 

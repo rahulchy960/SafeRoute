@@ -7,33 +7,20 @@ import android.net.Uri
 import android.provider.Settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.saferoute.app.BuildConfig
-import com.saferoute.app.core.data.ActiveSosContacts
 import com.saferoute.app.core.emergency.AlertLanguageChoice
-import com.saferoute.app.core.emergency.ReadinessFacts
 import com.saferoute.app.core.emergency.ReadinessLocation
-import com.saferoute.app.core.emergency.SmsMode
-import com.saferoute.app.core.emergency.SmsModeSource
-import com.saferoute.app.core.emergency.SosAlertPolicy
 import com.saferoute.app.core.emergency.SosReadiness
 import com.saferoute.app.core.emergency.SosSettings
 import com.saferoute.app.core.emergency.SosSettingsStore
-import com.saferoute.app.core.emergency.sosReadiness
-import com.saferoute.app.core.location.GrantedLocation
-import com.saferoute.app.core.location.LocationEnvironment
 import com.saferoute.app.core.session.AppLocale
 import com.saferoute.app.core.session.LOCALE_BENGALI
-import com.saferoute.app.feature.contacts.ContactsPreferences
 import com.saferoute.app.feature.contacts.ContactsRepository
 import com.saferoute.app.feature.contacts.ContactsResult
 import dagger.hilt.android.lifecycle.HiltViewModel
-import java.time.Clock
-import java.time.Instant
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
@@ -67,20 +54,11 @@ data class SosSetupUiState(
  */
 @HiltViewModel
 class SosSetupViewModel @Inject constructor(
-    private val policy: SosAlertPolicy,
-    private val contacts: ActiveSosContacts,
-    private val preferences: ContactsPreferences,
+    private val reader: SosReadinessReader,
     private val repository: ContactsRepository,
-    private val smsMode: SmsModeSource,
-    private val environment: LocationEnvironment,
-    private val notifications: NotificationGate,
     private val locale: AppLocale,
-    private val clock: Clock,
     private val settings: SosSettingsStore,
 ) : ViewModel() {
-
-    /** Whether this build could send SMS by itself. A release build cannot today (ADR 0027). */
-    internal var smsDeclared: Boolean = BuildConfig.SEND_SMS_DECLARED
 
     private val _state = MutableStateFlow<SosSetupUiState?>(null)
 
@@ -118,35 +96,15 @@ class SosSetupViewModel @Inject constructor(
     }
 
     private suspend fun read(refreshFailed: Boolean = false) {
-        val active = contacts.current().size
-        val location = location()
-        val facts = ReadinessFacts(
-            alertsSetUp = policy.alertsAllowed(),
-            activeContacts = active,
-            contactsSyncedAt = preferences.contactsSyncedAt.first().takeIf { it > 0 }?.let(Instant::ofEpochMilli),
-            smsAutomatic = smsMode.mode() == SmsMode.AUTOMATIC,
-            smsCanBeAutomatic = smsDeclared,
-            location = location,
-            // A single category switched off is not "notifications off": the others still show.
-            notificationsAllowed = notifications.block().let {
-                it == NotificationBlock.None || it == NotificationBlock.ChannelBlocked
-            },
-        )
+        val reading = reader.read()
         _state.value = SosSetupUiState(
-            readiness = sosReadiness(facts, clock.instant()),
-            activeContacts = active,
-            location = location,
+            readiness = reading.readiness,
+            activeContacts = reading.facts.activeContacts,
+            location = reading.facts.location,
             bengali = locale.current() == LOCALE_BENGALI,
             settings = settings.current(),
             refreshFailed = refreshFailed,
         )
-    }
-
-    private fun location(): ReadinessLocation = when {
-        environment.granted() == GrantedLocation.None -> ReadinessLocation.NOT_ALLOWED
-        !environment.isLocationEnabled() -> ReadinessLocation.SWITCHED_OFF
-        environment.granted() == GrantedLocation.Approximate -> ReadinessLocation.APPROXIMATE
-        else -> ReadinessLocation.PRECISE
     }
 }
 

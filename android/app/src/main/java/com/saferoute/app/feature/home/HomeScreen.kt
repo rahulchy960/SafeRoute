@@ -99,6 +99,7 @@ import com.saferoute.app.feature.emergency.ShortcutOfferDialog
 import com.saferoute.app.feature.emergency.ShortcutOfferViewModel
 import com.saferoute.app.feature.emergency.SosArmViewModel
 import com.saferoute.app.feature.emergency.SosOpenMode
+import com.saferoute.app.feature.emergency.SosSetupHomeCard
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 
@@ -131,6 +132,7 @@ fun HomeRoute(
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
     onOpenContacts: () -> Unit = {},
+    onOpenSetup: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
     permissionViewModel: LocationPermissionViewModel = hiltViewModel(),
     directionsViewModel: DirectionsViewModel = hiltViewModel(),
@@ -308,7 +310,11 @@ fun HomeRoute(
         ),
         modifier = modifier,
         // While the phone knows of no emergency contact: a card that leads to adding one.
-        sheetCard = { ContactsHomeCard(onAdd = onOpenContacts) },
+        // Once SOS is being set up and something is to fix: the way to the checklist.
+        sheetCard = {
+            ContactsHomeCard(onAdd = onOpenContacts)
+            SosSetupHomeCard(onOpen = onOpenSetup)
+        },
     )
 
     // Once, after the first use of the SOS control: the shortcuts outside the app exist. It

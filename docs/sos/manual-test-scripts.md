@@ -10,7 +10,8 @@ and reported by a person.
 - **M17 to M28** are new in P013c, for rows that had no script.
 - **M29** is new in P014b6, for the list of test numbers of debug builds.
 - **M30** is new in P014c2a, for the checklist "SOS setup"; M21 was updated with it. Its
-  part 6 (the alert settings) is new in P014c2b.
+  part 6 (the alert settings) is new in P014c2b, its part 7 (the two ways to the
+  checklist) in P014c2c.
 - **M22** was rewritten in P014b7: an unsent alert is now tried for as long as the SOS is
   active.
 - **M17** was written in P014c1a (it was a draft): the tile and the pinned notification
@@ -537,6 +538,25 @@ you run a real SOS afterwards.
     alert begins with the name you set and is written in Bengali. End with "I'm safe".
   - Emergency contacts → "Stop SOS alerts and remove all contacts", then open "SOS
     setup" again. *Expected:* no name, "Same as SafeRoute", the sound off.
+- **Part 7, the two ways to the checklist** (the build after P014c2c). No SMS is sent.
+  - *After the first contact.* With an account that has no contact yet, add one (your own
+    second phone) and go back to Emergency contacts. *Expected:* a card "Check that an SOS
+    would work" with "Open SOS setup" and "Not now". Tap "Not now": the card goes. Leave
+    the screen and come back, add a second contact: it does not return. (With an account
+    that already had contacts before this build, the card appears once, the first time
+    you open Emergency contacts.)
+  - *On Home.* Make something "to fix" (for example switch notifications off for
+    SafeRoute, or set location to approximate), go to Home and pull the bottom sheet up.
+    *Expected:* a card "Not ready: N things to fix" with the same N as the checklist's
+    summary, and the SOS control still visible and usable. "Open SOS setup" opens the
+    checklist. Fix the thing in the phone's settings and return to Home: the card is gone
+    without restarting the app. Make it "to fix" again and tap "Not now": the card goes
+    and stays away when you leave Home and come back.
+  - *Before any set-up.* With a fresh account (no agreement, no contact): Home shows
+    "Add emergency contacts" and **not** the "Not ready" card.
+- **Also record for part 7:** whether you noticed the card on Home without being told
+  where to look (it is inside the sheet, which starts low); N on the card and N on the
+  checklist; whether it went away after the fix without restarting the app.
 - **Also record for part 6:** whether the tone was heard, how loud it was against the
   alarm slider, and whether it sounded in the phone's silent mode and in Do Not Disturb
   (the app cannot override those); the first line of the SMS on the second phone.

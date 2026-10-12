@@ -720,6 +720,13 @@ and [`android/README.md`](android/README.md):
   `SmsPermissionCard`, and it never requests a battery-optimisation exemption. The battery
   hints per phone maker are drafts until checked on those phones; no link to an outside
   site without a verified official address.
+  The ways to the checklist (since P014c2c): one card on the contacts screen, once, after
+  the first contact (`SosSetupOfferCard`), and one in the Home sheet while something is to
+  fix (`SosSetupHomeCard`). Both read the phone through `SosReadinessReader`, the same
+  reading the checklist uses; never compute readiness a second way. **Home looks only
+  when it comes to the front**: no background work, no location updates, no fetch and no
+  logging for the card, and it is never a dialog and never covers the SOS control. The
+  Home card appears only once SOS is being set up (agreed, or a contact on the phone).
   Alert settings (since P014c2b): the name for alerts, the alert language and the
   countdown sound are `SosSettings`, kept by `SosSettingsStore` in the one-row Room table
   `sos_settings`; **never in DataStore, never sent to the server, never logged**, and the
