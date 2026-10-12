@@ -100,6 +100,7 @@ will be described in its privacy policy when it is published.
 | [`docs/adr/`](docs/adr/) | Architecture Decision Records | any prompt |
 | [`docs/diagrams/`](docs/diagrams/) | Diagram specs + exports | any prompt |
 | [`docs/prompt-logs/`](docs/prompt-logs/) | One log per prompt | every prompt |
+| [`docs/sos/`](docs/sos/) | [SOS failure matrix](docs/sos/failure-matrix.md) (what must still work when things go wrong, with tests and statuses) and the [manual test scripts](docs/sos/manual-test-scripts.md) | P013c, every SOS prompt |
 | [`docs/runbooks/`](docs/runbooks/) | Operational runbooks | P006, P020–P022 |
 | [`CLAUDE.md`](CLAUDE.md) | Rules Claude Code follows (golden rules, conventions, quality gate) | P001 |
 

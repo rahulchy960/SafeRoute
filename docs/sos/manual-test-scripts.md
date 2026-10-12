@@ -1,0 +1,508 @@
+# SOS manual test scripts
+
+The scripts a person runs on a phone for the rows of the
+[SOS failure matrix](failure-matrix.md). Claude Code has no phone: everything here is done
+and reported by a person.
+
+- **M0 to M16** were written in P014a1 to P014b3 inside the matrix file and moved here in
+  P013c with the **same numbers and steps**; only the layout changed (preconditions, steps,
+  what to record, what to do if it fails, rows covered).
+- **M17 to M28** are new in P013c, for rows that had no script.
+- A script marked **Draft until the feature exists** describes something that is not built
+  yet. Do not run it, and do not record a result for it.
+- Legal wording quoted here (the notice, the SMS texts) is a draft, to be verified by a
+  lawyer; the Bengali also by a native speaker.
+
+## Safety rules: read before every session
+
+**From P014b3 an SOS sends real SMS.** A countdown that finishes messages every emergency
+contact of the signed-in account.
+
+1. **Only send to numbers you control and have warned.** The emergency contacts of the test
+   account are phones you own (a second phone on the table), and nobody else's.
+2. **Before any trigger, open Settings → Emergency contacts and check that it holds ONLY
+   your test phone.** Do this every session, not once.
+3. **Use practice mode first** ([M8](#m8-practice)) to learn the screens. A practice run
+   sends, stores and records nothing.
+4. **Never place a real call.** "Call 112" opens the phone app with 112 entered. Look at it,
+   then leave the phone app. **Never press the call button on the dialer.**
+5. **Note the SMS cost.** The messages are ordinary SMS from the SIM of the phone that runs
+   SafeRoute, at that SIM's price. An alert can be up to three SMS parts, and a follow-up
+   and a location update may follow.
+6. **Use a test account**, never an account whose contacts are real people.
+7. **Stop and tell the developer** if a person you did not intend could receive a message,
+   or did receive one. Do not continue the session.
+
+To run a script **without any SMS**: use an account with **no contacts**. The SOS then runs
+and the active screen says "You have no emergency contact to alert. If you are in danger,
+call 112." Or use a build without the SMS permission (or with it refused) and **do not
+press Send** in the SMS app.
+
+## How to record a result
+
+Add one line per session to the "Device results" table in the
+[matrix](failure-matrix.md#device-results), and tell the developer:
+
+- the phone's make and model, and the Android version;
+- the build (debug or release) and the SMS mode (automatic or SMS app);
+- the date, the scripts run, and pass or fail for each;
+- for a fail: the step, and what the screen showed (the words, not a guess);
+- what each script asks for under "Record".
+
+**Never write a phone number, a person's name or a place into the result.** "The second
+phone" is enough. A screenshot must not show a number, a name or a map position.
+
+## When a script fails
+
+1. End anything that is running: "I'm safe" and its confirmation, or Cancel in the
+   countdown.
+2. Check the second phone: did a message arrive that should not have?
+3. Write down the script, the step, what was expected and what the screen showed.
+4. Do not repeat the script until you know why, if a message reached or could have reached
+   an unexpected person (safety rule 7).
+5. If the second phone received nothing, read
+   [the troubleshooting section](#troubleshooting-the-second-phone-received-nothing) first.
+
+## Scripts for what is built
+
+### M0. Set-up
+
+*New in P014b3.* **Rows:** 1, 7 (the consent gate and the way to the permission card).
+
+- **Preconditions:** a signed-in test account. Best seen with an account that agreed to
+  the old notice, or to none.
+- **Steps:** Settings → Emergency contacts. An account that agreed to the old notice, or to
+  none, sees "SOS alerts are off" and "Read how SOS alerts work". Open it: the notice "How
+  SOS alerts work" with seven paragraphs. "Not now": nothing changes, and the SOS control
+  on Home shows Call 112, "Practice SOS" and "Set up SOS alerts", with no hold button. "I
+  agree": the card "Send alerts automatically" appears, and the SOS control now shows "Hold
+  to send SOS".
+- **Record:** pass or fail; whether the notice could be read to its end.
+- **If it fails:** note which screen differed. No SOS can be running at this point; nothing
+  to end.
+
+### M1. Hold to arm and early release
+
+**Rows:** 11.
+
+- **Preconditions:** M0 done ("Hold to send SOS" is offered). Contacts checked (safety
+  rule 2).
+- **Steps:** Home → SOS control. In the dialog, press "Hold to send SOS" for about one
+  second and lift: the ring empties and nothing happens. Tap it briefly: nothing. Hold for
+  two seconds: the ring fills, the phone ticks, and the countdown screen opens. Tap Cancel.
+- **Record:** whether the ticks could be felt.
+- **If it fails:** if a countdown started after a short press or a tap, tap Cancel at once
+  and report it: that is a safety problem.
+
+### M2. Cancel
+
+**Rows:** 11, 6.
+
+- **Preconditions:** as M1.
+- **Steps:** during the countdown tap Cancel: the screen closes, no notification stays, the
+  phone stops vibrating, **and no SMS was sent** (check the second phone). Open the SOS
+  control again: the dialog is the normal one. Start again and press the phone's back
+  gesture during the countdown: nothing happens (back is not Cancel). Then tap Cancel.
+- **Record:** pass or fail; whether anything arrived on the second phone.
+- **If it fails:** an SMS after Cancel is a serious fault. Stop the session and report it.
+
+### M3. Full countdown, and locking the phone
+
+**Rows:** 11, 2 (Call 112 on the screens), A1 (the lock screen during a countdown).
+
+- **Preconditions:** as M1. With contacts and the SMS permission this **sends an SMS**; use
+  an account with no contacts unless you mean to test sending.
+- **Steps:** start and let the countdown finish: five vibrations, then a longer one, then
+  "SOS active", and a silent notification "SOS active" with Call 112 and I'm safe. Tap "I'm
+  safe" → confirm: the screen closes and the notification goes. Then start again and
+  **press the power button during the countdown**: wait ten seconds, wake the phone.
+  *Expected:* the SOS is active (it triggered while locked) and the active screen is shown
+  over the lock screen with "I'm safe (unlock first)". Tap it: the phone asks for the
+  unlock, then for the confirmation.
+- **Record:** what the lock screen showed.
+- **If it fails:** end the SOS from inside the app ("I'm safe"). If no screen shows it,
+  open SafeRoute: an SOS that is still running is shown again.
+
+### M4. Swipe the app away while active
+
+**Rows:** 4.
+
+- **Preconditions:** as M3.
+- **Steps:** with an SOS active, open the recent apps and swipe SafeRoute away. Open
+  SafeRoute again. *Expected:* either the SOS screen is simply still there, or the
+  emergency screen opens with "SOS is still active" (Continue / I'm safe). End with "I'm
+  safe". Repeat once with **battery saver** on.
+- **Record:** whether the "SOS active" notification stays (the service survived) or goes;
+  the phone maker's battery setting for SafeRoute, if it has one.
+- **If it fails:** if SafeRoute opens with nothing running although you did not end the
+  SOS, report it with the phone's make and model: this is the row that depends most on the
+  phone maker.
+
+### M5. Airplane mode and location off
+
+**Rows:** 2, 8, A8, A12.
+
+- **Preconditions:** as M3.
+- **Steps:** airplane mode on, start an SOS: the countdown and the active screen work as in
+  M3; with contacts, the screen shows the alert as "Still trying" and it is sent when
+  airplane mode is switched off again (within about ten minutes). End it. Then switch the
+  phone's Location off and start an SOS: it triggers on time, the active screen says
+  "Location: none. Location is switched off ...", and the SMS says "Location unavailable".
+  If SafeRoute has no location permission, the active screen says how to allow it
+  afterwards, and no permission dialog appears at any point.
+- **Record:** how long after airplane mode was switched off the SMS arrived; what the
+  location line said in each case.
+- **If it fails:** a permission dialog during an SOS, or an SOS that waits for a position,
+  is a fault: note at which step.
+
+### M6. Kill during the countdown, and reboot
+
+**Rows:** 5, A11, 4.
+
+- **Preconditions:** as M3.
+- **Steps:** start an SOS and, during the countdown, force stop the app (Settings → Apps →
+  SafeRoute → Force stop). Wait a minute, open SafeRoute. *Expected:* "SOS was starting
+  when the app closed" with "Send now" and Cancel; nothing was sent in between. Try both
+  answers on two runs. Then start an SOS, let it become active, **restart the phone**,
+  unlock, open SafeRoute. *Expected:* "SOS is still active", and the second phone did not
+  get the alert a second time. (Nothing appears before the app is opened: the notice at
+  boot is P014c, see [M27](#m27-the-notice-after-a-restart).)
+- **Record:** which answer was tried in each run; whether the second phone got one alert,
+  two, or none.
+- **If it fails:** an alert sent without "Send now", or a second alert after the restart,
+  is a fault. (One known exception is described in the matrix, row 6.)
+
+### M7. Notifications refused
+
+**Rows:** A4.
+
+- **Preconditions:** as M3.
+- **Steps:** refuse notifications for SafeRoute in the system settings, start an SOS.
+  *Expected:* no notification, and the active screen says that the screen is the only sign
+  that SOS is active.
+- **Record:** whether the service still shows in the phone's list of active apps.
+- **If it fails:** an SOS that does not start, or an error, because notifications are off
+  is a fault.
+
+### M8. Practice
+
+**Rows:** 11 (learning the flow without a real SOS).
+
+- **Preconditions:** none; works without contacts and without the notice.
+- **Steps:** SOS control → "Practice SOS": every screen carries the PRACTICE banner; no
+  notification appears; "I'm safe" → confirm → "Practice finished". Afterwards nothing is
+  running, **and no SMS was sent**.
+- **Record:** pass or fail; whether anything arrived on the second phone.
+- **If it fails:** an SMS or a notification from a practice run is a serious fault. Stop
+  and report it.
+
+### M9. Do Not Disturb, Bengali, dark mode, large font, TalkBack
+
+**Rows:** 11 (the countdown and Cancel for every user).
+
+- **Preconditions:** as M3.
+- **Steps:** with Do Not Disturb on, run M3. Switch the app to Bengali, to dark mode and to
+  the largest font size: every button can be reached (the screens scroll) and Cancel stays
+  large. With TalkBack on, the hold button is announced with its name and "double tap to
+  start the SOS countdown"; the countdown reads each second.
+- **Record:** whether the phone vibrates with Do Not Disturb on; any text that is cut off,
+  and in which language.
+- **If it fails:** note the setting, the screen and the button that could not be reached.
+
+### M10. Upgrade and install
+
+*From P014a1 and P014a2.* **Rows:** none (it protects the contacts a later SOS needs).
+
+- **Preconditions:** an older build installed, with emergency contacts.
+- **Steps:** install the new build over the older one. *Expected:* the emergency contacts
+  are kept; no new permission dialog appears at install or at first start.
+- **Record:** the two build versions.
+- **If it fails:** do not clear the app's data; report what the contacts list shows.
+
+### M11. Automatic sending
+
+**Rows:** 1. **A debug build; contacts are only your second phone.**
+
+- **Preconditions:** M0 done; a build with the SMS permission (a debug build by default);
+  safety rules 1 and 2.
+- **Steps:** Settings → Emergency contacts → "Send alerts automatically" → "Allow sending
+  SMS": the app's explanation appears first; "Continue"; Android's dialog; "Allow"; the
+  card says "On". Start an SOS (M3). *Expected:* within a few seconds of the trigger the
+  second phone gets one SMS: "Someone who listed you as an emergency contact needs help.
+  Location: [a map link] (about N m, at HH:mm IST). Battery N%. Sent by the SafeRoute app.
+  If you think they are in danger, call 112." The active screen shows "Alert sent by SMS: 1
+  of 1 emergency contacts." Open the link on the second phone: a map at your position.
+  "I'm safe" with "Tell my contacts that I am safe" ticked: the second phone gets "The
+  person who alerted you says they are safe now."
+- **Record:** the time from trigger to arrival, whether the long SMS arrived as one
+  message, and **what the SMS cost** (operator, plan, price per message).
+- **If it fails:** read
+  [the troubleshooting section](#troubleshooting-the-second-phone-received-nothing); note
+  what the active screen said about the alert (sent, still trying, could not be sent).
+
+### M12. Mobile data off, signal present
+
+**Rows:** 1.
+
+- **Preconditions:** as M11.
+- **Steps:** switch mobile data and Wi-Fi off, keep the SIM active. Run M11: the SMS still
+  arrives.
+- **Record:** as M11.
+- **If it fails:** as M11; also note whether the phone showed signal bars.
+
+### M13. The SMS app instead
+
+**Rows:** 7.
+
+- **Preconditions:** M0 done; contacts are only your own phones.
+- **Steps:** phone settings → Apps → SafeRoute → Permissions → SMS → don't allow; the card
+  says "Off". Start an SOS. *Expected:* after the countdown your SMS app opens with the
+  second phone's number and the alert text; a notification "Send your SOS alert" is also
+  there. **Nothing is sent until you press Send.** The active screen says "Your SMS app has
+  the alert for 1 emergency contacts. It is sent only when you press Send there." and
+  offers "Open SMS app again". With **two** test contacts (both your own phones): see
+  "Record". Then lock the phone during the countdown: after the trigger, the notification
+  is the way to the SMS app.
+- **Record:** the SMS app's name; with two contacts, whether the SMS app shows both numbers
+  or only one (the separator between recipients is not verified).
+- **If it fails:** if a message left without Send being pressed, stop and report it.
+
+### M14. Refusals
+
+**Rows:** 7.
+
+- **Preconditions:** a fresh install (or the app's data cleared), M0 done.
+- **Steps:** on the card tap "Allow sending SMS" → "Not now": no Android dialog appears.
+  Again → "Continue" → "Don't allow" twice: the card says that Android no longer asks and
+  offers "Open app settings". Allow SMS there, come back: the card says "On" without a
+  restart. A release build (if you have one): the card says that this version cannot send
+  SMS by itself.
+- **Record:** which Android version; how many refusals it took until Android stopped
+  asking.
+- **If it fails:** note what the card said in the state that differed.
+
+### M15. Dual SIM
+
+**Rows:** A9.
+
+- **Preconditions:** a phone with two active SIMs; as M11.
+- **Steps:** set the default SIM for SMS in the phone's settings, run M11. Then set the
+  phone to "ask every time" and run M11 again.
+- **Record:** from which SIM the SMS arrived in the first run; what happened in the second
+  (a question on the screen, an SMS from one of the SIMs, or nothing), and what the active
+  screen said.
+- **If it fails:** SafeRoute offers no SIM choice of its own (the matrix says why). Report
+  what the phone did; do not look for a setting in the app.
+
+### M16. A contact who opted out
+
+**Rows:** A5.
+
+- **Preconditions:** two test contacts, both your own phones; an invite sent to one of
+  them, so that it has its opt-out link.
+- **Steps:** open the opt-out link of one on the second phone and opt out. In SafeRoute
+  refresh the contacts list: it says "Opted out". Start an SOS: only the other phone gets
+  the SMS, and the screen shows "1 of 1".
+- **Record:** pass or fail; which phone received what.
+- **If it fails:** an alert to a phone that opted out is a serious fault. Stop and report
+  it, with whether the contacts list had already shown "Opted out".
+
+### M18. The pinned notification dismissed or killed
+
+*New in P013c.* **Rows:** A2.
+
+- **Preconditions:** the pinned emergency notification switched on in Settings (P012f2).
+- **Steps:** swipe the notification away, if the phone allows it. Open the app's SOS
+  control: it works as before. Leave the app and open it again: the notification is back.
+  Force stop the app (Settings → Apps → SafeRoute → Force stop): the notification goes;
+  open the app: it is back. Restart the phone and unlock it.
+- **Record:** whether the phone let the notification be swiped away; after the restart,
+  whether it was back before the app was opened, and how long after the unlock.
+- **If it fails:** the SOS control in the app must work in every case; if it does not,
+  report that first.
+- **Draft until the feature exists (P014c):** starting an SOS from the notification. Today
+  its actions open the dialer with 112 and the emergency options.
+
+### M19. A phone without the tile
+
+*New in P013c.* **Rows:** A3.
+
+- **Preconditions:** a phone on which "SafeRoute SOS" cannot be added to Quick Settings
+  (some phone makers offer no tiles from apps), or a phone on which you do not add it.
+- **Steps:** Settings → "Add the SOS tile". *Expected:* if Android does not add it, the
+  steps "Add the tile by hand" are shown, with the note that some phones have no Quick
+  Settings tiles from apps and that the SOS control in the app always works. Close it and
+  use the SOS control on Home: it opens the emergency options.
+- **Record:** the phone's make and model; what the screen offered.
+- **If it fails:** note whether the app said nothing at all, or said that the tile was
+  added although it was not.
+
+### M20. No emergency contact
+
+*New in P013c.* **Rows:** A6.
+
+- **Preconditions:** a test account that agreed to the notice (M0) and has **no** contact.
+- **Steps:** start an SOS and let the countdown finish. *Expected:* the SOS becomes active
+  on time; the active screen says "You have no emergency contact to alert. If you are in
+  danger, call 112."; Call 112 is offered; no SMS app opens and nothing is sent. "I'm safe"
+  → confirm: the confirmation offers nothing to tell contacts.
+- **Record:** pass or fail.
+- **If it fails:** an SOS that refuses to start, or an error, because there is no contact
+  is a fault.
+
+### M21. Contacts that never reached the phone
+
+*New in P013c.* **Rows:** A7.
+
+- **Preconditions:** a test account that has contacts on another install, and a fresh
+  install of the app on this phone (or the app's data cleared). Contacts are only your own
+  phones.
+- **Steps:** sign in. As soon as Home appears, switch airplane mode on, before opening
+  Settings. Open the SOS control. Then switch airplane mode off, open Settings → Emergency
+  contacts, wait for the list, and open the SOS control again.
+- **Record:** what the SOS control offered while the phone was offline. One of two things
+  is expected, depending on what arrived before the phone went offline: no hold button and
+  "Set up SOS alerts" (the phone has no note of the consent yet), or the hold button, and
+  then an active screen that says "You have no emergency contact to alert" (the consent
+  arrived, the list did not). Record also what it offered after the list had arrived.
+- **If it fails:** an alert to anyone while the list on the phone was empty is a fault.
+- **Draft until the feature exists (P014c):** a readiness screen that tells the user,
+  before any emergency, that the contacts are not on this phone yet. Today nothing warns
+  beforehand.
+
+### M22. Every message fails
+
+*New in P013c.* **Rows:** A8, 2.
+
+- **Preconditions:** as M11 (automatic sending on; contacts only your second phone).
+- **Steps, part 1 (airplane mode kept on):** airplane mode on, start an SOS, let it become
+  active and **leave airplane mode on for twelve minutes**. *Expected:* "Still trying to
+  send: 1." for about ten minutes (a try every 30 seconds, at most 20), then "Could not be
+  sent: 1."; Call 112 stays on the screen throughout; the SOS stays active. End it with
+  "I'm safe".
+- **Steps, part 2 (no SIM):** take the SIM out, or switch it off in the phone's settings,
+  and start an SOS.
+- **Record:** for part 1, the minute at which the line changed. For part 2, exactly what
+  the active screen said: which answer a phone gives without a SIM is not known (the matrix
+  lists it under "Known gaps").
+- **If it fails:** an SOS that ends, hangs or shows an error because no message could be
+  sent is a fault. So is an alert that arrives after "I'm safe".
+
+### M23. The contact list changes during an SOS
+
+*New in P013c.* **Rows:** A10.
+
+- **Preconditions:** two test contacts, both your own phones; automatic sending on;
+  airplane mode available.
+- **Steps:** airplane mode on, start an SOS and let it become active ("Still trying to
+  send: 2."). If the app lets you reach Settings → Emergency contacts while the SOS is
+  active, remove one contact there, or add a third phone you own (this needs a connection:
+  switch airplane mode off for it). Switch airplane mode off.
+- **Record:** whether the contacts screen could be reached during the SOS at all; which
+  phones received the alert. *Expected:* the people to alert were decided once, at the
+  trigger: a contact added afterwards is not alerted in this SOS. What happens to a contact
+  removed before their message left is not stated in the plan: record it.
+- **If it fails:** an alert to a phone that was never a contact, or two alerts to one
+  phone, is a fault.
+
+## Drafts for what is not built yet
+
+Do not run these. Each is rewritten with real steps in the prompt that builds the feature.
+
+### M17. SOS from the tile or the widget while the phone is locked
+
+**Draft until the feature exists (P014c).** **Rows:** A1.
+
+- **What exists today (can be checked):** the tile "SafeRoute SOS" opens the emergency
+  options, also from the lock screen, with Call 112. It starts no countdown.
+- **What P014c adds:** the tile, the home-screen widget and the pinned notification start
+  the same five-second countdown, through the same consent check as the app.
+- **To check then:** from the lock screen, the countdown appears over the lock screen with
+  a large Cancel and Call 112; nothing of the account (no name, number or place) is shown;
+  the alert goes out at the end as in M11; "I'm safe" asks for the unlock first.
+- **Record then:** what the lock screen showed; the time from the tap to the countdown.
+
+### M24. The SafeRoute API is down
+
+**Draft until the feature exists (P015).** **Rows:** 3.
+
+- **What exists today:** an SOS uses no server at all, so there is nothing to observe.
+- **To check then:** with the API unreachable or answering with errors, the SOS on the
+  phone runs exactly as in M11; the phone keeps trying to tell the server and does so once
+  it can; the server then holds **one** session for the SOS, not two.
+
+### M25. Push messages fail
+
+**Draft until the feature exists (P015).** **Rows:** 9.
+
+- **To check then:** when a push message to a contact who uses the app cannot be
+  delivered, the SMS has already covered that contact, and the server records the push as
+  failed and tries again.
+
+### M26. A server worker stops mid-action
+
+**Draft until the feature exists (P015).** **Rows:** 10.
+
+- This is a check on the staging server, not on a phone; its steps belong to a runbook
+  written with P015. **To check then:** a job that is interrupted is delivered again and no
+  contact gets a second push for the same action.
+
+### M27. The notice after a restart
+
+**Draft until the feature exists (P014c).** **Rows:** 5.
+
+- **What exists today:** after a restart, an SOS that was active is shown when SafeRoute is
+  opened (M6). Nothing appears before that.
+- **To check then:** after a restart with an SOS active, a notice appears without opening
+  the app, and it leads to "SOS is still active" (Continue / I'm safe).
+
+### M28. The live-location link by SMS
+
+**Draft until the feature exists (P015, P016).** **Rows:** 1 (its second half).
+
+- **To check then:** started without mobile data, the SOS sends the SMS at once (M12); when
+  the phone is online again and the server knows the SOS, the contacts get the link to the
+  live location.
+
+## Troubleshooting: the second phone received nothing
+
+Work through these in order; most sessions end at one of the first four.
+
+1. **A plain SMS between the two phones must work first.** Send an ordinary text from the
+   phone that runs SafeRoute to the second phone, with the phone's own SMS app. If that
+   does not arrive, the cause is the SIM, the balance, the signal or the number, not
+   SafeRoute.
+2. **The alert comes from the SIM in the phone that runs SafeRoute.** It does not come
+   from the number used to sign in, and never from a Firebase test number: a test number
+   exists only for signing in and cannot send anything. A phone without an active SIM
+   cannot alert anybody.
+3. **Practice mode and Cancel send nothing.** A run with the PRACTICE banner never sends.
+   A countdown that was cancelled never sends. Only a real SOS whose countdown finished
+   does.
+4. **Was it sent at all?** Read the active screen. "Alert sent by SMS: 1 of 1" means the
+   phone handed the message to the network; "Still trying to send" means not yet; "Could
+   not be sent" means it was given up. "Your SMS app has the alert ..." means **nothing is
+   sent until you press Send** in the SMS app (the mode without the SMS permission).
+   "Sent" is all the phone knows: it does not mean delivered.
+5. **The SMS permission.** Settings → Emergency contacts → "Send alerts automatically" must
+   say "On" for automatic sending. A release build has no SMS permission and always uses
+   the SMS app.
+6. **The phone maker's own switch.** Some phones (Xiaomi and Redmi among them, and similar
+   phones of other makers) have a separate per-app setting for sending SMS in their own
+   security or permission screens, besides Android's permission. Look for it in the phone's
+   settings for SafeRoute. This has not been verified on such a phone for SafeRoute: record
+   what you find.
+7. **Spam and unknown senders.** On the second phone look in the spam or blocked folder and
+   in any "unknown senders" list of its SMS app. The alert contains a link, which some
+   filters treat as suspicious.
+8. **The contact itself.** In Settings → Emergency contacts: is the second phone in the
+   list, with the right number, and not marked "Opted out"? An opted-out contact is never
+   alerted. A contact added on another phone must have reached this phone (refresh the
+   list).
+9. **The consent.** Without agreement to the current notice no SOS can be started from the
+   app at all; the SOS control then shows "Set up SOS alerts" and no hold button (M0).
+10. **Two SIMs.** The phone's default SIM for SMS is used; if that SIM has no balance or no
+    signal, nothing arrives (M15).
+
+If none of these explains it, report the phone, the Android version, the SMS app and what
+the active screen said. Do not send more alerts to find out.

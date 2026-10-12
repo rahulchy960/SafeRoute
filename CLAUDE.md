@@ -80,6 +80,7 @@ docs/plan/      Plan v7 PDF (source of truth for design) + addenda v7.1 to v7.7 
 docs/adr/       Architecture Decision Records (template.md, NNNN-title.md)
 docs/diagrams/  Diagram JSON specs + generated .excalidraw/.svg/.png
 docs/prompt-logs/ One log per prompt (NNN-core-work.md)
+docs/sos/       SOS failure matrix (living document) + manual test scripts (since P013c)
 docs/runbooks/  Operational runbooks
 .claude/        settings.json (deny rules) + slash commands /start-prompt, /ship-prompt
 .githooks/      pre-push hook that rejects pushes to main
@@ -756,6 +757,24 @@ in the prompt log. At minimum, cover the rows affected by the change:
 
 Emergency side effects must be idempotent and auditable. Never make a device-side SOS action wait
 for the server.
+
+**The living matrix (since P013c).** The rows above, the rows added since (A1 to A12), their
+tests, statuses and phone results are in [`docs/sos/failure-matrix.md`](docs/sos/failure-matrix.md);
+the scripts a person runs on a phone are in
+[`docs/sos/manual-test-scripts.md`](docs/sos/manual-test-scripts.md).
+
+- Any prompt touching SOS, contacts, live sharing or reminders must update
+  `docs/sos/failure-matrix.md` (tests added, status changes) and the manual scripts, and include
+  the matrix rows in its final report.
+- A status is derived from evidence, never assumed: "Automated pass" only where a named test
+  exists and the latest `android-ci` run on `main` is green; "Manual pass" only for a result a
+  person reported, with the device row that records it. Anything else is "Manual pending",
+  "Not started" or "Waiting on" the prompt that builds it.
+- A test named in the matrix must exist under that name; when a test is renamed or removed,
+  the matrix changes in the same prompt.
+- Scripts keep their numbers (M0, M1, ...): never renumber, add at the end. A script for
+  something not built yet is marked "Draft until the feature exists".
+- A result never contains a phone number, a person's name or a place.
 
 ## Android beginner support
 

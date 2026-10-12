@@ -112,7 +112,7 @@ when it exists.
 ## Before submitting
 
 - [ ] The lawyer has reviewed the notice, the disclosure and the SMS texts.
-- [ ] The phone scripts M11 to M16 in `docs/sos/failure-matrix.md` have been run.
+- [ ] The phone scripts M11 to M16 in `docs/sos/manual-test-scripts.md` have been run.
 - [ ] The policy page has been read again; the exception still exists.
 - [ ] The video, if required, shows only phones and numbers you own.
 - [ ] The build uploaded was made with `-Psaferoute.sendSmsEnabled=true` on purpose.
