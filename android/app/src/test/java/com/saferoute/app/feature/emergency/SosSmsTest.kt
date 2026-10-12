@@ -9,6 +9,8 @@ import android.telephony.SmsManager
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.saferoute.app.BuildConfig
+import com.saferoute.app.core.emergency.FakeSmsRecipientLimit
+import com.saferoute.app.core.emergency.SKIP_DEBUG_NOT_ALLOWLISTED
 import com.saferoute.app.core.emergency.SmsOutcome
 import java.io.File
 import kotlinx.coroutines.runBlocking
@@ -31,7 +33,8 @@ private const val FAKE_NUMBER = "+919000010001"
 class SosSmsTest {
 
     private val application: Application = ApplicationProvider.getApplicationContext()
-    private val gateway = AndroidSmsGateway(application)
+    private val limit = FakeSmsRecipientLimit()
+    private val gateway = AndroidSmsGateway(application, limit)
 
     @Test
     fun `only an OK from the phone counts as sent`() {
@@ -80,6 +83,23 @@ class SosSmsTest {
         val sms: ShadowSmsManager = shadowOf(application.getSystemService(SmsManager::class.java))
         assertNull(sms.lastSentMultipartTextMessageParams)
         assertNull(sms.lastSentTextMessageParams)
+    }
+
+    @Test
+    fun `a number outside the build's list is refused before anything else and never reaches the phone`() {
+        limit.allowed = setOf("+919000010099")
+
+        val outcome = runBlocking { gateway.send(FAKE_NUMBER, "Test message") }
+
+        // Final, so it is never retried; and this reason, not "no permission".
+        assertEquals(SmsOutcome.Final(SKIP_DEBUG_NOT_ALLOWLISTED), outcome)
+        val sms: ShadowSmsManager = shadowOf(application.getSystemService(SmsManager::class.java))
+        assertNull(sms.lastSentMultipartTextMessageParams)
+        assertNull(sms.lastSentTextMessageParams)
+
+        // A number on the list goes on to the next check (here: the permission, not granted).
+        limit.allowed = setOf(FAKE_NUMBER)
+        assertEquals(SmsOutcome.Final("no_permission"), runBlocking { gateway.send(FAKE_NUMBER, "Test message") })
     }
 
     @Test

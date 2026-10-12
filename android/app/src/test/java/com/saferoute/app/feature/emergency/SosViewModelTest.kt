@@ -45,7 +45,7 @@ class SosViewModelTest {
         block(SosRig(this).also { it.policy.open = true })
     }
 
-    private fun SosRig.viewModel() = SosViewModel(runner, trail, gate, haptics, dispatch, policy, appScope)
+    private fun SosRig.viewModel() = SosViewModel(runner, trail, gate, haptics, dispatch, policy, notices, appScope)
 
     private fun SosRig.open(mode: SosOpenMode, fresh: Boolean = true): SosViewModel =
         viewModel().also {

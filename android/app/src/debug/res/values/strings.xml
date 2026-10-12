@@ -38,4 +38,9 @@
     <string name="developer_check_who_am_i_known">Role %1$s · language %2$s</string>
     <string name="developer_check_who_am_i_unavailable">The server did not say. Are you signed in and online?</string>
     <string name="developer_check_footer">Debug builds only. This screen never shows the server address or a token.</string>
+
+    <!-- The SMS banner of debug builds (P014b6): who this build will really text. A count only. -->
+    <string name="debug_sms_banner_sending">DEBUG build: SMS is sent for real to %1$d allowlisted contacts.</string>
+    <string name="debug_sms_banner_none">DEBUG build: no allowlisted contacts: composer mode. Your SMS app opens, and nothing is sent until you press Send there.</string>
+    <string name="debug_sms_banner_no_permission">DEBUG build: the app may not send SMS by itself (the SMS permission is off): composer mode. Your SMS app opens, and nothing is sent until you press Send there.</string>
 </resources>

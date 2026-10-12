@@ -38,4 +38,8 @@
     <string name="developer_check_who_am_i_known">ভূমিকা %1$s · ভাষা %2$s</string>
     <string name="developer_check_who_am_i_unavailable">সার্ভার জানায়নি। আপনি কি সাইন-ইন করা এবং অনলাইনে আছেন?</string>
     <string name="developer_check_footer">শুধু ডিবাগ বিল্ডে। এই স্ক্রিন কখনও সার্ভারের ঠিকানা বা টোকেন দেখায় না।</string>
+
+    <string name="debug_sms_banner_sending">DEBUG সংস্করণ: অনুমোদিত তালিকার %1$dটি পরিচিতিকে সত্যিই SMS পাঠানো হবে।</string>
+    <string name="debug_sms_banner_none">DEBUG সংস্করণ: অনুমোদিত তালিকায় কোনো পরিচিতি নেই: কম্পোজার মোড। আপনার SMS অ্যাপ খুলবে, আর সেখানে Send না চাপা পর্যন্ত কিছুই পাঠানো হবে না।</string>
+    <string name="debug_sms_banner_no_permission">DEBUG সংস্করণ: অ্যাপ নিজে SMS পাঠাতে পারবে না (SMS অনুমতি বন্ধ): কম্পোজার মোড। আপনার SMS অ্যাপ খুলবে, আর সেখানে Send না চাপা পর্যন্ত কিছুই পাঠানো হবে না।</string>
 </resources>

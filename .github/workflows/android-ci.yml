@@ -192,6 +192,34 @@ jobs:
             exit 1
           fi
 
+      # A debug build may text only a list of test numbers and says so in a banner (P014b6,
+      # ADR 0027). The list, the class that reads it and the banner's strings live in src/debug;
+      # a release build must hold none of them and texts every emergency contact. The debug APK
+      # is the control: if it shows no hits, the check is not looking in the right place. CI
+      # sets no list, so no phone number is in either APK.
+      - name: The release APK has no debug SMS allowlist and no debug banner
+        run: |
+          hits() { unzip -p "$1" "$2" | grep -a -c "$3" || true; }
+          debug_apk=app/build/outputs/apk/debug/app-debug.apk
+          release_apk=app/build/outputs/apk/release/app-release-unsigned.apk
+          debug_field=$(hits "$debug_apk" 'classes*.dex' DEBUG_SMS_ALLOWLIST)
+          release_field=$(hits "$release_apk" 'classes*.dex' DEBUG_SMS_ALLOWLIST)
+          debug_class=$(hits "$debug_apk" 'classes*.dex' DebugSmsAllowlist)
+          release_class=$(hits "$release_apk" 'classes*.dex' DebugSmsAllowlist)
+          debug_strings=$(hits "$debug_apk" resources.arsc debug_sms_banner)
+          release_strings=$(hits "$release_apk" resources.arsc debug_sms_banner)
+          echo "allowlist field: debug $debug_field, release $release_field"
+          echo "allowlist class: debug $debug_class, release $release_class"
+          echo "banner strings: debug $debug_strings, release $release_strings"
+          if [ "$debug_field" -eq 0 ] || [ "$debug_class" -eq 0 ] || [ "$debug_strings" -eq 0 ]; then
+            echo "::error::No SMS allowlist found in the debug APK: this check is not looking in the right place."
+            exit 1
+          fi
+          if [ "$release_field" -ne 0 ] || [ "$release_class" -ne 0 ] || [ "$release_strings" -ne 0 ]; then
+            echo "::error::The release APK contains the debug SMS allowlist or its banner."
+            exit 1
+          fi
+
       # SEND_SMS may be in a debug build (to try SMS alerts on a phone) and must not be in the
       # release APK built above. aapt2 prints the permissions an APK asks for. The debug APK is
       # the control: if it shows no SEND_SMS, the check is not looking in the right place.

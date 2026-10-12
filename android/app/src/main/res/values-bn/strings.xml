@@ -524,6 +524,7 @@
     <string name="sos_alerts_waiting">এখনও পাঠানোর চেষ্টা চলছে: %1$d।</string>
     <string name="sos_alerts_failed">পাঠানো যায়নি: %1$d।</string>
     <string name="sos_alerts_skipped">পরিচিতি বেরিয়ে যাওয়ায় পাঠানো হয়নি: %1$d।</string>
+    <string name="sos_alerts_held">এই পরীক্ষামূলক সংস্করণ তাঁদের SMS পাঠাতে পারে না বলে পাঠানো হয়নি: %1$d।</string>
     <string name="sos_alerts_caveat">পাঠানো বার্তাও না পৌঁছাতে বা না পড়া হতে পারে। বিপদে পড়লে 112-এ কল করুন।</string>
     <string name="sos_alerts_composer">আপনার SMS অ্যাপে %1$d জন জরুরি পরিচিতির জন্য সতর্কবার্তা তৈরি আছে। সেখানে পাঠান চাপলে তবেই এটি যাবে।</string>
     <string name="sos_alerts_composer_open">SMS অ্যাপ আবার খুলুন</string>

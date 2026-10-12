@@ -229,6 +229,20 @@ class SosAlertLinesTest {
     }
 
     @Test
+    fun `messages held back by a build's list of test numbers have their own line and are not called opted out`() {
+        state = state.copy(alerts = SosAlertStatus.Automatic(SosAlertSummary(sent = 1, waiting = 0, failed = 0, skipped = 0, held = 2)))
+        show()
+
+        compose.onNodeWithText(string(R.string.sos_alerts_sent, 1, 3)).assertExists()
+        compose.onNodeWithText(string(R.string.sos_alerts_held, 2)).assertExists()
+        compose.onAllNodesWithText(string(R.string.sos_alerts_skipped, 2)).assertCountEquals(0)
+
+        // No build limit, no line.
+        state = state.copy(alerts = SosAlertStatus.Automatic(SosAlertSummary(sent = 1, waiting = 0, failed = 0, skipped = 0)))
+        compose.onAllNodesWithText(string(R.string.sos_alerts_held, 0)).assertCountEquals(0)
+    }
+
+    @Test
     fun `on the lock screen the same counts are shown and nothing else about the contacts`() {
         state = state.copy(alerts = SosAlertStatus.Automatic(SosAlertSummary(sent = 2, waiting = 0, failed = 0, skipped = 0)))
         show(locked = true)

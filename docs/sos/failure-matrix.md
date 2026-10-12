@@ -49,14 +49,17 @@ default), otherwise through the phone's SMS app. Without that consent no SOS can
 started from the app; Call 112 and a practice run always work. The tile and the pinned
 notification open the emergency options and do not start an SOS yet; there is no widget
 yet (P014c). No server takes part in an SOS yet (P015), and there is no live-location
-link (P016).
+link (P016). **A debug build texts only the test numbers it was built with** (P014b6): with
+no such list it sends nothing by itself and uses the SMS app, and a banner on the SOS
+screens says which.
 
 ## The matrix
 
 Rows 1 to 11 are Plan v7 §7.5. Rows A1 to A4 are from addendum v7.1, section B (SOS entry
 points). Row A5 is from ADR 0024. Rows A6 to A12 were added in P013c; the plan has no text
 for them, so their expected behaviour is the design recorded in
-[ADR 0027](../adr/0027-sos-device-flow.md), and says so where the design is silent.
+[ADR 0027](../adr/0027-sos-device-flow.md), and says so where the design is silent. Row A13
+was added in P014b6.
 
 | ID | Scenario | Expected behaviour | Implemented in | Automated tests | Manual script | Status | Last result date | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -83,6 +86,7 @@ for them, so their expected behaviour is the design recorded in
 | A10 | Contact list changed mid-SOS | Who is alerted is decided once, at the trigger. A later change of the list does not add anyone to this SOS; a contact who opts out before their message left is skipped. The follow-up goes only to those whose alert was sent. | P014b1, P014b2 | `SosAlertsTest`, `RoomSosActionStoreTest`, `SosDispatchTest` ([names](#row-a10-contact-list-changed-mid-sos)) | [M23](manual-test-scripts.md#m23-the-contact-list-changes-during-an-sos) | Automated pass · Manual pending | 2026-10-12 (automated); manual: none | The plan has no row for this; the expected behaviour is the design of ADR 0027. A contact removed (not opted out) before their message left: see Known gaps. |
 | A11 | Process death inside the 5-second countdown | With time left, the same countdown goes on. If its end has passed, nothing is sent: the user is asked "Send now" or Cancel. | P014a1, P014a2, P014a3 | `SosRecoveryTest`, `SosEngineTest`, `SosRunnerTest`, `SosViewModelTest`, `SosScreensTest`, `SosDispatchTest` ([names](#row-a11-process-death-inside-the-5-second-countdown)) | [M6](manual-test-scripts.md#m6-kill-during-the-countdown-and-reboot) | Automated pass · Manual pending | 2026-10-12 (automated); manual: none | Automated at data, logic and screen level. |
 | A12 | SOS location unavailable (no permission or location off) | The SOS triggers on time and never asks for a permission. The screen says in words why there is no position; the SMS says that the location is unavailable and still asks to call 112. | P014a2, P014a3, P014b1, P014b2 | `SosRunnerTest`, `SosForegroundServiceTest`, `SosScreensTest`, `SosMessageTest`, `SosDispatchTest` ([names](#row-a12-sos-location-unavailable-no-permission-or-location-off)) | [M5](manual-test-scripts.md#m5-airplane-mode-and-location-off) | Automated pass · Manual pending | 2026-10-12 (automated); manual: none | Automated at logic, component and screen level. |
+| A13 | Debug build whose account holds real contacts | A debug build texts by itself only the test numbers it was built with; every other contact is not texted and is recorded as skipped. With no list, or none of the contacts on it, nothing is sent by the app and the SMS app is used. A banner on the SOS screens says which, with a count. A release build is unchanged. | P014b6 | `DebugSmsAllowlistTest`, `DebugSmsAllowlistLayoutTest`, `BuildSmsNoticeTest`, `SmsRecipientLimitTest`, `SosDispatchTest`, `SosAlertsTest`, `SosSmsTest`, `SosAlertLinesTest` ([names](#row-a13-debug-build-whose-account-holds-real-contacts)) | [M29](manual-test-scripts.md#m29-the-list-of-test-numbers-of-a-debug-build) | Manual pending | None | The tests were added in P014b6 and pass in that prompt's gate. The row becomes "Automated pass" when `android-ci` has run green on `main` with them; until then this document does not claim it. |
 
 ## Known gaps
 
@@ -600,6 +604,39 @@ No automated test: nothing of this row is built, or nothing of it can be tested 
   - "without a location permission there is nothing to wait for"
   - "without a position the alert waits 3 seconds at most, and the trigger not at all"
 
+### Row A13: Debug build whose account holds real contacts
+
+Added in P014b6; these tests are on `main` only after that prompt is merged.
+
+- `DebugSmsAllowlistTest` (`android/app/src/testDebug/java/com/saferoute/app/feature/emergency/DebugSmsAllowlistTest.kt`): all 7 tests.
+- `DebugSmsAllowlistLayoutTest` (the same file):
+  - "the debug code of the list never logs or prints"
+  - "the release build sets no limit and reads no list"
+  - "the build file gives the list to the debug build type only and never prints it"
+  - "no tracked properties file holds a list of numbers"
+  - "nothing in the main source set reads the list or the debug class"
+- `BuildSmsNoticeTest` (the same file): all 7 tests.
+- `SmsRecipientLimitTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SmsRecipientLimitTest.kt`):
+  - "no limit means every number, and nothing to tell the screens"
+  - "a limited build is told how many of its contacts would be texted"
+  - "an empty list, or one that matches no contact, counts nobody"
+  - "when the app cannot send by itself nobody is counted, whatever the list holds"
+  - "the notice holds counts only"
+- `SosDispatchTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosDispatchTest.kt`):
+  - "a build that limits its recipients texts only the allowlisted contacts and records the others as skipped"
+  - "with an empty list of test numbers nothing is sent by the app and the SMS app gets everyone"
+  - "with test numbers that match none of the contacts the SMS app is used, as with an empty list"
+  - "without a limit every contact is texted and nothing is held back"
+  - "the safe follow-up of a limited build goes only to the contact who was texted"
+  - "after a process death a limited build still texts nobody outside its list"
+- `SosAlertsTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosAlertsTest.kt`):
+  - "numbers a limited build may not text are skipped with their own reason, and counted apart"
+  - "a build without a limit skips nobody"
+- `SosSmsTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosSmsTest.kt`):
+  - "a number outside the build's list is refused before anything else and never reaches the phone"
+- `SosAlertLinesTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosAlertsDeviceTest.kt`):
+  - "messages held back by a build's list of test numbers have their own line and are not called opted out"
+
 ## History
 
 - **P014a1** (2026-10-09): created from the failure-matrix table of that prompt's log.
@@ -614,3 +651,6 @@ No automated test: nothing of this row is built, or nothing of it can be tested 
   [manual-test-scripts.md](manual-test-scripts.md) with their numbers unchanged (M17 to M28
   new). No test, status or result was invented: a status is "Automated pass" only where a
   named test exists and `android-ci` on `main` is green.
+- **P014b6** (2026-10-12): row A13 and script M29 added (debug builds text only the test
+  numbers they were built with). Scripts M11, M12, M15, M16 and M22 now need the list for
+  automatic sending in a debug build. No other row's status changed.

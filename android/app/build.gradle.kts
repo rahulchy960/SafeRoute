@@ -180,6 +180,23 @@ if (sendSmsProperty != null && sendSmsProperty != "true" && sendSmsProperty != "
 }
 val sendSmsInDebug = sendSmsProperty?.toBoolean() ?: true
 val sendSmsInRelease = sendSmsProperty?.toBoolean() ?: false
+// A DEBUG build may text only the test numbers named here (ADR 0027, note of P014b6): a
+// developer's account can hold the numbers of real people, and a finished SOS countdown would
+// text all of them. The Gradle property `saferoute.debugSmsAllowlist` is a comma-separated
+// list of phone numbers in international form (+91...). It belongs in the USER-LEVEL
+// gradle.properties, never in a tracked file: phone numbers are personal data. Not set or
+// empty: a debug build sends nothing by itself and opens the phone's SMS app instead.
+// The value becomes a BuildConfig field of the debug build type only; a release build does
+// not have the field and ignores the property. The value is never printed: an error names
+// the property, not its content.
+val debugSmsAllowlist = providers.gradleProperty("saferoute.debugSmsAllowlist").orNull?.trim().orEmpty()
+if (!Regex("""[0-9+, ().-]*""").matches(debugSmsAllowlist)) {
+    throw GradleException(
+        "saferoute.debugSmsAllowlist may contain only phone numbers separated by commas " +
+            "(digits, +, spaces, brackets, dots and hyphens). See android/README.md.",
+    )
+}
+
 fun sendSmsManifest(enabled: Boolean) = if (enabled) "src/sendSmsOn/AndroidManifest.xml" else "src/sendSmsOff/AndroidManifest.xml"
 
 android {
@@ -216,6 +233,9 @@ android {
             }
             // Read by the SMS gateway: without the permission in the manifest it never tries.
             buildConfigField("boolean", "SEND_SMS_DECLARED", sendSmsInDebug.toString())
+            // Read by BuildSmsRecipientLimit in src/debug only. Never shown or logged; the
+            // screens may only say how many contacts are on the list.
+            buildConfigField("String", "DEBUG_SMS_ALLOWLIST", "\"$debugSmsAllowlist\"")
         }
         // Unsigned on purpose: there is no keystore anywhere in this repository. Release signing
         // and code shrinking (R8) arrive with P022.

@@ -14,8 +14,10 @@ import android.telephony.SmsManager
 import android.telephony.SubscriptionManager
 import androidx.core.content.ContextCompat
 import com.saferoute.app.BuildConfig
+import com.saferoute.app.core.emergency.SKIP_DEBUG_NOT_ALLOWLISTED
 import com.saferoute.app.core.emergency.SmsGateway
 import com.saferoute.app.core.emergency.SmsOutcome
+import com.saferoute.app.core.emergency.SmsRecipientLimit
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.UUID
 import javax.inject.Inject
@@ -85,6 +87,7 @@ internal fun canSendSmsAutomatically(context: Context): Boolean =
 
 class AndroidSmsGateway @Inject constructor(
     @ApplicationContext private val context: Context,
+    private val limit: SmsRecipientLimit,
 ) : SmsGateway {
 
     /**
@@ -112,6 +115,9 @@ class AndroidSmsGateway @Inject constructor(
      * phone joins them) and waits until the phone has reported on every part.
      */
     override suspend fun send(phoneE164: String, text: String): SmsOutcome {
+        // The second lock (the first is in SosDispatch): whatever asked for this message, a
+        // build that limits its recipients never hands another number to the phone.
+        if (!limit.allows(phoneE164)) return SmsOutcome.Final(SKIP_DEBUG_NOT_ALLOWLISTED)
         if (!canSendSmsAutomatically(context)) return SmsOutcome.Final("no_permission")
         val manager = smsManager() ?: return SmsOutcome.Retryable("no_sms_service")
         val parts = try {

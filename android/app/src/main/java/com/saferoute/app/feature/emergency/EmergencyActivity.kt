@@ -72,6 +72,7 @@ class EmergencyActivity : ComponentActivity() {
         setContent {
             SafeRouteTheme {
                 val ui by viewModel.ui.collectAsStateWithLifecycle()
+                val smsNotice by viewModel.smsNotice.collectAsStateWithLifecycle()
                 // Survives a rotation: the dialog does not fall back to its first state.
                 var dialerMissing by rememberSaveable { mutableStateOf(false) }
                 val call112 = { if (!openEmergencyDialer(this)) dialerMissing = true }
@@ -98,6 +99,7 @@ class EmergencyActivity : ComponentActivity() {
                             dialerMissing = dialerMissing,
                             onCancel = viewModel::onCancel,
                             onCall112 = call112,
+                            smsNotice = smsNotice,
                         )
                     }
 
@@ -114,6 +116,7 @@ class EmergencyActivity : ComponentActivity() {
                             onCall112 = call112,
                             onOpenComposer = viewModel::onOpenComposer,
                             onTellContactsChange = viewModel::onTellContactsChange,
+                            smsNotice = smsNotice,
                         )
                     }
 

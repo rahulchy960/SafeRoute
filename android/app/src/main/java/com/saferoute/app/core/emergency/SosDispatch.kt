@@ -113,6 +113,10 @@ private val SENDABLE = setOf(SosActionState.PENDING, SosActionState.FAILED_RETRY
  *    the trigger can therefore be missed: the alert does not wait for a server.
  * 4. send (or open the SMS app), retry while the emergency is active, and send one update if
  *    a better position arrives within [LOCATION_UPDATE_WINDOW_MILLIS].
+ *
+ * A build that limits its recipients ([SmsRecipientLimit], debug builds) texts only the
+ * numbers it allows and marks the others SKIPPED; when it allows none of the contacts, the
+ * SMS app is used for all of them, as if the app could not send by itself.
  */
 @Singleton
 class SosDispatch @Inject constructor(
@@ -122,6 +126,7 @@ class SosDispatch @Inject constructor(
     private val freshener: ContactsFreshener,
     private val modeSource: SmsModeSource,
     private val composer: SmsComposer,
+    private val limit: SmsRecipientLimit,
     private val trail: SosTrail,
     private val battery: BatteryLevel,
     private val clock: Clock,
@@ -182,6 +187,20 @@ class SosDispatch @Inject constructor(
     private fun hasGoodPosition(triggeredAt: Instant): Boolean =
         trail.state.value.last?.recordedAt?.isBefore(triggeredAt.minus(SOS_COUNTDOWN)) == false
 
+    private suspend fun waitingAlerts(sosId: String): List<SosAction> =
+        alerts.actions(sosId).filter { it.type == SosActionType.ALERT && it.state in SENDABLE }
+
+    /**
+     * The way of sending for the alerts that are still [waiting]. The SMS app whenever the
+     * app cannot send by itself, and also when this build's limit allows none of the people
+     * who are waiting: then the user decides in the SMS app, and nothing is sent unseen.
+     */
+    private fun modeFor(waiting: List<SosAction>): SmsMode = when {
+        modeSource.mode() == SmsMode.COMPOSER -> SmsMode.COMPOSER
+        limit.limited && waiting.isNotEmpty() && waiting.none { limit.allows(it.phoneE164) } -> SmsMode.COMPOSER
+        else -> SmsMode.AUTOMATIC
+    }
+
     private suspend fun run(sosId: String, resumed: Boolean, stillActive: suspend () -> Boolean) {
         if (!policy.alertsAllowed()) {
             _status.value = SosAlertStatus.NotEnabled
@@ -195,14 +214,16 @@ class SosDispatch @Inject constructor(
         val name = settings.name()
         val language = settings.language()
         if (!resumed) waitBrieflyForPositionAndContacts(sosId, triggeredAt)
-        if (modeSource.mode() == SmsMode.COMPOSER) {
-            val waiting = alerts.actions(sosId).filter { it.type == SosActionType.ALERT && it.state in SENDABLE }
+        val waiting = waitingAlerts(sosId)
+        if (modeFor(waiting) == SmsMode.COMPOSER) {
             _status.value = if (waiting.isEmpty()) SosAlertStatus.NoContacts else SosAlertStatus.Composer(waiting.size)
             if (!resumed && waiting.isNotEmpty()) {
                 compose(waiting.map { it.phoneE164 }, buildAlertMessage(input(name, language)))
             }
             return
         }
+        // Before the first message leaves: who this build may not text is taken off.
+        alerts.skipNotAllowed(sosId, limit)
         suspend fun publish() {
             _status.value = SosAlertStatus.Automatic(summarise(alerts.actions(sosId)))
         }
@@ -264,8 +285,8 @@ class SosDispatch @Inject constructor(
     suspend fun tellContactsSafe(sosId: String) {
         if (!policy.alertsAllowed()) return
         val text = buildSafeMessage(settings.name(), settings.language())
-        if (modeSource.mode() == SmsMode.COMPOSER) {
-            val written = alerts.actions(sosId).filter { it.type == SosActionType.ALERT && it.state in SENDABLE }
+        val written = waitingAlerts(sosId)
+        if (modeFor(written) == SmsMode.COMPOSER) {
             if (written.isNotEmpty()) compose(written.map { it.phoneE164 }, text)
             return
         }

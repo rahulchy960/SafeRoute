@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.saferoute.app.core.di.ApplicationScope
 import com.saferoute.app.core.emergency.SOS_COUNTDOWN
+import com.saferoute.app.core.emergency.SmsLimitNotice
+import com.saferoute.app.core.emergency.SmsLimitNotices
 import com.saferoute.app.core.emergency.SosAlertPolicy
 import com.saferoute.app.core.emergency.SosAlertStatus
 import com.saferoute.app.core.emergency.SosDispatch
@@ -24,6 +26,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -120,8 +123,16 @@ class SosViewModel @Inject constructor(
     private val haptics: SosHaptics,
     private val dispatch: SosDispatch,
     private val policy: SosAlertPolicy,
+    private val notices: SmsLimitNotices,
     @param:ApplicationScope private val appScope: CoroutineScope,
 ) : ViewModel() {
+
+    /**
+     * What a build that limits its recipients (a debug build) does with an alert; null in
+     * every other build. Shown on the countdown and the active screen, never in practice.
+     */
+    val smsNotice: StateFlow<SmsLimitNotice?> =
+        flow { emit(notices.current()) }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     private val local = MutableStateFlow(Local())
     private var practiceTimer: Job? = null

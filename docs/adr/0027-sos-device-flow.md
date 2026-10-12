@@ -309,6 +309,48 @@ messages their emergency contacts. Nothing was verified on a phone.
 **Still open after part b:** the name in the message and the SOS language setting (P014c);
 which separator SMS apps accept; every phone check.
 
+### Note of 2026-10-12 (P014b6): debug builds text only named test numbers
+
+**The problem.** A debug build carries `SEND_SMS` so that alerts can be tried on a phone, and
+from P014b3 an SOS that finishes its countdown texts every emergency contact of the account.
+A developer's or tester's account can hold the numbers of real people. One forgotten
+countdown, or a test of something else, would alert them.
+
+**Decided.**
+
+1. **A build can limit who it texts by itself** (`core/emergency/SmsRecipientLimit`). A
+   release build sets no limit. A debug build allows only the numbers in the Gradle property
+   `saferoute.debugSmsAllowlist`, which lives in the user-level `gradle.properties` and
+   becomes a `BuildConfig` field of the debug build type only.
+2. **Two locks.** `SosDispatch` marks every waiting message to a number outside the list as
+   SKIPPED with the category `debug_not_allowlisted` before the first message leaves; and
+   the SMS gateway itself refuses such a number, whoever asks.
+3. **No list means no automatic sending.** With an empty or missing list, or a list that
+   matches none of the contacts, the phone's SMS app is used for every contact, as in a build
+   without the permission. Nothing leaves without the user reading it and pressing Send.
+   The SMS app is not limited by the list: there the user sees every recipient.
+4. **The build says what it does.** A banner on the arm step, the countdown and the active
+   screen gives the number of contacts that will really be texted, or says "composer mode"
+   and why. The banner, its strings, the list and the class that reads it are in `src/debug`;
+   `src/release` holds stand-ins that do nothing. CI checks the release APK for them.
+5. **Counts only.** The numbers on the list are never shown, logged or printed; a malformed
+   property fails the build with a message that does not contain it.
+
+**What does not change.** The consent gate, the notice and its version (this is a property
+of a test build, not of what an SOS does for a user), who is decided at the trigger, the
+retries, the follow-ups (they go only to contacts whose alert was sent), and every release
+build.
+
+**Rejected.** Building debug without the permission by default: the automatic path could then
+be tried only with an extra flag, and a build made with that flag would again text everyone.
+A confirmation dialog in debug builds: one more tap in the flow under test, and it protects
+nobody who taps through. Hiding the limit inside the gateway only: the record would then say
+"failed" for something that was never meant to be sent.
+
+**Residual risks.** A debug APK built with a list contains those numbers. In composer mode a
+tester can still press Send to real people; the SMS app shows them who. A tester who puts a
+real person's number on the list has chosen to text them.
+
 ## Alternatives considered
 
 - **Keep the state in memory or in DataStore.** Simpler, but a killed process loses the

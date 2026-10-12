@@ -8,6 +8,7 @@ and reported by a person.
   P013c with the **same numbers and steps**; only the layout changed (preconditions, steps,
   what to record, what to do if it fails, rows covered).
 - **M17 to M28** are new in P013c, for rows that had no script.
+- **M29** is new in P014b6, for the list of test numbers of debug builds.
 - A script marked **Draft until the feature exists** describes something that is not built
   yet. Do not run it, and do not record a result for it.
 - Legal wording quoted here (the notice, the SMS texts) is a draft, to be verified by a
@@ -32,6 +33,12 @@ contact of the signed-in account.
 6. **Use a test account**, never an account whose contacts are real people.
 7. **Stop and tell the developer** if a person you did not intend could receive a message,
    or did receive one. Do not continue the session.
+
+**A debug build texts only the numbers it was built with** (since P014b6): the Gradle
+property `saferoute.debugSmsAllowlist` in your user-level `gradle.properties` (see
+`android/README.md`). Put only phones you own on it. A debug build made **without** the list
+sends nothing by itself and opens your SMS app instead; the banner on the SOS screens says
+which of the two it is. Read the banner before every countdown.
 
 To run a script **without any SMS**: use an account with **no contacts**. The SOS then runs
 and the active screen says "You have no emergency contact to alert. If you are in danger,
@@ -223,8 +230,10 @@ phone" is enough. A screenshot must not show a number, a name or a map position.
 
 **Rows:** 1. **A debug build; contacts are only your second phone.**
 
-- **Preconditions:** M0 done; a build with the SMS permission (a debug build by default);
-  safety rules 1 and 2.
+- **Preconditions:** M0 done; a build with the SMS permission (a debug build by default)
+  **made with your second phone's number in `saferoute.debugSmsAllowlist`** (since P014b6;
+  without it a debug build uses the SMS app, as in M13); safety rules 1 and 2. On the SOS
+  dialog the banner must read "DEBUG build: SMS is sent for real to 1 allowlisted contacts."
 - **Steps:** Settings → Emergency contacts → "Send alerts automatically" → "Allow sending
   SMS": the app's explanation appears first; "Continue"; Android's dialog; "Allow"; the
   card says "On". Start an SOS (M3). *Expected:* within a few seconds of the trigger the
@@ -405,6 +414,31 @@ phone" is enough. A screenshot must not show a number, a name or a map position.
 - **If it fails:** an alert to a phone that was never a contact, or two alerts to one
   phone, is a fault.
 
+### M29. The list of test numbers of a debug build
+
+*New in P014b6.* **Rows:** A13.
+
+- **Preconditions:** a debug build; a test account with **two** contacts, both phones you
+  own; "Send alerts automatically" is "On" (M11).
+- **Steps, part 1 (no list):** build without `saferoute.debugSmsAllowlist` (or with it
+  empty). Open the SOS control. *Expected:* the banner "DEBUG build: no allowlisted
+  contacts: composer mode. ..." on the dialog and on the countdown. Let the countdown
+  finish: your SMS app opens with both numbers and **nothing is sent** until you press
+  Send; do not press it. End with "I'm safe".
+- **Steps, part 2 (one of two):** put the number of **one** of the two phones on the list
+  and rebuild. *Expected:* the banner "DEBUG build: SMS is sent for real to 1 allowlisted
+  contacts." Let the countdown finish: only the listed phone gets the SMS; the active
+  screen shows "Alert sent by SMS: 1 of 2 emergency contacts." and "Not sent because this
+  test build may not text them: 1."; no SMS app opens. "I'm safe" with "Tell my contacts
+  that I am safe" ticked: only the listed phone gets the follow-up.
+- **Steps, part 3 (a number that is nobody's contact):** put a number on the list that is
+  none of the account's contacts (another phone you own) and rebuild. *Expected:* as part
+  1, composer mode.
+- **Record:** pass or fail for each part; what each phone received; the banner's words.
+- **If it fails:** an SMS to the phone that is **not** on the list is a serious fault: stop
+  the session and report it. So is a banner that names a different number of contacts than
+  were texted.
+
 ## Drafts for what is not built yet
 
 Do not run these. Each is rewritten with real steps in the prompt that builds the feature.
@@ -487,21 +521,27 @@ Work through these in order; most sessions end at one of the first four.
 5. **The SMS permission.** Settings → Emergency contacts → "Send alerts automatically" must
    say "On" for automatic sending. A release build has no SMS permission and always uses
    the SMS app.
-6. **The phone maker's own switch.** Some phones (Xiaomi and Redmi among them, and similar
+6. **A debug build and its list of test numbers.** Since P014b6 a debug build texts only
+   the numbers in `saferoute.debugSmsAllowlist`. Read the banner on the SOS dialog: "no
+   allowlisted contacts: composer mode" means the list is missing or empty, or the second
+   phone's number is not on it (a typing mistake, or the build was not made again after the
+   list changed). On the active screen, "Not sent because this test build may not text
+   them" counts the contacts that were left out.
+7. **The phone maker's own switch.** Some phones (Xiaomi and Redmi among them, and similar
    phones of other makers) have a separate per-app setting for sending SMS in their own
    security or permission screens, besides Android's permission. Look for it in the phone's
    settings for SafeRoute. This has not been verified on such a phone for SafeRoute: record
    what you find.
-7. **Spam and unknown senders.** On the second phone look in the spam or blocked folder and
+8. **Spam and unknown senders.** On the second phone look in the spam or blocked folder and
    in any "unknown senders" list of its SMS app. The alert contains a link, which some
    filters treat as suspicious.
-8. **The contact itself.** In Settings → Emergency contacts: is the second phone in the
+9. **The contact itself.** In Settings → Emergency contacts: is the second phone in the
    list, with the right number, and not marked "Opted out"? An opted-out contact is never
    alerted. A contact added on another phone must have reached this phone (refresh the
    list).
-9. **The consent.** Without agreement to the current notice no SOS can be started from the
-   app at all; the SOS control then shows "Set up SOS alerts" and no hold button (M0).
-10. **Two SIMs.** The phone's default SIM for SMS is used; if that SIM has no balance or no
+10. **The consent.** Without agreement to the current notice no SOS can be started from the
+    app at all; the SOS control then shows "Set up SOS alerts" and no hold button (M0).
+11. **Two SIMs.** The phone's default SIM for SMS is used; if that SIM has no balance or no
     signal, nothing arrives (M15).
 
 If none of these explains it, report the phone, the Android version, the SMS app and what

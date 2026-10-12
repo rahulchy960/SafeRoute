@@ -36,7 +36,10 @@ enum class SosActionState {
     FAILED_RETRYABLE,
     FAILED_FINAL,
 
-    /** Not sent on purpose: the contact opted out before the message left. */
+    /**
+     * Not sent on purpose: the contact opted out before the message left, or this build may
+     * not text that number ([SKIP_DEBUG_NOT_ALLOWLISTED]).
+     */
     SKIPPED,
 }
 
@@ -95,8 +98,16 @@ fun interface SmsGateway {
 }
 
 /** Counts for a screen, also for the lock screen: never a name or a number. */
-data class SosAlertSummary(val sent: Int, val waiting: Int, val failed: Int, val skipped: Int) {
-    val total: Int get() = sent + waiting + failed + skipped
+data class SosAlertSummary(
+    val sent: Int,
+    val waiting: Int,
+    val failed: Int,
+    /** Not sent because the contact opted out. */
+    val skipped: Int,
+    /** Not sent because this build may not text that number (a debug build's list of test numbers). */
+    val held: Int = 0,
+) {
+    val total: Int get() = sent + waiting + failed + skipped + held
 }
 
 fun summarise(actions: List<SosAction>, type: SosActionType = SosActionType.ALERT): SosAlertSummary {
@@ -109,7 +120,8 @@ fun summarise(actions: List<SosAction>, type: SosActionType = SosActionType.ALER
                 it.state == SosActionState.FAILED_RETRYABLE
         },
         failed = ofType.count { it.state == SosActionState.FAILED_FINAL },
-        skipped = ofType.count { it.state == SosActionState.SKIPPED },
+        skipped = ofType.count { it.state == SosActionState.SKIPPED && it.lastErrorCategory != SKIP_DEBUG_NOT_ALLOWLISTED },
+        held = ofType.count { it.state == SosActionState.SKIPPED && it.lastErrorCategory == SKIP_DEBUG_NOT_ALLOWLISTED },
     )
 }
 
@@ -188,6 +200,20 @@ class SosAlerts @Inject constructor(
         store.actions(sosId)
             .filter { it.state in UNFINISHED && it.contactId !in stillAllowed }
             .count { store.moveIf(it.id, UNFINISHED, SosActionState.SKIPPED, it.attemptCount, "opted_out", clock.instant()) }
+    }
+
+    /**
+     * Every message that has not left yet and whose number [limit] does not allow is marked
+     * SKIPPED with [SKIP_DEBUG_NOT_ALLOWLISTED]. Returns how many. Does nothing in a build
+     * without a limit.
+     */
+    suspend fun skipNotAllowed(sosId: String, limit: SmsRecipientLimit): Int = sending.withLock {
+        if (!limit.limited) return@withLock 0
+        store.actions(sosId)
+            .filter { it.state in UNFINISHED && !limit.allows(it.phoneE164) }
+            .count {
+                store.moveIf(it.id, UNFINISHED, SosActionState.SKIPPED, it.attemptCount, SKIP_DEBUG_NOT_ALLOWLISTED, clock.instant())
+            }
     }
 
     /**

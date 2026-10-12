@@ -671,6 +671,17 @@ and [`android/README.md`](android/README.md):
   (`SmsPermissionCardTest`). Changing what an SOS sends, costs or stores means changing the
   notice and its version in the same prompt. Play declarations are drafts in `docs/play/`;
   Claude Code never submits anything to Google Play.
+  Debug builds (since P014b6): a debug build texts **only** the numbers in the Gradle
+  property `saferoute.debugSmsAllowlist` (user-level `gradle.properties`; a `BuildConfig`
+  field of the debug build type only). Never write a list into a tracked file, never read,
+  print, log or show its numbers (screens show a count), and never give a debug build a
+  default list or a way around it: no list means the SMS app, not sending. The limit is
+  `core/emergency/SmsRecipientLimit`; `SosDispatch` records a number outside it as SKIPPED
+  (`debug_not_allowlisted`) and `AndroidSmsGateway` refuses it as a second lock: keep both.
+  The list, `DebugSmsAllowlist` and the banner (`BuildSmsNotice`, `debug_sms_*` strings) live
+  in `src/debug` with stand-ins in `src/release`; nothing in `src/main` names them, and a
+  release build must stay unchanged (`DebugSmsAllowlistLayoutTest`, and `android-ci` scans
+  the release APK). A Hilt test gets `FakeSmsRecipientLimit` (no limit by default).
   Every SOS change updates [`docs/sos/failure-matrix.md`](docs/sos/failure-matrix.md):
   "Automated pass" only for rows with passing tests, with the level it was tested at.
 - `android/app/google-services.json` is never opened, printed or committed by Claude Code. CI and

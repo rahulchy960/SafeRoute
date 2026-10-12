@@ -118,6 +118,7 @@ fun SearchRoute(
     // reach it, and it survives a rotation.
     var emergencyDialog by rememberSaveable { mutableStateOf(EmergencyDialogState.Hidden) }
     val alertsEnabled by armViewModel.alertsEnabled.collectAsStateWithLifecycle()
+    val smsNotice by armViewModel.smsNotice.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     SearchScreen(
@@ -163,6 +164,7 @@ fun SearchRoute(
                     emergencyDialog = EmergencyDialogState.Hidden
                     context.startActivity(EmergencyShortcut.modeIntent(context, SosOpenMode.PRACTICE))
                 },
+                smsNotice = smsNotice,
             ),
         )
     }
