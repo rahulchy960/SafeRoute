@@ -154,6 +154,24 @@ class FakeContactsPreferences(snoozedUntil: Long = 0L) : ContactsPreferences {
     override suspend fun setContactsSyncedAt(epochMillis: Long) {
         contactsSyncedAt.value = epochMillis
     }
+
+    override val setupOfferShown = MutableStateFlow(false)
+
+    override suspend fun setSetupOfferShown() {
+        setupOfferShown.value = true
+    }
+
+    override val setupCardSnoozedUntil = MutableStateFlow(0L)
+
+    override suspend fun snoozeSetupCardUntil(epochMillis: Long) {
+        setupCardSnoozedUntil.value = epochMillis
+    }
+
+    /** Makes the two ways to "SOS setup" due again (they are put off by default in Hilt tests). */
+    fun clearSetupOffers() {
+        setupOfferShown.value = false
+        setupCardSnoozedUntil.value = 0L
+    }
 }
 
 /**
@@ -176,7 +194,12 @@ object FakeContactsModule {
     // Snoozed for ever by default: tests of other features start MainActivity with no contacts,
     // and the "Add emergency contacts" card is not what they are about. A test of the card
     // calls clearSnooze().
-    fun provideFakeContactsPreferences(): FakeContactsPreferences = FakeContactsPreferences(Long.MAX_VALUE)
+    // The same for the two ways to "SOS setup" (P014c2c): a test of them calls
+    // clearSetupOffers().
+    fun provideFakeContactsPreferences(): FakeContactsPreferences = FakeContactsPreferences(Long.MAX_VALUE).apply {
+        setupOfferShown.value = true
+        setupCardSnoozedUntil.value = Long.MAX_VALUE
+    }
 
     @Provides
     fun provideContactsPreferences(fake: FakeContactsPreferences): ContactsPreferences = fake

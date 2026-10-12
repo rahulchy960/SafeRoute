@@ -61,6 +61,7 @@ fun SafeRouteNavHost(
                 onOpenContacts = {
                     navController.navigate(ContactsDestination) { launchSingleTop = true }
                 },
+                onOpenSetup = { navController.navigate(SosSetupDestination) { launchSingleTop = true } },
             )
         }
         composable<SearchDestination> {

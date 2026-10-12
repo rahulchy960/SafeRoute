@@ -3,6 +3,7 @@ package com.saferoute.app.feature.contacts
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.longPreferencesKey
@@ -45,6 +46,19 @@ interface ContactsPreferences {
     val contactsSyncedAt: Flow<Long>
 
     suspend fun setContactsSyncedAt(epochMillis: Long)
+
+    /** The one-time offer of "SOS setup" after the first contact has been answered. */
+    val setupOfferShown: Flow<Boolean>
+
+    suspend fun setSetupOfferShown()
+
+    /**
+     * Until when the card "Not ready" on Home stays hidden after "Not now", in milliseconds
+     * since 1970 (UTC); 0 when it was never put off.
+     */
+    val setupCardSnoozedUntil: Flow<Long>
+
+    suspend fun snoozeSetupCardUntil(epochMillis: Long)
 }
 
 /**
@@ -82,9 +96,26 @@ class DataStoreContactsPreferences @Inject constructor(
         dataStore.edit { it[CONTACTS_SYNCED_AT] = epochMillis }
     }
 
+    // An unreadable file must not hide a warning: the offer and the card are simply shown.
+    private val safe = dataStore.data.catch { e -> if (e is IOException) emit(emptyPreferences()) else throw e }
+
+    override val setupOfferShown: Flow<Boolean> = safe.map { it[SETUP_OFFER_SHOWN] ?: false }
+
+    override suspend fun setSetupOfferShown() {
+        dataStore.edit { it[SETUP_OFFER_SHOWN] = true }
+    }
+
+    override val setupCardSnoozedUntil: Flow<Long> = safe.map { it[SETUP_CARD_SNOOZED_UNTIL] ?: 0L }
+
+    override suspend fun snoozeSetupCardUntil(epochMillis: Long) {
+        dataStore.edit { it[SETUP_CARD_SNOOZED_UNTIL] = epochMillis }
+    }
+
     private companion object {
         val SNOOZED_UNTIL = longPreferencesKey("contacts_card_snoozed_until")
         val ALERTS_NOTICE_VERSION = stringPreferencesKey("alerts_notice_version_agreed")
         val CONTACTS_SYNCED_AT = longPreferencesKey("contacts_synced_at")
+        val SETUP_OFFER_SHOWN = booleanPreferencesKey("sos_setup_offer_shown")
+        val SETUP_CARD_SNOOZED_UNTIL = longPreferencesKey("sos_setup_card_snoozed_until")
     }
 }

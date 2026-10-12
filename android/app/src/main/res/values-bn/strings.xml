@@ -635,4 +635,8 @@
     <string name="sos_setup_sound_on">চালু। কম্পনের পাশাপাশি প্রতি সেকেন্ডে একটি ছোট শব্দ, আপনার অ্যালার্মের ভলিউমে।</string>
     <string name="sos_setup_sound_warning">ফোন শব্দ করলে আপনি বিপদে পড়তে পারেন। শব্দে আপনার উপস্থিতি ধরা পড়ার আশঙ্কা থাকলে এটি বন্ধ রাখুন।</string>
     <string name="sos_setup_practice_explain">পুরো প্রক্রিয়াটি চেষ্টা করে দেখুন। অনুশীলনে কিছুই পাঠানো, সংরক্ষণ বা রেকর্ড করা হয় না।</string>
+    <string name="sos_setup_open">SOS সেটআপ খুলুন</string>
+    <string name="sos_setup_offer_title">SOS কাজ করবে কি না দেখে নিন</string>
+    <string name="sos_setup_offer_body">এখন আপনার একজন জরুরি পরিচিতি আছে। দরকার পড়ার আগেই SOS সেটআপ দেখায়, এই ফোন থেকে SOS কী করবে আর কী করবে না।</string>
+    <string name="sos_setup_home_body">এই ফোন থেকে SOS যেমন কাজ করা উচিত তেমন করবে না। কী বদলাতে হবে তা SOS সেটআপ দেখায়।</string>
 </resources>

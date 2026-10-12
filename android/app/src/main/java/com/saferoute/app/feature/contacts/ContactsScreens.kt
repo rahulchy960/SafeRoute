@@ -28,6 +28,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import com.saferoute.app.feature.emergency.SmsAlertModeCard
 import com.saferoute.app.feature.emergency.SosArmViewModel
+import com.saferoute.app.feature.emergency.SosSetupOfferCard
+import com.saferoute.app.feature.emergency.SosSetupOfferViewModel
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -159,6 +161,7 @@ fun ContactsRoute(
     onOpenSetup: () -> Unit = {},
     viewModel: ContactsViewModel = hiltViewModel(),
     armViewModel: SosArmViewModel = hiltViewModel(),
+    offerViewModel: SosSetupOfferViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val alertsEnabled by armViewModel.alertsEnabled.collectAsStateWithLifecycle()
@@ -170,11 +173,17 @@ fun ContactsRoute(
         onRefresh = viewModel::onRefresh,
         onStopConfirmed = viewModel::onStopConfirmed,
         modifier = modifier,
-        onOpenSetup = onOpenSetup,
+        // Opening the checklist by its own button also answers the one-time offer.
+        onOpenSetup = {
+            offerViewModel.onAnswered()
+            onOpenSetup()
+        },
         // How alerts leave this phone, once the user has agreed to them; before that, the
         // way to the notice. ("Add contact" shows the notice first when it is still owed.)
         alertsCard = {
             if (alertsEnabled) SmsAlertModeCard() else AlertsNotSetUpCard(onReadNotice = onAdd)
+            // Once, when the first contact exists: "check that an SOS would work".
+            SosSetupOfferCard(onOpen = onOpenSetup, viewModel = offerViewModel)
         },
     )
 }
