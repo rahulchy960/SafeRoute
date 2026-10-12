@@ -1,171 +1,616 @@
 # SOS failure matrix
 
-The rows of Plan v7 §7.5 and of [addendum v7.1](../plan/addendum-v7.1.md), section B, with the
-test or manual script that covers each and an honest status. Every prompt that touches SOS,
-live location or emergency contacts updates this file.
+What must still work when things go wrong during an SOS: the rows of Plan v7 §7.5, of
+[addendum v7.1](../plan/addendum-v7.1.md), section B, and rows added since. For each row:
+what is expected, where it is built, which tests cover it, which
+[manual script](manual-test-scripts.md) covers it on a phone, and an honest status.
 
-- **Created in P014a1** (2026-10-09) from the failure-matrix table of that prompt's log; no
-  earlier version existed. **Updated in P014a2, P014a3, P014b1, P014b2 and P014b3** (2026-10-09).
-- **Automated pass** is written only where tests exist and pass in the Android gate, and it
-  says at which level. Tests run on the JVM (Robolectric); none runs on a phone.
-- **Manual pending** means a person has to do it on a phone and has not reported it.
-- A row can be both: the logic is tested, the behaviour of the platform is not.
-- Levels: *data* = the records in Room; *logic* = the runner, the trail and the engine with
-  fakes for the phone's parts, in virtual time; *component* = the real service, notification
-  or job under Robolectric; *screen* = the Compose screens and the ViewModel.
+**This is a living document.** Every prompt that touches SOS, emergency contacts, live
+sharing or reminders updates it: tests added, statuses changed, scripts changed.
 
-Last gate run: P014b3, 2026-10-09, 1071 tests, 0 failures.
+- SafeRoute is not an emergency service. Every SOS screen offers Call 112.
+- **Nothing in this document was run on a phone by Claude Code**, which has none. A manual
+  result is written only when a person reported it.
+- **No SMS alert has been reported as sent or received by anyone.** See
+  [Device results](#device-results).
 
-**State of the build:** a user who has agreed to the SOS alerts notice (version 2) can start
-an SOS from the SOS control in the app (hold for 2 seconds). **It now messages their emergency
-contacts by SMS**: by itself in a build with the SMS permission once the user allowed it
-(debug builds by default), otherwise through the phone's SMS app. Without that consent no SOS
-can be started; Call 112 and a practice run always work. The tile, the pinned notification
-and the widget do not start an SOS yet (P014c). **Nothing of this was run on a phone.**
+## How to read the status
 
-## Plan v7 §7.5
+| Status | Meaning |
+| --- | --- |
+| Not started | Nothing built and no test |
+| Automated pass | Tests named under [Evidence](#evidence) exist **and** the latest `android-ci` run on `main` is green. The tests run on the JVM (Robolectric), never on a phone |
+| Manual pending | A person has to run the script on a phone, and no result is reported |
+| Manual pass | A person ran the script and reported that it passed (see Device results) |
+| Fail | A test or a reported manual run failed |
+| Waiting on P015 | The row, or a part of it, needs the server orchestration of P015 |
+| Waiting on P014c | The row, or a part of it, needs the tile, the widget, the notification shortcut, the readiness screen or the notice after a restart |
 
-| # | Scenario | Expected behaviour | Automated tests | Status |
-| --- | --- | --- | --- | --- |
-| 1 | No mobile data, cellular signal present | SMS sent from the device; server sync queued | The engine needs no data connection (no network code: `SosCoreBoundaryTest`). Logic: `SosAlertsTest` (`every contact the phone knows gets one message, and the result is recorded`, `preparing twice, or after the contact list changed, alerts the same people once`, `with no contact nothing is sent and nothing fails`). Data: `RoomSosActionStoreTest`. Component: `SosSmsTest` (`it hands one multipart message to the phone and waits for an answer per part`). The text: `SosMessageTest`, `SmsSegmentsTest`, `SosSmsTextDocumentTest` | In a running SOS: `SosDispatchTest` (`with a position ready the alert leaves at the trigger, once per contact, with the link`, `a message that cannot be sent never holds up or undoes the emergency, and is retried`, `with the gate closed an SOS runs and nobody is messaged`, `with no contact the screen says so and nothing is sent`). On the screen: `SosAlertLinesTest`, `SosViewModelTest` (`the active screen shows the counts of the alerts as they change`). The gate itself: `SosAlertsDeviceTest` (`the gate opens only for consent to the notice the app shows today`), `ApiContactsRepositoryTest` (the four consent tests), `SosViewModelTest` (`without consent to the alerts notice no SOS can be started from the screen`), `SosFlowTest` (`without consent ... the SOS control offers Call 112 and the way to the setup`). Automated pass at data, logic, component and screen level. Server sync: P015. Manual pending (scripts M11, M12) |
-| 2 | No signal at all | SOS screen shows the 112 button; device keeps retrying; local record kept | No network code in the SOS path: `SosCoreBoundaryTest`, `SosDeviceTest` (`the device code of a running SOS never logs ...`). The whole run works on the phone alone: `SosRunnerTest` (all). Call 112 on every SOS screen and without a phone app: `SosScreensTest` (`the countdown shows the number, a 72 dp cancel, Call 112 ...`, `the active screen says in words ...`, `the question after a restart offers ...`, `without a phone app the screens show the number ...`); on the notification: `SosDeviceTest` | Automated pass at logic, component and screen level for "runs with no network" and "112 everywhere". Retry of messages: `SosAlertsTest` (`a failed message is tried again every 30 seconds, and a sent one never again`, `after 20 tries a message is given up ...`, `retries stop the moment the emergency is over`, `each try carries the text of that moment`); result codes: `SosSmsTest` (`only an OK from the phone counts as sent`, `what may pass is retried and what cannot is final`). In a running SOS: `SosDispatchTest` (`a message that cannot be sent ... is retried`, `after a process death the retries go on, and nobody who has the alert gets it again`). Automated pass at logic level. Manual pending (script M5) |
-| 3 | SafeRoute API down / 5xx | Device path unaffected; no duplicate sessions | P015 | P015 |
-| 4 | App swiped away / killed by OEM | Foreground service keeps running where allowed; on restart, state restored from Room | Data: `SosEngineTest`, the five `process death ...` tests; `SosRecoveryTest`. Logic: `SosRunnerTest`, the five `process death ...` tests. Component: `SosForegroundServiceTest`. Screen: `SosViewModelTest` (`after a process death in the countdown the screen shows the SAME countdown`, `a countdown that ended while the app was closed is asked about - start now`, `... - cancel`, `an SOS found still active says so, and continue keeps it running`, `a rotated or re-created screen never starts a second emergency`); `SosFlowTest` (`an emergency nobody is running opens the emergency screen when the app comes to the front`); `SosScreensTest` (`an SOS found after a restart says so ...`) | Automated pass at data, logic, component and screen level. Whether the service survives a swipe from recents or a phone maker's battery manager: manual pending (script M4) |
-| 5 | Phone rebooted during SOS | On boot or app open, the active SOS is detected and the user is asked | The same tests as row 4 (a reboot is a process death with a later clock) | Automated pass at data, logic and screen level for "on app open". The notice at boot: P014c. Manual pending (script M6) |
-| 6 | Double tap / duplicate trigger | Single session (`clientSosId`); the second trigger shows the existing one | Data: `SosEngineTest` (`a second start ...`, `ten starts at once ...`, `ten triggers at once ...`). Logic: `SosRunnerTest` (`a second start during the countdown starts nothing new`, `a start while an SOS is active shows the active one`). Screen: `SosViewModelTest` (`a rotated or re-created screen ...`, `a practice run never replaces or hides a real SOS`); `SosScreensTest` (`a hold of two seconds arms exactly once ...`) | Automated pass at data, logic and screen level. No duplicate message: `SosAlertsTest` (`two senders at once never send the same message twice`, `after a process death a sent message stays sent and an unanswered one is tried again`; in that one case a contact may get the alert twice, see ADR 0027). Manual pending (script M2) |
-| 7 | SEND_SMS denied or not approved | SMS composer opens pre-filled | The gateway refuses without the permission and never reaches the phone's SMS service: `SosSmsTest` (`without the permission it refuses ...`); a refusal is final, not retried: `SosAlertsTest` (`a failure that cannot pass is not tried again`). A build without the permission: `SosSmsTest` (`the main manifest never asks for SEND_SMS ...`, `this build asks for SEND_SMS exactly when it was built with it`), `MainActivityTest`, and the CI check of the release APK | Automated pass for "refuses and does not retry" and for the build switch. The composer: `SosDispatchTest` (`without the permission the SMS app is opened once with every number and the alert`, `after a process death in composer mode the SMS app is not opened a second time`, `in composer mode I am safe opens the SMS app with the follow-up`); `SosAlertsDeviceTest` (`the composer intent goes to an SMS app with every number and the text, and sends nothing`, `the composer notification shows fixed text only ...`, `showing posts the notification on a high-importance channel ...`, `the way of sending follows the build and the permission`); `SosAlertLinesTest` (`in composer mode it says that nothing is sent until Send is pressed ...`). Automated pass at logic, component and screen level. The permission flow: `SmsPermissionCardTest` (all: the explanation before Android's dialog, not now, on, blocked, a build without the permission, 200% font, the one file that may ask). Automated pass at screen level. Which separator an SMS app accepts for several recipients: not verified. Manual pending (scripts M13, M14) |
-| 8 | No GPS fix | Last known location with its age; marked stale | Logic: `SosTrailTest` (all); `SosRunnerTest` (the two `location never blocks an SOS ...`). Screen: `SosScreensTest` (`every way of having no good position has its own sentence`); `SosViewModelTest` (`the active screen reports the location in words ...`) | Automated pass at logic and screen level. What the SMS says: `SosMessageTest` (`without a position it says so and still asks to call 112`, `an old position carries its age in minutes and the clock time it was taken`, `an unknown accuracy and an unknown battery are left out, not invented`), automated pass. The 3-second rule and the one update: `SosDispatchTest` (`without a position the alert waits 3 seconds at most, and the trigger not at all`, `a position that arrives inside the 3 seconds is used at once`, `sent without a position, ONE update follows when a position arrives within 60 seconds`, `a position that arrives after 60 seconds is not sent after the alert`, `without a location permission there is nothing to wait for`), automated pass at logic level. Real GPS behaviour: manual pending (script M5) |
-| 9 | FCM failure | Action recorded FAILED_RETRYABLE, retried | P015 | P015 |
-| 10 | Worker crash mid-action | pg-boss re-delivers; no duplicate push | P015 | P015 |
-| 11 | Accidental trigger | Cancel in the countdown; after the trigger, "I'm safe" | Data: `SosEngineTest` (`cancel during the countdown ...`, `after the alert went out cancel is refused ...`). Logic: `SosRunnerTest` (`cancel is local only ...`, `after the alert went out cancel is refused and I am safe ends everything`). Component: `SosForegroundServiceTest`. Screen: `SosScreensTest` (`a hold released before two seconds arms nothing`, the cancel tests); `SosViewModelTest` (`cancel in the countdown closes the screen and leaves nothing`, `I am safe asks first, and only the confirmation ends the SOS`); `SosEmergencyScreenTest` (`started after the hold it shows the countdown ..., and cancel leaves nothing`) | Automated pass at data, logic, component and screen level. The follow-up message: its text (`SosMessageTest`, `the safe follow-up reports what the sender said, in both languages`) and its recipients (`SosAlertsTest`, `the safe follow-up goes only to the contacts whose alert was really sent`), and sending it: `SosDispatchTest` (`I am safe with tell my contacts sends the follow-up to those whose alert was sent`, `I am safe without tell my contacts sends nothing more`, `cancel during the countdown sends nothing, also with the gate open`); `SosViewModelTest` (`I am safe tells the alerted contacts by default`, `with tell my contacts unticked I am safe sends nothing more`); `SosAlertLinesTest` (`the confirmation offers tell my contacts, ticked, only when someone was told`). Automated pass at logic and screen level. Manual pending (scripts M1, M2, M3) |
+A row can carry more than one status, because its parts are in different states: the logic
+can be tested while the behaviour of a real phone is not, and a part can be unbuilt. A row
+is **done** only at "Manual pass". "Automated pass" says that the logic holds in tests; it
+says nothing about a phone maker's battery manager, a SIM, a network or a lock screen.
 
-## Addendum v7.1
+Levels named in the notes: *data* = the records in Room; *logic* = the runner, the trail,
+the alerts and the engine, with fakes for the phone's parts, in virtual time; *component* =
+the real service, notification or job under Robolectric; *screen* = the Compose screens and
+their ViewModels.
 
-| Scenario | Expected behaviour | Automated tests | Status |
-| --- | --- | --- | --- |
-| SOS started from the tile while the phone is locked | The countdown appears over the lock screen; nothing of the account is shown | The tile opens the emergency screen, which shows Call 112 while nothing runs: `EmergencyShortcutsTest`, `EmergencyActivityTest`. The emergency screen holds statuses only: `SosScreensTest` (`on the lock screen the way out says that the unlock comes first`). Countdown from the tile: P014c | Automated pass for the screen. Observed by Rahul on one phone (Samsung, Android 17): the dialog opened from the lock screen. Countdown from the tile: P014c. Lock during a countdown: manual pending (script M3) |
-| Pinned notification dismissed or killed | SOS still starts from the tile and the app; re-posted at the next open | `EmergencyNotificationTest` (P012f2) | Automated pass for re-posting. Observed on the same phone. "Start SOS" action: P014c, manual pending |
-| Tile unavailable on the device | Settings explains; the in-app control always works | `SettingsShortcutsTest` (P012f1); the in-app control: `SosFlowTest` | Automated pass. Not observed on a phone without tiles. Manual pending |
-| A contact opted out (ADR 0024) | An opted-out contact is never alerted | `ContactsDatabaseTest` (`sos contacts leave out everyone who opted out`); `SosAlertsTest` (`a contact who opted out before their message left is skipped and never texted`, `an opt-out that arrives after the message was sent changes nothing about it`) | The fresh fetch: `SosDispatchTest` (`a contact who opted out is taken off when the fresh list arrives before their message left`, `the alert never waits for the server - a slow or absent answer changes nothing`); `SosAlertsDeviceTest` (`the fresh look returns who may still be alerted ...`). Automated pass at data and logic level. **Known gap:** with a position ready the alert leaves at once, so an opt-out made shortly before the trigger and not yet on the phone is missed (ADR 0027) |
-| Notification permission denied | No notification and no error; SOS never depends on it | Pinned notification: `EmergencyNotificationTest`, `SettingsShortcutsTest`. Running SOS: `SosRunnerTest` (a host that shows nothing), `SosForegroundServiceTest`; the active screen says so: `SosScreensTest` (`the active screen says in words ...`), `SosViewModelTest` (`... says when notifications are off`) | Automated pass at logic and screen level. On a phone with notifications refused: manual pending (script M7) |
+**Evidence for "Automated pass" on this date:** `android-ci` run 38240011508 on `main`
+(commit `4334232`, 2026-10-12): success. The run before it on `main` failed once on a
+flaky test and passed when run again (P014b5).
 
-## Manual scripts
+## State of the build
 
-Record the phone's make, model and Android version with every result. If a step fails, write
-down what the screen showed.
+A user who has agreed to the SOS alerts notice (version 2) can start an SOS from the SOS
+control in the app (hold for 2 seconds). **It messages their emergency contacts by SMS**:
+by itself in a build with the SMS permission once the user allowed it (debug builds by
+default), otherwise through the phone's SMS app. Without that consent no SOS can be
+started from the app; Call 112 and a practice run always work. The tile and the pinned
+notification open the emergency options and do not start an SOS yet; there is no widget
+yet (P014c). No server takes part in an SOS yet (P015), and there is no live-location
+link (P016).
 
-**From P014b3 an SOS sends real SMS.** Before any script that lets a countdown finish:
+## The matrix
 
-- the emergency contacts in the test account are **only numbers of phones you own** (a
-  second phone on the table), and nobody else's;
-- or the build is in the mode where nothing leaves without you pressing Send (no SMS
-  permission), and you do not press Send.
+Rows 1 to 11 are Plan v7 §7.5. Rows A1 to A4 are from addendum v7.1, section B (SOS entry
+points). Row A5 is from ADR 0024. Rows A6 to A12 were added in P013c; the plan has no text
+for them, so their expected behaviour is the design recorded in
+[ADR 0027](../adr/0027-sos-device-flow.md), and says so where the design is silent.
 
-To run M1 to M9 without any SMS: use an account with **no contacts**. The SOS then runs and
-the active screen says "You have no emergency contact to alert".
+| ID | Scenario | Expected behaviour | Implemented in | Automated tests | Manual script | Status | Last result date | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | No mobile data, signal present | The alert goes out by SMS from the phone itself, with no data connection. Telling the server waits until the phone is online; the SMS with the live-location link follows once the server knows the SOS. | P014b1, P014b2, P014b3 (SMS from the phone). P015 (telling the server), P016 (the live link): not built | `SosCoreBoundaryTest`, `SosAlertsTest`, `RoomSosActionStoreTest`, `SosSmsTest`, `SosMessageTest`, `SmsSegmentsTest`, `SosSmsTextDocumentTest`, `SosDispatchTest`, `SosAlertLinesTest`, `SosViewModelTest`, `SosAlertsDeviceTest`, `ApiContactsRepositoryTest`, `SosFlowTest` ([names](#row-1-no-mobile-data-signal-present)) | [M0](manual-test-scripts.md#m0-set-up), [M11](manual-test-scripts.md#m11-automatic-sending), [M12](manual-test-scripts.md#m12-mobile-data-off-signal-present), [M28](manual-test-scripts.md#m28-the-live-location-link-by-sms) | Automated pass · Manual pending · Waiting on P015 | 2026-10-12 (automated); manual: none | Automated for the SMS path, at data, logic, component and screen level. No message has been sent on a phone by anyone. The server half of the row does not exist. |
+| 2 | No signal at all | The SOS runs on the phone alone. Every SOS screen offers Call 112. The record stays on the phone, and messages are tried again until they leave or the retries are used up. | P014a1, P014a2, P014a3, P014b1, P014b2 | `SosCoreBoundaryTest`, `SosDeviceTest`, `SosRunnerTest`, `SosScreensTest`, `SosAlertsTest`, `SosSmsTest`, `SosDispatchTest` ([names](#row-2-no-signal-at-all)) | [M3](manual-test-scripts.md#m3-full-countdown-and-locking-the-phone), [M5](manual-test-scripts.md#m5-airplane-mode-and-location-off), [M22](manual-test-scripts.md#m22-every-message-fails) | Automated pass · Manual pending | 2026-10-12 (automated); manual: none | Automated at logic, component and screen level. What a phone reports with no signal is not known (Known gaps). |
+| 3 | API down or 5xx | The SOS on the phone is not affected. The phone keeps trying to tell the server, and repeated tries create one session, not several. | P015: not built. Today an SOS uses no server | None | [M24](manual-test-scripts.md#m24-the-saferoute-api-is-down) | Waiting on P015 | None | That the SOS path holds no network code is tested (row 2, `SosCoreBoundaryTest`); nothing of the server side exists. |
+| 4 | App swiped away or killed by the OEM | The foreground service keeps the SOS running where the phone allows it. If the process dies, the state is read from the record on the phone when the app is next opened, and the SOS goes on. | P014a1, P014a2, P014a3 | `SosEngineTest`, `SosRecoveryTest`, `SosRunnerTest`, `SosForegroundServiceTest`, `AndroidSosHostTest`, `SosViewModelTest`, `SosFlowTest`, `SosScreensTest` ([names](#row-4-app-swiped-away-or-killed-by-the-oem)) | [M4](manual-test-scripts.md#m4-swipe-the-app-away-while-active), [M6](manual-test-scripts.md#m6-kill-during-the-countdown-and-reboot) | Automated pass · Manual pending | 2026-10-12 (automated); manual: none | Automated at data, logic, component and screen level. Whether the service survives a swipe from recents or a phone maker's battery manager can only be seen on phones. |
+| 5 | Phone rebooted during SOS | At boot or when the app is opened, the SOS that was running is found in the record and the user is asked whether to continue or to end it. | P014a1, P014a2, P014a3 (when the app is opened). P014c (the notice at boot): not built | `SosRecoveryTest`, `SosEngineTest`, `SosRunnerTest`, `SosViewModelTest`, `SosScreensTest` ([names](#row-5-phone-rebooted-during-sos)) | [M6](manual-test-scripts.md#m6-kill-during-the-countdown-and-reboot), [M27](manual-test-scripts.md#m27-the-notice-after-a-restart) | Automated pass · Manual pending · Waiting on P014c | 2026-10-12 (automated); manual: none | For the tests a reboot is a process death with a later clock. Nothing appears before the app is opened: the notice at boot is P014c. |
+| 6 | Double tap or duplicate trigger | One emergency, identified by one id made on the phone. A second trigger shows the one that exists and starts nothing new. | P014a1, P014a2, P014a3, P014b1 | `SosEngineTest`, `SosRunnerTest`, `SosViewModelTest`, `SosScreensTest`, `SosAlertsTest` ([names](#row-6-double-tap-or-duplicate-trigger)) | [M2](manual-test-scripts.md#m2-cancel) | Automated pass · Manual pending | 2026-10-12 (automated); manual: none | One accepted exception: a message handed to the phone whose answer was lost in a process death is tried again, so that contact may get the alert twice (ADR 0027). |
+| 7 | SEND_SMS denied or not approved | The phone's SMS app opens with the recipients and the alert filled in; the user presses Send. Nothing is recorded as sent. | P014b1 (the build switch), P014b2 (the SMS app), P014b3 (the permission card) | `SosSmsTest`, `SosAlertsTest`, `MainActivityTest`, `SosDispatchTest`, `SosAlertsDeviceTest`, `SosAlertLinesTest`, `SosViewModelTest`, `SmsPermissionCardTest` ([names](#row-7-send_sms-denied-or-not-approved)) | [M0](manual-test-scripts.md#m0-set-up), [M13](manual-test-scripts.md#m13-the-sms-app-instead), [M14](manual-test-scripts.md#m14-refusals) | Automated pass · Manual pending | 2026-10-12 (automated); manual: none | Also checked in CI: the release APK does not ask for SEND_SMS. Which separator an SMS app accepts for several recipients is not verified (Known gaps). |
+| 8 | No GPS fix | The last known position is used, with its age, and marked as old in the SMS. (The viewer of the live link is P016.) The SOS never waits for a position. | P014a2 (the trail), P014a3 (the screen), P014b1 (the text), P014b2 (the wait of at most 3 seconds). P016 (the viewer): not built | `SosTrailTest`, `SosRunnerTest`, `SosScreensTest`, `SosViewModelTest`, `SosMessageTest`, `SosDispatchTest` ([names](#row-8-no-gps-fix)) | [M5](manual-test-scripts.md#m5-airplane-mode-and-location-off) | Automated pass · Manual pending | 2026-10-12 (automated); manual: none | Automated at logic and screen level. Real GPS behaviour (indoors, a cold start) can only be seen on phones. |
+| 9 | FCM failure | The push is recorded as failed and to be retried, and is tried again. The SMS has already reached the contacts. | P015: not built | None | [M25](manual-test-scripts.md#m25-push-messages-fail) | Waiting on P015 | None | No push message exists yet. |
+| 10 | Worker crash mid-action | The job is delivered again; the call to the provider carries the action's idempotency key, so no contact gets a second push. | P015: not built | None | [M26](manual-test-scripts.md#m26-a-server-worker-stops-mid-action) | Waiting on P015 | None | A server check, not a phone script. |
+| 11 | Accidental trigger | Cancel during the countdown ends it and sends nothing. After the alert went out there is no Cancel: "I'm safe" ends the SOS and tells the contacts who were alerted. | P014a1, P014a2, P014a3, P014b2 | `SosStateMachineTest`, `SosEngineTest`, `SosRunnerTest`, `SosForegroundServiceTest`, `SosScreensTest`, `SosViewModelTest`, `SosEmergencyScreenTest`, `SosMessageTest`, `SosAlertsTest`, `SosDispatchTest`, `SosAlertLinesTest` ([names](#row-11-accidental-trigger)) | [M1](manual-test-scripts.md#m1-hold-to-arm-and-early-release), [M2](manual-test-scripts.md#m2-cancel), [M3](manual-test-scripts.md#m3-full-countdown-and-locking-the-phone), [M8](manual-test-scripts.md#m8-practice), [M9](manual-test-scripts.md#m9-do-not-disturb-bengali-dark-mode-large-font-talkback) | Automated pass · Manual pending | 2026-10-12 (automated); manual: none | Automated at data, logic, component and screen level. |
+| A1 | SOS started from the tile while the phone is locked | The tile starts the same five-second countdown as the app, shown over the lock screen with Cancel and Call 112. Nothing of the account is shown there. | P012f1 (the tile opens the emergency options), P014a3 (the emergency screen over the lock screen). P014c (the countdown from the tile): not built | `EmergencyShortcutTest`, `SosTileServiceTest`, `EmergencyActivityTest`, `EmergencyShortcutsManifestTest`, `SosScreensTest`, `SosAlertLinesTest` ([names](#row-a1-sos-started-from-the-tile-while-the-phone-is-locked)) | [M3](manual-test-scripts.md#m3-full-countdown-and-locking-the-phone), [M17](manual-test-scripts.md#m17-sos-from-the-tile-or-the-widget-while-the-phone-is-locked) | Waiting on P014c | None | The tests cover what exists: the tile opens the emergency options, and the emergency screen shows statuses only. Observed on one phone (Device results): the dialog opened from the lock screen. The row itself, a countdown from the tile, is not built. |
+| A2 | Pinned notification dismissed or killed | The SOS still starts from the tile and from the app. The notification is posted again when the app is next opened and after a restart. | P012f2. P014c (starting an SOS from the notification): not built | `EmergencyNotificationTest`, `SosFlowTest` ([names](#row-a2-pinned-notification-dismissed-or-killed)) | [M18](manual-test-scripts.md#m18-the-pinned-notification-dismissed-or-killed) | Automated pass · Manual pending · Waiting on P014c | 2026-10-12 (automated); manual: none | Automated for posting again. Observed on one phone (Device results): posted again after a swipe, a restart and a force stop. That was reported before these scripts existed, so the row stays Manual pending. |
+| A3 | Tile unavailable on the device | Settings explains how to add the tile by hand and says that some phones have none. The SOS control in the app always works. | P012f1 | `SettingsShortcutsTest`, `EmergencyShortcutTest`, `SosFlowTest` ([names](#row-a3-tile-unavailable-on-the-device)) | [M19](manual-test-scripts.md#m19-a-phone-without-the-tile) | Automated pass · Manual pending | 2026-10-12 (automated); manual: none | Not seen on a phone without tiles from apps. |
+| A4 | Notification permission denied | No notification and no error. An SOS never depends on a notification; the active screen says that it is the only sign. | P012f2, P014a2, P014a3 | `EmergencyNotificationTest`, `SettingsShortcutsTest`, `SosScreensTest`, `SosViewModelTest` ([names](#row-a4-notification-permission-denied)) | [M7](manual-test-scripts.md#m7-notifications-refused) | Automated pass · Manual pending | 2026-10-12 (automated); manual: none | Automated at logic and screen level. |
+| A5 | Opted-out contact excluded | A contact who opted out is never alerted (ADR 0024). | P013a (the opt-out), P013b1 (the copy on the phone), P014b1, P014b2 | `ContactsDatabaseTest`, `SosAlertsTest`, `SosDispatchTest`, `SosAlertsDeviceTest`, `ApiContactsRepositoryTest` ([names](#row-a5-opted-out-contact-excluded)) | [M16](manual-test-scripts.md#m16-a-contact-who-opted-out) | Automated pass · Manual pending | 2026-10-12 (automated); manual: none | Known gap: with a position ready the alert leaves at once, so an opt-out made shortly before the trigger and not yet on the phone is missed (ADR 0027). |
+| A6 | Contacts empty at SOS time | The SOS runs as always. The active screen says that there is no emergency contact to alert and offers Call 112; nothing is sent and nothing fails. | P014b1, P014b2 | `SosAlertsTest`, `SosDispatchTest`, `SosViewModelTest`, `SosAlertLinesTest`, `ContactsDatabaseTest` ([names](#row-a6-contacts-empty-at-sos-time)) | [M20](manual-test-scripts.md#m20-no-emergency-contact) | Automated pass · Manual pending | 2026-10-12 (automated); manual: none | The plan has no row for this; the expected behaviour is the design of ADR 0027. |
+| A7 | Contacts never synced to the phone | An SOS reads the contacts from the phone only and never waits for the server. If the list never arrived, nobody is alerted and the screen says so. The user should learn of this before an emergency (readiness screen). | P013b1 (the copy and its sync), P014b2 (the refresh that is started and never awaited), P014b3 (the consent note). P014c (the readiness screen): not built | `ApiContactsRepositoryTest`, `ContactsSessionSyncTest`, `SosDispatchTest` ([names](#row-a7-contacts-never-synced-to-the-phone)) | [M21](manual-test-scripts.md#m21-contacts-that-never-reached-the-phone) | Automated pass · Manual pending · Waiting on P014c | 2026-10-12 (automated); manual: none | Automated for what happens during the SOS. Nothing warns the user beforehand (Known gaps). |
+| A8 | SMS fails for every contact (no SIM, no service, airplane mode) | The SOS stays active and Call 112 stays on the screen. Each message is tried again every 30 seconds, at most 20 times, and only while the SOS is active; the screen shows counts of what is still being tried and what could not be sent. | P014b1, P014b2 | `SosAlertsTest`, `SosSmsTest`, `SosDispatchTest`, `SosAlertLinesTest` ([names](#row-a8-sms-fails-for-every-contact-no-sim-no-service-airplane-mode)) | [M5](manual-test-scripts.md#m5-airplane-mode-and-location-off), [M22](manual-test-scripts.md#m22-every-message-fails) | Automated pass · Manual pending | 2026-10-12 (automated); manual: none | Which answer a phone gives without a SIM or without service is not known; every such answer is treated as "try again" (ADR 0027). |
+| A9 | Dual-SIM phone with the wrong default SIM | The alert leaves from the SIM the phone has set as default for SMS. The app offers no SIM choice of its own: listing the SIMs would need a permission the app does not ask for (ADR 0027). | P014b1 (the phone's default SIM is used) | None | [M15](manual-test-scripts.md#m15-dual-sim) | Manual pending | None | No automated test. What happens when the phone is set to "ask every time", or the default SIM has no balance, is not known (Known gaps). |
+| A10 | Contact list changed mid-SOS | Who is alerted is decided once, at the trigger. A later change of the list does not add anyone to this SOS; a contact who opts out before their message left is skipped. The follow-up goes only to those whose alert was sent. | P014b1, P014b2 | `SosAlertsTest`, `RoomSosActionStoreTest`, `SosDispatchTest` ([names](#row-a10-contact-list-changed-mid-sos)) | [M23](manual-test-scripts.md#m23-the-contact-list-changes-during-an-sos) | Automated pass · Manual pending | 2026-10-12 (automated); manual: none | The plan has no row for this; the expected behaviour is the design of ADR 0027. A contact removed (not opted out) before their message left: see Known gaps. |
+| A11 | Process death inside the 5-second countdown | With time left, the same countdown goes on. If its end has passed, nothing is sent: the user is asked "Send now" or Cancel. | P014a1, P014a2, P014a3 | `SosRecoveryTest`, `SosEngineTest`, `SosRunnerTest`, `SosViewModelTest`, `SosScreensTest`, `SosDispatchTest` ([names](#row-a11-process-death-inside-the-5-second-countdown)) | [M6](manual-test-scripts.md#m6-kill-during-the-countdown-and-reboot) | Automated pass · Manual pending | 2026-10-12 (automated); manual: none | Automated at data, logic and screen level. |
+| A12 | SOS location unavailable (no permission or location off) | The SOS triggers on time and never asks for a permission. The screen says in words why there is no position; the SMS says that the location is unavailable and still asks to call 112. | P014a2, P014a3, P014b1, P014b2 | `SosRunnerTest`, `SosForegroundServiceTest`, `SosScreensTest`, `SosMessageTest`, `SosDispatchTest` ([names](#row-a12-sos-location-unavailable-no-permission-or-location-off)) | [M5](manual-test-scripts.md#m5-airplane-mode-and-location-off) | Automated pass · Manual pending | 2026-10-12 (automated); manual: none | Automated at logic, component and screen level. |
 
-**M0. Set-up (new in P014b3).** Settings → Emergency contacts. An account that agreed to
-the old notice, or to none, sees "SOS alerts are off" and "Read how SOS alerts work". Open
-it: the notice "How SOS alerts work" with seven paragraphs. "Not now": nothing changes, and
-the SOS control on Home shows Call 112, "Practice SOS" and "Set up SOS alerts", with no hold
-button. "I agree": the card "Send alerts automatically" appears, and the SOS control now
-shows "Hold to send SOS".
+## Known gaps
 
-**M1. Hold to arm and early release.** Home → SOS control. In the dialog, press "Hold to
-send SOS" for about one second and lift: the ring empties and nothing happens. Tap it
-briefly: nothing. Hold for two seconds: the ring fills, the phone ticks, and the countdown
-screen opens. *Record:* whether the ticks could be felt.
+What the plan or the design requires and no test covers, or what nobody knows yet.
 
-**M2. Cancel.** During the countdown tap Cancel: the screen closes, no notification stays,
-the phone stops vibrating, **and no SMS was sent** (check the second phone). Open the SOS
-control again: the dialog is the normal one. Start again and press the phone's back gesture
-during the countdown: nothing happens (back is not Cancel). Then tap Cancel.
+### Not built
 
-**M3. Full countdown, and locking the phone.** Start and let the countdown finish: five
-vibrations, then a longer one, then "SOS active", and a silent notification "SOS active"
-with Call 112 and I'm safe. Tap "I'm safe" → confirm: the screen closes and the notification
-goes. Then start again and **press the power button during the countdown**: wait ten
-seconds, wake the phone. *Expected:* the SOS is active (it triggered while locked) and the
-active screen is shown over the lock screen with "I'm safe (unlock first)". Tap it: the
-phone asks for the unlock, then for the confirmation. *Record:* what the lock screen showed.
+1. **The server half of an SOS** (rows 1, 3, 9, 10): telling the server, one session per
+   SOS, push messages, retried jobs. P015.
+2. **The live-location link and its viewer** (rows 1, 8). P016.
+3. **Starting an SOS from the tile, the widget or the pinned notification** (rows A1, A2),
+   and **the notice after a restart** (row 5). P014c. Today nothing appears after a restart
+   until the app is opened.
+4. **A warning before an emergency** that alerts are not ready: no contact on this phone,
+   contacts that never arrived, no SMS permission, battery optimisation (rows A6, A7). The
+   readiness screen of P014c.
 
-**M4. Swipe the app away while active.** With an SOS active, open the recent apps and swipe
-SafeRoute away. *Record:* whether the "SOS active" notification stays (the service
-survived) or goes. Open SafeRoute again. *Expected:* either the SOS screen is simply still
-there, or the emergency screen opens with "SOS is still active" (Continue / I'm safe). End
-with "I'm safe". Repeat once with **battery saver** on.
+### Built, but no test can show it
 
-**M5. Airplane mode and location off.** Airplane mode on, start an SOS: the countdown and
-the active screen work as in M3; with contacts, the screen shows the alert as "Still trying"
-and it is sent when airplane mode is switched off again (within about ten minutes). End it.
-Then switch the phone's Location off and start an SOS: it triggers on time, the active
-screen says "Location: none. Location is switched off ...", and the SMS says "Location
-unavailable". If SafeRoute has no location permission, the active screen says how to allow
-it afterwards, and no permission dialog appears at any point.
+1. **No test runs on a phone.** Whether the foreground service survives a swipe from
+   recents, a phone maker's battery manager or a night in Doze (row 4) is unknown for every
+   phone.
+2. **No SMS has left a phone.** Sending, arrival, the cost, how a long message is shown,
+   and whether the map link opens (rows 1, 7) are untested outside the JVM.
+3. **What a phone answers without a SIM, without service or in airplane mode** (rows 2,
+   A8) is not stated in Android's documentation; every such answer is treated as "try
+   again". What the user then sees for ten minutes is written, not observed.
+4. **Two SIMs** (row A9): no automated test. The phone's default SIM for SMS is used; a
+   phone set to "ask every time", or a default SIM without balance, is not covered, and the
+   app cannot offer a choice without a permission it does not ask for.
+5. **The SMS app with several recipients** (row 7): which separator an SMS app accepts
+   between numbers is not verified.
+6. **"Sent" is not "delivered".** The phone knows only that the network took the message.
+   There is no delivery report by design, so no test and no screen can say that a contact
+   got or read an alert.
 
-**M6. Kill during the countdown, and reboot.** Start an SOS and, during the countdown, force
-stop the app (Settings → Apps → SafeRoute → Force stop). Wait a minute, open SafeRoute.
-*Expected:* "SOS was starting when the app closed" with "Send now" and Cancel; nothing was
-sent in between. Try both answers on two runs. Then start an SOS, let it become active,
-**restart the phone**, unlock, open SafeRoute. *Expected:* "SOS is still active", and the
-second phone did not get the alert a second time. (Nothing appears before the app is
-opened: the notice at boot is P014c.)
+### Accepted risks in the design (ADR 0027)
 
-**M7. Notifications refused.** Refuse notifications for SafeRoute in the system settings,
-start an SOS. *Expected:* no notification, and the active screen says that the screen is the
-only sign that SOS is active. *Record:* whether the service still shows in the phone's list
-of active apps.
+1. **An opt-out made shortly before the trigger** and not yet on the phone is missed when a
+   position is ready, because the alert leaves at once and never waits for the server
+   (row A5).
+2. **A contact may get the alert twice** in one case: the message was handed to the phone,
+   the process died before the answer, and it is tried again (row 6).
 
-**M8. Practice.** SOS control → "Practice SOS": every screen carries the PRACTICE banner;
-no notification appears; "I'm safe" → confirm → "Practice finished". Afterwards nothing is
-running, **and no SMS was sent**.
+### Not specified
 
-**M9. Do Not Disturb, Bengali, dark mode, large font, TalkBack.** With Do Not Disturb on,
-run M3 and *record* whether the phone vibrates. Switch the app to Bengali, to dark mode and
-to the largest font size: every button can be reached (the screens scroll) and Cancel stays
-large. With TalkBack on, the hold button is announced with its name and "double tap to
-start the SOS countdown"; the countdown reads each second.
+1. **A contact removed (not opted out) after the trigger and before their message left**
+   (row A10): the tests fix that the people decided at the trigger are alerted once; the
+   plan does not say whether a removal should stop a message.
+2. **A8 after the retries are used up:** the screen says that the message could not be
+   sent; nothing tries again later in the same SOS, and the plan does not ask for it.
 
-**M10. Upgrade and install (from P014a1, P014a2).** Installing over an older build keeps the
-emergency contacts; no new permission dialog appears at install or at first start.
+### About the tests themselves
 
-**M11. Automatic sending (row 1). A debug build; contacts are only your second phone.**
-Settings → Emergency contacts → "Send alerts automatically" → "Allow sending SMS": the
-app's explanation appears first; "Continue"; Android's dialog; "Allow"; the card says "On".
-Start an SOS (M3). *Expected:* within a few seconds of the trigger the second phone gets one
-SMS: "Someone who listed you as an emergency contact needs help. Location: [a map link]
-(about N m, at HH:mm IST). Battery N%. Sent by the SafeRoute app. If you think they are in
-danger, call 112." The active screen shows "Alert sent by SMS: 1 of 1 emergency contacts."
-Open the link on the second phone: a map at your position. "I'm safe" with "Tell my
-contacts that I am safe" ticked: the second phone gets "The person who alerted you says they
-are safe now." *Record:* the time from trigger to arrival, whether the long SMS arrived as
-one message, and **what the SMS cost** (operator, plan, price per message).
+1. Several SOS tests wait on real threads with a real-time limit, and tests leave databases
+   open (follow-ups of P014b5). A red `android-ci` run for such a reason takes "Automated
+   pass" away from every row until it is green again.
+2. The texts a contact receives, the notice and the Bengali wording are drafts: no lawyer
+   and no native speaker has reviewed them.
 
-**M12. Mobile data off, signal present (row 1).** Switch mobile data and Wi-Fi off, keep
-the SIM active. Run M11: the SMS still arrives.
+## Device results
 
-**M13. The SMS app instead (row 7).** Phone settings → Apps → SafeRoute → Permissions →
-SMS → don't allow; the card says "Off". Start an SOS. *Expected:* after the countdown your
-SMS app opens with the second phone's number and the alert text; a notification "Send your
-SOS alert" is also there. **Nothing is sent until you press Send.** The active screen says
-"Your SMS app has the alert for 1 emergency contacts. It is sent only when you press Send
-there." and offers "Open SMS app again". With **two** test contacts (both your own phones):
-*record* whether the SMS app shows both numbers, or only one (the separator; tell me the
-SMS app's name). Then lock the phone during the countdown: after the trigger, the
-notification is the way to the SMS app.
+**The launch rule (Plan v7 §3.4, as stated in the P013c prompt; the PDF was not read for
+this document):** every row of the matrix passes on at least **one Pixel or stock-Android
+phone** and on **two phones with aggressive battery management** (for example
+Xiaomi/Redmi and Vivo/Oppo/Realme), and the closed test meets the plan's goal for
+crash-free sessions (the figure is in the plan and is not repeated here). Addendum v7.1
+adds: the SOS entry points tested on the same set of phones.
 
-**M14. Refusals.** A fresh install: on the card tap "Allow sending SMS" → "Not now": no
-Android dialog appears. Again → "Continue" → "Don't allow" twice: the card says that Android
-no longer asks and offers "Open app settings". Allow SMS there, come back: the card says
-"On" without a restart. A release build (if you have one): the card says that this version
-cannot send SMS by itself.
+**Where this stands:** no phone has run a script of this matrix. One phone has reported
+results for two earlier checks.
 
-**M15. Dual SIM.** On a phone with two SIMs, set the default SIM for SMS in the phone's
-settings, run M11, and *record* from which number the SMS arrived. Then set the phone to
-"ask every time" and *record* what happens.
+| Device (make and model) | Android version | Build | SMS mode | Date | Scripts run | Result | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Samsung, model not recorded | 17 | Not recorded | Not applicable (before SMS alerts existed) | Recorded 2026-10-08; the day of the checks is not recorded | None of M0 to M28. The checks of P012f1 and P012f2: tile added, tile tapped with the screen on and from the lock screen, pinned notification on and off, after a swipe, a restart and a force stop | As reported: each worked | Reported by Rahul, no details. Source: the "Revision 2026-10-08" sections of `docs/prompt-logs/012f1-sos-tile.md` and `012f2-emergency-notification.md`. Not a run of any script here, so no row is "Manual pass" |
+| Not reported | Not reported | Not reported | Not reported | 2026-10-12 | M0 to M16 | Not reported | The P013c prompt asked for the manual SMS results so far, the phone's make and Android version, and whether a second phone was used as the contact. The lines were empty |
 
-**M16. A contact who opted out.** With two test contacts, open the opt-out link of one on
-the second phone and opt out. In SafeRoute refresh the contacts list: it says "Opted out".
-Start an SOS: only the other phone gets the SMS, and the screen shows "1 of 1".
+Other checks, not on a phone's SOS path:
 
-The tile, widget and notification entry points and the boot notice arrive with P014c.
+- **P013a staging checks** (the opt-out page's headers, 401 without a token, 404 for a
+  made-up token, the fragment removed, request-log paths without a token): reported by
+  Rahul in the P014 prompt and recorded in the "Revision (P014a1, 2026-10-09)" section of
+  `docs/prompt-logs/013a-contacts-backend.md`. The date of the checks, the browser and the
+  Bengali switch of the page are not recorded. The P013c prompt's line for them was empty,
+  so nothing is added here.
+- **P013b phone results** (the contacts screens, the system contact picker, the invite by
+  SMS): **not reported**.
+
+When a result arrives, add a row (never edit an old one), set the matrix row to "Manual
+pass" or "Fail" with the date, and name the script. How to record:
+[manual-test-scripts.md](manual-test-scripts.md#how-to-record-a-result).
+
+## Evidence
+
+The test classes and test names behind each row, as they are in the repository at commit
+`4334232`. A class listed with "all N tests" is cited as a whole. The names are generated
+from the test sources, not typed.
+
+### Row 1: No mobile data, signal present
+
+- `SosCoreBoundaryTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosEngineTest.kt`):
+  - "it never logs, never touches the network and sends no message"
+- `SosAlertsTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosAlertsTest.kt`):
+  - "every contact the phone knows gets one message, and the result is recorded"
+  - "preparing twice, or after the contact list changed, alerts the same people once"
+  - "with no contact nothing is sent and nothing fails"
+- `RoomSosActionStoreTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosAlertsTest.kt`):
+  - "actions are stored with their snapshot and move only from the expected states"
+  - "cancelling the emergency deletes its actions, and a late insert is dropped"
+- `SosSmsTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosSmsTest.kt`):
+  - "it hands one multipart message to the phone and waits for an answer per part"
+- `SosMessageTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosMessageTest.kt`):
+  - "the English alert says who, where, how exact, when, the battery, the sender and 112"
+  - "the Bengali alert keeps every number in Latin digits and fits three parts"
+  - "every alert fits three parts, whatever the name, language and position"
+  - "the link is plain, unshortened, and written the same whatever the phone's language"
+- `SmsSegmentsTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosMessageTest.kt`):
+  - "plain text fits 160 characters in one part and 153 per part after that"
+  - "the characters of the SMS alphabet that cost two places are counted twice"
+  - "one letter from outside the SMS alphabet makes the whole message 70 per part"
+  - "punctuation used by the messages is inside the SMS alphabet"
+- `SosSmsTextDocumentTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosSmsTextDocumentTest.kt`):
+  - "every fixed sentence of the messages is in the document, in both languages"
+  - "the sentences that carry a name are in the document with a placeholder"
+  - "the document says that it is a draft and that nothing is sent yet"
+- `SosDispatchTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosDispatchTest.kt`):
+  - "with a position ready the alert leaves at the trigger, once per contact, with the link"
+  - "a message that cannot be sent never holds up or undoes the emergency, and is retried"
+  - "with the gate closed an SOS runs and nobody is messaged"
+  - "the Bengali setting sends the Bengali message, and no name sends the no-name wording"
+- `SosAlertLinesTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosAlertsDeviceTest.kt`):
+  - "sent, waiting, failed and skipped are shown as counts, and a sent message is not called delivered"
+- `SosViewModelTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosViewModelTest.kt`):
+  - "the active screen shows the counts of the alerts as they change"
+  - "without consent to the alerts notice no SOS can be started from the screen"
+- `SosAlertsDeviceTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosAlertsDeviceTest.kt`):
+  - "the gate opens only for consent to the notice the app shows today"
+  - "the notice version is the second one, and differs from the first"
+- `ApiContactsRepositoryTest` (`android/app/src/test/java/com/saferoute/app/feature/contacts/ApiContactsRepositoryTest.kt`):
+  - "consent counts only when it is granted for the notice the app shows today"
+  - "the phone's note of the consent follows the server, and a failed check changes nothing"
+  - "granting notes the consent on the phone only after the server recorded it"
+  - "withdrawing and signing out take the note of the consent away"
+- `SosFlowTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosScreensTest.kt`):
+  - "without consent to the alerts notice the SOS control offers Call 112 and the way to the setup"
+
+### Row 2: No signal at all
+
+- `SosCoreBoundaryTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosEngineTest.kt`):
+  - "it never logs, never touches the network and sends no message"
+- `SosDeviceTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosDeviceTest.kt`):
+  - "the device code of a running SOS never logs and holds no means to send a message"
+  - "during the countdown its one button opens the dialer with 112 and a tap opens the emergency screen"
+- `SosRunnerTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosRunnerTest.kt`): all 14 tests.
+- `SosScreensTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosScreensTest.kt`):
+  - "the countdown shows the number, a 72 dp cancel, Call 112 and what SafeRoute is not"
+  - "the active screen says in words what is and is not happening"
+  - "the question after a restart offers start now, cancel and Call 112"
+  - "without a phone app the screens show the number instead of the button"
+- `SosAlertsTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosAlertsTest.kt`):
+  - "a failed message is tried again every 30 seconds, and a sent one never again"
+  - "after 20 tries a message is given up, about ten minutes in"
+  - "retries stop the moment the emergency is over"
+  - "each try carries the text of that moment"
+- `SosSmsTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosSmsTest.kt`):
+  - "only an OK from the phone counts as sent"
+  - "what may pass is retried and what cannot is final"
+- `SosDispatchTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosDispatchTest.kt`):
+  - "a message that cannot be sent never holds up or undoes the emergency, and is retried"
+  - "after a process death the retries go on, and nobody who has the alert gets it again"
+
+### Row 3: API down or 5xx
+
+No automated test: nothing of this row is built, or nothing of it can be tested without a phone.
+
+### Row 4: App swiped away or killed by the OEM
+
+- `SosEngineTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosEngineTest.kt`):
+  - "process death during the countdown with time left resumes with what remains"
+  - "process death past the end of the countdown asks, and sends only on send now"
+  - "process death past the end of the countdown, then cancel, leaves nothing"
+  - "process death after the trigger and while active is found as still active"
+  - "process death after resolved leaves nothing to recover"
+- `SosRecoveryTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosStateMachineTest.kt`):
+  - "no record, or one that is over, needs nothing"
+  - "a countdown with time left is shown again with what remains"
+  - "a countdown whose end passed is always asked about, never sent or dropped"
+  - "a countdown that starts in the future means the clock changed, so it is asked about"
+  - "an alert that went out is still active until the user says they are safe"
+- `SosRunnerTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosRunnerTest.kt`):
+  - "process death during the countdown - the new process finishes the SAME countdown"
+  - "process death past the end of the countdown - nothing is sent until the user says so"
+  - "process death past the end of the countdown, then cancel - nothing remains"
+  - "process death while active - the new process picks it up and I am safe still works"
+  - "process death between the trigger and the first action - the new process goes on"
+- `SosForegroundServiceTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosDeviceTest.kt`):
+  - "started with nothing running, the service stops itself at once"
+  - "during an SOS it is in the foreground with the fixed notification, and ends on cancel"
+  - "without a location permission the plain notification stands in for the service"
+- `AndroidSosHostTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosDeviceTest.kt`):
+  - "with a location permission it starts the foreground service and posts nothing itself"
+  - "ending stops the service and removes the notification"
+- `SosViewModelTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosViewModelTest.kt`):
+  - "after a process death in the countdown the screen shows the SAME countdown"
+  - "a countdown that ended while the app was closed is asked about - start now"
+  - "a countdown that ended while the app was closed is asked about - cancel"
+  - "an SOS found still active says so, and continue keeps it running"
+  - "a rotated or re-created screen never starts a second emergency"
+- `SosFlowTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosScreensTest.kt`):
+  - "an emergency nobody is running opens the emergency screen when the app comes to the front"
+- `SosScreensTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosScreensTest.kt`):
+  - "an SOS found after a restart says so and offers continue or I am safe"
+
+### Row 5: Phone rebooted during SOS
+
+- `SosRecoveryTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosStateMachineTest.kt`):
+  - "no record, or one that is over, needs nothing"
+  - "a countdown with time left is shown again with what remains"
+  - "a countdown whose end passed is always asked about, never sent or dropped"
+  - "a countdown that starts in the future means the clock changed, so it is asked about"
+  - "an alert that went out is still active until the user says they are safe"
+- `SosEngineTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosEngineTest.kt`):
+  - "process death after the trigger and while active is found as still active"
+  - "process death past the end of the countdown asks, and sends only on send now"
+- `SosRunnerTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosRunnerTest.kt`):
+  - "process death while active - the new process picks it up and I am safe still works"
+  - "a clock set back during the countdown neither sends early nor gets stuck"
+- `SosViewModelTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosViewModelTest.kt`):
+  - "an SOS found still active says so, and continue keeps it running"
+- `SosScreensTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosScreensTest.kt`):
+  - "an SOS found after a restart says so and offers continue or I am safe"
+  - "the question after a restart offers start now, cancel and Call 112"
+
+### Row 6: Double tap or duplicate trigger
+
+- `SosEngineTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosEngineTest.kt`):
+  - "a second start in any unresolved state shows the existing emergency"
+  - "ten starts at once make one emergency"
+  - "ten triggers at once fire once"
+- `SosRunnerTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosRunnerTest.kt`):
+  - "a second start during the countdown starts nothing new"
+  - "a start while an SOS is active shows the active one"
+- `SosViewModelTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosViewModelTest.kt`):
+  - "a rotated or re-created screen never starts a second emergency"
+  - "a practice run never replaces or hides a real SOS"
+- `SosScreensTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosScreensTest.kt`):
+  - "a hold of two seconds arms exactly once, and a tap does nothing"
+- `SosAlertsTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosAlertsTest.kt`):
+  - "two senders at once never send the same message twice"
+  - "after a process death a sent message stays sent and an unanswered one is tried again"
+
+### Row 7: SEND_SMS denied or not approved
+
+- `SosSmsTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosSmsTest.kt`):
+  - "without the permission it refuses and never reaches the phone's SMS service"
+  - "the main manifest never asks for SEND_SMS, only the extra one of builds made with it"
+  - "this build asks for SEND_SMS exactly when it was built with it"
+- `SosAlertsTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosAlertsTest.kt`):
+  - "a failure that cannot pass is not tried again"
+- `MainActivityTest` (`android/app/src/test/java/com/saferoute/app/MainActivityTest.kt`):
+  - "the app asks for exactly these permissions and never for background location"
+- `SosDispatchTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosDispatchTest.kt`):
+  - "without the permission the SMS app is opened once with every number and the alert"
+  - "after a process death in composer mode the SMS app is not opened a second time"
+  - "in composer mode I am safe opens the SMS app with the follow-up"
+- `SosAlertsDeviceTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosAlertsDeviceTest.kt`):
+  - "the composer intent goes to an SMS app with every number and the text, and sends nothing"
+  - "the composer notification shows fixed text only and carries the message unchangeable"
+  - "showing posts the notification on a high-importance channel, and dismissing removes it"
+  - "the way of sending follows the build and the permission"
+- `SosAlertLinesTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosAlertsDeviceTest.kt`):
+  - "in composer mode it says that nothing is sent until Send is pressed, and offers the SMS app again"
+- `SosViewModelTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosViewModelTest.kt`):
+  - "in composer mode the screen offers the SMS app again"
+- `SmsPermissionCardTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SmsPermissionCardTest.kt`): all 10 tests.
+
+### Row 8: No GPS fix
+
+- `SosTrailTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosRunnerTest.kt`): all 8 tests.
+- `SosRunnerTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosRunnerTest.kt`):
+  - "location never blocks an SOS - without permission it triggers on time"
+  - "location never blocks an SOS - with location off and no fix it triggers on time"
+- `SosScreensTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosScreensTest.kt`):
+  - "every way of having no good position has its own sentence"
+- `SosViewModelTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosViewModelTest.kt`):
+  - "the active screen reports the location in words and says when notifications are off"
+- `SosMessageTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosMessageTest.kt`):
+  - "without a position it says so and still asks to call 112"
+  - "an old position carries its age in minutes and the clock time it was taken"
+  - "an unknown accuracy and an unknown battery are left out, not invented"
+- `SosDispatchTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosDispatchTest.kt`):
+  - "without a position the alert waits 3 seconds at most, and the trigger not at all"
+  - "a position that arrives inside the 3 seconds is used at once"
+  - "sent without a position, ONE update follows when a position arrives within 60 seconds"
+  - "a position that arrives after 60 seconds is not sent after the alert"
+  - "without a location permission there is nothing to wait for"
+
+### Row 9: FCM failure
+
+No automated test: nothing of this row is built, or nothing of it can be tested without a phone.
+
+### Row 10: Worker crash mid-action
+
+No automated test: nothing of this row is built, or nothing of it can be tested without a phone.
+
+### Row 11: Accidental trigger
+
+- `SosStateMachineTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosStateMachineTest.kt`):
+  - "an alert that went out cannot be cancelled, only marked safe"
+- `SosEngineTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosEngineTest.kt`):
+  - "cancel during the countdown deletes the record and its points"
+  - "after the alert went out cancel is refused and I am safe resolves it"
+- `SosRunnerTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosRunnerTest.kt`):
+  - "cancel is local only - record gone, trail stopped, host ended, nothing fires later"
+  - "after the alert went out cancel is refused and I am safe ends everything"
+- `SosForegroundServiceTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosDeviceTest.kt`):
+  - "during an SOS it is in the foreground with the fixed notification, and ends on cancel"
+- `SosScreensTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosScreensTest.kt`):
+  - "a hold released before two seconds arms nothing"
+  - "the countdown shows the number, a 72 dp cancel, Call 112 and what SafeRoute is not"
+  - "at 200 percent font cancel and Call 112 can still be reached and stay big"
+  - "in landscape cancel and Call 112 can still be reached"
+  - "I am safe is confirmed in a dialog"
+- `SosViewModelTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosViewModelTest.kt`):
+  - "cancel in the countdown closes the screen and leaves nothing"
+  - "I am safe asks first, and only the confirmation ends the SOS"
+  - "I am safe on the notification opens the confirmation, and does not end anything by itself"
+  - "I am safe tells the alerted contacts by default"
+  - "with tell my contacts unticked I am safe sends nothing more"
+  - "practice runs the whole flow and touches nothing real"
+- `SosEmergencyScreenTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosScreensTest.kt`):
+  - "started after the hold it shows the countdown over the lock screen, and cancel leaves nothing"
+- `SosMessageTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosMessageTest.kt`):
+  - "the safe follow-up reports what the sender said, in both languages"
+- `SosAlertsTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosAlertsTest.kt`):
+  - "the safe follow-up goes only to the contacts whose alert was really sent"
+- `SosDispatchTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosDispatchTest.kt`):
+  - "I am safe with tell my contacts sends the follow-up to those whose alert was sent"
+  - "I am safe without tell my contacts sends nothing more"
+  - "cancel during the countdown sends nothing, also with the gate open"
+- `SosAlertLinesTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosAlertsDeviceTest.kt`):
+  - "the confirmation offers tell my contacts, ticked, only when someone was told"
+
+### Row A1: SOS started from the tile while the phone is locked
+
+- `EmergencyShortcutTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/EmergencyShortcutsTest.kt`):
+  - "every entry leads to the one emergency destination, as a new task"
+  - "the pending intent starts an activity, is immutable, and differs per entry"
+  - "a tile uses a pending intent from Android 14 and a plain intent before"
+  - "Android's answer to the add-tile request is read by its number"
+- `SosTileServiceTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/EmergencyShortcutsTest.kt`):
+  - "a tap opens the emergency destination and nothing else"
+  - "the tile is tappable, not shown as switched on, and named for TalkBack"
+  - "the label fits a tile"
+- `EmergencyActivityTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/EmergencyShortcutsTest.kt`):
+  - "it shows the emergency dialog with the not-an-emergency-service note"
+  - "call 112 opens the dialer with 112, never calls, and closes this screen"
+  - "cancel closes this screen and starts nothing"
+  - "without a dialer app it shows the number instead of crashing, and stays open"
+  - "it is not the main activity and carries nothing of the app's session"
+- `EmergencyShortcutsManifestTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/EmergencyShortcutsTest.kt`):
+  - "the tile service is declared the way Android asks"
+  - "only the emergency screen may show over the lock screen, and it is not exported"
+- `SosScreensTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosScreensTest.kt`):
+  - "on the lock screen the way out says that the unlock comes first"
+- `SosAlertLinesTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosAlertsDeviceTest.kt`):
+  - "on the lock screen the same counts are shown and nothing else about the contacts"
+
+### Row A2: Pinned notification dismissed or killed
+
+- `EmergencyNotificationTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/EmergencyNotificationTest.kt`):
+  - "posting shows exactly one notification, posting again replaces it, cancel removes it"
+  - "app open, restart and update all use the same rule - swiped away, it comes back"
+  - "with the switch off nothing is posted at boot, at update or at app open"
+  - "once started it follows the switch - off removes it at once, and so does a cleared store"
+  - "the receiver answers to a restart and to an update of this app, and to nothing else"
+- `SosFlowTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosScreensTest.kt`):
+  - "the SOS control opens the dialog, and a completed hold leads to the emergency screen"
+
+### Row A3: Tile unavailable on the device
+
+- `SettingsShortcutsTest` (`android/app/src/test/java/com/saferoute/app/feature/settings/SettingsShortcutsTest.kt`):
+  - "the row is a button of at least 48 dp, says what the tile does, and reports the tap"
+  - "added and already added say so, and OK closes the notice"
+  - "when Android does not add it, the four steps for doing it by hand are shown"
+  - "in Bengali at double font size the row and the steps are still reachable"
+- `EmergencyShortcutTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/EmergencyShortcutsTest.kt`):
+  - "Android's answer to the add-tile request is read by its number"
+- `SosFlowTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosScreensTest.kt`):
+  - "the SOS control opens the dialog, and a completed hold leads to the emergency screen"
+
+### Row A4: Notification permission denied
+
+- `EmergencyNotificationTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/EmergencyNotificationTest.kt`):
+  - "on Android 13 the permission decides, then the app switch, then the channel"
+  - "it is shown only when the switch is on and Android allows it"
+- `SettingsShortcutsTest` (`android/app/src/test/java/com/saferoute/app/feature/settings/SettingsShortcutsTest.kt`):
+  - "denied once and denied for good each have their notice, and the switch stays off"
+  - "notifications or the category blocked - a notice, no request, the switch stays off"
+- `SosScreensTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosScreensTest.kt`):
+  - "the active screen says in words what is and is not happening"
+- `SosViewModelTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosViewModelTest.kt`):
+  - "the active screen reports the location in words and says when notifications are off"
+
+### Row A5: Opted-out contact excluded
+
+- `ContactsDatabaseTest` (`android/app/src/test/java/com/saferoute/app/core/data/ContactsDatabaseTest.kt`):
+  - "sos contacts leave out everyone who opted out"
+  - "sos contacts are empty when there are none or all opted out"
+- `SosAlertsTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosAlertsTest.kt`):
+  - "a contact who opted out before their message left is skipped and never texted"
+  - "an opt-out that arrives after the message was sent changes nothing about it"
+- `SosDispatchTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosDispatchTest.kt`):
+  - "a contact who opted out is taken off when the fresh list arrives before their message left"
+  - "the alert never waits for the server - a slow or absent answer changes nothing"
+- `SosAlertsDeviceTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosAlertsDeviceTest.kt`):
+  - "the fresh look returns who may still be alerted, or nothing when the list could not be fetched"
+- `ApiContactsRepositoryTest` (`android/app/src/test/java/com/saferoute/app/feature/contacts/ApiContactsRepositoryTest.kt`):
+  - "an opted-out contact cannot be invited, and the copy learns it"
+
+### Row A6: Contacts empty at SOS time
+
+- `SosAlertsTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosAlertsTest.kt`):
+  - "with no contact nothing is sent and nothing fails"
+- `SosDispatchTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosDispatchTest.kt`):
+  - "with no contact the screen says so and nothing is sent"
+- `SosViewModelTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosViewModelTest.kt`):
+  - "with no contact the active screen says so and I am safe offers nothing to tell"
+- `SosAlertLinesTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosAlertsDeviceTest.kt`):
+  - "while preparing and with no contact it says so"
+- `ContactsDatabaseTest` (`android/app/src/test/java/com/saferoute/app/core/data/ContactsDatabaseTest.kt`):
+  - "sos contacts are empty when there are none or all opted out"
+
+### Row A7: Contacts never synced to the phone
+
+- `ApiContactsRepositoryTest` (`android/app/src/test/java/com/saferoute/app/feature/contacts/ApiContactsRepositoryTest.kt`):
+  - "reading works with no server at all, and so does the sos list"
+  - "a failed fetch never deletes or changes what is on the phone"
+  - "the phone's note of the consent follows the server, and a failed check changes nothing"
+- `ContactsSessionSyncTest` (`android/app/src/test/java/com/saferoute/app/feature/contacts/ContactRulesTest.kt`):
+  - "ready fetches the list once, and again after the next sign-in"
+  - "a failed fetch after sign-in keeps what is on the phone"
+- `SosDispatchTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosDispatchTest.kt`):
+  - "the alert never waits for the server - a slow or absent answer changes nothing"
+  - "with no contact the screen says so and nothing is sent"
+
+### Row A8: SMS fails for every contact (no SIM, no service, airplane mode)
+
+- `SosAlertsTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosAlertsTest.kt`):
+  - "a failed message is tried again every 30 seconds, and a sent one never again"
+  - "after 20 tries a message is given up, about ten minutes in"
+  - "a failure that cannot pass is not tried again"
+  - "retries stop the moment the emergency is over"
+- `SosSmsTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosSmsTest.kt`):
+  - "only an OK from the phone counts as sent"
+  - "what may pass is retried and what cannot is final"
+  - "on a device that cannot send SMS it says so instead of crashing"
+- `SosDispatchTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosDispatchTest.kt`):
+  - "a message that cannot be sent never holds up or undoes the emergency, and is retried"
+- `SosAlertLinesTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosAlertsDeviceTest.kt`):
+  - "sent, waiting, failed and skipped are shown as counts, and a sent message is not called delivered"
+
+### Row A9: Dual-SIM phone with the wrong default SIM
+
+No automated test: nothing of this row is built, or nothing of it can be tested without a phone.
+
+### Row A10: Contact list changed mid-SOS
+
+- `SosAlertsTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosAlertsTest.kt`):
+  - "preparing twice, or after the contact list changed, alerts the same people once"
+  - "a contact who opted out before their message left is skipped and never texted"
+  - "the safe follow-up goes only to the contacts whose alert was really sent"
+- `RoomSosActionStoreTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosAlertsTest.kt`):
+  - "actions are stored with their snapshot and move only from the expected states"
+- `SosDispatchTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosDispatchTest.kt`):
+  - "a contact who opted out is taken off when the fresh list arrives before their message left"
+  - "after a process death the retries go on, and nobody who has the alert gets it again"
+
+### Row A11: Process death inside the 5-second countdown
+
+- `SosRecoveryTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosStateMachineTest.kt`):
+  - "a countdown with time left is shown again with what remains"
+  - "a countdown whose end passed is always asked about, never sent or dropped"
+  - "a countdown that starts in the future means the clock changed, so it is asked about"
+- `SosEngineTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosEngineTest.kt`):
+  - "process death during the countdown with time left resumes with what remains"
+  - "process death past the end of the countdown asks, and sends only on send now"
+  - "process death past the end of the countdown, then cancel, leaves nothing"
+- `SosRunnerTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosRunnerTest.kt`):
+  - "process death during the countdown - the new process finishes the SAME countdown"
+  - "process death past the end of the countdown - nothing is sent until the user says so"
+  - "process death past the end of the countdown, then cancel - nothing remains"
+  - "a clock set back during the countdown neither sends early nor gets stuck"
+- `SosViewModelTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosViewModelTest.kt`):
+  - "after a process death in the countdown the screen shows the SAME countdown"
+  - "a countdown that ended while the app was closed is asked about - start now"
+  - "a countdown that ended while the app was closed is asked about - cancel"
+- `SosScreensTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosScreensTest.kt`):
+  - "the question after a restart offers start now, cancel and Call 112"
+- `SosDispatchTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosDispatchTest.kt`):
+  - "cancel during the countdown sends nothing, also with the gate open"
+
+### Row A12: SOS location unavailable (no permission or location off)
+
+- `SosRunnerTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosRunnerTest.kt`):
+  - "location never blocks an SOS - without permission it triggers on time"
+  - "location never blocks an SOS - with location off and no fix it triggers on time"
+- `SosForegroundServiceTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosDeviceTest.kt`):
+  - "without a location permission the plain notification stands in for the service"
+- `SosScreensTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosScreensTest.kt`):
+  - "every way of having no good position has its own sentence"
+- `SosMessageTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosMessageTest.kt`):
+  - "without a position it says so and still asks to call 112"
+- `SosDispatchTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosDispatchTest.kt`):
+  - "without a location permission there is nothing to wait for"
+  - "without a position the alert waits 3 seconds at most, and the trigger not at all"
+
+## History
+
+- **P014a1** (2026-10-09): created from the failure-matrix table of that prompt's log.
+- **P014a2, P014a3, P014b1, P014b2, P014b3** (2026-10-09): rows and scripts M0 to M16 added
+  as each part was built.
+- **P014b5** (merged 2026-10-12): no row changed; one test of the daily clean-up was made
+  independent of a background thread.
+- **P013c** (2026-10-12): restructured as a living document. Rows numbered (1 to 11, A1 to
+  A12), seven rows added (A6 to A12), the columns "Implemented in", "Manual script",
+  "Status" and "Last result date" added, every test name checked against the test sources,
+  the sections "Known gaps" and "Device results" added, and the manual scripts moved to
+  [manual-test-scripts.md](manual-test-scripts.md) with their numbers unchanged (M17 to M28
+  new). No test, status or result was invented: a status is "Automated pass" only where a
+  named test exists and `android-ci` on `main` is green.

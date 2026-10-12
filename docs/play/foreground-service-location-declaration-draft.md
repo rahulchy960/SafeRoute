@@ -73,6 +73,6 @@ No secret, account id or tester's detail belongs in this file.
 ## Before submitting
 
 - [ ] The form's own questions have been read and each is answered above or added here.
-- [ ] The phone scripts M3 to M6 in `docs/sos/failure-matrix.md` have been run, and what
+- [ ] The phone scripts M3 to M6 in `docs/sos/manual-test-scripts.md` have been run, and what
       happens to the service on the test phones is recorded.
 - [ ] The privacy policy, when it exists, says the same about location.
