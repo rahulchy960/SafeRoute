@@ -23,6 +23,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.saferoute.app.R
 import com.saferoute.app.core.designsystem.preview.SafeRoutePreviews
 import com.saferoute.app.core.designsystem.theme.SafeRouteTheme
+import com.saferoute.app.core.emergency.SmsLimitNotice
+import com.saferoute.app.feature.emergency.BuildSmsNotice
 import com.saferoute.app.feature.emergency.HoldToArmButton
 
 /** What the dialog offers besides Call 112 when an SOS can be started from where it is shown. */
@@ -37,6 +39,8 @@ class EmergencyArm(
     val onPractice: () -> Unit,
     /** "Set up SOS alerts" was tapped; null where the screen has no way to the setup. */
     val onSetUp: (() -> Unit)? = null,
+    /** Who a debug build would really text; null in every other build. */
+    val smsNotice: SmsLimitNotice? = null,
 )
 
 /**
@@ -94,6 +98,8 @@ fun EmergencyDialog(
                 if (arm != null) {
                     val onArmed = arm.onArmed
                     if (onArmed != null) {
+                        // A debug build says here who it will really text. Nothing in a release build.
+                        BuildSmsNotice(arm.smsNotice)
                         HoldToArmButton(
                             onArmed = onArmed,
                             modifier = Modifier.align(Alignment.CenterHorizontally),

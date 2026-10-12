@@ -178,6 +178,16 @@ class FakeSmsModeSource(var mode: SmsMode = SmsMode.AUTOMATIC) : SmsModeSource {
     override fun mode(): SmsMode = mode
 }
 
+/**
+ * The build's limit on who is texted, as a test sets it. Null means no limit (a release
+ * build); a set means a debug build that may text only those numbers. Fake numbers only.
+ */
+class FakeSmsRecipientLimit(var allowed: Set<String>? = null) : SmsRecipientLimit {
+    override val limited: Boolean get() = allowed != null
+
+    override fun allows(phoneE164: String): Boolean = allowed?.contains(phoneE164) ?: true
+}
+
 /** Records what the SMS app would have been opened with. Fake numbers only. */
 class FakeSmsComposer : SmsComposer {
     val shown = CopyOnWriteArrayList<Pair<List<String>, String>>()
@@ -306,4 +316,12 @@ object FakeSosDeviceModule {
 
     @Provides
     fun provideComposer(fake: FakeSmsComposer): SmsComposer = fake
+
+    // No limit by default, so that tests of other things behave like a release build.
+    @Provides
+    @Singleton
+    fun provideFakeRecipientLimit(): FakeSmsRecipientLimit = FakeSmsRecipientLimit()
+
+    @Provides
+    fun provideRecipientLimit(fake: FakeSmsRecipientLimit): SmsRecipientLimit = fake
 }

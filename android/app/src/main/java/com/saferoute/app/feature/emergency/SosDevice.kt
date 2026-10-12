@@ -19,6 +19,7 @@ import com.saferoute.app.core.emergency.ContactsFreshener
 import com.saferoute.app.core.emergency.PurgeScheduler
 import com.saferoute.app.core.emergency.SmsComposer
 import com.saferoute.app.core.emergency.SmsModeSource
+import com.saferoute.app.core.emergency.SmsRecipientLimit
 import com.saferoute.app.core.emergency.SosAlertPolicy
 import com.saferoute.app.core.emergency.SosMessageSettings
 import com.saferoute.app.core.emergency.SmsGateway
@@ -164,6 +165,11 @@ interface SosDeviceModule {
 
     @Binds
     fun bindSmsComposer(composer: AndroidSmsComposer): SmsComposer
+
+    // BuildSmsRecipientLimit exists twice: src/debug (the list of test numbers) and
+    // src/release (no limit). The build type decides which one is compiled.
+    @Binds
+    fun bindSmsRecipientLimit(limit: BuildSmsRecipientLimit): SmsRecipientLimit
 
     @Binds
     fun bindContactsFreshener(freshener: RepositoryContactsFreshener): ContactsFreshener

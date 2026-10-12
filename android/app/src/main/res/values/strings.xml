@@ -531,6 +531,8 @@
     <string name="sos_alerts_waiting">Still trying to send: %1$d.</string>
     <string name="sos_alerts_failed">Could not be sent: %1$d.</string>
     <string name="sos_alerts_skipped">Not sent because the contact opted out: %1$d.</string>
+    <!-- Only a build that limits who it texts (a debug build, P014b6) can show this. -->
+    <string name="sos_alerts_held">Not sent because this test build may not text them: %1$d.</string>
     <string name="sos_alerts_caveat">A sent message may still not arrive or be read. If you are in danger, call 112.</string>
     <string name="sos_alerts_composer">Your SMS app has the alert for %1$d emergency contacts. It is sent only when you press Send there.</string>
     <string name="sos_alerts_composer_open">Open SMS app again</string>

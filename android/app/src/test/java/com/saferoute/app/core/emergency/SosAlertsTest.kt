@@ -202,6 +202,41 @@ class SosAlertsTest {
     }
 
     @Test
+    fun `numbers a limited build may not text are skipped with their own reason, and counted apart`() = runTest {
+        val rig = AlertsRig(this, contact(1), contact(2), contact(3))
+        rig.alerts.prepare(SOS_ID, SosActionType.ALERT)
+        val limit = FakeSmsRecipientLimit(allowed = setOf(phone(2)))
+
+        val held = rig.alerts.skipNotAllowed(SOS_ID, limit)
+        rig.alerts.sendDue(SOS_ID, SosActionType.ALERT) { "the alert" }
+
+        assertEquals(2, held)
+        assertEquals(
+            mapOf(phone(1) to SosActionState.SKIPPED, phone(2) to SosActionState.SENT, phone(3) to SosActionState.SKIPPED),
+            rig.states(),
+        )
+        assertEquals(0, rig.gateway.attemptsTo(phone(1)))
+        assertEquals(SKIP_DEBUG_NOT_ALLOWLISTED, rig.store.all[0].lastErrorCategory)
+        // "Opted out" and "held by this build" are different facts and are not added up.
+        assertEquals(SosAlertSummary(sent = 1, waiting = 0, failed = 0, skipped = 0, held = 2), summarise(rig.store.all))
+        assertEquals(3, summarise(rig.store.all).total)
+        // Asked again, nothing changes; and a sent message is never touched.
+        assertEquals(0, rig.alerts.skipNotAllowed(SOS_ID, FakeSmsRecipientLimit(allowed = emptySet())))
+        assertEquals(SosActionState.SENT, rig.states()[phone(2)])
+    }
+
+    @Test
+    fun `a build without a limit skips nobody`() = runTest {
+        val rig = AlertsRig(this, contact(1), contact(2))
+        rig.alerts.prepare(SOS_ID, SosActionType.ALERT)
+
+        assertEquals(0, rig.alerts.skipNotAllowed(SOS_ID, UnlimitedSmsRecipients))
+        assertEquals(0, rig.alerts.skipNotAllowed(SOS_ID, FakeSmsRecipientLimit(allowed = null)))
+
+        assertEquals(mapOf(phone(1) to SosActionState.PENDING, phone(2) to SosActionState.PENDING), rig.states())
+    }
+
+    @Test
     fun `a contact who opted out before their message left is skipped and never texted`() = runTest {
         val rig = AlertsRig(this, contact(1), contact(2), contact(3))
         rig.gateway.fallback = RETRY

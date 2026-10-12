@@ -17,6 +17,8 @@ import com.saferoute.app.R
 import com.saferoute.app.core.data.ActiveSosContacts
 import com.saferoute.app.core.emergency.ContactsFreshener
 import com.saferoute.app.core.emergency.SmsComposer
+import com.saferoute.app.core.emergency.SmsLimitNotice
+import com.saferoute.app.core.emergency.SmsLimitNotices
 import com.saferoute.app.core.emergency.SmsMode
 import com.saferoute.app.core.emergency.SmsModeSource
 import com.saferoute.app.core.emergency.SosAlertPolicy
@@ -35,6 +37,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
@@ -60,9 +63,16 @@ class ConsentSosAlertPolicy @Inject constructor(preferences: ContactsPreferences
  * shows Call 112 and a way to the notice, not the hold button.
  */
 @HiltViewModel
-class SosArmViewModel @Inject constructor(policy: SosAlertPolicy) : ViewModel() {
+class SosArmViewModel @Inject constructor(policy: SosAlertPolicy, notices: SmsLimitNotices) : ViewModel() {
     val alertsEnabled: StateFlow<Boolean> =
         policy.allowed.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_AFTER_MILLIS), false)
+
+    /**
+     * What a build that limits its recipients (a debug build) would do with an alert; null in
+     * every other build. Worked out again each time a screen starts to watch it.
+     */
+    val smsNotice: StateFlow<SmsLimitNotice?> =
+        flow { emit(notices.current()) }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_AFTER_MILLIS), null)
 
     private companion object {
         const val STOP_AFTER_MILLIS = 5_000L

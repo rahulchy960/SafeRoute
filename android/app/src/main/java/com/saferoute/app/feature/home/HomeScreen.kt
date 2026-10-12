@@ -140,6 +140,7 @@ fun HomeRoute(
     val directions by directionsViewModel.state.collectAsStateWithLifecycle()
     val emergencyDialog by viewModel.emergencyDialog.collectAsStateWithLifecycle()
     val alertsEnabled by armViewModel.alertsEnabled.collectAsStateWithLifecycle()
+    val smsNotice by armViewModel.smsNotice.collectAsStateWithLifecycle()
     val mapState by viewModel.map.loadState.collectAsStateWithLifecycle()
     val myLocation by viewModel.myLocation.collectAsStateWithLifecycle()
     val locationState by viewModel.locationState.collectAsStateWithLifecycle()
@@ -298,6 +299,7 @@ fun HomeRoute(
                 viewModel.onEmergencyDialogDismiss()
                 onOpenContacts()
             },
+            smsNotice = smsNotice,
             onPractice = {
                 viewModel.onEmergencyDialogDismiss()
                 context.startActivity(EmergencyShortcut.modeIntent(context, SosOpenMode.PRACTICE))

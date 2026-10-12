@@ -56,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import com.saferoute.app.R
 import com.saferoute.app.core.designsystem.theme.MinTouchTarget
 import com.saferoute.app.core.designsystem.theme.SafeRouteTheme
+import com.saferoute.app.core.emergency.SmsLimitNotice
 import com.saferoute.app.core.emergency.SosAlertStatus
 import com.saferoute.app.core.emergency.SosLocationReport
 import kotlinx.coroutines.launch
@@ -246,8 +247,11 @@ fun SosCountdownScreen(
     dialerMissing: Boolean,
     onCancel: () -> Unit,
     onCall112: () -> Unit,
+    smsNotice: SmsLimitNotice? = null,
 ) {
     SosFrame(practice = practice, dialerMissing = dialerMissing, onCall112 = onCall112) {
+        // A debug build says here who it will really text. Nothing in a release build.
+        if (!practice) BuildSmsNotice(smsNotice)
         SosTitle(stringResource(R.string.sos_countdown_title))
         val spoken = stringResource(R.string.sos_countdown_seconds_description, secondsLeft)
         Text(
@@ -305,8 +309,10 @@ fun SosActiveScreen(
     onCall112: () -> Unit,
     onOpenComposer: () -> Unit = {},
     onTellContactsChange: (Boolean) -> Unit = {},
+    smsNotice: SmsLimitNotice? = null,
 ) {
     SosFrame(practice = state.practice, dialerMissing = dialerMissing, onCall112 = onCall112) {
+        if (!state.practice) BuildSmsNotice(smsNotice)
         SosTitle(stringResource(R.string.sos_active_title))
         AlertLines(alerts = if (state.practice) SosAlertStatus.NotEnabled else state.alerts, onOpenComposer = onOpenComposer)
         if (!state.practice) {
@@ -402,6 +408,9 @@ private fun AlertLines(alerts: SosAlertStatus, onOpenComposer: () -> Unit) {
             }
             if (summary.skipped > 0) {
                 Text(text = stringResource(R.string.sos_alerts_skipped, summary.skipped), textAlign = TextAlign.Center)
+            }
+            if (summary.held > 0) {
+                Text(text = stringResource(R.string.sos_alerts_held, summary.held), textAlign = TextAlign.Center)
             }
             Text(text = stringResource(R.string.sos_alerts_caveat), textAlign = TextAlign.Center)
         }

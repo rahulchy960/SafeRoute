@@ -212,6 +212,101 @@ class SosDispatchTest {
     }
 
     @Test
+    fun `a build that limits its recipients texts only the allowlisted contacts and records the others as skipped`() = runTest {
+        val rig = rig(contacts = 3)
+        rig.limit.allowed = setOf(person(2).phoneE164)
+
+        rig.trigger()
+        rig.advance(600_000)
+
+        assertEquals(listOf(SosActionState.SKIPPED, SosActionState.SENT, SosActionState.SKIPPED), rig.alertStates())
+        assertEquals(listOf(person(2).phoneE164), rig.gateway.attempts.map { it.first }.distinct())
+        val skipped = rig.actions.all.filter { it.state == SosActionState.SKIPPED }
+        assertEquals(listOf(SKIP_DEBUG_NOT_ALLOWLISTED, SKIP_DEBUG_NOT_ALLOWLISTED), skipped.map { it.lastErrorCategory })
+        assertEquals(
+            SosAlertStatus.Automatic(SosAlertSummary(sent = 1, waiting = 0, failed = 0, skipped = 0, held = 2)),
+            rig.dispatch.status.value,
+        )
+        // Nobody was handed to the SMS app either: the others are simply not texted.
+        assertEquals(emptyList<Pair<List<String>, String>>(), rig.composer.shown.toList())
+    }
+
+    @Test
+    fun `with an empty list of test numbers nothing is sent by the app and the SMS app gets everyone`() = runTest {
+        val rig = rig(contacts = 2)
+        rig.limit.allowed = emptySet()
+
+        rig.trigger()
+        rig.advance(600_000)
+
+        assertEquals(SosState.ACTIVE, rig.stored())
+        assertEquals(emptyList<Pair<String, String>>(), rig.gateway.attempts.toList())
+        assertEquals(SosAlertStatus.Composer(2), rig.dispatch.status.value)
+        assertEquals(listOf(person(1).phoneE164, person(2).phoneE164), rig.composer.shown.single().first)
+        // Nothing is recorded as sent, and nothing as skipped: the user decides in the SMS app.
+        assertEquals(listOf(SosActionState.PENDING, SosActionState.PENDING), rig.alertStates())
+    }
+
+    @Test
+    fun `with test numbers that match none of the contacts the SMS app is used, as with an empty list`() = runTest {
+        val rig = rig(contacts = 2)
+        rig.limit.allowed = setOf(person(9).phoneE164)
+
+        rig.trigger()
+
+        assertEquals(emptyList<Pair<String, String>>(), rig.gateway.attempts.toList())
+        assertEquals(SosAlertStatus.Composer(2), rig.dispatch.status.value)
+    }
+
+    @Test
+    fun `without a limit every contact is texted and nothing is held back`() = runTest {
+        // What a release build has (the default of the rig): the behaviour before P014b6.
+        val rig = rig(contacts = 3)
+        assertFalse(rig.limit.limited)
+
+        rig.trigger()
+
+        assertEquals(listOf(SosActionState.SENT, SosActionState.SENT, SosActionState.SENT), rig.alertStates())
+        assertEquals(
+            SosAlertStatus.Automatic(SosAlertSummary(sent = 3, waiting = 0, failed = 0, skipped = 0, held = 0)),
+            rig.dispatch.status.value,
+        )
+    }
+
+    @Test
+    fun `the safe follow-up of a limited build goes only to the contact who was texted`() = runTest {
+        val rig = rig(contacts = 3)
+        rig.limit.allowed = setOf(person(1).phoneE164)
+        rig.trigger()
+        rig.gateway.attempts.clear()
+
+        assertTrue(rig.runner.markSafe(tellContacts = true))
+        rig.advance(60_000)
+
+        assertEquals(listOf("Test User says they are safe now. Sent by the SafeRoute app."), rig.sentTo(1))
+        assertEquals(emptyList<String>(), rig.sentTo(2))
+        assertEquals(emptyList<String>(), rig.sentTo(3))
+        assertEquals(emptyList<Pair<List<String>, String>>(), rig.composer.shown.toList())
+    }
+
+    @Test
+    fun `after a process death a limited build still texts nobody outside its list`() = runTest {
+        val rig = rig(contacts = 2)
+        rig.limit.allowed = setOf(person(1).phoneE164)
+        rig.gateway.answer(person(1).phoneE164, RETRYABLE, RETRYABLE, RETRYABLE)
+        rig.trigger()
+        assertEquals(listOf(SosActionState.FAILED_RETRYABLE, SosActionState.SKIPPED), rig.alertStates())
+
+        rig.restartProcess()
+        rig.runner.resume()
+        rig.advance(60_000)
+
+        assertTrue(rig.sentTo(1).isNotEmpty())
+        assertEquals(0, rig.sentTo(2).size)
+        assertEquals(listOf(SosActionState.SENT, SosActionState.SKIPPED), rig.alertStates())
+    }
+
+    @Test
     fun `with no contact the screen says so and nothing is sent`() = runTest {
         val rig = rig(contacts = 0)
 
