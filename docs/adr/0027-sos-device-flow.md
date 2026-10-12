@@ -351,6 +351,78 @@ nobody who taps through. Hiding the limit inside the gateway only: the record wo
 tester can still press Send to real people; the SMS app shows them who. A tester who puts a
 real person's number on the list has chosen to text them.
 
+### Note of 2026-10-12 (P014b7): an unsent alert is retried while the SOS is active
+
+**The problem.** Point 5 of the note of P014b1 gave up a message after 20 tries, about ten
+minutes. Plan v7 section 7.5, row "No signal at all", says that the device keeps retrying
+and that the SMS is retried when signal returns. A user who starts an SOS in a place
+without signal and reaches signal fifteen minutes later had alerted nobody.
+
+**Decided.** This replaces point 5 of the note of P014b1 for the alert itself.
+
+1. **An alert that is not sent is tried again until the SOS ends.** The wait after a try is
+   30 seconds for the first ten tries, then 1, 2 and 4 minutes, then 5 minutes each time
+   (`alertRetryDelayMillis`). After five minutes of failure the next thirty seconds are
+   unlikely to differ, and every try wakes the radio.
+2. **The schedule is in the record, not in memory.** When a message is due again follows
+   from its stored number of tries and the time of the last one. A new process continues
+   the same schedule; the database did not change.
+3. **An extra try at once**, without waiting: the button "Send again now" on the active
+   screen; the emergency screen coming to the front; the app opened again after a process
+   death; airplane mode switched off; a network becoming available. Signals from the phone
+   are followed at most every ten seconds. A try asked for while one is in flight is
+   ignored, so no message is handed to the phone twice.
+4. **Final stays final.** An error that cannot pass is never tried again and is shown as
+   "could not be sent". A sent message is never sent again.
+5. **After 2 hours with an alert unsent the user is told once**: a notification with fixed
+   text ("Some alerts have not been sent. Call 112 or send a text yourself.") and the same
+   sentence on the active screen. That it was said is written into the action table (a row
+   of the type `UNSENT_NOTICE`, with no contact, number or name), so a new process does not
+   say it again.
+6. **24 hours after the trigger trying stops.** What is still unsent becomes "could not be
+   sent" with the category `expired`, and the screen says that trying has stopped. The SOS
+   itself goes on until the user ends it.
+7. **Follow-ups keep their limit.** The "safe" message and the location update are given up
+   after 20 tries as before: they run beside or after the emergency and must end.
+
+**What was verified for the signals** (Android SDK sources, API 37, read on 2026-10-12):
+
+| Signal | What it needs | Used |
+| --- | --- | --- |
+| `Intent.ACTION_AIRPLANE_MODE_CHANGED` | A broadcast only the system can send; no permission to receive it with a receiver registered in code | Yes |
+| `ConnectivityManager.registerDefaultNetworkCallback` | `ACCESS_NETWORK_STATE`, granted at install. The app's own manifest does not declare it; it is in the merged manifest through the sign-in libraries (ADR 0012). The code checks for it and leaves the signal out if it is ever missing | Yes |
+| `Intent.ACTION_SERVICE_STATE` (the mobile network's own service) | `READ_PHONE_STATE` | No |
+| `TelephonyCallback.ServiceStateListener` | Its documentation names no permission, but what it delivers without one could not be checked without a phone | No |
+
+A data network becoming available is not the same as the mobile network accepting an SMS;
+it is a hint that conditions changed. The regular tries never depend on a signal.
+
+**Battery.** No new service, alarm or wake lock. The timer is a coroutine in the app's
+scope; the emergency's foreground service, which already runs for the location trail, keeps
+the app alive. An unsent alert costs 11 tries in the first five minutes, 15 in the first
+seventeen, then 12 an hour: about 36 in two hours and about 300 in 24 hours per message,
+each a short use of the radio. This is an estimate from the schedule; **nothing was
+measured on a phone**. It is small beside the location trail, which asks for a position
+every 5 seconds (every 15 below 10% battery) for the whole SOS. Without a wake lock a try
+can be late while the phone sleeps deeply; it is made when the phone wakes.
+
+**What does not change.** The consent gate; who is alerted (decided at the trigger); the
+notice the user agreed to, which names no duration for retries; the number of messages a
+contact gets (one alert, at most one location update, at most one follow-up); the debug
+list of P014b6; the permissions.
+
+**Rejected.** A wake lock or exact alarms for the timer: a new permission and a real
+battery cost for a message that goes out at the next wake-up anyway. `READ_PHONE_STATE` for
+the service state: a sensitive permission for a hint. WorkManager for the retries: it
+would run them after the SOS screen and service are gone, with its own delays, and "nothing
+resumes an emergency in the background" (note of P014a2). Retrying for ever: an SOS that
+was forgotten would text a contact days later.
+
+**Residual risks.** An alert can arrive hours after the trigger; it is written anew at each
+try, with the newest position and the clock time at which that position was taken. A try asked for by a tap or a signal counts as a try, so the
+wait before the next regular one can grow sooner. The two numbers (2 hours, 24 hours) are
+choices of this prompt, not plan text.
+
 ## Alternatives considered
 
 - **Keep the state in memory or in DataStore.** Simpler, but a killed process loses the

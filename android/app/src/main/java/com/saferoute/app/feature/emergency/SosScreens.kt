@@ -71,6 +71,7 @@ const val HoldToArmTag = "sos-hold-to-arm"
 const val SosCancelTag = "sos-cancel"
 const val SosCountdownNumberTag = "sos-countdown-number"
 const val SosTellContactsTag = "sos-tell-contacts"
+const val SosRetryNowTag = "sos-retry-now"
 
 private val HoldButtonSize = 168.dp
 private const val HAPTIC_STEPS = 4
@@ -310,11 +311,16 @@ fun SosActiveScreen(
     onOpenComposer: () -> Unit = {},
     onTellContactsChange: (Boolean) -> Unit = {},
     smsNotice: SmsLimitNotice? = null,
+    onRetryNow: () -> Unit = {},
 ) {
     SosFrame(practice = state.practice, dialerMissing = dialerMissing, onCall112 = onCall112) {
         if (!state.practice) BuildSmsNotice(smsNotice)
         SosTitle(stringResource(R.string.sos_active_title))
-        AlertLines(alerts = if (state.practice) SosAlertStatus.NotEnabled else state.alerts, onOpenComposer = onOpenComposer)
+        AlertLines(
+            alerts = if (state.practice) SosAlertStatus.NotEnabled else state.alerts,
+            onOpenComposer = onOpenComposer,
+            onRetryNow = onRetryNow,
+        )
         if (!state.practice) {
             Text(text = locationLine(state.location), textAlign = TextAlign.Center)
             if (state.notificationsOff) {
@@ -381,7 +387,7 @@ fun SosActiveScreen(
  * number of a contact is ever on this screen.
  */
 @Composable
-private fun AlertLines(alerts: SosAlertStatus, onOpenComposer: () -> Unit) {
+private fun AlertLines(alerts: SosAlertStatus, onOpenComposer: () -> Unit, onRetryNow: () -> Unit) {
     when (alerts) {
         SosAlertStatus.NotEnabled ->
             Text(text = stringResource(R.string.sos_active_contacts_none), textAlign = TextAlign.Center)
@@ -400,8 +406,34 @@ private fun AlertLines(alerts: SosAlertStatus, onOpenComposer: () -> Unit) {
                 fontWeight = FontWeight.SemiBold,
                 textAlign = TextAlign.Center,
             )
+            if (alerts.unsentForLong) {
+                // The sentence of the two-hour notification, for a phone that shows none.
+                Text(
+                    text = stringResource(R.string.sos_alerts_unsent_long),
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center,
+                )
+            }
             if (summary.waiting > 0) {
                 Text(text = stringResource(R.string.sos_alerts_waiting, summary.waiting), textAlign = TextAlign.Center)
+                Text(
+                    text = stringResource(R.string.sos_alerts_retry_explain),
+                    style = MaterialTheme.typography.bodySmall,
+                    textAlign = TextAlign.Center,
+                )
+                OutlinedButton(
+                    onClick = onRetryNow,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = MinTouchTarget).testTag(SosRetryNowTag),
+                ) {
+                    Text(text = stringResource(R.string.sos_alerts_retry_now))
+                }
+            }
+            if (alerts.retryingStopped) {
+                Text(
+                    text = stringResource(R.string.sos_alerts_stopped),
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center,
+                )
             }
             if (summary.failed > 0) {
                 Text(text = stringResource(R.string.sos_alerts_failed, summary.failed), textAlign = TextAlign.Center)

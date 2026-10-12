@@ -36,9 +36,9 @@ the alerts and the engine, with fakes for the phone's parts, in virtual time; *c
 the real service, notification or job under Robolectric; *screen* = the Compose screens and
 their ViewModels.
 
-**Evidence for "Automated pass" on this date:** `android-ci` run 38240011508 on `main`
-(commit `4334232`, 2026-10-12): success. The run before it on `main` failed once on a
-flaky test and passed when run again (P014b5).
+**Evidence for "Automated pass" on this date:** `android-ci` run 38247544266 on `main`
+(commit `0298557`, 2026-10-12): success. An earlier run on `main` failed once on a flaky
+test and passed when run again (P014b5).
 
 ## State of the build
 
@@ -51,7 +51,9 @@ notification open the emergency options and do not start an SOS yet; there is no
 yet (P014c). No server takes part in an SOS yet (P015), and there is no live-location
 link (P016). **A debug build texts only the test numbers it was built with** (P014b6): with
 no such list it sends nothing by itself and uses the SMS app, and a banner on the SOS
-screens says which.
+screens says which. **An alert that cannot be sent is tried again for as long as the SOS is
+active** (P014b7): the user is told once after two hours, and trying stops 24 hours after
+the trigger.
 
 ## The matrix
 
@@ -64,7 +66,7 @@ was added in P014b6.
 | ID | Scenario | Expected behaviour | Implemented in | Automated tests | Manual script | Status | Last result date | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 1 | No mobile data, signal present | The alert goes out by SMS from the phone itself, with no data connection. Telling the server waits until the phone is online; the SMS with the live-location link follows once the server knows the SOS. | P014b1, P014b2, P014b3 (SMS from the phone). P015 (telling the server), P016 (the live link): not built | `SosCoreBoundaryTest`, `SosAlertsTest`, `RoomSosActionStoreTest`, `SosSmsTest`, `SosMessageTest`, `SmsSegmentsTest`, `SosSmsTextDocumentTest`, `SosDispatchTest`, `SosAlertLinesTest`, `SosViewModelTest`, `SosAlertsDeviceTest`, `ApiContactsRepositoryTest`, `SosFlowTest` ([names](#row-1-no-mobile-data-signal-present)) | [M0](manual-test-scripts.md#m0-set-up), [M11](manual-test-scripts.md#m11-automatic-sending), [M12](manual-test-scripts.md#m12-mobile-data-off-signal-present), [M28](manual-test-scripts.md#m28-the-live-location-link-by-sms) | Automated pass · Manual pending · Waiting on P015 | 2026-10-12 (automated); manual: none | Automated for the SMS path, at data, logic, component and screen level. No message has been sent on a phone by anyone. The server half of the row does not exist. |
-| 2 | No signal at all | The SOS runs on the phone alone. Every SOS screen offers Call 112. The record stays on the phone, and messages are tried again until they leave or the retries are used up. | P014a1, P014a2, P014a3, P014b1, P014b2 | `SosCoreBoundaryTest`, `SosDeviceTest`, `SosRunnerTest`, `SosScreensTest`, `SosAlertsTest`, `SosSmsTest`, `SosDispatchTest` ([names](#row-2-no-signal-at-all)) | [M3](manual-test-scripts.md#m3-full-countdown-and-locking-the-phone), [M5](manual-test-scripts.md#m5-airplane-mode-and-location-off), [M22](manual-test-scripts.md#m22-every-message-fails) | Automated pass · Manual pending | 2026-10-12 (automated); manual: none | Automated at logic, component and screen level. What a phone reports with no signal is not known (Known gaps). |
+| 2 | No signal at all | The SOS runs on the phone alone. Every SOS screen offers Call 112. The record stays on the phone, and an alert that has not left is tried again for as long as the SOS is active: every 30 seconds at first, then every 5 minutes, and at once when the phone leaves airplane mode, a network returns, or the user asks. | P014a1, P014a2, P014a3, P014b1, P014b2, P014b7 | `SosCoreBoundaryTest`, `SosDeviceTest`, `SosRunnerTest`, `SosScreensTest`, `SosAlertsTest`, `SosSmsTest`, `SosDispatchTest` ([names](#row-2-no-signal-at-all)) | [M3](manual-test-scripts.md#m3-full-countdown-and-locking-the-phone), [M5](manual-test-scripts.md#m5-airplane-mode-and-location-off), [M22](manual-test-scripts.md#m22-every-message-fails) | Automated pass · Manual pending | 2026-10-12 (automated); manual: none | Automated at logic, component and screen level. The retry tests changed in P014b7 (Evidence); they count once `android-ci` is green on `main` with them. What a phone reports with no signal is not known (Known gaps). |
 | 3 | API down or 5xx | The SOS on the phone is not affected. The phone keeps trying to tell the server, and repeated tries create one session, not several. | P015: not built. Today an SOS uses no server | None | [M24](manual-test-scripts.md#m24-the-saferoute-api-is-down) | Waiting on P015 | None | That the SOS path holds no network code is tested (row 2, `SosCoreBoundaryTest`); nothing of the server side exists. |
 | 4 | App swiped away or killed by the OEM | The foreground service keeps the SOS running where the phone allows it. If the process dies, the state is read from the record on the phone when the app is next opened, and the SOS goes on. | P014a1, P014a2, P014a3 | `SosEngineTest`, `SosRecoveryTest`, `SosRunnerTest`, `SosForegroundServiceTest`, `AndroidSosHostTest`, `SosViewModelTest`, `SosFlowTest`, `SosScreensTest` ([names](#row-4-app-swiped-away-or-killed-by-the-oem)) | [M4](manual-test-scripts.md#m4-swipe-the-app-away-while-active), [M6](manual-test-scripts.md#m6-kill-during-the-countdown-and-reboot) | Automated pass · Manual pending | 2026-10-12 (automated); manual: none | Automated at data, logic, component and screen level. Whether the service survives a swipe from recents or a phone maker's battery manager can only be seen on phones. |
 | 5 | Phone rebooted during SOS | At boot or when the app is opened, the SOS that was running is found in the record and the user is asked whether to continue or to end it. | P014a1, P014a2, P014a3 (when the app is opened). P014c (the notice at boot): not built | `SosRecoveryTest`, `SosEngineTest`, `SosRunnerTest`, `SosViewModelTest`, `SosScreensTest` ([names](#row-5-phone-rebooted-during-sos)) | [M6](manual-test-scripts.md#m6-kill-during-the-countdown-and-reboot), [M27](manual-test-scripts.md#m27-the-notice-after-a-restart) | Automated pass · Manual pending · Waiting on P014c | 2026-10-12 (automated); manual: none | For the tests a reboot is a process death with a later clock. Nothing appears before the app is opened: the notice at boot is P014c. |
@@ -81,12 +83,12 @@ was added in P014b6.
 | A5 | Opted-out contact excluded | A contact who opted out is never alerted (ADR 0024). | P013a (the opt-out), P013b1 (the copy on the phone), P014b1, P014b2 | `ContactsDatabaseTest`, `SosAlertsTest`, `SosDispatchTest`, `SosAlertsDeviceTest`, `ApiContactsRepositoryTest` ([names](#row-a5-opted-out-contact-excluded)) | [M16](manual-test-scripts.md#m16-a-contact-who-opted-out) | Automated pass · Manual pending | 2026-10-12 (automated); manual: none | Known gap: with a position ready the alert leaves at once, so an opt-out made shortly before the trigger and not yet on the phone is missed (ADR 0027). |
 | A6 | Contacts empty at SOS time | The SOS runs as always. The active screen says that there is no emergency contact to alert and offers Call 112; nothing is sent and nothing fails. | P014b1, P014b2 | `SosAlertsTest`, `SosDispatchTest`, `SosViewModelTest`, `SosAlertLinesTest`, `ContactsDatabaseTest` ([names](#row-a6-contacts-empty-at-sos-time)) | [M20](manual-test-scripts.md#m20-no-emergency-contact) | Automated pass · Manual pending | 2026-10-12 (automated); manual: none | The plan has no row for this; the expected behaviour is the design of ADR 0027. |
 | A7 | Contacts never synced to the phone | An SOS reads the contacts from the phone only and never waits for the server. If the list never arrived, nobody is alerted and the screen says so. The user should learn of this before an emergency (readiness screen). | P013b1 (the copy and its sync), P014b2 (the refresh that is started and never awaited), P014b3 (the consent note). P014c (the readiness screen): not built | `ApiContactsRepositoryTest`, `ContactsSessionSyncTest`, `SosDispatchTest` ([names](#row-a7-contacts-never-synced-to-the-phone)) | [M21](manual-test-scripts.md#m21-contacts-that-never-reached-the-phone) | Automated pass · Manual pending · Waiting on P014c | 2026-10-12 (automated); manual: none | Automated for what happens during the SOS. Nothing warns the user beforehand (Known gaps). |
-| A8 | SMS fails for every contact (no SIM, no service, airplane mode) | The SOS stays active and Call 112 stays on the screen. Each message is tried again every 30 seconds, at most 20 times, and only while the SOS is active; the screen shows counts of what is still being tried and what could not be sent. | P014b1, P014b2 | `SosAlertsTest`, `SosSmsTest`, `SosDispatchTest`, `SosAlertLinesTest` ([names](#row-a8-sms-fails-for-every-contact-no-sim-no-service-airplane-mode)) | [M5](manual-test-scripts.md#m5-airplane-mode-and-location-off), [M22](manual-test-scripts.md#m22-every-message-fails) | Automated pass · Manual pending | 2026-10-12 (automated); manual: none | Which answer a phone gives without a SIM or without service is not known; every such answer is treated as "try again" (ADR 0027). |
+| A8 | SMS fails for every contact (no SIM, no service, airplane mode) | The SOS stays active and Call 112 stays on the screen. An alert that is not sent is tried again until the SOS ends: every 30 seconds for the first ten tries, then after 1, 2 and 4 minutes, then every 5 minutes; at once on "Send again now", when the emergency screen comes to the front, when airplane mode is switched off and when a network becomes available. An error that cannot pass is final and shown as "could not be sent". After 2 hours with an alert unsent the user is told once (a notification and the screen): call 112 or send a text yourself. 24 hours after the trigger trying stops and the screen says so. A sent alert is never sent again. | P014b1, P014b2, P014b7 | `SosAlertsTest`, `SosSmsTest`, `SosDispatchTest`, `SosAlertLinesTest`, `SosViewModelTest`, `SosRetryDeviceTest` ([names](#row-a8-sms-fails-for-every-contact-no-sim-no-service-airplane-mode)) | [M5](manual-test-scripts.md#m5-airplane-mode-and-location-off), [M22](manual-test-scripts.md#m22-every-message-fails) | Manual pending | None | Changed in P014b7: the tests of the new behaviour are on `main` only after that merge, and this row becomes "Automated pass" when `android-ci` has run green there with them. Which answer a phone gives without a SIM or without service is not known; every such answer is treated as "try again" (ADR 0027). |
 | A9 | Dual-SIM phone with the wrong default SIM | The alert leaves from the SIM the phone has set as default for SMS. The app offers no SIM choice of its own: listing the SIMs would need a permission the app does not ask for (ADR 0027). | P014b1 (the phone's default SIM is used) | None | [M15](manual-test-scripts.md#m15-dual-sim) | Manual pending | None | No automated test. What happens when the phone is set to "ask every time", or the default SIM has no balance, is not known (Known gaps). |
 | A10 | Contact list changed mid-SOS | Who is alerted is decided once, at the trigger. A later change of the list does not add anyone to this SOS; a contact who opts out before their message left is skipped. The follow-up goes only to those whose alert was sent. | P014b1, P014b2 | `SosAlertsTest`, `RoomSosActionStoreTest`, `SosDispatchTest` ([names](#row-a10-contact-list-changed-mid-sos)) | [M23](manual-test-scripts.md#m23-the-contact-list-changes-during-an-sos) | Automated pass · Manual pending | 2026-10-12 (automated); manual: none | The plan has no row for this; the expected behaviour is the design of ADR 0027. A contact removed (not opted out) before their message left: see Known gaps. |
 | A11 | Process death inside the 5-second countdown | With time left, the same countdown goes on. If its end has passed, nothing is sent: the user is asked "Send now" or Cancel. | P014a1, P014a2, P014a3 | `SosRecoveryTest`, `SosEngineTest`, `SosRunnerTest`, `SosViewModelTest`, `SosScreensTest`, `SosDispatchTest` ([names](#row-a11-process-death-inside-the-5-second-countdown)) | [M6](manual-test-scripts.md#m6-kill-during-the-countdown-and-reboot) | Automated pass · Manual pending | 2026-10-12 (automated); manual: none | Automated at data, logic and screen level. |
 | A12 | SOS location unavailable (no permission or location off) | The SOS triggers on time and never asks for a permission. The screen says in words why there is no position; the SMS says that the location is unavailable and still asks to call 112. | P014a2, P014a3, P014b1, P014b2 | `SosRunnerTest`, `SosForegroundServiceTest`, `SosScreensTest`, `SosMessageTest`, `SosDispatchTest` ([names](#row-a12-sos-location-unavailable-no-permission-or-location-off)) | [M5](manual-test-scripts.md#m5-airplane-mode-and-location-off) | Automated pass · Manual pending | 2026-10-12 (automated); manual: none | Automated at logic, component and screen level. |
-| A13 | Debug build whose account holds real contacts | A debug build texts by itself only the test numbers it was built with; every other contact is not texted and is recorded as skipped. With no list, or none of the contacts on it, nothing is sent by the app and the SMS app is used. A banner on the SOS screens says which, with a count. A release build is unchanged. | P014b6 | `DebugSmsAllowlistTest`, `DebugSmsAllowlistLayoutTest`, `BuildSmsNoticeTest`, `SmsRecipientLimitTest`, `SosDispatchTest`, `SosAlertsTest`, `SosSmsTest`, `SosAlertLinesTest` ([names](#row-a13-debug-build-whose-account-holds-real-contacts)) | [M29](manual-test-scripts.md#m29-the-list-of-test-numbers-of-a-debug-build) | Manual pending | None | The tests were added in P014b6 and pass in that prompt's gate. The row becomes "Automated pass" when `android-ci` has run green on `main` with them; until then this document does not claim it. |
+| A13 | Debug build whose account holds real contacts | A debug build texts by itself only the test numbers it was built with; every other contact is not texted and is recorded as skipped. With no list, or none of the contacts on it, nothing is sent by the app and the SMS app is used. A banner on the SOS screens says which, with a count. A release build is unchanged. | P014b6 | `DebugSmsAllowlistTest`, `DebugSmsAllowlistLayoutTest`, `BuildSmsNoticeTest`, `SmsRecipientLimitTest`, `SosDispatchTest`, `SosAlertsTest`, `SosSmsTest`, `SosAlertLinesTest` ([names](#row-a13-debug-build-whose-account-holds-real-contacts)) | [M29](manual-test-scripts.md#m29-the-list-of-test-numbers-of-a-debug-build) | Automated pass · Manual pending | 2026-10-12 (automated); manual: none | The tests are on `main` since `0298557`, and `android-ci` ran green there (run 38247544266). |
 
 ## Known gaps
 
@@ -113,7 +115,8 @@ What the plan or the design requires and no test covers, or what nobody knows ye
    and whether the map link opens (rows 1, 7) are untested outside the JVM.
 3. **What a phone answers without a SIM, without service or in airplane mode** (rows 2,
    A8) is not stated in Android's documentation; every such answer is treated as "try
-   again". What the user then sees for ten minutes is written, not observed.
+   again", for as long as the SOS is active. What the user then sees is written, not
+   observed.
 4. **Two SIMs** (row A9): no automated test. The phone's default SIM for SMS is used; a
    phone set to "ask every time", or a default SIM without balance, is not covered, and the
    app cannot offer a choice without a permission it does not ask for.
@@ -130,14 +133,28 @@ What the plan or the design requires and no test covers, or what nobody knows ye
    (row A5).
 2. **A contact may get the alert twice** in one case: the message was handed to the phone,
    the process died before the answer, and it is tried again (row 6).
+3. **An alert can arrive hours after the trigger** (rows 2, A8, P014b7): it is tried for as
+   long as the SOS is active, up to 24 hours. A retried message is written anew at each try, with the newest
+   position and the clock time at which that position was taken. A user who
+   forgets to end an SOS can therefore alert a contact much later than they meant to.
+4. **The retry timer holds no wake lock** (P014b7): it runs in the app while the
+   emergency's foreground service keeps the app alive. If the phone sleeps deeply, a try
+   can be late; it is made when the phone wakes, and at once when the screen is opened.
+5. **Every try counts**, also one asked for by a tap or by the phone: after the tenth the
+   wait before the next regular try grows, to five minutes at most.
+6. **The signal that matters most is not used**: the mobile network going from "no
+   service" to "in service". Its broadcast needs `READ_PHONE_STATE`, which the app does not
+   ask for. Airplane mode switched off and a data network becoming available are used
+   instead; with neither, the next regular try is at most five minutes away.
 
 ### Not specified
 
 1. **A contact removed (not opted out) after the trigger and before their message left**
    (row A10): the tests fix that the people decided at the trigger are alerted once; the
    plan does not say whether a removal should stop a message.
-2. **A8 after the retries are used up:** the screen says that the message could not be
-   sent; nothing tries again later in the same SOS, and the plan does not ask for it.
+2. **How long to keep trying** (rows 2, A8): the plan says the device keeps retrying and
+   names no end. P014b7 chose: until the SOS ends, and at most 24 hours after the trigger;
+   the user is told after 2 hours. Both numbers are choices, not plan text.
 
 ### About the tests themselves
 
@@ -248,7 +265,7 @@ from the test sources, not typed.
   - "without a phone app the screens show the number instead of the button"
 - `SosAlertsTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosAlertsTest.kt`):
   - "a failed message is tried again every 30 seconds, and a sent one never again"
-  - "after 20 tries a message is given up, about ten minutes in"
+  - "an alert is tried again past 20 tries, for as long as the emergency is active" (P014b7)
   - "retries stop the moment the emergency is over"
   - "each try carries the text of that moment"
 - `SosSmsTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosSmsTest.kt`):
@@ -537,9 +554,19 @@ No automated test: nothing of this row is built, or nothing of it can be tested 
 
 - `SosAlertsTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosAlertsTest.kt`):
   - "a failed message is tried again every 30 seconds, and a sent one never again"
-  - "after 20 tries a message is given up, about ten minutes in"
   - "a failure that cannot pass is not tried again"
   - "retries stop the moment the emergency is over"
+  - Added or changed in P014b7 (on `main` after that merge):
+  - "an alert is tried again past 20 tries, for as long as the emergency is active"
+  - "the wait is 30 seconds for the first ten tries, then 1, 2 and 4 minutes, then 5 minutes"
+  - "24 hours after the trigger what is still unsent is given up, on time, and says why"
+  - "a try asked for now is made at once, whatever the wait, and counts as a try"
+  - "a try asked for while one is in flight is ignored"
+  - "a final failure stays final, also when a try is asked for now"
+  - "a new process continues the same schedule instead of starting it again"
+  - "the user is told about unsent alerts once, only while one is unsent, also across a new process"
+  - "nobody is told about unsent alerts when every alert was sent or given up"
+  - "a follow-up is given up after 20 tries, about ten minutes in"
 - `SosSmsTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosSmsTest.kt`):
   - "only an OK from the phone counts as sent"
   - "what may pass is retried and what cannot is final"
@@ -548,6 +575,25 @@ No automated test: nothing of this row is built, or nothing of it can be tested 
   - "a message that cannot be sent never holds up or undoes the emergency, and is retried"
 - `SosAlertLinesTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosAlertsDeviceTest.kt`):
   - "sent, waiting, failed and skipped are shown as counts, and a sent message is not called delivered"
+
+Added in P014b7 for row A8 (on `main` after that merge):
+
+- `SosDispatchTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosDispatchTest.kt`):
+  - "an alert that cannot be sent is still tried an hour later, and leaves when the signal returns"
+  - "two hours after the trigger with an alert unsent the user is told once, also across a process death"
+  - "a process that starts after the two hours tells the user, if the old one never did"
+  - "with every alert sent nobody is told anything after two hours"
+  - "24 hours after the trigger trying stops, the screen is told, and the emergency goes on"
+  - "send again now makes one try at once, and a second tap during that try is ignored"
+  - "a signal from the phone asks for one more try, at most every ten seconds, and none after the end"
+  - "in composer mode and with the gate closed there is nothing to retry"
+- `SosViewModelTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosViewModelTest.kt`):
+  - "send again now tries the unsent alert at once, and coming back to the screen does too"
+- `SosAlertLinesTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosAlertsDeviceTest.kt`):
+  - "while an alert is unsent the screen says that it keeps trying and offers send again now"
+  - "after two hours the screen says that alerts are unsent and what to do, with the button still there"
+  - "after 24 hours the screen says that trying has stopped, and offers no send again"
+- `SosRetryDeviceTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosRetryDeviceTest.kt`): all 9 tests.
 
 ### Row A9: Dual-SIM phone with the wrong default SIM
 
@@ -606,7 +652,7 @@ No automated test: nothing of this row is built, or nothing of it can be tested 
 
 ### Row A13: Debug build whose account holds real contacts
 
-Added in P014b6; these tests are on `main` only after that prompt is merged.
+Added in P014b6; on `main` since commit `0298557`.
 
 - `DebugSmsAllowlistTest` (`android/app/src/testDebug/java/com/saferoute/app/feature/emergency/DebugSmsAllowlistTest.kt`): all 7 tests.
 - `DebugSmsAllowlistLayoutTest` (the same file):
@@ -654,3 +700,8 @@ Added in P014b6; these tests are on `main` only after that prompt is merged.
 - **P014b6** (2026-10-12): row A13 and script M29 added (debug builds text only the test
   numbers they were built with). Scripts M11, M12, M15, M16 and M22 now need the list for
   automatic sending in a debug build. No other row's status changed.
+- **P014b7** (2026-10-12): an unsent alert is tried again for as long as the SOS is active
+  (rows 2 and A8 rewritten, script M22 rewritten). Row A8 is "Manual pending" until
+  `android-ci` is green on `main` with the new tests. Row A13 is "Automated pass" now: its
+  tests are on `main` and the run was green. "Accepted risks" gained four items and "Not
+  specified" item 2 was replaced.

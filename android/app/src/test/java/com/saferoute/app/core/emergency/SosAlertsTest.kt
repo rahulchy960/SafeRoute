@@ -12,6 +12,7 @@ import java.util.Random
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
@@ -20,6 +21,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -66,9 +68,9 @@ class SosAlertsTest {
         // Written down before anything is sent.
         assertEquals(emptyList<Pair<String, String>>(), rig.gateway.attempts.toList())
 
-        val retryLater = rig.alerts.sendDue(SOS_ID, SosActionType.ALERT) { "the alert" }
+        val retryIn = rig.alerts.sendDue(SOS_ID, SosActionType.ALERT) { "the alert" }
 
-        assertFalse(retryLater)
+        assertNull("nothing is left to send", retryIn)
         assertEquals(listOf(phone(1), phone(2), phone(3)), rig.gateway.attempts.map { it.first })
         assertTrue(rig.gateway.attempts.all { it.second == "the alert" })
         assertTrue(rig.store.all.all { it.state == SosActionState.SENT && it.attemptCount == 1 })
@@ -95,7 +97,7 @@ class SosAlertsTest {
         val rig = AlertsRig(this)
 
         assertEquals(emptyList<SosAction>(), rig.alerts.prepare(SOS_ID, SosActionType.ALERT))
-        assertFalse(rig.alerts.sendDue(SOS_ID, SosActionType.ALERT) { "the alert" })
+        assertNull(rig.alerts.sendDue(SOS_ID, SosActionType.ALERT) { "the alert" })
         assertEquals(0, summarise(rig.store.all).total)
     }
 
@@ -128,7 +130,231 @@ class SosAlertsTest {
     }
 
     @Test
-    fun `after 20 tries a message is given up, about ten minutes in`() = runTest {
+    fun `an alert is tried again past 20 tries, for as long as the emergency is active`() = runTest {
+        val rig = AlertsRig(this, contact(1))
+        rig.gateway.fallback = RETRY
+        rig.alerts.prepare(SOS_ID, SosActionType.ALERT)
+        val rule = alertRetryRule(rig.clock.instant())
+
+        val loop = launch { rig.alerts.sendUntilDone(SOS_ID, SosActionType.ALERT, { true }, rule = rule) { "the alert" } }
+        advanceTimeBy(3 * 3_600_000L)
+        runCurrent()
+
+        // Eleven tries in the first five minutes, then four more as the wait grows to five
+        // minutes (at 6, 8, 12 and 17 minutes), then one every five minutes.
+        assertTrue("more than 40 tries in three hours", rig.gateway.attemptsTo(phone(1)) > 40)
+        val action = rig.store.all.single()
+        assertEquals(SosActionState.FAILED_RETRYABLE, action.state)
+        assertEquals(SosAlertSummary(sent = 0, waiting = 1, failed = 0, skipped = 0), summarise(rig.store.all))
+        assertFalse("still trying", loop.isCompleted)
+
+        // The signal returns: the next try sends it, and then nothing more is tried.
+        rig.gateway.fallback = SmsOutcome.Sent
+        advanceTimeBy(ALERT_RETRY_CAP_MILLIS)
+        runCurrent()
+        assertEquals(SosActionState.SENT, rig.store.all.single().state)
+        assertTrue(loop.isCompleted)
+        val tries = rig.gateway.attemptsTo(phone(1))
+        advanceTimeBy(3_600_000)
+        assertEquals("a sent alert is never sent again", tries, rig.gateway.attemptsTo(phone(1)))
+    }
+
+    @Test
+    fun `the wait is 30 seconds for the first ten tries, then 1, 2 and 4 minutes, then 5 minutes`() = runTest {
+        assertEquals(List(10) { 30_000L }, (1..10).map(::alertRetryDelayMillis))
+        assertEquals(listOf(60_000L, 120_000L, 240_000L, 300_000L, 300_000L), (11..15).map(::alertRetryDelayMillis))
+        assertEquals(ALERT_RETRY_CAP_MILLIS, alertRetryDelayMillis(10_000))
+        assertEquals(ALERT_RETRY_CAP_MILLIS, alertRetryDelayMillis(Int.MAX_VALUE))
+
+        // And the tries really happen at those moments.
+        val rig = AlertsRig(this, contact(1))
+        rig.gateway.fallback = RETRY
+        rig.alerts.prepare(SOS_ID, SosActionType.ALERT)
+        val rule = alertRetryRule(rig.clock.instant())
+        launch { rig.alerts.sendUntilDone(SOS_ID, SosActionType.ALERT, { true }, rule = rule) { "the alert" } }
+        runCurrent()
+
+        // Seconds after the first try at which the tries 2 to 17 are made.
+        val expected = (1..10).map { it * 30 } + listOf(360, 480, 720, 1_020, 1_320, 1_620)
+        var elapsed = 0
+        for ((index, second) in expected.withIndex()) {
+            advanceTimeBy((second - elapsed) * 1_000L - 1)
+            runCurrent()
+            assertEquals("not before second $second", index + 1, rig.gateway.attemptsTo(phone(1)))
+            advanceTimeBy(1)
+            runCurrent()
+            assertEquals("at second $second", index + 2, rig.gateway.attemptsTo(phone(1)))
+            elapsed = second
+        }
+        coroutineContext.cancelChildren()
+    }
+
+    @Test
+    fun `24 hours after the trigger what is still unsent is given up, on time, and says why`() = runTest {
+        val rig = AlertsRig(this, contact(1), contact(2))
+        rig.gateway.answer(phone(2), SmsOutcome.Sent)
+        rig.gateway.fallback = RETRY
+        rig.alerts.prepare(SOS_ID, SosActionType.ALERT)
+        val rule = alertRetryRule(rig.clock.instant())
+
+        val loop = launch { rig.alerts.sendUntilDone(SOS_ID, SosActionType.ALERT, { true }, rule = rule) { "the alert" } }
+        advanceTimeBy(ALERT_RETRY_LIMIT_MILLIS - 1)
+        runCurrent()
+        assertEquals(SosActionState.FAILED_RETRYABLE, rig.states()[phone(1)])
+        assertFalse(loop.isCompleted)
+        val tries = rig.gateway.attemptsTo(phone(1))
+
+        advanceTimeBy(1)
+        runCurrent()
+
+        assertEquals(SosActionState.FAILED_FINAL, rig.states()[phone(1)])
+        assertEquals(FAILED_EXPIRED, rig.store.all.first().lastErrorCategory)
+        assertEquals("the sent one is untouched", SosActionState.SENT, rig.states()[phone(2)])
+        assertTrue(loop.isCompleted)
+        assertEquals(SosAlertSummary(sent = 1, waiting = 0, failed = 1, skipped = 0), summarise(rig.store.all))
+        // No try is made at the moment of giving up, and none ever after.
+        advanceTimeBy(ALERT_RETRY_LIMIT_MILLIS)
+        assertEquals(tries, rig.gateway.attemptsTo(phone(1)))
+        rig.alerts.sendNow(SOS_ID, SosActionType.ALERT, rule) { "the alert" }
+        assertEquals("not even when asked for now", tries, rig.gateway.attemptsTo(phone(1)))
+    }
+
+    @Test
+    fun `a try asked for now is made at once, whatever the wait, and counts as a try`() = runTest {
+        val rig = AlertsRig(this, contact(1), contact(2))
+        rig.gateway.answer(phone(2), SmsOutcome.Sent)
+        rig.gateway.fallback = RETRY
+        rig.alerts.prepare(SOS_ID, SosActionType.ALERT)
+        val rule = alertRetryRule(rig.clock.instant())
+        assertEquals(ALERT_RETRY_MILLIS, rig.alerts.sendDue(SOS_ID, SosActionType.ALERT, rule) { "the alert" })
+
+        // One second later the regular round has nothing due...
+        advanceTimeBy(1_000)
+        rig.alerts.sendDue(SOS_ID, SosActionType.ALERT, rule) { "the alert" }
+        assertEquals(1, rig.gateway.attemptsTo(phone(1)))
+        // ...but a try asked for now is made.
+        assertTrue(rig.alerts.sendNow(SOS_ID, SosActionType.ALERT, rule) { "the alert" })
+
+        assertEquals(2, rig.gateway.attemptsTo(phone(1)))
+        assertEquals(2, rig.store.all.first().attemptCount)
+        assertEquals("the sent alert is not sent again", 1, rig.gateway.attemptsTo(phone(2)))
+        // The wait starts again from this try.
+        assertEquals(ALERT_RETRY_MILLIS, rig.alerts.sendDue(SOS_ID, SosActionType.ALERT, rule) { "the alert" })
+    }
+
+    @Test
+    fun `a try asked for while one is in flight is ignored`() = runTest {
+        val rig = AlertsRig(this, contact(1))
+        rig.gateway.fallback = RETRY
+        rig.gateway.holdMillis = 20_000
+        rig.alerts.prepare(SOS_ID, SosActionType.ALERT)
+        val rule = alertRetryRule(rig.clock.instant())
+
+        val round = launch { rig.alerts.sendDue(SOS_ID, SosActionType.ALERT, rule) { "the alert" } }
+        runCurrent()
+        assertEquals(SosActionState.IN_PROGRESS, rig.store.all.single().state)
+
+        // The phone has not answered yet: three taps change nothing.
+        repeat(3) { assertFalse(rig.alerts.sendNow(SOS_ID, SosActionType.ALERT, rule) { "the alert" }) }
+        assertEquals(1, rig.gateway.attemptsTo(phone(1)))
+
+        advanceTimeBy(20_000)
+        runCurrent()
+        assertTrue(round.isCompleted)
+        // Once it has answered, a tap is a try again.
+        rig.gateway.holdMillis = 0
+        assertTrue(rig.alerts.sendNow(SOS_ID, SosActionType.ALERT, rule) { "the alert" })
+        assertEquals(2, rig.gateway.attemptsTo(phone(1)))
+    }
+
+    @Test
+    fun `a final failure stays final, also when a try is asked for now`() = runTest {
+        val rig = AlertsRig(this, contact(1))
+        rig.gateway.answer(phone(1), SmsOutcome.Final("rejected"))
+        rig.alerts.prepare(SOS_ID, SosActionType.ALERT)
+        val rule = alertRetryRule(rig.clock.instant())
+
+        assertNull(rig.alerts.sendDue(SOS_ID, SosActionType.ALERT, rule) { "the alert" })
+        rig.alerts.sendNow(SOS_ID, SosActionType.ALERT, rule) { "the alert" }
+        advanceTimeBy(3_600_000)
+        rig.alerts.sendDue(SOS_ID, SosActionType.ALERT, rule) { "the alert" }
+
+        assertEquals(1, rig.gateway.attemptsTo(phone(1)))
+        assertEquals(SosActionState.FAILED_FINAL, rig.store.all.single().state)
+        assertEquals("rejected", rig.store.all.single().lastErrorCategory)
+    }
+
+    @Test
+    fun `a new process continues the same schedule instead of starting it again`() = runTest {
+        val rig = AlertsRig(this, contact(1))
+        rig.gateway.fallback = RETRY
+        rig.alerts.prepare(SOS_ID, SosActionType.ALERT)
+        val rule = alertRetryRule(rig.clock.instant())
+        val first = launch { rig.alerts.sendUntilDone(SOS_ID, SosActionType.ALERT, { true }, rule = rule) { "the alert" } }
+        // Twelve tries: the last at 6 minutes, the next is due 2 minutes later, at 8 minutes.
+        advanceTimeBy(360_000)
+        runCurrent()
+        assertEquals(12, rig.gateway.attemptsTo(phone(1)))
+
+        // The process dies half a minute later and a new one starts at once.
+        advanceTimeBy(30_000)
+        first.cancel()
+        rig.newProcess()
+        launch { rig.alerts.sendUntilDone(SOS_ID, SosActionType.ALERT, { true }, rule = rule) { "the alert" } }
+        runCurrent()
+
+        assertEquals("no try at the restart: the wait is not over", 12, rig.gateway.attemptsTo(phone(1)))
+        advanceTimeBy(89_999)
+        runCurrent()
+        assertEquals(12, rig.gateway.attemptsTo(phone(1)))
+        advanceTimeBy(1)
+        runCurrent()
+        assertEquals("at 8 minutes, as planned before the restart", 13, rig.gateway.attemptsTo(phone(1)))
+        // And the count went on: the next wait is 4 minutes, not 30 seconds.
+        advanceTimeBy(239_999)
+        runCurrent()
+        assertEquals(13, rig.gateway.attemptsTo(phone(1)))
+        advanceTimeBy(1)
+        runCurrent()
+        assertEquals(14, rig.gateway.attemptsTo(phone(1)))
+        coroutineContext.cancelChildren()
+    }
+
+    @Test
+    fun `the user is told about unsent alerts once, only while one is unsent, also across a new process`() = runTest {
+        val rig = AlertsRig(this, contact(1), contact(2))
+        rig.gateway.answer(phone(1), SmsOutcome.Sent)
+        rig.gateway.fallback = RETRY
+        rig.alerts.prepare(SOS_ID, SosActionType.ALERT)
+        rig.alerts.sendDue(SOS_ID, SosActionType.ALERT) { "the alert" }
+
+        assertTrue(rig.alerts.markUnsentNoticeOnce(SOS_ID))
+        assertFalse(rig.alerts.markUnsentNoticeOnce(SOS_ID))
+        rig.newProcess()
+        assertFalse(rig.alerts.markUnsentNoticeOnce(SOS_ID))
+
+        // The mark is not a message: no contact, number or name, and nothing was sent for it.
+        val mark = rig.store.all.single { it.type == SosActionType.UNSENT_NOTICE }
+        assertEquals(listOf("", "", ""), listOf(mark.contactId, mark.phoneE164, mark.name))
+        assertEquals(2, rig.gateway.attempts.size)
+        // It is not counted among the alerts, and no follow-up is ever written for it.
+        assertEquals(SosAlertSummary(sent = 1, waiting = 1, failed = 0, skipped = 0), summarise(rig.store.all))
+        assertEquals(emptyList<SosAction>(), rig.alerts.prepare(SOS_ID, SosActionType.UNSENT_NOTICE).filter { it.contactId.isNotEmpty() })
+    }
+
+    @Test
+    fun `nobody is told about unsent alerts when every alert was sent or given up`() = runTest {
+        val rig = AlertsRig(this, contact(1), contact(2))
+        rig.gateway.answer(phone(2), SmsOutcome.Final("rejected"))
+        rig.alerts.prepare(SOS_ID, SosActionType.ALERT)
+        rig.alerts.sendDue(SOS_ID, SosActionType.ALERT) { "the alert" }
+
+        assertFalse(rig.alerts.markUnsentNoticeOnce(SOS_ID))
+        assertTrue(rig.store.all.none { it.type == SosActionType.UNSENT_NOTICE })
+    }
+
+    @Test
+    fun `a follow-up is given up after 20 tries, about ten minutes in`() = runTest {
         val rig = AlertsRig(this, contact(1))
         rig.gateway.fallback = RETRY
         rig.alerts.prepare(SOS_ID, SosActionType.ALERT)
@@ -137,7 +363,9 @@ class SosAlertsTest {
         advanceTimeBy(19 * ALERT_RETRY_MILLIS)
         runCurrent()
 
-        assertEquals(MAX_ALERT_ATTEMPTS, rig.gateway.attemptsTo(phone(1)))
+        // The rule of the "safe" message and the location update (the default of the loop):
+        // they run beside or after the emergency and must come to an end.
+        assertEquals(MAX_FOLLOW_UP_ATTEMPTS, rig.gateway.attemptsTo(phone(1)))
         val action = rig.store.all.single()
         assertEquals(SosActionState.FAILED_FINAL, action.state)
         assertEquals(20, action.attemptCount)
@@ -246,6 +474,8 @@ class SosAlertsTest {
         // The fresh list from the server no longer has contact 2 (opted out) nor 3 (removed).
         val dropped = rig.alerts.dropOptedOut(SOS_ID, stillAllowed = setOf("id-1"))
         rig.gateway.fallback = SmsOutcome.Sent
+        // The next round is due 30 seconds after the failed one.
+        advanceTimeBy(ALERT_RETRY_MILLIS)
         rig.alerts.sendDue(SOS_ID, SosActionType.ALERT) { "the alert" }
 
         assertEquals(2, dropped)
@@ -359,7 +589,7 @@ class RoomSosActionStoreTest {
         gateway.answer(phone(2), RETRY)
 
         alerts.prepare(id, SosActionType.ALERT)
-        assertTrue(alerts.sendDue(id, SosActionType.ALERT) { "the alert" })
+        assertEquals("due again in 30 seconds", ALERT_RETRY_MILLIS, alerts.sendDue(id, SosActionType.ALERT) { "the alert" })
 
         val stored = store.actions(id)
         assertEquals(listOf("Test Contact 1", "Test Contact 2"), stored.map { it.name })
@@ -371,7 +601,7 @@ class RoomSosActionStoreTest {
         assertFalse(
             store.moveIf(stored[0].id, setOf(SosActionState.PENDING), SosActionState.IN_PROGRESS, 2, null, clock.instant()),
         )
-        assertFalse(alerts.sendDue(id, SosActionType.ALERT) { "the alert" })
+        assertTrue(alerts.sendNow(id, SosActionType.ALERT, FOLLOW_UP_RETRY_RULE) { "the alert" })
         assertEquals(1, gateway.attemptsTo(phone(1)))
         assertEquals(2, gateway.attemptsTo(phone(2)))
     }

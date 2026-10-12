@@ -4,6 +4,7 @@ package com.saferoute.app.core.emergency
 import com.saferoute.app.core.data.SosContact
 import com.saferoute.app.core.location.GrantedLocation
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -304,6 +305,180 @@ class SosDispatchTest {
         assertTrue(rig.sentTo(1).isNotEmpty())
         assertEquals(0, rig.sentTo(2).size)
         assertEquals(listOf(SosActionState.SENT, SosActionState.SKIPPED), rig.alertStates())
+    }
+
+    @Test
+    fun `an alert that cannot be sent is still tried an hour later, and leaves when the signal returns`() = runTest {
+        val rig = rig(contacts = 1)
+        rig.gateway.fallback = RETRYABLE
+
+        rig.trigger()
+        rig.advance(3_600_000)
+
+        // Far past the 20 tries after which it used to be given up.
+        assertTrue(rig.sentTo(1).size > 20)
+        assertEquals(SosState.ACTIVE, rig.stored())
+        assertEquals(
+            SosAlertStatus.Automatic(SosAlertSummary(sent = 0, waiting = 1, failed = 0, skipped = 0)),
+            rig.dispatch.status.value,
+        )
+
+        rig.gateway.fallback = SmsOutcome.Sent
+        rig.advance(ALERT_RETRY_CAP_MILLIS)
+
+        assertEquals(listOf(SosActionState.SENT), rig.alertStates())
+        val tries = rig.sentTo(1).size
+        rig.advance(3_600_000)
+        assertEquals("a sent alert is never sent again", tries, rig.sentTo(1).size)
+        assertFalse("nothing is listened for once everything is sent", rig.signals.listening)
+    }
+
+    @Test
+    fun `two hours after the trigger with an alert unsent the user is told once, also across a process death`() = runTest {
+        val rig = rig(contacts = 2)
+        rig.gateway.answer(person(1).phoneE164, SmsOutcome.Sent)
+        rig.gateway.fallback = RETRYABLE
+        rig.trigger()
+
+        rig.advance(ALERT_UNSENT_NOTICE_MILLIS - 1)
+        assertEquals("not before two hours", 0, rig.notifier.shown)
+        assertFalse((rig.dispatch.status.value as SosAlertStatus.Automatic).unsentForLong)
+
+        rig.advance(1)
+        assertEquals(1, rig.notifier.shown)
+        assertTrue((rig.dispatch.status.value as SosAlertStatus.Automatic).unsentForLong)
+
+        rig.advance(3_600_000)
+        assertEquals(1, rig.notifier.shown)
+
+        // The app is closed and opened again an hour later: the same emergency, no second notice.
+        rig.restartProcess()
+        rig.runner.resume()
+        rig.advance(3_600_000)
+        assertEquals(1, rig.notifier.shown)
+        assertTrue((rig.dispatch.status.value as SosAlertStatus.Automatic).unsentForLong)
+    }
+
+    @Test
+    fun `a process that starts after the two hours tells the user, if the old one never did`() = runTest {
+        val rig = rig(contacts = 1)
+        rig.gateway.fallback = RETRYABLE
+        rig.trigger()
+        rig.advance(600_000)
+
+        // The process dies; the app is opened again three hours after the trigger.
+        rig.restartProcess()
+        rig.advance(3 * 3_600_000L)
+        assertEquals(0, rig.notifier.shown)
+        rig.runner.resume()
+        rig.advance(1_000)
+
+        assertEquals(1, rig.notifier.shown)
+    }
+
+    @Test
+    fun `with every alert sent nobody is told anything after two hours`() = runTest {
+        val rig = rig(contacts = 2)
+
+        rig.trigger()
+        rig.advance(3 * 3_600_000L)
+
+        assertEquals(0, rig.notifier.shown)
+        assertFalse((rig.dispatch.status.value as SosAlertStatus.Automatic).unsentForLong)
+    }
+
+    @Test
+    fun `24 hours after the trigger trying stops, the screen is told, and the emergency goes on`() = runTest {
+        val rig = rig(contacts = 1)
+        rig.gateway.fallback = RETRYABLE
+        rig.trigger()
+
+        rig.advance(ALERT_RETRY_LIMIT_MILLIS)
+
+        assertEquals(
+            SosAlertStatus.Automatic(
+                summary = SosAlertSummary(sent = 0, waiting = 0, failed = 1, skipped = 0),
+                unsentForLong = false,
+                retryingStopped = true,
+            ),
+            rig.dispatch.status.value,
+        )
+        assertEquals("the SOS itself is not ended by this", SosState.ACTIVE, rig.stored())
+        assertEquals(FAILED_EXPIRED, rig.actions.all.single { it.type == SosActionType.ALERT }.lastErrorCategory)
+        val tries = rig.sentTo(1).size
+        rig.advance(3_600_000)
+        rig.signals.signal()
+        assertFalse(rig.dispatch.retryNow() && rig.sentTo(1).size > tries)
+        rig.advance(1_000)
+        assertEquals("nothing is tried after the stop", tries, rig.sentTo(1).size)
+    }
+
+    @Test
+    fun `send again now makes one try at once, and a second tap during that try is ignored`() = runTest {
+        val rig = rig(contacts = 1)
+        rig.gateway.fallback = RETRYABLE
+        rig.trigger()
+        rig.advance(1_000)
+        val before = rig.sentTo(1).size
+
+        assertTrue(rig.dispatch.retryNow())
+        assertEquals(before + 1, rig.sentTo(1).size)
+
+        // The phone takes 20 seconds to answer the next one.
+        rig.gateway.holdMillis = 20_000
+        val slow = async { rig.dispatch.retryNow() }
+        runCurrent()
+        assertEquals(before + 2, rig.sentTo(1).size)
+        assertFalse("a try is in flight", rig.dispatch.retryNow())
+        assertFalse(rig.dispatch.retryNow())
+        assertEquals(before + 2, rig.sentTo(1).size)
+
+        rig.advance(20_000)
+        assertTrue(slow.await())
+        // The screen heard about every try.
+        assertEquals(1, (rig.dispatch.status.value as SosAlertStatus.Automatic).summary.waiting)
+    }
+
+    @Test
+    fun `a signal from the phone asks for one more try, at most every ten seconds, and none after the end`() = runTest {
+        val rig = rig(contacts = 1)
+        rig.gateway.fallback = RETRYABLE
+        rig.trigger()
+        assertTrue(rig.signals.listening)
+        rig.advance(1_000)
+        val before = rig.sentTo(1).size
+
+        // Airplane mode off, then a network a moment later: one try, not two.
+        rig.signals.signal()
+        rig.signals.signal()
+        runCurrent()
+        assertEquals(before + 1, rig.sentTo(1).size)
+
+        rig.advance(RETRY_SIGNAL_GAP_MILLIS)
+        rig.signals.signal()
+        runCurrent()
+        assertEquals(before + 2, rig.sentTo(1).size)
+
+        assertTrue(rig.runner.markSafe())
+        rig.advance(0)
+        assertFalse(rig.signals.listening)
+        rig.signals.signal()
+        assertFalse(rig.dispatch.retryNow())
+        rig.advance(600_000)
+        assertEquals(before + 2, rig.sentTo(1).size)
+        assertEquals(1, rig.notifier.dismissed)
+    }
+
+    @Test
+    fun `in composer mode and with the gate closed there is nothing to retry`() = runTest {
+        val composer = rig(contacts = 1)
+        composer.smsMode.mode = SmsMode.COMPOSER
+        composer.trigger()
+        assertFalse(composer.dispatch.retryNow())
+        assertFalse(composer.signals.listening)
+        composer.advance(3 * 3_600_000L)
+        assertEquals(0, composer.notifier.shown)
+        assertEquals(emptyList<Pair<String, String>>(), composer.gateway.attempts.toList())
     }
 
     @Test

@@ -7,7 +7,10 @@ import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
+import java.time.Duration
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -78,6 +81,30 @@ interface SmsComposer {
     fun dismiss()
 }
 
+/**
+ * Tells the user, once, that alerts are still unsent after [ALERT_UNSENT_NOTICE_MILLIS]: a
+ * notification with fixed text. Nothing about a contact is in it.
+ */
+interface UnsentAlertNotifier {
+    fun show()
+
+    fun dismiss()
+}
+
+/**
+ * Moments at which an unsent alert is worth an extra try: the phone left airplane mode, or a
+ * network became available. Only signals that need no permission the app does not already
+ * have (ADR 0027, note of P014b7). [start] may be called again; [stop] ends the listening.
+ */
+interface RetrySignals {
+    fun start(onSignal: () -> Unit)
+
+    fun stop()
+}
+
+/** Two extra tries asked for by signals are at least this far apart. A tap is never held back. */
+const val RETRY_SIGNAL_GAP_MILLIS = 10_000L
+
 /** What the active screen says about the alerts. Counts only: never a name or a number. */
 sealed interface SosAlertStatus {
     /** Alerts are not switched on for this user: nobody is messaged. */
@@ -88,7 +115,15 @@ sealed interface SosAlertStatus {
 
     data object NoContacts : SosAlertStatus
 
-    data class Automatic(val summary: SosAlertSummary) : SosAlertStatus
+    /**
+     * @param unsentForLong alerts are still unsent [ALERT_UNSENT_NOTICE_MILLIS] after the trigger.
+     * @param retryingStopped [ALERT_RETRY_LIMIT_MILLIS] passed: what was unsent was given up.
+     */
+    data class Automatic(
+        val summary: SosAlertSummary,
+        val unsentForLong: Boolean = false,
+        val retryingStopped: Boolean = false,
+    ) : SosAlertStatus
 
     /** The SMS app holds the message for [contacts] contacts; whether it was sent is unknown. */
     data class Composer(val contacts: Int) : SosAlertStatus
@@ -114,6 +149,12 @@ private val SENDABLE = setOf(SosActionState.PENDING, SosActionState.FAILED_RETRY
  * 4. send (or open the SMS app), retry while the emergency is active, and send one update if
  *    a better position arrives within [LOCATION_UPDATE_WINDOW_MILLIS].
  *
+ * An alert that is not sent is tried again until the emergency ends ([alertRetryRule]): at
+ * its own pace, and at once when the user asks ([retryNow]) or a [RetrySignals] signal comes.
+ * After [ALERT_UNSENT_NOTICE_MILLIS] the user is told once; after [ALERT_RETRY_LIMIT_MILLIS]
+ * trying stops and the screen says so. The timer is this coroutine in the app's scope, which
+ * the emergency's foreground service keeps alive: no alarm, no wake lock, no second service.
+ *
  * A build that limits its recipients ([SmsRecipientLimit], debug builds) texts only the
  * numbers it allows and marks the others SKIPPED; when it allows none of the contacts, the
  * SMS app is used for all of them, as if the app could not send by itself.
@@ -127,6 +168,8 @@ class SosDispatch @Inject constructor(
     private val modeSource: SmsModeSource,
     private val composer: SmsComposer,
     private val limit: SmsRecipientLimit,
+    private val notifier: UnsentAlertNotifier,
+    private val signals: RetrySignals,
     private val trail: SosTrail,
     private val battery: BatteryLevel,
     private val clock: Clock,
@@ -136,6 +179,21 @@ class SosDispatch @Inject constructor(
     val status: StateFlow<SosAlertStatus> = _status.asStateFlow()
 
     private var job: Job? = null
+
+    /** What an extra try needs to know about the alert that is being sent. Memory only. */
+    private class Sending(
+        val sosId: String,
+        val rule: RetryRule,
+        val triggeredAt: Instant,
+        val stillActive: suspend () -> Boolean,
+        val text: () -> String,
+    )
+
+    @Volatile
+    private var sending: Sending? = null
+
+    @Volatile
+    private var lastSignalTry: Instant? = null
 
     // What the SMS app was last opened with, for "Open SMS app again". Memory only.
     private var composed: Pair<List<String>, String>? = null
@@ -155,10 +213,11 @@ class SosDispatch @Inject constructor(
      * active (after the app was closed): then the SMS app is not opened a second time.
      */
     @Synchronized
-    fun start(sosId: String, resumed: Boolean, stillActive: suspend () -> Boolean) {
+    fun start(sosId: String, resumed: Boolean, triggeredAt: Instant, stillActive: suspend () -> Boolean) {
         job?.cancel()
+        sending = null
         _status.value = SosAlertStatus.Preparing
-        job = scope.launch { run(sosId, resumed, stillActive) }
+        job = scope.launch { run(sosId, resumed, triggeredAt, stillActive) }
     }
 
     /** The emergency is over or was wiped: stop retrying. Sent messages stay sent. */
@@ -166,9 +225,59 @@ class SosDispatch @Inject constructor(
     fun stop() {
         job?.cancel()
         job = null
+        sending = null
+        lastSignalTry = null
+        signals.stop()
+        notifier.dismiss()
         composed = null
         composer.dismiss()
         _status.value = SosAlertStatus.NotEnabled
+    }
+
+    private suspend fun publish(now: Sending) {
+        val actions = alerts.actions(now.sosId)
+        val summary = summarise(actions)
+        _status.value = SosAlertStatus.Automatic(
+            summary = summary,
+            unsentForLong = summary.waiting > 0 && actions.any { it.type == SosActionType.UNSENT_NOTICE },
+            retryingStopped = actions.any { it.type == SosActionType.ALERT && it.lastErrorCategory == FAILED_EXPIRED },
+        )
+    }
+
+    /**
+     * "Send again now" on the active screen, or the emergency screen coming to the front: one
+     * try at once for every unsent alert. False when nothing is being sent, the emergency is
+     * over, or a try is in flight (then this one is simply not needed).
+     */
+    suspend fun retryNow(): Boolean {
+        val now = sending ?: return false
+        if (!now.stillActive()) return false
+        val tried = alerts.sendNow(now.sosId, SosActionType.ALERT, now.rule, now.text)
+        if (tried && sending === now) publish(now)
+        return tried
+    }
+
+    /** A signal from the phone: as [retryNow], but not more often than every [RETRY_SIGNAL_GAP_MILLIS]. */
+    private fun onRetrySignal() {
+        val at = clock.instant()
+        val last = lastSignalTry
+        if (last != null && at.isBefore(last.plusMillis(RETRY_SIGNAL_GAP_MILLIS))) return
+        lastSignalTry = at
+        scope.launch { retryNow() }
+    }
+
+    /**
+     * Waits until [ALERT_UNSENT_NOTICE_MILLIS] after the trigger and, if an alert is still
+     * unsent then, tells the user once. The mark is written down first, so a new process
+     * that comes by later does not tell them again.
+     */
+    private suspend fun tellAboutUnsentAlerts(now: Sending) {
+        val due = now.triggeredAt.plusMillis(ALERT_UNSENT_NOTICE_MILLIS)
+        val wait = Duration.between(clock.instant(), due).toMillis()
+        if (wait > 0) delay(wait)
+        if (!now.stillActive()) return
+        if (alerts.markUnsentNoticeOnce(now.sosId)) notifier.show()
+        if (sending === now) publish(now)
     }
 
     /** The message's facts at this moment: the newest position, the time, the battery. */
@@ -201,7 +310,7 @@ class SosDispatch @Inject constructor(
         else -> SmsMode.AUTOMATIC
     }
 
-    private suspend fun run(sosId: String, resumed: Boolean, stillActive: suspend () -> Boolean) {
+    private suspend fun run(sosId: String, resumed: Boolean, since: Instant, stillActive: suspend () -> Boolean) {
         if (!policy.alertsAllowed()) {
             _status.value = SosAlertStatus.NotEnabled
             return
@@ -224,20 +333,31 @@ class SosDispatch @Inject constructor(
         }
         // Before the first message leaves: who this build may not text is taken off.
         alerts.skipNotAllowed(sosId, limit)
-        suspend fun publish() {
-            _status.value = SosAlertStatus.Automatic(summarise(alerts.actions(sosId)))
-        }
+        // Each try builds its text anew: a retry carries the position and time of its moment.
+        // The rule counts from the moment the emergency was triggered ([since]), which is
+        // written down: a new process continues the same two-hour and 24-hour clocks.
+        val now = Sending(sosId, alertRetryRule(since), since, stillActive) { buildAlertMessage(input(name, language)) }
+        sending = now
+        suspend fun publish() = publish(now)
         publish()
+        signals.start(::onRetrySignal)
+        // A child of this run: it ends when the run is stopped.
+        val notice = scope.launch(currentCoroutineContext()[Job] ?: Job()) { tellAboutUnsentAlerts(now) }
         // Decided now, before the first message leaves: was the position good enough, or is
         // one update owed if a better one arrives?
         val updateOwed = !resumed && !hasGoodPosition(triggeredAt)
         val update = scope.launch {
             if (updateOwed) sendOneLocationUpdate(sosId, triggeredAt, name, language, stillActive)
         }
-        // Each try builds its text anew: a retry carries the position and time of its moment.
-        alerts.sendUntilDone(sosId, SosActionType.ALERT, stillActive, onRound = { publish() }) {
-            buildAlertMessage(input(name, language))
-        }
+        // Found by a new process: the user has just opened the app again, so what is unsent
+        // gets a try at once. The number of tries, and with it the wait that follows, goes on
+        // from where the old process stopped.
+        if (resumed) alerts.sendNow(sosId, SosActionType.ALERT, now.rule, now.text)
+        alerts.sendUntilDone(sosId, SosActionType.ALERT, stillActive, onRound = { publish() }, rule = now.rule, text = now.text)
+        // Everything is sent or given up: nothing is left to tell the user about or to retry.
+        notice.cancel()
+        signals.stop()
+        if (sending === now) sending = null
         update.join()
         publish()
     }
@@ -291,7 +411,7 @@ class SosDispatch @Inject constructor(
             return
         }
         if (alerts.prepare(sosId, SosActionType.SAFE).isEmpty()) return
-        if (alerts.sendDue(sosId, SosActionType.SAFE) { text }) {
+        if (alerts.sendDue(sosId, SosActionType.SAFE) { text } != null) {
             scope.launch { alerts.sendUntilDone(sosId, SosActionType.SAFE, { true }) { text } }
         }
     }

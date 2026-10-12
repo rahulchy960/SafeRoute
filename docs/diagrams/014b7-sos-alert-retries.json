@@ -1,0 +1,130 @@
+{
+  "$schema": "../../tools/diagrams/diagram.schema.json",
+  "title": "An SOS alert that cannot be sent",
+  "subtitle": "It is tried again for as long as the SOS is active; the user is told after 2 hours; trying stops after 24 hours (P014b7, ADR 0027)",
+  "direction": "TB",
+  "layout": {
+    "nodeWidth": 250,
+    "rankGap": 46
+  },
+  "groups": [
+    {
+      "id": "start",
+      "label": "What starts a try"
+    },
+    {
+      "id": "try",
+      "label": "One try"
+    },
+    {
+      "id": "ends",
+      "label": "How it ends"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "first",
+      "label": "The alert leaves at the trigger. Written down first: in progress",
+      "role": "service",
+      "group": "start",
+      "rank": 1
+    },
+    {
+      "id": "answer",
+      "label": "The phone's answer: sent, may pass, or cannot pass",
+      "role": "service",
+      "group": "try",
+      "rank": 2
+    },
+    {
+      "id": "wait",
+      "label": "Wait, then try again: 30 s for ten tries, then 1, 2, 4 min, then 5 min. Due time = stored tries + time of the last try",
+      "role": "data",
+      "group": "try",
+      "rank": 3
+    },
+    {
+      "id": "now",
+      "label": "Send again now, the screen comes to the front, the app is opened again",
+      "role": "app",
+      "group": "start",
+      "rank": 1
+    },
+    {
+      "id": "signals",
+      "label": "Airplane mode off, a network becomes available. No new permission",
+      "role": "external",
+      "group": "start",
+      "rank": 1
+    },
+    {
+      "id": "sent",
+      "label": "Sent: never sent again",
+      "role": "service",
+      "group": "ends",
+      "rank": 3
+    },
+    {
+      "id": "final",
+      "label": "Cannot pass: could not be sent. Never tried again",
+      "role": "security",
+      "group": "ends",
+      "rank": 3
+    },
+    {
+      "id": "notice",
+      "label": "After 2 hours unsent: one notification and the screen. Call 112 or send a text yourself",
+      "role": "app",
+      "group": "ends",
+      "rank": 4
+    },
+    {
+      "id": "stop",
+      "label": "After 24 hours, or when the SOS ends: trying stops. The screen says so",
+      "role": "security",
+      "group": "ends",
+      "rank": 5
+    }
+  ],
+  "edges": [
+    {
+      "from": "first",
+      "to": "answer"
+    },
+    {
+      "from": "now",
+      "to": "answer",
+      "label": "not while a try is in flight"
+    },
+    {
+      "from": "signals",
+      "to": "answer",
+      "label": "at most every 10 s"
+    },
+    {
+      "from": "answer",
+      "to": "wait",
+      "label": "may pass"
+    },
+    {
+      "from": "answer",
+      "to": "sent",
+      "label": "sent"
+    },
+    {
+      "from": "answer",
+      "to": "final",
+      "label": "cannot pass"
+    },
+    {
+      "from": "wait",
+      "to": "notice",
+      "label": "still unsent after 2 hours"
+    },
+    {
+      "from": "notice",
+      "to": "stop",
+      "label": "24 hours"
+    }
+  ]
+}

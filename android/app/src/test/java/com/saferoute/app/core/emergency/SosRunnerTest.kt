@@ -43,6 +43,8 @@ class SosRig(private val scope: TestScope, granted: GrantedLocation = GrantedLoc
     val smsMode = FakeSmsModeSource()
     val composer = FakeSmsComposer()
     val limit = FakeSmsRecipientLimit()
+    val notifier = FakeUnsentAlertNotifier()
+    val signals = FakeRetrySignals()
     val notices = SmsLimitNotices(limit, contacts, smsMode)
 
     private var process: CoroutineScope? = null
@@ -74,7 +76,7 @@ class SosRig(private val scope: TestScope, granted: GrantedLocation = GrantedLoc
         trail = SosTrail(source, environment, store, battery, clock, alive)
         engine = SosEngine(store, clock, UuidV7Generator(clock, Random(1)))
         alerts = SosAlerts(contacts, actions, gateway, clock, UuidV7Generator(clock, Random(2)))
-        dispatch = SosDispatch(alerts, policy, settings, freshener, smsMode, composer, limit, trail, battery, clock, alive)
+        dispatch = SosDispatch(alerts, policy, settings, freshener, smsMode, composer, limit, notifier, signals, trail, battery, clock, alive)
         runner = SosRunner(engine, trail, host, haptics, dispatch, clock, alive)
     }
 

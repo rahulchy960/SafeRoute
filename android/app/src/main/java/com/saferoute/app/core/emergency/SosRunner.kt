@@ -206,7 +206,8 @@ class SosRunner @Inject constructor(
         // The messages. Started in the app's scope and never waited for: an alert that cannot
         // be sent does not hold up, or undo, the emergency.
         val id = record.clientSosId
-        dispatch.start(id, resumed) { (_state.value as? SosRunState.Active)?.record?.clientSosId == id }
+        val triggeredAt = (engine.current() ?: record).triggeredAt ?: clock.instant()
+        dispatch.start(id, resumed, triggeredAt) { (_state.value as? SosRunState.Active)?.record?.clientSosId == id }
     }
 
     private fun stopEverything(keepHost: Boolean = false) {

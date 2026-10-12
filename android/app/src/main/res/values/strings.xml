@@ -530,6 +530,15 @@
     <string name="sos_alerts_sent">Alert sent by SMS: %1$d of %2$d emergency contacts.</string>
     <string name="sos_alerts_waiting">Still trying to send: %1$d.</string>
     <string name="sos_alerts_failed">Could not be sent: %1$d.</string>
+    <!-- Retrying while the SOS is active (P014b7). Fixed text: no name, number or place. -->
+    <string name="sos_alerts_retry_explain">SafeRoute keeps trying while this SOS is active.</string>
+    <string name="sos_alerts_retry_now">Send again now</string>
+    <string name="sos_alerts_unsent_long">Some alerts have not been sent. Call 112 or send a text yourself.</string>
+    <string name="sos_alerts_stopped">SafeRoute stopped trying to send after 24 hours. Call 112 or send a text yourself.</string>
+    <string name="sos_unsent_channel">SOS alerts not sent</string>
+    <string name="sos_unsent_channel_description">Shown once when an SOS alert has still not been sent after two hours.</string>
+    <string name="sos_unsent_title">Some alerts have not been sent</string>
+    <string name="sos_unsent_text">Call 112 or send a text yourself.</string>
     <string name="sos_alerts_skipped">Not sent because the contact opted out: %1$d.</string>
     <!-- Only a build that limits who it texts (a debug build, P014b6) can show this. -->
     <string name="sos_alerts_held">Not sent because this test build may not text them: %1$d.</string>
