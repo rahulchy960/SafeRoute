@@ -117,6 +117,7 @@ class EmergencyActivity : ComponentActivity() {
                             onOpenComposer = viewModel::onOpenComposer,
                             onTellContactsChange = viewModel::onTellContactsChange,
                             smsNotice = smsNotice,
+                            onRetryNow = viewModel::onRetryNow,
                         )
                     }
 

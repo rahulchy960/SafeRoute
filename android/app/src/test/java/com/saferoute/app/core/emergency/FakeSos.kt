@@ -131,6 +131,9 @@ class FakeSmsGateway(var fallback: SmsOutcome = SmsOutcome.Sent) : SmsGateway {
     val attempts = CopyOnWriteArrayList<Pair<String, String>>()
     val outcomes = mutableMapOf<String, ArrayDeque<SmsOutcome>>()
 
+    /** How long the phone takes to answer, in virtual time: a try "in flight". */
+    var holdMillis = 0L
+
     fun answer(phone: String, vararg results: SmsOutcome) {
         outcomes.getOrPut(phone) { ArrayDeque() }.addAll(results)
     }
@@ -139,6 +142,7 @@ class FakeSmsGateway(var fallback: SmsOutcome = SmsOutcome.Sent) : SmsGateway {
 
     override suspend fun send(phoneE164: String, text: String): SmsOutcome {
         attempts += phoneE164 to text
+        if (holdMillis > 0) kotlinx.coroutines.delay(holdMillis)
         return outcomes[phoneE164]?.removeFirstOrNull() ?: fallback
     }
 }
@@ -176,6 +180,42 @@ class FakeContactsFreshener(var allowed: Set<String>? = null, var delayMillis: L
 
 class FakeSmsModeSource(var mode: SmsMode = SmsMode.AUTOMATIC) : SmsModeSource {
     override fun mode(): SmsMode = mode
+}
+
+/** Counts how often the user was told about unsent alerts. */
+class FakeUnsentAlertNotifier : UnsentAlertNotifier {
+    var shown = 0
+    var dismissed = 0
+
+    override fun show() {
+        shown++
+    }
+
+    override fun dismiss() {
+        dismissed++
+    }
+}
+
+/** The phone's signals as a test sends them: [signal] is "airplane mode off" or "network back". */
+class FakeRetrySignals : RetrySignals {
+    private var listener: (() -> Unit)? = null
+    var starts = 0
+    var stops = 0
+    val listening: Boolean get() = listener != null
+
+    override fun start(onSignal: () -> Unit) {
+        starts++
+        listener = onSignal
+    }
+
+    override fun stop() {
+        stops++
+        listener = null
+    }
+
+    fun signal() {
+        listener?.invoke()
+    }
 }
 
 /**
@@ -324,4 +364,18 @@ object FakeSosDeviceModule {
 
     @Provides
     fun provideRecipientLimit(fake: FakeSmsRecipientLimit): SmsRecipientLimit = fake
+
+    @Provides
+    @Singleton
+    fun provideFakeUnsentNotifier(): FakeUnsentAlertNotifier = FakeUnsentAlertNotifier()
+
+    @Provides
+    fun provideUnsentNotifier(fake: FakeUnsentAlertNotifier): UnsentAlertNotifier = fake
+
+    @Provides
+    @Singleton
+    fun provideFakeRetrySignals(): FakeRetrySignals = FakeRetrySignals()
+
+    @Provides
+    fun provideRetrySignals(fake: FakeRetrySignals): RetrySignals = fake
 }

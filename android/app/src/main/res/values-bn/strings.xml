@@ -523,6 +523,14 @@
     <string name="sos_alerts_sent">SMS-এ সতর্কবার্তা পাঠানো হয়েছে: %2$d জন জরুরি পরিচিতির মধ্যে %1$d জনকে।</string>
     <string name="sos_alerts_waiting">এখনও পাঠানোর চেষ্টা চলছে: %1$d।</string>
     <string name="sos_alerts_failed">পাঠানো যায়নি: %1$d।</string>
+    <string name="sos_alerts_retry_explain">এই SOS চালু থাকা পর্যন্ত SafeRoute চেষ্টা চালিয়ে যাবে।</string>
+    <string name="sos_alerts_retry_now">এখনই আবার পাঠান</string>
+    <string name="sos_alerts_unsent_long">কিছু সতর্কবার্তা পাঠানো যায়নি। 112 নম্বরে কল করুন অথবা নিজে একটি SMS পাঠান।</string>
+    <string name="sos_alerts_stopped">24 ঘণ্টা পর SafeRoute পাঠানোর চেষ্টা বন্ধ করেছে। 112 নম্বরে কল করুন অথবা নিজে একটি SMS পাঠান।</string>
+    <string name="sos_unsent_channel">SOS সতর্কবার্তা পাঠানো যায়নি</string>
+    <string name="sos_unsent_channel_description">দুই ঘণ্টা পরেও কোনো SOS সতর্কবার্তা পাঠানো না গেলে একবার দেখানো হয়।</string>
+    <string name="sos_unsent_title">কিছু সতর্কবার্তা পাঠানো যায়নি</string>
+    <string name="sos_unsent_text">112 নম্বরে কল করুন অথবা নিজে একটি SMS পাঠান।</string>
     <string name="sos_alerts_skipped">পরিচিতি বেরিয়ে যাওয়ায় পাঠানো হয়নি: %1$d।</string>
     <string name="sos_alerts_held">এই পরীক্ষামূলক সংস্করণ তাঁদের SMS পাঠাতে পারে না বলে পাঠানো হয়নি: %1$d।</string>
     <string name="sos_alerts_caveat">পাঠানো বার্তাও না পৌঁছাতে বা না পড়া হতে পারে। বিপদে পড়লে 112-এ কল করুন।</string>

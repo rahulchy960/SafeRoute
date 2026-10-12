@@ -313,6 +313,28 @@ class SosViewModelTest {
     }
 
     @Test
+    fun `send again now tries the unsent alert at once, and coming back to the screen does too`() = test { rig ->
+        rig.withContacts(1)
+        rig.gateway.fallback = SmsOutcome.Retryable("no_service")
+        val viewModel = rig.open(SosOpenMode.START)
+        rig.advance(2_000)
+        rig.source.emit()
+        rig.advance(4_000)
+        val before = rig.gateway.attempts.size
+        assertEquals(1, before)
+
+        viewModel.onRetryNow()
+        rig.advance(0)
+        assertEquals(before + 1, rig.gateway.attempts.size)
+
+        // The screen comes to the front again (the same screen object, shown a second time).
+        viewModel.onShown(SosOpenMode.OPEN, fresh = false)
+        rig.advance(0)
+        assertEquals(before + 2, rig.gateway.attempts.size)
+        assertEquals("still one emergency", 1, rig.store.all.size)
+    }
+
+    @Test
     fun `the active screen shows the counts of the alerts as they change`() = test { rig ->
         rig.withContacts(2)
         rig.gateway.answer("+919000010002", SmsOutcome.Retryable("no_service"))

@@ -190,6 +190,10 @@ class SosViewModel @Inject constructor(
                 is SosRecovery.ResumeCountdown, SosRecovery.Nothing -> Unit
             }
             if (first && fresh && mode == SosOpenMode.SAFE) onSafeClick()
+            // The screen came to the front again while an SOS is sending: the user is looking,
+            // so an unsent alert gets a try now. Not at the first showing: the alert is only
+            // just leaving then, and a try that is in flight is never doubled anyway.
+            if (!first) dispatch.retryNow()
         }
     }
 
@@ -238,6 +242,14 @@ class SosViewModel @Inject constructor(
 
     /** "Open SMS app again" on the active screen (composer mode). */
     fun onOpenComposer() = dispatch.reopenComposer()
+
+    /**
+     * "Send again now" on the active screen: one try at once for every unsent alert. In the
+     * app's scope, like every command: the try must not end because this screen went away.
+     */
+    fun onRetryNow() {
+        appScope.launch { dispatch.retryNow() }
+    }
 
     fun onSafeConfirm() {
         if (local.value.practice == Practice.ACTIVE) {

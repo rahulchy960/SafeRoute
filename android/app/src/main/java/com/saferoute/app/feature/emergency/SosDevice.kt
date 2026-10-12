@@ -17,6 +17,7 @@ import androidx.work.WorkerParameters
 import com.saferoute.app.core.emergency.BatteryLevel
 import com.saferoute.app.core.emergency.ContactsFreshener
 import com.saferoute.app.core.emergency.PurgeScheduler
+import com.saferoute.app.core.emergency.RetrySignals
 import com.saferoute.app.core.emergency.SmsComposer
 import com.saferoute.app.core.emergency.SmsModeSource
 import com.saferoute.app.core.emergency.SmsRecipientLimit
@@ -26,6 +27,7 @@ import com.saferoute.app.core.emergency.SmsGateway
 import com.saferoute.app.core.emergency.SosHaptics
 import com.saferoute.app.core.emergency.SosHost
 import com.saferoute.app.core.emergency.SosHousekeeping
+import com.saferoute.app.core.emergency.UnsentAlertNotifier
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.EntryPoint
@@ -173,4 +175,10 @@ interface SosDeviceModule {
 
     @Binds
     fun bindContactsFreshener(freshener: RepositoryContactsFreshener): ContactsFreshener
+
+    @Binds
+    fun bindUnsentAlertNotifier(notifier: AndroidUnsentAlertNotifier): UnsentAlertNotifier
+
+    @Binds
+    fun bindRetrySignals(signals: AndroidRetrySignals): RetrySignals
 }

@@ -15,6 +15,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -196,6 +197,7 @@ class SosAlertLinesTest {
                     onCall112 = {},
                     onOpenComposer = { events += "composer" },
                     onTellContactsChange = { state = state.copy(tellContacts = it) },
+                    onRetryNow = { events += "retry" },
                 )
             }
         }
@@ -240,6 +242,51 @@ class SosAlertLinesTest {
         // No build limit, no line.
         state = state.copy(alerts = SosAlertStatus.Automatic(SosAlertSummary(sent = 1, waiting = 0, failed = 0, skipped = 0)))
         compose.onAllNodesWithText(string(R.string.sos_alerts_held, 0)).assertCountEquals(0)
+    }
+
+    @Test
+    fun `while an alert is unsent the screen says that it keeps trying and offers send again now`() {
+        state = state.copy(alerts = SosAlertStatus.Automatic(SosAlertSummary(sent = 1, waiting = 1, failed = 0, skipped = 0)))
+        show()
+
+        compose.onNodeWithText(string(R.string.sos_alerts_retry_explain)).assertExists()
+        compose.onNodeWithTag(SosRetryNowTag).performScrollTo().assertIsDisplayed().assertMinTouchTarget()
+        compose.onNodeWithText(string(R.string.sos_alerts_retry_now)).performClick()
+        assertEquals(listOf("retry"), events)
+        // Not said before it is true.
+        compose.onAllNodesWithText(string(R.string.sos_alerts_unsent_long)).assertCountEquals(0)
+        compose.onAllNodesWithText(string(R.string.sos_alerts_stopped)).assertCountEquals(0)
+
+        // Everything sent: nothing to send again.
+        state = state.copy(alerts = SosAlertStatus.Automatic(SosAlertSummary(sent = 2, waiting = 0, failed = 0, skipped = 0)))
+        compose.onAllNodesWithTag(SosRetryNowTag).assertCountEquals(0)
+        compose.onAllNodesWithText(string(R.string.sos_alerts_retry_explain)).assertCountEquals(0)
+    }
+
+    @Test
+    fun `after two hours the screen says that alerts are unsent and what to do, with the button still there`() {
+        state = state.copy(
+            alerts = SosAlertStatus.Automatic(SosAlertSummary(sent = 0, waiting = 2, failed = 0, skipped = 0), unsentForLong = true),
+        )
+        show()
+
+        val sentence = string(R.string.sos_alerts_unsent_long)
+        assertEquals("Some alerts have not been sent. Call 112 or send a text yourself.", sentence)
+        compose.onNodeWithText(sentence).assertExists()
+        compose.onNodeWithTag(SosRetryNowTag).assertExists()
+    }
+
+    @Test
+    fun `after 24 hours the screen says that trying has stopped, and offers no send again`() {
+        state = state.copy(
+            alerts = SosAlertStatus.Automatic(SosAlertSummary(sent = 1, waiting = 0, failed = 1, skipped = 0), retryingStopped = true),
+        )
+        show()
+
+        compose.onNodeWithText(string(R.string.sos_alerts_stopped)).assertExists()
+        compose.onNodeWithText(string(R.string.sos_alerts_failed, 1)).assertExists()
+        compose.onAllNodesWithTag(SosRetryNowTag).assertCountEquals(0)
+        assertTrue(string(R.string.sos_alerts_stopped).contains("112"))
     }
 
     @Test
