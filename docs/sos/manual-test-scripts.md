@@ -12,7 +12,7 @@ and reported by a person.
 - **M22** was rewritten in P014b7: an unsent alert is now tried for as long as the SOS is
   active.
 - **M17** was written in P014c1a (it was a draft): the tile and the pinned notification
-  start an SOS. Its widget part stays a draft until P014c1b. M18 and M19 were updated.
+  start an SOS. M18 and M19 were updated. Its widget part (part 7) was written in P014c1b.
 - A script marked **Draft until the feature exists** describes something that is not built
   yet. Do not run it, and do not record a result for it.
 - Legal wording quoted here (the notice, the SMS texts) is a draft, to be verified by a
@@ -476,7 +476,7 @@ phone" is enough. A screenshot must not show a number, a name or a map position.
 
 *Written in P014c1a; it was a draft before.* **Rows:** A1, A2, 6, 11. The heading keeps its
 old words so that links to it still work; the script covers the tile and the pinned
-notification. **Its widget part is a draft until the feature exists (P014c1b).**
+notification, and since P014c1b the home-screen widget (part 7).
 
 - **Preconditions:** as [M0](#m0-set-up). The build after P014c1a. The tile added (Settings
   → "Add the SOS tile") and the pinned notification switched on. A screen lock (PIN,
@@ -511,7 +511,20 @@ notification. **Its widget part is a draft until the feature exists (P014c1b).**
   no vibration; a dialog with Call 112, "SOS alerts are not set up yet ...", "Set up SOS
   alerts" and "Practice SOS". Tap "Set up SOS alerts": on a locked phone the unlock is
   asked for first, then SafeRoute opens at Emergency contacts.
-- **Part 7, the widget.** *Draft until the feature exists (P014c1b).* Do not run.
+- **Part 7, the widget** (the build after P014c1b). Long-press an empty place on the home
+  screen → Widgets → find "SafeRoute" → "SafeRoute SOS" → add it. (On a Samsung: hold the
+  home screen, tap Widgets, search for SafeRoute, tap the widget, then Add.) *Expected:* a
+  square of 2 by 2 cells with a red button "SOS" and the line "Tap to start SOS"; it
+  cannot be made smaller. Tap **beside** the red button, on the card's edge: nothing
+  happens. Tap the red button: the same countdown as from the tile, at once. Cancel. Start
+  it again and, during the countdown, tap the tile: one countdown, not two. With an
+  account that has not agreed to the notice: Call 112 and "Set up SOS alerts", no
+  countdown. With TalkBack on, the button is read as "Start SOS". Switch the phone to dark
+  mode and to Bengali: the widget can still be read. Look for the widget in the lock
+  screen's own widget list, if the phone has one: it should not be offered there.
+- **Also record for part 7:** whether the widget was in the launcher's list at all, and
+  under which name; its size on the home screen; whether it could be resized; whether the
+  phone offered it for the lock screen; any tap on it that you did not mean.
 - **Record:** the phone and its Android version; for parts 1 to 4, the time from the tap to
   the first number of the countdown (count "one, two"; under a second is expected);
   whether the tile was reachable on the lock screen at all (some phones hide Quick

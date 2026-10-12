@@ -36,22 +36,23 @@ the alerts and the engine, with fakes for the phone's parts, in virtual time; *c
 the real service, notification or job under Robolectric; *screen* = the Compose screens and
 their ViewModels.
 
-**Evidence for "Automated pass" on this date:** `android-ci` run 38285365927 on `main`
-(commit `3225e12`, 2026-10-12): success. Tests added in P014c1a are not on `main` yet and
-are marked so under [Evidence](#evidence). An earlier run on `main` failed once on a flaky
+**Evidence for "Automated pass" on this date:** `android-ci` run 38296767979 on `main`
+(commit `5e57495`, 2026-10-12): success. Tests added in P014c1b (the widget) are not on
+`main` yet and are marked so under [Evidence](#evidence). An earlier run on `main` failed once on a flaky
 test and passed when run again (P014b5).
 
 ## State of the build
 
 A user who has agreed to the SOS alerts notice (version 3 since P014c1a; a consent for
 version 2 no longer counts) can start an SOS from the SOS control in the app (hold for 2
-seconds), and with one tap from the Quick Settings tile or from the "Start SOS" button of
-the pinned notification, also on a locked phone. Every one of them goes through the same
+seconds), and with one tap from the Quick Settings tile, from the "Start SOS" button of
+the pinned notification (both also on a locked phone) or, since P014c1b, from the
+home-screen widget "SafeRoute SOS". Every one of them goes through the same
 use case, the same consent check and the same five-second countdown. **It messages their emergency contacts by SMS**:
 by itself in a build with the SMS permission once the user allowed it (debug builds by
 default), otherwise through the phone's SMS app. Without that consent no SOS can be
 started at all: the app and the shortcuts then offer Call 112, a practice run and the way
-to the setup. There is no home-screen widget yet (P014c1b), no readiness screen (P014c2)
+to the setup. There is no readiness screen yet (P014c2)
 and no notice after a restart (P014c3). No server takes part in an SOS yet (P015), and there is no live-location
 link (P016). **A debug build texts only the test numbers it was built with** (P014b6): with
 no such list it sends nothing by itself and uses the SMS app, and a banner on the SOS
@@ -80,8 +81,8 @@ was added in P014b6.
 | 9 | FCM failure | The push is recorded as failed and to be retried, and is tried again. The SMS has already reached the contacts. | P015: not built | None | [M25](manual-test-scripts.md#m25-push-messages-fail) | Waiting on P015 | None | No push message exists yet. |
 | 10 | Worker crash mid-action | The job is delivered again; the call to the provider carries the action's idempotency key, so no contact gets a second push. | P015: not built | None | [M26](manual-test-scripts.md#m26-a-server-worker-stops-mid-action) | Waiting on P015 | None | A server check, not a phone script. |
 | 11 | Accidental trigger | Cancel during the countdown ends it and sends nothing. After the alert went out there is no Cancel: "I'm safe" ends the SOS and tells the contacts who were alerted. | P014a1, P014a2, P014a3, P014b2 | `SosStateMachineTest`, `SosEngineTest`, `SosRunnerTest`, `SosForegroundServiceTest`, `SosScreensTest`, `SosViewModelTest`, `SosEmergencyScreenTest`, `SosMessageTest`, `SosAlertsTest`, `SosDispatchTest`, `SosAlertLinesTest` ([names](#row-11-accidental-trigger)) | [M1](manual-test-scripts.md#m1-hold-to-arm-and-early-release), [M2](manual-test-scripts.md#m2-cancel), [M3](manual-test-scripts.md#m3-full-countdown-and-locking-the-phone), [M8](manual-test-scripts.md#m8-practice), [M9](manual-test-scripts.md#m9-do-not-disturb-bengali-dark-mode-large-font-talkback) | Automated pass · Manual pending | 2026-10-12 (automated); manual: none | Automated at data, logic, component and screen level. |
-| A1 | SOS started from the tile while the phone is locked | The tile starts the same five-second countdown as the app, shown over the lock screen with Cancel and Call 112. Nothing of the account is shown there. | P012f1 (the tile), P014a3 (the emergency screen over the lock screen), P014c1a (the tile starts the countdown through the one use case). P014c1b (the widget): not built | `EmergencyShortcutTest`, `SosTileServiceTest`, `EmergencyActivityTest`, `EmergencyShortcutsManifestTest`, `SosScreensTest`, `SosAlertLinesTest`, `StartSosTest`, `SosViewModelTest`, `SosEmergencyScreenTest` ([names](#row-a1-sos-started-from-the-tile-while-the-phone-is-locked)) | [M3](manual-test-scripts.md#m3-full-countdown-and-locking-the-phone), [M17](manual-test-scripts.md#m17-sos-from-the-tile-or-the-widget-while-the-phone-is-locked) | Manual pending · Waiting on P014c | None | Built in P014c1a: the tests of the countdown from the tile are on `main` only after that merge, and this row becomes "Automated pass" when `android-ci` has run green there with them. The tests run on the JVM: that a phone shows the countdown over its lock screen, and that the location service starts there, can only be seen on phones. Observed on one phone before this change (Device results): the dialog opened from the lock screen. With SOS alerts not set up the tile shows Call 112 and the way to the setup, and no countdown. The widget is P014c1b. |
-| A2 | Pinned notification dismissed or killed | The SOS still starts from the tile and from the app. The notification is posted again when the app is next opened and after a restart. | P012f2, P014c1a (its button "Start SOS") | `EmergencyNotificationTest`, `SosFlowTest`, `SosEmergencyScreenTest` ([names](#row-a2-pinned-notification-dismissed-or-killed)) | [M17](manual-test-scripts.md#m17-sos-from-the-tile-or-the-widget-while-the-phone-is-locked), [M18](manual-test-scripts.md#m18-the-pinned-notification-dismissed-or-killed) | Automated pass · Manual pending | 2026-10-12 (automated); manual: none | Automated for posting again. Starting an SOS from the notification is built in P014c1a; its tests count once `android-ci` is green on `main` with them. Observed on one phone (Device results): posted again after a swipe, a restart and a force stop. That was reported before these scripts existed, so the row stays Manual pending. |
+| A1 | SOS started from the tile while the phone is locked | The tile starts the same five-second countdown as the app, shown over the lock screen with Cancel and Call 112. Nothing of the account is shown there. | P012f1 (the tile), P014a3 (the emergency screen over the lock screen), P014c1a (the tile starts the countdown through the one use case), P014c1b (the home-screen widget) | `EmergencyShortcutTest`, `SosTileServiceTest`, `EmergencyActivityTest`, `EmergencyShortcutsManifestTest`, `SosScreensTest`, `SosAlertLinesTest`, `StartSosTest`, `SosViewModelTest`, `SosEmergencyScreenTest`, `SosWidgetTest` ([names](#row-a1-sos-started-from-the-tile-while-the-phone-is-locked)) | [M3](manual-test-scripts.md#m3-full-countdown-and-locking-the-phone), [M17](manual-test-scripts.md#m17-sos-from-the-tile-or-the-widget-while-the-phone-is-locked) | Automated pass · Manual pending | 2026-10-13 (automated); manual: none | The tests of the countdown from the tile (P014c1a) are on `main` since `5e57495`, and `android-ci` ran green there (run 38296767979). The widget is built in P014c1b; its tests count once `android-ci` is green on `main` with them. The row names the tile; the widget is recorded here because it is the same start from outside the app, and it is offered for the home screen only, not the lock screen. The tests run on the JVM: that a phone shows the countdown over its lock screen, and that the location service starts there, can only be seen on phones. Observed on one phone before this change (Device results): the dialog opened from the lock screen. With SOS alerts not set up the tile and the widget show Call 112 and the way to the setup, and no countdown. |
+| A2 | Pinned notification dismissed or killed | The SOS still starts from the tile and from the app. The notification is posted again when the app is next opened and after a restart. | P012f2, P014c1a (its button "Start SOS") | `EmergencyNotificationTest`, `SosFlowTest`, `SosEmergencyScreenTest` ([names](#row-a2-pinned-notification-dismissed-or-killed)) | [M17](manual-test-scripts.md#m17-sos-from-the-tile-or-the-widget-while-the-phone-is-locked), [M18](manual-test-scripts.md#m18-the-pinned-notification-dismissed-or-killed) | Automated pass · Manual pending | 2026-10-12 (automated); manual: none | Automated for posting again. Starting an SOS from the notification (P014c1a): its tests are on `main` and ran green there (run 38296767979). Observed on one phone (Device results): posted again after a swipe, a restart and a force stop. That was reported before these scripts existed, so the row stays Manual pending. |
 | A3 | Tile unavailable on the device | Settings explains how to add the tile by hand and says that some phones have none. The SOS control in the app always works. | P012f1 | `SettingsShortcutsTest`, `EmergencyShortcutTest`, `SosFlowTest` ([names](#row-a3-tile-unavailable-on-the-device)) | [M19](manual-test-scripts.md#m19-a-phone-without-the-tile) | Automated pass · Manual pending | 2026-10-12 (automated); manual: none | Not seen on a phone without tiles from apps. |
 | A4 | Notification permission denied | No notification and no error. An SOS never depends on a notification; the active screen says that it is the only sign. | P012f2, P014a2, P014a3 | `EmergencyNotificationTest`, `SettingsShortcutsTest`, `SosScreensTest`, `SosViewModelTest` ([names](#row-a4-notification-permission-denied)) | [M7](manual-test-scripts.md#m7-notifications-refused) | Automated pass · Manual pending | 2026-10-12 (automated); manual: none | Automated at logic and screen level. |
 | A5 | Opted-out contact excluded | A contact who opted out is never alerted (ADR 0024). | P013a (the opt-out), P013b1 (the copy on the phone), P014b1, P014b2 | `ContactsDatabaseTest`, `SosAlertsTest`, `SosDispatchTest`, `SosAlertsDeviceTest`, `ApiContactsRepositoryTest` ([names](#row-a5-opted-out-contact-excluded)) | [M16](manual-test-scripts.md#m16-a-contact-who-opted-out) | Automated pass · Manual pending | 2026-10-12 (automated); manual: none | Known gap: with a position ready the alert leaves at once, so an opt-out made shortly before the trigger and not yet on the phone is missed (ADR 0027). |
@@ -103,9 +104,9 @@ What the plan or the design requires and no test covers, or what nobody knows ye
 1. **The server half of an SOS** (rows 1, 3, 9, 10): telling the server, one session per
    SOS, push messages, retried jobs. P015.
 2. **The live-location link and its viewer** (rows 1, 8). P016.
-3. **The home-screen widget** (row A1; P014c1b) and **the notice after a restart** (row 5;
-   P014c3). Today nothing appears after a restart until the app is opened. The tile and
-   the pinned notification start an SOS since P014c1a.
+3. **The notice after a restart** (row 5; P014c3). Today nothing appears after a restart
+   until the app is opened. The tile and the pinned notification start an SOS since
+   P014c1a, the home-screen widget since P014c1b.
 4. **A warning before an emergency** that alerts are not ready: no contact on this phone,
    contacts that never arrived, no SMS permission, battery optimisation (rows A6, A7). The
    readiness screen of P014c.
@@ -153,7 +154,8 @@ What the plan or the design requires and no test covers, or what nobody knows ye
 
 7. **A start nobody meant, from outside the app** (rows A1, A2, 11; P014c1a). In the app an
    SOS needs a two-second hold; the tile and the notification's button need one tap, also
-   on a locked phone, by anyone who holds it. The five-second countdown with its vibration
+   on a locked phone, by anyone who holds it, and the widget (P014c1b) one tap on the home
+   screen, where a thumb passes more often than in Quick Settings. The five-second countdown with its vibration
    and Cancel is the only safeguard, by decision (ADR 0027, "Entry points"). How often it
    happens is not known; a follow-up measures it in the closed test.
 
@@ -184,11 +186,13 @@ crash-free sessions (the figure is in the plan and is not repeated here). Addend
 adds: the SOS entry points tested on the same set of phones.
 
 **Where this stands:** no phone has run a script of this matrix. One phone has reported
-results for two earlier checks.
+results for two earlier checks, and one phone is named (a Samsung Galaxy S21 FE on
+Android 16, the phone-maker's own Android, not stock) without a script result yet.
 
 | Device (make and model) | Android version | Build | SMS mode | Date | Scripts run | Result | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Samsung, model not recorded | 17 | Not recorded | Not applicable (before SMS alerts existed) | Recorded 2026-10-08; the day of the checks is not recorded | None of M0 to M28. The checks of P012f1 and P012f2: tile added, tile tapped with the screen on and from the lock screen, pinned notification on and off, after a swipe, a restart and a force stop | As reported: each worked | Reported by Rahul, no details. Source: the "Revision 2026-10-08" sections of `docs/prompt-logs/012f1-sos-tile.md` and `012f2-emergency-notification.md`. Not a run of any script here, so no row is "Manual pass" |
+| Samsung Galaxy S21 FE | 16 | Not reported | Not reported | 2026-10-13 | None of M0 to M29 | No script result. As reported: no SafeRoute widget could be added on this phone | Reported by Rahul on 2026-10-13: the phone's make, model and Android version, and that a widget could not be made. That is expected for that build: the widget did not exist before P014c1b, so this is not a failure of a script. **The Android version reported here (16) differs from the row above (17, model not recorded).** Whether the earlier checks were made on this phone is not recorded, so the older row is left as it was written |
 | Not reported | Not reported | Not reported | Not reported | 2026-10-12 | M0 to M16 | Not reported | The P013c prompt asked for the manual SMS results so far, the phone's make and Android version, and whether a second phone was used as the contact. The lines were empty |
 
 Other checks, not on a phone's SOS path:
@@ -251,7 +255,7 @@ from the test sources, not typed.
   - "without consent to the alerts notice no SOS can be started from the screen"
 - `SosAlertsDeviceTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosAlertsDeviceTest.kt`):
   - "the gate opens only for consent to the notice the app shows today"
-  - "the notice version is the third one, and differs from the first two" (renamed in P014c1a; on `main` after that merge)
+  - "the notice version is the third one, and differs from the first two" (renamed in P014c1a)
 - `ApiContactsRepositoryTest` (`android/app/src/test/java/com/saferoute/app/feature/contacts/ApiContactsRepositoryTest.kt`):
   - "consent counts only when it is granted for the notice the app shows today"
   - "the phone's note of the consent follows the server, and a failed check changes nothing"
@@ -365,7 +369,7 @@ No automated test: nothing of this row is built, or nothing of it can be tested 
   - "two senders at once never send the same message twice"
   - "after a process death a sent message stays sent and an unanswered one is tried again"
 
-Added in P014c1a for row 6 (on `main` after that merge):
+Added in P014c1a for row 6 (on `main` since `5e57495`):
 
 - `StartSosTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/StartSosTest.kt`):
   - "a second start from another entry point shows the same emergency"
@@ -490,7 +494,7 @@ No automated test: nothing of this row is built, or nothing of it can be tested 
 - `SosAlertLinesTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosAlertsDeviceTest.kt`):
   - "on the lock screen the same counts are shown and nothing else about the contacts"
 
-Added or renamed in P014c1a for row A1 (on `main` after that merge):
+Added or renamed in P014c1a for row A1 (on `main` since `5e57495`):
 
 - `StartSosTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/StartSosTest.kt`): all 6 tests.
 - `EmergencyShortcutTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/EmergencyShortcutsTest.kt`):
@@ -510,6 +514,13 @@ Added or renamed in P014c1a for row A1 (on `main` after that merge):
   - "on a locked phone set up SOS alerts asks for the unlock first"
   - "in Bengali at double font size the not-set-up dialog still reaches Call 112 and the setup"
 
+Added in P014c1b for row A1, the widget (on `main` after that merge):
+
+- `SosWidgetTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosWidgetTest.kt`): all 7 tests.
+- `EmergencyShortcutsManifestTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/EmergencyShortcutsTest.kt`):
+  - "one receiver, not exported, for a restart and an update of this app only" (it now
+    counts two receivers: that one and the widget's provider)
+
 ### Row A2: Pinned notification dismissed or killed
 
 - `EmergencyNotificationTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/EmergencyNotificationTest.kt`):
@@ -521,7 +532,7 @@ Added or renamed in P014c1a for row A1 (on `main` after that merge):
 - `SosFlowTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosScreensTest.kt`):
   - "the SOS control opens the dialog, and a completed hold leads to the emergency screen"
 
-Added in P014c1a for row A2 (on `main` after that merge):
+Added in P014c1a for row A2 (on `main` since `5e57495`):
 
 - `EmergencyNotificationTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/EmergencyNotificationTest.kt`):
   - "call 112 opens the dialer and start SOS asks the emergency screen to start, both immutable"
@@ -757,3 +768,8 @@ Added in P014b6; on `main` since commit `0298557`.
   P014c1b. Row A8 is "Automated pass" now and row 2's retry tests count: the tests of
   P014b7 are on `main` and the run was green. "Accepted risks" gained item 7 (a start
   nobody meant). Two tests were renamed; their old names are noted under Evidence.
+- **P014c1b** (2026-10-13): the home-screen widget starts the same countdown through the
+  same use case (row A1; script M17, part 7 written). Rows A1, A2 and 6 count the tests of
+  P014c1a now: they are on `main` and the run was green, so row A1 is "Automated pass ·
+  Manual pending". The widget's tests count after this merge. Device results gained a row:
+  a Samsung Galaxy S21 FE on Android 16, as reported, with no script result.
