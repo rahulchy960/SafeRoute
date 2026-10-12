@@ -109,8 +109,15 @@ class EmergencyNotificationController @Inject constructor(
  * remove every notification. Android starts the app's process for a moment to deliver these
  * two broadcasts; this receiver only calls [EmergencyNotificationController.sync] and ends.
  *
- * It starts no activity and no service. If the switch is off or notifications are not
- * allowed, it does nothing. An app the user force-stopped receives nothing until it is opened
+ * Since P014c3 it also looks at the phone's emergency record: if an SOS was active when the
+ * phone restarted (or the app was updated), it posts the notice that says so
+ * ([SosRestartNotice]). It reads the app's own database, which Android makes readable only
+ * after the phone was unlocked once; these two broadcasts arrive after that, and the app
+ * does not take part in "direct boot".
+ *
+ * It starts no activity and no service, and it does not continue the SOS. If the switch is
+ * off, the pinned notification is not posted; the notice about an SOS does not depend on
+ * that switch. An app the user force-stopped receives nothing until it is opened
  * again; then the app's own start puts the notification back.
  */
 class EmergencyShortcutReceiver : BroadcastReceiver() {
@@ -119,6 +126,8 @@ class EmergencyShortcutReceiver : BroadcastReceiver() {
     @InstallIn(SingletonComponent::class)
     interface Dependencies {
         fun controller(): EmergencyNotificationController
+
+        fun restartNotice(): SosRestartNotice
 
         @ApplicationScope
         fun scope(): CoroutineScope
@@ -132,7 +141,7 @@ class EmergencyShortcutReceiver : BroadcastReceiver() {
         val pending = goAsync()
         dependencies.scope().launch {
             try {
-                dependencies.controller().sync()
+                react(intent.action, dependencies.controller(), dependencies.restartNotice())
             } finally {
                 pending.finish()
             }
@@ -143,5 +152,25 @@ class EmergencyShortcutReceiver : BroadcastReceiver() {
         /** Only these two; anything else sent to the receiver is ignored. */
         fun handles(action: String?): Boolean =
             action == Intent.ACTION_BOOT_COMPLETED || action == Intent.ACTION_MY_PACKAGE_REPLACED
+
+        /**
+         * Everything the receiver does, as a plain function so that it can be tested without
+         * Android: put the pinned notification back if the user wants it, then look whether
+         * an SOS was active. Nothing is started and nothing is continued here.
+         */
+        internal suspend fun react(
+            action: String?,
+            controller: EmergencyNotificationController,
+            restartNotice: SosRestartNotice,
+        ) {
+            if (!handles(action)) return
+            controller.sync()
+            val reason = if (action == Intent.ACTION_BOOT_COMPLETED) {
+                RestartReason.PHONE_RESTARTED
+            } else {
+                RestartReason.APP_UPDATED
+            }
+            restartNotice.check(reason)
+        }
     }
 }

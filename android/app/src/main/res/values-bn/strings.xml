@@ -639,4 +639,14 @@
     <string name="sos_setup_offer_title">SOS কাজ করবে কি না দেখে নিন</string>
     <string name="sos_setup_offer_body">এখন আপনার একজন জরুরি পরিচিতি আছে। দরকার পড়ার আগেই SOS সেটআপ দেখায়, এই ফোন থেকে SOS কী করবে আর কী করবে না।</string>
     <string name="sos_setup_home_body">এই ফোন থেকে SOS যেমন কাজ করা উচিত তেমন করবে না। কী বদলাতে হবে তা SOS সেটআপ দেখায়।</string>
+
+    <!-- After a restart, and sign-out during an SOS (P014c3). -->
+    <string name="sos_restart_channel">রিস্টার্টের পরে SOS</string>
+    <string name="sos_restart_channel_description">ফোন রিস্টার্ট হওয়ার বা SafeRoute আপডেট হওয়ার সময় SOS সক্রিয় থাকলে দেখানো হয়।</string>
+    <string name="sos_restart_title_phone">ফোন রিস্টার্ট হওয়ার সময় SOS সক্রিয় ছিল</string>
+    <string name="sos_restart_title_update">SafeRoute আপডেট হওয়ার সময় SOS সক্রিয় ছিল</string>
+    <string name="sos_restart_text">এটি এখন চলছে না: আপনি চালিয়ে না যাওয়া পর্যন্ত অবস্থান রেকর্ড হচ্ছে না এবং না-পাঠানো সতর্কবার্তা আবার পাঠানোর চেষ্টা হচ্ছে না। SafeRoute কোনো জরুরি পরিষেবা নয়: 112 নম্বরে ফোন করুন।</string>
+    <string name="settings_sign_out_sos_title">একটি SOS সক্রিয় আছে</string>
+    <string name="settings_sign_out_sos_body">আগে সেটি শেষ করুন। সাইন আউট করলে এই ফোন থেকে আপনার জরুরি যোগাযোগ এবং এই SOS-এর রেকর্ড মুছে যায়, আর আপনার পরিচিতিদের আর জানানো যাবে না যে আপনি ঠিক আছেন।</string>
+    <string name="settings_sign_out_sos_open">SOS খুলুন</string>
 </resources>

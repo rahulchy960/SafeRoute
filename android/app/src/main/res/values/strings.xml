@@ -648,4 +648,14 @@
     <string name="sos_setup_offer_title">Check that an SOS would work</string>
     <string name="sos_setup_offer_body">You have an emergency contact now. SOS setup shows what an SOS from this phone would do, and what it would not, before you ever need one.</string>
     <string name="sos_setup_home_body">An SOS from this phone would not work as it should. SOS setup shows what to change.</string>
+
+    <!-- After a restart, and sign-out during an SOS (P014c3). -->
+    <string name="sos_restart_channel">SOS after a restart</string>
+    <string name="sos_restart_channel_description">Shown when an SOS was active while the phone restarted or SafeRoute was updated.</string>
+    <string name="sos_restart_title_phone">SOS was active when the phone restarted</string>
+    <string name="sos_restart_title_update">SOS was active when SafeRoute was updated</string>
+    <string name="sos_restart_text">It is not running now: no location is recorded and unsent alerts are not retried until you continue. SafeRoute is not an emergency service: call 112.</string>
+    <string name="settings_sign_out_sos_title">An SOS is active</string>
+    <string name="settings_sign_out_sos_body">End it first. Signing out deletes your emergency contacts and the record of this SOS from this phone, and your contacts could no longer be told that you are all right.</string>
+    <string name="settings_sign_out_sos_open">Open the SOS</string>
 </resources>

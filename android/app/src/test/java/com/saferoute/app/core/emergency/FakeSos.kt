@@ -334,6 +334,16 @@ object FakeSosDeviceModule {
 
     @Provides
     @Singleton
+    fun provideFakeRestartNotifier(): com.saferoute.app.feature.emergency.FakeRestartNotifier =
+        com.saferoute.app.feature.emergency.FakeRestartNotifier()
+
+    @Provides
+    fun provideRestartNotifier(
+        fake: com.saferoute.app.feature.emergency.FakeRestartNotifier,
+    ): com.saferoute.app.feature.emergency.RestartNotifier = fake
+
+    @Provides
+    @Singleton
     fun provideFakeTone(): FakeCountdownTone = FakeCountdownTone()
 
     @Provides

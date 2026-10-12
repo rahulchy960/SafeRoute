@@ -216,4 +216,7 @@ interface SosDeviceModule {
 
     @Binds
     fun bindRetrySignals(signals: AndroidRetrySignals): RetrySignals
+
+    @Binds
+    fun bindRestartNotifier(notifier: AndroidRestartNotifier): RestartNotifier
 }

@@ -78,6 +78,14 @@ class EmergencyActivity : ComponentActivity() {
             SafeRouteTheme {
                 val ui by viewModel.ui.collectAsStateWithLifecycle()
                 val smsNotice by viewModel.smsNotice.collectAsStateWithLifecycle()
+                val safeRequested by viewModel.safeRequested.collectAsStateWithLifecycle()
+                // "I'm safe" from a notification: the same path as the button, unlock first.
+                LaunchedEffect(safeRequested) {
+                    if (safeRequested) {
+                        viewModel.onSafeRequestHandled()
+                        onSafeTapped()
+                    }
+                }
                 // Survives a rotation: the dialog does not fall back to its first state.
                 var dialerMissing by rememberSaveable { mutableStateOf(false) }
                 val call112 = { if (!openEmergencyDialer(this)) dialerMissing = true }

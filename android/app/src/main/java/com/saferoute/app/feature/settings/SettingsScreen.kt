@@ -60,7 +60,9 @@ import com.saferoute.app.core.designsystem.preview.SafeRoutePreviews
 import com.saferoute.app.core.designsystem.theme.SafeRouteTheme
 import com.saferoute.app.core.session.AccountSummary
 import com.saferoute.app.core.session.maskPhone
+import com.saferoute.app.feature.emergency.EmergencyShortcut
 import com.saferoute.app.feature.emergency.NotificationBlock
+import com.saferoute.app.feature.emergency.SosOpenMode
 
 /** Material's opacity for content that can't be used yet. */
 private const val DisabledAlpha = 0.38f
@@ -78,6 +80,7 @@ fun SettingsRoute(
     shortcutsViewModel: EmergencyShortcutsViewModel = hiltViewModel(),
 ) {
     val account by viewModel.account.collectAsStateWithLifecycle()
+    val sosActive by viewModel.sosActive.collectAsStateWithLifecycle()
     val tileNotice by shortcutsViewModel.tileNotice.collectAsStateWithLifecycle()
     val notification by shortcutsViewModel.notification.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -104,6 +107,8 @@ fun SettingsRoute(
     // Back from system settings, the answer may be different.
     LifecycleResumeEffect(Unit) {
         shortcutsViewModel.refresh()
+        // Whether an SOS is going on, which decides what "Sign out" does.
+        viewModel.onResume()
         onPauseOrDispose { }
     }
 
@@ -117,6 +122,8 @@ fun SettingsRoute(
         account = account,
         onRetryAccount = viewModel::load,
         onSignOut = viewModel::signOut,
+        signOutBlocked = sosActive,
+        onOpenSos = { context.startActivity(EmergencyShortcut.modeIntent(context, SosOpenMode.OPEN)) },
         tileNotice = tileNotice,
         onAddTile = shortcutsViewModel::onAddTileClick,
         onTileNoticeDismiss = shortcutsViewModel::onTileNoticeDismiss,
@@ -179,6 +186,8 @@ fun SettingsScreen(
     account: AccountUiState? = null,
     onRetryAccount: () -> Unit = {},
     onSignOut: () -> Unit = {},
+    signOutBlocked: Boolean = false,
+    onOpenSos: () -> Unit = {},
     tileNotice: TileNotice? = null,
     onAddTile: () -> Unit = {},
     onTileNoticeDismiss: () -> Unit = {},
@@ -229,7 +238,13 @@ fun SettingsScreen(
                 .verticalScroll(rememberScrollState()),
         ) {
             if (account != null) {
-                AccountSection(account = account, onRetry = onRetryAccount, onSignOut = onSignOut)
+                AccountSection(
+                    account = account,
+                    onRetry = onRetryAccount,
+                    onSignOut = onSignOut,
+                    signOutBlocked = signOutBlocked,
+                    onOpenSos = onOpenSos,
+                )
             }
 
             // Not a button yet. Faded, marked disabled for TalkBack, and it says "coming soon"
@@ -497,8 +512,15 @@ private fun TileNoticeDialog(notice: TileNotice, onDismiss: () -> Unit) {
  * It stays available when the details can't be loaded.
  */
 @Composable
-private fun AccountSection(account: AccountUiState, onRetry: () -> Unit, onSignOut: () -> Unit) {
+private fun AccountSection(
+    account: AccountUiState,
+    onRetry: () -> Unit,
+    onSignOut: () -> Unit,
+    signOutBlocked: Boolean = false,
+    onOpenSos: () -> Unit = {},
+) {
     var confirmingSignOut by rememberSaveable { mutableStateOf(false) }
+    var explainingSos by rememberSaveable { mutableStateOf(false) }
 
     SectionTitle(text = stringResource(R.string.settings_account_title))
     when (account) {
@@ -527,7 +549,8 @@ private fun AccountSection(account: AccountUiState, onRetry: () -> Unit, onSignO
         )
     }
     OutlinedButton(
-        onClick = { confirmingSignOut = true },
+        // While an SOS is going on, signing out is refused, with the reason and the way to it.
+        onClick = { if (signOutBlocked) explainingSos = true else confirmingSignOut = true },
         modifier = Modifier.padding(horizontal = SafeRouteTheme.spacing.md),
     ) {
         Text(text = stringResource(R.string.settings_sign_out))
@@ -558,6 +581,34 @@ private fun AccountSection(account: AccountUiState, onRetry: () -> Unit, onSignO
             },
         )
         HorizontalDivider()
+    }
+
+    // The SOS began after the confirmation was opened: the refusal takes its place.
+    if (signOutBlocked && confirmingSignOut) {
+        confirmingSignOut = false
+        explainingSos = true
+    }
+    if (explainingSos) {
+        AlertDialog(
+            onDismissRequest = { explainingSos = false },
+            title = { Text(text = stringResource(R.string.settings_sign_out_sos_title)) },
+            text = { Text(text = stringResource(R.string.settings_sign_out_sos_body)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        explainingSos = false
+                        onOpenSos()
+                    },
+                ) {
+                    Text(text = stringResource(R.string.settings_sign_out_sos_open))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { explainingSos = false }) {
+                    Text(text = stringResource(R.string.emergency_dialog_close))
+                }
+            },
+        )
     }
 
     if (confirmingSignOut) {
