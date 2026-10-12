@@ -1,0 +1,134 @@
+{
+  "$schema": "../../tools/diagrams/diagram.schema.json",
+  "title": "Who a build may text by itself",
+  "subtitle": "A debug build texts only the test numbers it was built with; a release build is unchanged (P014b6, ADR 0027)",
+  "direction": "TB",
+  "layout": {
+    "nodeWidth": 250,
+    "rankGap": 46
+  },
+  "groups": [
+    {
+      "id": "build",
+      "label": "When the app is built"
+    },
+    {
+      "id": "sos",
+      "label": "When an SOS countdown finishes"
+    },
+    {
+      "id": "result",
+      "label": "What happens to each contact"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "property",
+      "label": "saferoute.debugSmsAllowlist in the user-level gradle.properties. Never in the repository",
+      "role": "security",
+      "group": "build",
+      "rank": 1
+    },
+    {
+      "id": "debug",
+      "label": "Debug build: the list is a BuildConfig field. Limit = the list",
+      "role": "app",
+      "group": "build",
+      "rank": 2
+    },
+    {
+      "id": "release",
+      "label": "Release build: no field, no banner. No limit",
+      "role": "app",
+      "group": "build",
+      "rank": 2
+    },
+    {
+      "id": "banner",
+      "label": "Debug banner on the SOS dialog, the countdown and the active screen: a count, never a number",
+      "role": "app",
+      "group": "sos",
+      "rank": 3
+    },
+    {
+      "id": "dispatch",
+      "label": "SosDispatch: can the app send by itself, and is any waiting contact allowed?",
+      "role": "service",
+      "group": "sos",
+      "rank": 4
+    },
+    {
+      "id": "allowed",
+      "label": "On the list (or no limit): SMS sent by the app",
+      "role": "service",
+      "group": "result",
+      "rank": 5
+    },
+    {
+      "id": "skipped",
+      "label": "Not on the list: not texted. Recorded SKIPPED, debug_not_allowlisted",
+      "role": "data",
+      "group": "result",
+      "rank": 5
+    },
+    {
+      "id": "composer",
+      "label": "No list, or nobody on it, or no SMS permission: the SMS app opens for every contact. Nothing is sent until Send is pressed",
+      "role": "external",
+      "group": "result",
+      "rank": 5
+    },
+    {
+      "id": "gateway",
+      "label": "Second lock: the SMS gateway refuses a number outside the list",
+      "role": "security",
+      "group": "result",
+      "rank": 6
+    }
+  ],
+  "edges": [
+    {
+      "from": "property",
+      "to": "debug",
+      "label": "read at build time"
+    },
+    {
+      "from": "property",
+      "to": "release",
+      "label": "ignored"
+    },
+    {
+      "from": "debug",
+      "to": "banner"
+    },
+    {
+      "from": "banner",
+      "to": "dispatch",
+      "label": "countdown finished"
+    },
+    {
+      "from": "release",
+      "to": "dispatch",
+      "label": "every contact allowed"
+    },
+    {
+      "from": "dispatch",
+      "to": "allowed",
+      "label": "allowed"
+    },
+    {
+      "from": "dispatch",
+      "to": "skipped",
+      "label": "others, debug only"
+    },
+    {
+      "from": "dispatch",
+      "to": "composer",
+      "label": "none allowed"
+    },
+    {
+      "from": "allowed",
+      "to": "gateway"
+    }
+  ]
+}

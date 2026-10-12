@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1838" height="1147" viewBox="0 0 1838 1147" font-family="Helvetica, Arial, sans-serif">
+<title>Who a build may text by itself</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#495057"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="40" y="62" font-size="24" font-weight="700" fill="#1e1e1e">Who a build may text by itself</text>
+<text x="40" y="86" font-size="14" fill="#495057">A debug build texts only the test numbers it was built with; a release build is unchanged (P014b6, ADR 0027)</text>
+<rect x="40" y="114" width="562" height="947" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="54" y="135" font-size="14" font-weight="700" fill="#495057">When the app is built</text>
+<rect x="638" y="114" width="286" height="947" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="652" y="135" font-size="14" font-weight="700" fill="#495057">When an SOS countdown finishes</text>
+<rect x="960" y="114" width="838" height="947" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="974" y="135" font-size="14" font-weight="700" fill="#495057">What happens to each contact</text>
+<line x1="321" y1="316" x2="183" y2="362" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="321" y1="316" x2="459" y2="372.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="183" y1="449" x2="781" y2="495" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="781" y1="603" x2="781" y2="649" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="459" y1="438.5" x2="781" y2="649" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="781" y1="736" x2="1103" y2="813" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="781" y1="736" x2="1379" y2="802.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="781" y1="736" x2="1655" y2="782" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1103" y1="879" x2="1103" y2="956" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="196" y="208" width="250" height="108" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="321" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="321" y="236.4">saferoute.debugSmsAllowlist</tspan>
+<tspan x="321" y="257.2">in the user-level</tspan>
+<tspan x="321" y="278">gradle.properties. Never in the</tspan>
+<tspan x="321" y="298.8">repository</tspan>
+</text>
+<rect x="58" y="362" width="250" height="87" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="183" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="183" y="390.3">Debug build: the list is a</tspan>
+<tspan x="183" y="411.1">BuildConfig field. Limit = the</tspan>
+<tspan x="183" y="431.9">list</tspan>
+</text>
+<rect x="334" y="372.5" width="250" height="66" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="459" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="459" y="400.7">Release build: no field, no</tspan>
+<tspan x="459" y="421.5">banner. No limit</tspan>
+</text>
+<rect x="656" y="495" width="250" height="108" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="781" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="781" y="523.4">Debug banner on the SOS</tspan>
+<tspan x="781" y="544.2">dialog, the countdown and the</tspan>
+<tspan x="781" y="565">active screen: a count, never</tspan>
+<tspan x="781" y="585.8">a number</tspan>
+</text>
+<rect x="656" y="649" width="250" height="87" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="781" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="781" y="677.3">SosDispatch: can the app</tspan>
+<tspan x="781" y="698.1">send by itself, and is any</tspan>
+<tspan x="781" y="718.9">waiting contact allowed?</tspan>
+</text>
+<rect x="978" y="813" width="250" height="66" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="1103" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1103" y="841.2">On the list (or no limit): SMS</tspan>
+<tspan x="1103" y="862">sent by the app</tspan>
+</text>
+<rect x="1254" y="802.5" width="250" height="87" rx="10" fill="#ffd8a8" stroke="#e8590c" stroke-width="2"/>
+<text x="1379" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1379" y="830.8">Not on the list: not texted.</tspan>
+<tspan x="1379" y="851.6">Recorded SKIPPED,</tspan>
+<tspan x="1379" y="872.4">debug_not_allowlisted</tspan>
+</text>
+<rect x="1530" y="782" width="250" height="128" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="1655" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1655" y="810">No list, or nobody on it, or no</tspan>
+<tspan x="1655" y="830.8">SMS permission: the SMS</tspan>
+<tspan x="1655" y="851.6">app opens for every contact.</tspan>
+<tspan x="1655" y="872.4">Nothing is sent until Send is</tspan>
+<tspan x="1655" y="893.2">pressed</tspan>
+</text>
+<rect x="978" y="956" width="250" height="87" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="1103" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1103" y="984.3">Second lock: the SMS</tspan>
+<tspan x="1103" y="1005.1">gateway refuses a number</tspan>
+<tspan x="1103" y="1025.9">outside the list</tspan>
+</text>
+<rect x="194.8" y="328" width="114.4" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="252" y="343.5" font-size="13" fill="#1e1e1e" text-anchor="middle">read at build time</text>
+<rect x="362.2" y="333.3" width="55.7" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="390" y="348.8" font-size="13" fill="#1e1e1e" text-anchor="middle">ignored</text>
+<rect x="717.7" y="615" width="126.7" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="781" y="630.5" font-size="13" fill="#1e1e1e" text-anchor="middle">countdown finished</text>
+<rect x="549" y="532.8" width="142" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="620" y="548.3" font-size="13" fill="#1e1e1e" text-anchor="middle">every contact allowed</text>
+<rect x="912.5" y="763.5" width="59.1" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="942" y="779" font-size="13" fill="#1e1e1e" text-anchor="middle">allowed</text>
+<rect x="1020.1" y="758.3" width="119.9" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="1080" y="773.8" font-size="13" fill="#1e1e1e" text-anchor="middle">others, debug only</text>
+<rect x="1172.6" y="748" width="90.8" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="1218" y="763.5" font-size="13" fill="#1e1e1e" text-anchor="middle">none allowed</text>
+<rect x="40" y="1082" width="16" height="16" rx="3" fill="#a5d8ff" stroke="#1971c2" stroke-width="1.5"/>
+<text x="62" y="1095" font-size="13" fill="#495057">App / UI</text>
+<rect x="134.8" y="1082" width="16" height="16" rx="3" fill="#b2f2bb" stroke="#2f9e44" stroke-width="1.5"/>
+<text x="156.8" y="1095" font-size="13" fill="#495057">Service</text>
+<rect x="228.3" y="1082" width="16" height="16" rx="3" fill="#ffd8a8" stroke="#e8590c" stroke-width="1.5"/>
+<text x="250.3" y="1095" font-size="13" fill="#495057">Data</text>
+<rect x="303.1" y="1082" width="16" height="16" rx="3" fill="#ffc9c9" stroke="#e03131" stroke-width="1.5"/>
+<text x="325.1" y="1095" font-size="13" fill="#495057">Security / emergency</text>
+<rect x="476.7" y="1082" width="16" height="16" rx="3" fill="#e9ecef" stroke="#495057" stroke-width="1.5"/>
+<text x="498.7" y="1095" font-size="13" fill="#495057">External</text>
+</svg>
