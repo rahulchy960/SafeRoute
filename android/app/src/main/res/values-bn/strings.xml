@@ -78,6 +78,9 @@
     <string name="settings_language_supporting">English / বাংলা · শীঘ্রই আসছে</string>
     <string name="sos_tile_label">SafeRoute SOS</string>
     <string name="sos_tile_subtitle">SOS শুরু করতে ট্যাপ করুন</string>
+    <string name="sos_widget_label">SafeRoute SOS</string>
+    <string name="sos_widget_description">SOS শুরু করুন</string>
+    <string name="sos_widget_picker_description">একটি বোতাম, যা SOS কাউন্টডাউন শুরু করে। বাতিল করার জন্য আপনার হাতে 5 সেকেন্ড থাকে।</string>
     <string name="settings_shortcuts_title">জরুরি শর্টকাট</string>
     <string name="settings_tile_add_title">SOS টাইল যোগ করুন</string>
     <string name="settings_tile_add_supporting">“SafeRoute SOS” কুইক সেটিংসে রাখে, অর্থাৎ স্ক্রিনের উপর থেকে নিচে টানলে যে প্যানেল খোলে। এতে ট্যাপ করলে SOS কাউন্টডাউন শুরু হয়, ফোন লক থাকলেও।</string>

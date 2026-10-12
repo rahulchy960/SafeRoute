@@ -183,6 +183,27 @@
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
             </intent-filter>
         </receiver>
+
+        <!--
+            The home-screen widget "SafeRoute SOS" (P014c1): one button that starts the SOS
+            countdown. A widget's provider is a broadcast receiver that Android calls when
+            the widget is put on the home screen; the meta-data names the file that describes
+            its size and layout. It needs no permission.
+            exported=false: only the system sends APPWIDGET_UPDATE to it. It starts no
+            activity and no service itself; the tap on the widget does, through a
+            PendingIntent, exactly like the tile.
+        -->
+        <receiver
+            android:name=".feature.emergency.SosWidgetProvider"
+            android:exported="false"
+            android:label="@string/sos_widget_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/emergency_widget_info" />
+        </receiver>
     </application>
 
 </manifest>

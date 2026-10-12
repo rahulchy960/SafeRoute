@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<!-- The widget's card: the app's surface colour, so that the text on it can always be read. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/emergency_widget_surface" />
+    <corners android:radius="24dp" />
+</shape>

@@ -81,6 +81,9 @@
     <string name="settings_language_supporting">English / বাংলা · Coming soon</string>
     <string name="sos_tile_label">SafeRoute SOS</string>
     <string name="sos_tile_subtitle">Tap to start SOS</string>
+    <string name="sos_widget_label">SafeRoute SOS</string>
+    <string name="sos_widget_description">Start SOS</string>
+    <string name="sos_widget_picker_description">One button that starts the SOS countdown. You have 5 seconds to cancel.</string>
     <string name="settings_shortcuts_title">Emergency shortcuts</string>
     <string name="settings_tile_add_title">Add the SOS tile</string>
     <string name="settings_tile_add_supporting">Puts “SafeRoute SOS” in Quick Settings, the panel you pull down from the top of the screen. Tapping it starts the SOS countdown, also when the phone is locked.</string>
