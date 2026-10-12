@@ -99,7 +99,34 @@ class ApiContactsRepositoryTest {
             dao,
             config,
             preferences,
+            FIXED_CLOCK,
         )
+    }
+
+    // --- when the list was last fetched (P014c2a) ---------------------------------------
+
+    @Test
+    fun `a fetched list notes the time, and a failed fetch leaves the time as it was`() = runTest {
+        assertEquals("never fetched", 0L, preferences.contactsSyncedAt.value)
+
+        api.on(LIST, ok(listJson(contactJson())))
+        assertTrue(repository.refresh() is ContactsResult.Ok)
+        assertEquals(FIXED_CLOCK.millis(), preferences.contactsSyncedAt.value)
+
+        preferences.setContactsSyncedAt(12_345L)
+        api.on(LIST, problemResponse(503, "db_unavailable"))
+        assertTrue(repository.refresh() is ContactsResult.Failed)
+        assertEquals("the copy and its time are unchanged", 12_345L, preferences.contactsSyncedAt.value)
+    }
+
+    @Test
+    fun `emptying the copy forgets when it was fetched`() = runTest {
+        api.on(LIST, ok(listJson(contactJson())))
+        repository.refresh()
+
+        repository.clearLocal()
+
+        assertEquals(0L, preferences.contactsSyncedAt.value)
     }
 
     @After

@@ -36,6 +36,15 @@ interface ContactsPreferences {
     val alertsNoticeVersion: Flow<String?>
 
     suspend fun setAlertsNoticeVersion(version: String?)
+
+    /**
+     * When the contact list was last fetched from the server and written to this phone, in
+     * milliseconds since 1970 (UTC); 0 when never, or when the copy was emptied since. A
+     * point in time, nothing about a person. The "SOS setup" screen shows how old the copy is.
+     */
+    val contactsSyncedAt: Flow<Long>
+
+    suspend fun setContactsSyncedAt(epochMillis: Long)
 }
 
 /**
@@ -64,8 +73,18 @@ class DataStoreContactsPreferences @Inject constructor(
         dataStore.edit { if (version == null) it.remove(ALERTS_NOTICE_VERSION) else it[ALERTS_NOTICE_VERSION] = version }
     }
 
+    override val contactsSyncedAt: Flow<Long> = dataStore.data
+        // An unreadable file reads as "never": the screen then offers Refresh.
+        .catch { e -> if (e is IOException) emit(emptyPreferences()) else throw e }
+        .map { it[CONTACTS_SYNCED_AT] ?: 0L }
+
+    override suspend fun setContactsSyncedAt(epochMillis: Long) {
+        dataStore.edit { it[CONTACTS_SYNCED_AT] = epochMillis }
+    }
+
     private companion object {
         val SNOOZED_UNTIL = longPreferencesKey("contacts_card_snoozed_until")
         val ALERTS_NOTICE_VERSION = stringPreferencesKey("alerts_notice_version_agreed")
+        val CONTACTS_SYNCED_AT = longPreferencesKey("contacts_synced_at")
     }
 }

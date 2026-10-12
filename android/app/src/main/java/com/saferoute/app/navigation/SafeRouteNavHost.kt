@@ -15,6 +15,7 @@ import com.saferoute.app.feature.contacts.AddContactRoute
 import com.saferoute.app.feature.contacts.ContactDetailRoute
 import com.saferoute.app.feature.contacts.ContactsRoute
 import com.saferoute.app.feature.contacts.InviteRoute
+import com.saferoute.app.feature.emergency.SosSetupRoute
 import com.saferoute.app.feature.home.HomeRoute
 import com.saferoute.app.feature.search.SearchRoute
 import com.saferoute.app.feature.settings.SettingsRoute
@@ -88,6 +89,14 @@ fun SafeRouteNavHost(
                 onOpenContact = { id ->
                     navController.navigate(ContactDetailDestination(id)) { launchSingleTop = true }
                 },
+                onOpenSetup = { navController.navigate(SosSetupDestination) { launchSingleTop = true } },
+            )
+        }
+        composable<SosSetupDestination> {
+            SosSetupRoute(
+                onBack = { navController.popBackStack() },
+                // The notice is shown by "Add contact" while it is still owed.
+                onReadNotice = { navController.navigate(AddContactDestination) { launchSingleTop = true } },
             )
         }
         composable<AddContactDestination> {

@@ -148,6 +148,12 @@ class FakeContactsPreferences(snoozedUntil: Long = 0L) : ContactsPreferences {
     override suspend fun setAlertsNoticeVersion(version: String?) {
         alertsNoticeVersion.value = version
     }
+
+    override val contactsSyncedAt = MutableStateFlow(0L)
+
+    override suspend fun setContactsSyncedAt(epochMillis: Long) {
+        contactsSyncedAt.value = epochMillis
+    }
 }
 
 /**

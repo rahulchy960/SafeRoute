@@ -14,6 +14,7 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -470,6 +471,27 @@ class SosFlowTest {
         compose.waitForIdle()
         // It leads to Emergency contacts, where the notice is; no emergency screen opened.
         compose.onNodeWithText(string(R.string.contacts_title)).assertIsDisplayed()
+        assertNull(nextStarted())
+        assertNull(runBlocking { engine.current() })
+    }
+
+    @Test
+    fun `emergency contacts leads to the SOS setup checklist, which says that alerts are not set up`() {
+        policy.open = false
+        compose.onNodeWithContentDescription(string(R.string.sos_control_description)).performClick()
+        compose.onNodeWithText(string(R.string.sos_arm_set_up)).performScrollTo().performClick()
+        compose.waitForIdle()
+
+        compose.onNodeWithText(string(R.string.contacts_open_setup)).performScrollTo().performClick()
+        compose.waitForIdle()
+
+        compose.onNodeWithText(string(R.string.sos_setup_title)).assertIsDisplayed()
+        waitUntil("the checklist was read") {
+            compose.waitForIdle()
+            compose.onAllNodesWithTag(SosSetupSummaryTag).fetchSemanticsNodes().isNotEmpty()
+        }
+        // Opening the checklist starts nothing and fetches nothing.
+        compose.onNodeWithText(string(R.string.sos_setup_alerts_fix)).assertExists()
         assertNull(nextStarted())
         assertNull(runBlocking { engine.current() })
     }
