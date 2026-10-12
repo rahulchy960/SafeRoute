@@ -124,7 +124,7 @@ else.
   P016).
 - Troubleshooting: "the second phone received nothing", ten causes in the order to check.
 
-**Wiring**
+**Wiring** (six files)
 
 - `CLAUDE.md`: the rule in "SOS, live-location and contacts rules", four supporting rules
   (a status comes from evidence; a named test must exist; scripts keep their numbers; no
@@ -144,7 +144,7 @@ No diagram needed (docs only; no flow, state machine, schema or infrastructure c
 | Check | Result |
 | --- | --- |
 | Every test named in the matrix exists under that name | Pass: 269 names resolved against the test sources |
-| markdownlint (132 files) | Pass, 0 errors (four `MD036` findings fixed on the way) |
+| markdownlint (133 files) | Pass, 0 errors (seven `MD036` findings fixed on the way, three of them in this log after its first commit) |
 | Relative links and anchors in the six changed Markdown files | Pass: 184 checked, 0 broken. External links: none in these files |
 | gitleaks on the branch's commits | Pass: no leaks |
 | `git diff --stat main...HEAD` | Docs, `CLAUDE.md`, `README.md` and the PR template only |
@@ -153,7 +153,7 @@ No diagram needed (docs only; no flow, state machine, schema or infrastructure c
 No Android, backend or contract gate applies: nothing under `android/`, `backend/` or
 `contracts/` changed. `repo-checks` runs on the pull request.
 
-**The matrix (statuses on 2026-10-12)**
+### The matrix (statuses on 2026-10-12)
 
 | ID | Scenario | Status |
 | --- | --- | --- |
@@ -183,7 +183,7 @@ No Android, backend or contract gate applies: nothing under `android/`, `backend
 
 No row is "Manual pass", "Fail" or "Not started".
 
-**Known gaps, in short**
+### Known gaps, in short
 
 - Not built: the server half of an SOS (P015), the live link (P016), an SOS from the tile,
   the widget or the notification, the notice after a restart, and a warning before an
@@ -236,8 +236,9 @@ No ADR: nothing hard to reverse.
 
 ## 9. Known issues & risks
 
-- **About 1,100 changed lines**, above the usual size for one pull request. Nearly half is
-  the Evidence section, which is generated; the scripts M0 to M16 were moved, not written.
+- **About 1,600 changed lines**, above the usual size for one pull request. About 300 are
+  the Evidence section, which is generated, about 170 are the old matrix removed, and the
+  scripts M0 to M16 were moved, not written.
 - The statuses depend on `android-ci` staying green. A red run on `main` makes every
   "Automated pass" untrue until it is green again; nothing updates the document by itself.
 - The Evidence section names tests at commit `4334232`. A renamed test makes it stale; the
