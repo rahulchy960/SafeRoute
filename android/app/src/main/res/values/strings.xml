@@ -432,11 +432,11 @@
     <string name="contacts_error_invalid">Check the name and the number.</string>
     <string name="contacts_error_not_found">This contact no longer exists.</string>
 
-    <!-- The sos_alerts notice. Mirrored in docs/legal/sos-alerts-notice-v3.md (ContactsNoticeDocumentTest). Changing it means changing SOS_ALERTS_NOTICE_VERSION. DRAFT until a lawyer has reviewed it. -->
+    <!-- The sos_alerts notice. Mirrored in docs/legal/sos-alerts-notice-v4.md (ContactsNoticeDocumentTest). Changing it means changing SOS_ALERTS_NOTICE_VERSION. DRAFT until a lawyer has reviewed it. -->
     <string name="contacts_notice_title">How SOS alerts work</string>
     <string name="contacts_notice_p1">You are about to save other people\'s phone numbers in SafeRoute. Add only people who know you and whom you have a good reason to add.</string>
     <string name="contacts_notice_p2">You send each one an invite from your own phone. It has a link with which they can opt out. Someone who opted out is never alerted.</string>
-    <string name="contacts_notice_p3">When you start an SOS, your phone sends each of them an SMS from your own SIM. It says that you need help and gives a map link to where your phone is, how exact and how old that position is, and your battery level. One more SMS may follow with a better position, and one if you say you are safe.</string>
+    <string name="contacts_notice_p3">When you start an SOS, your phone sends each of them an SMS from your own SIM. It says that you need help, with the name you entered for alerts if you entered one (that name is kept on this phone only), and gives a map link to where your phone is, how exact and how old that position is, and your battery level. One more SMS may follow with a better position, and one if you say you are safe.</string>
     <string name="contacts_notice_p4">Your mobile plan may charge you for these SMS. Nothing is sent unless you start an SOS. You can start one in the app, or with a single tap on a SafeRoute shortcut outside the app, such as its Quick Settings tile or its pinned notification, also when the phone is locked; a 5-second countdown that you can cancel always comes first. If the app is not allowed to send SMS, it opens your SMS app with the message and you press Send.</string>
     <string name="contacts_notice_p5">During an SOS the app also records where your phone is. That record stays on this phone for up to 30 days. SafeRoute\'s server receives neither your alerts nor your position.</string>
     <string name="contacts_notice_p6">SafeRoute is not an emergency service. A message can arrive late or not at all. In an emergency, call 112.</string>
@@ -623,10 +623,25 @@
     <string name="sos_setup_battery_vivo">Vivo: allow SafeRoute to autostart and to run in the background.</string>
     <string name="sos_setup_battery_oppo">Oppo, Realme: allow Auto-launch and background activity for SafeRoute.</string>
     <string name="sos_setup_battery_note">The names differ between phones and versions. These are starting points; they have not been checked on every phone.</string>
-    <string name="sos_setup_facts_title">How an SOS behaves</string>
-    <string name="sos_setup_fact_countdown">Countdown: 5 seconds, with a vibration each second and no sound.</string>
-    <string name="sos_setup_fact_language_en">The alert is written in the language SafeRoute is shown in: English.</string>
-    <string name="sos_setup_fact_language_bn">The alert is written in the language SafeRoute is shown in: Bengali.</string>
-    <string name="sos_setup_fact_name">Your name is not in the alert yet. It says that someone who listed the person as an emergency contact needs help, and it comes from your phone number.</string>
+    <string name="sos_setup_settings_title">Your alert settings</string>
+    <string name="sos_setup_name_title">Name in the alert</string>
+    <string name="sos_setup_name_none">No name set. The alert says that someone who listed the person as an emergency contact needs help, and it comes from your phone number.</string>
+    <string name="sos_setup_name_set">The alert begins: “%1$s needs help.”</string>
+    <string name="sos_setup_name_explain">Your contacts see this name in the SMS. It is kept on this phone only, and it is erased when you stop SOS alerts or sign out.</string>
+    <string name="sos_setup_name_edit">Set a name</string>
+    <string name="sos_setup_name_change">Change the name</string>
+    <string name="sos_setup_name_field">Name (up to %1$d characters)</string>
+    <string name="sos_setup_name_save">Save</string>
+    <string name="sos_setup_name_remove">Remove the name</string>
+    <string name="sos_setup_language_title">Language of the alert</string>
+    <string name="sos_setup_language_explain">Choose the language your contacts understand best.</string>
+    <string name="sos_setup_language_app_en">Same as SafeRoute (now English)</string>
+    <string name="sos_setup_language_app_bn">Same as SafeRoute (now Bengali)</string>
+    <string name="sos_setup_language_en">English</string>
+    <string name="sos_setup_language_bn">Bengali (বাংলা)</string>
+    <string name="sos_setup_sound_title">Sound during the countdown</string>
+    <string name="sos_setup_sound_off">Off. The countdown vibrates and makes no sound.</string>
+    <string name="sos_setup_sound_on">On. A short tone each second, at your alarm volume, besides the vibration.</string>
+    <string name="sos_setup_sound_warning">A phone that makes a noise can put you at risk. Leave this off if a sound could give you away.</string>
     <string name="sos_setup_practice_explain">Try the whole flow. A practice run sends, stores and records nothing.</string>
 </resources>

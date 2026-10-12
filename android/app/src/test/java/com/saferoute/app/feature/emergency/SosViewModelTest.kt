@@ -46,7 +46,7 @@ class SosViewModelTest {
         block(SosRig(this).also { it.policy.open = true })
     }
 
-    private fun SosRig.viewModel() = SosViewModel(runner, trail, gate, haptics, dispatch, StartSos(policy, runner), notices, appScope)
+    private fun SosRig.viewModel() = SosViewModel(runner, trail, gate, haptics, dispatch, StartSos(policy, runner), notices, alertSettings, tone, appScope)
 
     private fun SosRig.open(
         mode: SosOpenMode,
@@ -311,6 +311,19 @@ class SosViewModelTest {
 
         assertTrue((viewModel.ui.value as SosUi.Active).confirmingSafe)
         assertEquals(SosState.ACTIVE, rig.stored())
+    }
+
+    @Test
+    fun `a practice run sounds like the real one when the sound is on, and is silent otherwise`() = test { rig ->
+        rig.open(SosOpenMode.PRACTICE)
+        rig.advance(5_000)
+        assertEquals(0, rig.tone.played)
+
+        rig.alertSettings.setCountdownSound(true)
+        rig.open(SosOpenMode.PRACTICE)
+        rig.advance(5_000)
+        assertEquals(5, rig.tone.played)
+        assertEquals(emptyList<SosRecord>(), rig.store.all)
     }
 
     @Test

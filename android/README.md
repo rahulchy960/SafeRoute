@@ -739,7 +739,7 @@ the Home sheet (shown while the phone knows of no contact; "Not now" hides it fo
   for the SMS app, which is not a permission.
 - **Consent just in time.** The server is asked whether `sos_alerts` is granted when "Add a
   contact" opens, never earlier. The notice text is the `contacts_notice_*` strings, mirrored in
-  [`docs/legal/sos-alerts-notice-v3.md`](../docs/legal/sos-alerts-notice-v3.md)
+  [`docs/legal/sos-alerts-notice-v4.md`](../docs/legal/sos-alerts-notice-v4.md)
   (`ContactsNoticeDocumentTest`); changing it means changing `SOS_ALERTS_NOTICE_VERSION`.
 - **Nothing typed or picked is saved or logged.** The form, the contact and the invite link
   live in the ViewModels' memory; their state classes hide them in `toString()`. A navigation

@@ -6,11 +6,14 @@ import androidx.room.Room
 import com.saferoute.app.core.data.ActiveSosContacts
 import com.saferoute.app.core.data.RoomActiveSosContacts
 import com.saferoute.app.core.data.RoomSosActionStore
+import com.saferoute.app.core.data.RoomSosSettingsStore
 import com.saferoute.app.core.data.RoomSosStore
 import com.saferoute.app.core.data.local.ContactDao
 import com.saferoute.app.core.data.local.SafeRouteDatabase
 import com.saferoute.app.core.data.local.SosDao
+import com.saferoute.app.core.data.local.SosSettingsDao
 import com.saferoute.app.core.emergency.SosActionStore
+import com.saferoute.app.core.emergency.SosSettingsStore
 import com.saferoute.app.core.emergency.SosStore
 import com.saferoute.app.core.emergency.UuidV7Generator
 import dagger.Binds
@@ -56,12 +59,18 @@ interface DataModule {
     @Binds
     fun bindSosActionStore(store: RoomSosActionStore): SosActionStore
 
+    @Binds
+    fun bindSosSettingsStore(store: RoomSosSettingsStore): SosSettingsStore
+
     companion object {
         @Provides
         fun provideContactDao(database: SafeRouteDatabase): ContactDao = database.contactDao()
 
         @Provides
         fun provideSosDao(database: SafeRouteDatabase): SosDao = database.sosDao()
+
+        @Provides
+        fun provideSosSettingsDao(database: SafeRouteDatabase): SosSettingsDao = database.sosSettingsDao()
 
         @Provides
         fun provideUuidV7Generator(clock: Clock): UuidV7Generator = UuidV7Generator(clock)

@@ -4,6 +4,7 @@ package com.saferoute.app.feature.emergency
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.saferoute.app.core.di.ApplicationScope
+import com.saferoute.app.core.emergency.CountdownTone
 import com.saferoute.app.core.emergency.SOS_COUNTDOWN
 import com.saferoute.app.core.emergency.SmsLimitNotice
 import com.saferoute.app.core.emergency.SmsLimitNotices
@@ -15,6 +16,7 @@ import com.saferoute.app.core.emergency.SosLocationReport
 import com.saferoute.app.core.emergency.SosRecovery
 import com.saferoute.app.core.emergency.SosRunState
 import com.saferoute.app.core.emergency.SosRunner
+import com.saferoute.app.core.emergency.SosSettingsStore
 import com.saferoute.app.core.emergency.SosTrail
 import com.saferoute.app.core.emergency.StartSos
 import com.saferoute.app.core.emergency.StartSosResult
@@ -136,6 +138,8 @@ class SosViewModel @Inject constructor(
     private val dispatch: SosDispatch,
     private val startSos: StartSos,
     private val notices: SmsLimitNotices,
+    private val settings: SosSettingsStore,
+    private val tone: CountdownTone,
     @param:ApplicationScope private val appScope: CoroutineScope,
 ) : ViewModel() {
 
@@ -294,9 +298,12 @@ class SosViewModel @Inject constructor(
         if (runner.state.value != SosRunState.Idle) return
         practiceTimer?.cancel()
         practiceTimer = viewModelScope.launch {
+            // A practice run sounds like the real one, so that the setting can be tried.
+            val sound = runCatching { settings.current().countdownSound }.getOrDefault(false)
             for (seconds in SOS_COUNTDOWN.seconds.toInt() downTo 1) {
                 local.value = local.value.copy(practice = Practice.COUNTDOWN, practiceSeconds = seconds)
                 haptics.countdownTick()
+                if (sound) tone.play()
                 delay(PRACTICE_SECOND_MILLIS)
             }
             haptics.triggered()

@@ -9,7 +9,8 @@ and reported by a person.
   what to record, what to do if it fails, rows covered).
 - **M17 to M28** are new in P013c, for rows that had no script.
 - **M29** is new in P014b6, for the list of test numbers of debug builds.
-- **M30** is new in P014c2a, for the checklist "SOS setup"; M21 was updated with it.
+- **M30** is new in P014c2a, for the checklist "SOS setup"; M21 was updated with it. Its
+  part 6 (the alert settings) is new in P014c2b.
 - **M22** was rewritten in P014b7: an unsent alert is now tried for as long as the SOS is
   active.
 - **M17** was written in P014c1a (it was a draft): the tile and the pinned notification
@@ -520,6 +521,25 @@ you run a real SOS afterwards.
   [M8](#m8-practice). Then repeat part 1 in Bengali, in dark mode, with the font at its
   largest setting (every button must still be reachable by scrolling), and with TalkBack
   (the summary is read as a heading; each row's status is read as a word).
+- **Part 6, the alert settings** (the build after P014c2b). **This part sends an SMS in
+  its last step**: only your own second phone as the contact, and the banner of a debug
+  build read first. Agree to the notice again first: it has a new version.
+  - Under "Your alert settings", tap "Set a name", type a name, Save. *Expected:* "The
+    alert begins: “... needs help.”" with your name. "Change the name" shows the field
+    with the name and "Remove the name". Type more than 30 characters: the field stops
+    at 30.
+  - "Language of the alert": choose Bengali while the app is in English.
+  - "Sound during the countdown": it is off. Switch it on, read the warning under it.
+  - Tap "Practice SOS". *Expected:* the countdown vibrates **and** gives a short tone
+    each second. Set the phone's alarm volume to zero and practise again: no tone. Switch
+    the sound off and practise again: vibration only.
+  - Start a real SOS and let the countdown finish. *Expected on the second phone:* the
+    alert begins with the name you set and is written in Bengali. End with "I'm safe".
+  - Emergency contacts → "Stop SOS alerts and remove all contacts", then open "SOS
+    setup" again. *Expected:* no name, "Same as SafeRoute", the sound off.
+- **Also record for part 6:** whether the tone was heard, how loud it was against the
+  alarm slider, and whether it sounded in the phone's silent mode and in Do Not Disturb
+  (the app cannot override those); the first line of the SMS on the second phone.
 - **Record:** the phone and its Android version; the summary line and the status of each
   row; for part 2, whether each change showed after coming back without reopening the
   screen; part 4 as described; anything the screen said that was not true for this phone.
@@ -562,7 +582,7 @@ notification, and since P014c1b the home-screen widget (part 7).
   that was left; not a new five seconds, and not two emergencies. Let it finish and tap the
   tile again: "SOS active" is shown, nothing new starts. End with "I'm safe".
 - **Part 6, without the consent.** With an account that has not agreed to the current
-  notice (a fresh account, or one that agreed before P014c1a: the notice has a new
+  notice (a fresh account, or one that agreed before P014c2b: the notice has a new
   version), tap the tile, then the notification's "Start SOS". *Expected:* no countdown and
   no vibration; a dialog with Call 112, "SOS alerts are not set up yet ...", "Set up SOS
   alerts" and "Practice SOS". Tap "Set up SOS alerts": on a locked phone the unlock is

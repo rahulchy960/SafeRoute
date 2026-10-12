@@ -36,15 +36,15 @@ the alerts and the engine, with fakes for the phone's parts, in virtual time; *c
 the real service, notification or job under Robolectric; *screen* = the Compose screens and
 their ViewModels.
 
-**Evidence for "Automated pass" on this date:** `android-ci` run 38301695368 on `main`
-(commit `a16c443`, 2026-10-12): success. Tests added in P014c2a (the readiness screen) are
+**Evidence for "Automated pass" on this date:** `android-ci` run 38306321302 on `main`
+(commit `aff95a5`, 2026-10-12): success. Tests added in P014c2b (the alert settings) are
 not on `main` yet and are marked so under [Evidence](#evidence). An earlier run on `main` failed once on a flaky
 test and passed when run again (P014b5).
 
 ## State of the build
 
-A user who has agreed to the SOS alerts notice (version 3 since P014c1a; a consent for
-version 2 no longer counts) can start an SOS from the SOS control in the app (hold for 2
+A user who has agreed to the SOS alerts notice (version 4 since P014c2b; a consent for
+an older version no longer counts) can start an SOS from the SOS control in the app (hold for 2
 seconds), and with one tap from the Quick Settings tile, from the "Start SOS" button of
 the pinned notification (both also on a locked phone) or, since P014c1b, from the
 home-screen widget "SafeRoute SOS". Every one of them goes through the same
@@ -54,7 +54,8 @@ default), otherwise through the phone's SMS app. Without that consent no SOS can
 started at all: the app and the shortcuts then offer Call 112, a practice run and the way
 to the setup. Since P014c2a a checklist, "SOS setup" under Emergency contacts, says before
 an emergency what an SOS from this phone would and would not do: "Ready" or "Not ready: N
-things to fix". The name in the alert and two offers of that screen are P014c2b. There is
+things to fix". Since P014c2b the user can set there a name for the alert, its language
+and a sound for the countdown (off by default). Two offers of that screen are P014c2c. There is
 no notice after a restart yet (P014c3). No server takes part in an SOS yet (P015), and there is no live-location
 link (P016). **A debug build texts only the test numbers it was built with** (P014b6): with
 no such list it sends nothing by itself and uses the SMS app, and a banner on the SOS
@@ -88,8 +89,8 @@ was added in P014b6.
 | A3 | Tile unavailable on the device | Settings explains how to add the tile by hand and says that some phones have none. The SOS control in the app always works. | P012f1 | `SettingsShortcutsTest`, `EmergencyShortcutTest`, `SosFlowTest` ([names](#row-a3-tile-unavailable-on-the-device)) | [M19](manual-test-scripts.md#m19-a-phone-without-the-tile) | Automated pass · Manual pending | 2026-10-12 (automated); manual: none | Not seen on a phone without tiles from apps. |
 | A4 | Notification permission denied | No notification and no error. An SOS never depends on a notification; the active screen says that it is the only sign. | P012f2, P014a2, P014a3 | `EmergencyNotificationTest`, `SettingsShortcutsTest`, `SosScreensTest`, `SosViewModelTest` ([names](#row-a4-notification-permission-denied)) | [M7](manual-test-scripts.md#m7-notifications-refused) | Automated pass · Manual pending | 2026-10-12 (automated); manual: none | Automated at logic and screen level. |
 | A5 | Opted-out contact excluded | A contact who opted out is never alerted (ADR 0024). | P013a (the opt-out), P013b1 (the copy on the phone), P014b1, P014b2 | `ContactsDatabaseTest`, `SosAlertsTest`, `SosDispatchTest`, `SosAlertsDeviceTest`, `ApiContactsRepositoryTest` ([names](#row-a5-opted-out-contact-excluded)) | [M16](manual-test-scripts.md#m16-a-contact-who-opted-out) | Automated pass · Manual pending | 2026-10-12 (automated); manual: none | Known gap: with a position ready the alert leaves at once, so an opt-out made shortly before the trigger and not yet on the phone is missed (ADR 0027). |
-| A6 | Contacts empty at SOS time | The SOS runs as always. The active screen says that there is no emergency contact to alert and offers Call 112; nothing is sent and nothing fails. Before an emergency, "SOS setup" says that no contact would be texted. | P014b1, P014b2, P014c2a (the checklist) | `SosAlertsTest`, `SosDispatchTest`, `SosViewModelTest`, `SosAlertLinesTest`, `ContactsDatabaseTest`, `SosReadinessTest`, `SosSetupViewModelTest`, `SosSetupScreenTest` ([names](#row-a6-contacts-empty-at-sos-time)) | [M20](manual-test-scripts.md#m20-no-emergency-contact), [M30](manual-test-scripts.md#m30-the-sos-setup-checklist) | Automated pass · Manual pending | 2026-10-12 (automated); manual: none | The plan has no row for this; the expected behaviour is the design of ADR 0027. The checklist's tests (P014c2a) count once `android-ci` is green on `main` with them. |
-| A7 | Contacts never synced to the phone | An SOS reads the contacts from the phone only and never waits for the server. If the list never arrived, nobody is alerted and the screen says so. The user should learn of this before an emergency (readiness screen). | P013b1 (the copy and its sync), P014b2 (the refresh that is started and never awaited), P014b3 (the consent note). P014c2a (the checklist, with the time the list was last fetched) | `ApiContactsRepositoryTest`, `ContactsSessionSyncTest`, `SosDispatchTest`, `SosReadinessTest`, `SosSetupViewModelTest`, `SosSetupScreenTest` ([names](#row-a7-contacts-never-synced-to-the-phone)) | [M21](manual-test-scripts.md#m21-contacts-that-never-reached-the-phone), [M30](manual-test-scripts.md#m30-the-sos-setup-checklist) | Automated pass · Manual pending | 2026-10-12 (automated); manual: none | Automated for what happens during the SOS. Since P014c2a "SOS setup" says "Never updated" and that it cannot tell whether there are contacts, with a Refresh button; its tests count once `android-ci` is green on `main` with them. The user has to open that screen (Known gaps). |
+| A6 | Contacts empty at SOS time | The SOS runs as always. The active screen says that there is no emergency contact to alert and offers Call 112; nothing is sent and nothing fails. Before an emergency, "SOS setup" says that no contact would be texted. | P014b1, P014b2, P014c2a (the checklist) | `SosAlertsTest`, `SosDispatchTest`, `SosViewModelTest`, `SosAlertLinesTest`, `ContactsDatabaseTest`, `SosReadinessTest`, `SosSetupViewModelTest`, `SosSetupScreenTest` ([names](#row-a6-contacts-empty-at-sos-time)) | [M20](manual-test-scripts.md#m20-no-emergency-contact), [M30](manual-test-scripts.md#m30-the-sos-setup-checklist) | Automated pass · Manual pending | 2026-10-12 (automated); manual: none | The plan has no row for this; the expected behaviour is the design of ADR 0027. The checklist's tests (P014c2a) are on `main` since `aff95a5` and ran green there (run 38306321302). |
+| A7 | Contacts never synced to the phone | An SOS reads the contacts from the phone only and never waits for the server. If the list never arrived, nobody is alerted and the screen says so. The user should learn of this before an emergency (readiness screen). | P013b1 (the copy and its sync), P014b2 (the refresh that is started and never awaited), P014b3 (the consent note). P014c2a (the checklist, with the time the list was last fetched) | `ApiContactsRepositoryTest`, `ContactsSessionSyncTest`, `SosDispatchTest`, `SosReadinessTest`, `SosSetupViewModelTest`, `SosSetupScreenTest` ([names](#row-a7-contacts-never-synced-to-the-phone)) | [M21](manual-test-scripts.md#m21-contacts-that-never-reached-the-phone), [M30](manual-test-scripts.md#m30-the-sos-setup-checklist) | Automated pass · Manual pending | 2026-10-12 (automated); manual: none | Automated for what happens during the SOS. Since P014c2a "SOS setup" says "Never updated" and that it cannot tell whether there are contacts, with a Refresh button; its tests are on `main` since `aff95a5` and ran green there (run 38306321302). The user has to open that screen (Known gaps). |
 | A8 | SMS fails for every contact (no SIM, no service, airplane mode) | The SOS stays active and Call 112 stays on the screen. An alert that is not sent is tried again until the SOS ends: every 30 seconds for the first ten tries, then after 1, 2 and 4 minutes, then every 5 minutes; at once on "Send again now", when the emergency screen comes to the front, when airplane mode is switched off and when a network becomes available. An error that cannot pass is final and shown as "could not be sent". After 2 hours with an alert unsent the user is told once (a notification and the screen): call 112 or send a text yourself. 24 hours after the trigger trying stops and the screen says so. A sent alert is never sent again. | P014b1, P014b2, P014b7 | `SosAlertsTest`, `SosSmsTest`, `SosDispatchTest`, `SosAlertLinesTest`, `SosViewModelTest`, `SosRetryDeviceTest` ([names](#row-a8-sms-fails-for-every-contact-no-sim-no-service-airplane-mode)) | [M5](manual-test-scripts.md#m5-airplane-mode-and-location-off), [M22](manual-test-scripts.md#m22-every-message-fails) | Automated pass · Manual pending | 2026-10-12 (automated); manual: none | The tests of P014b7 are on `main` since `3225e12`, and `android-ci` ran green there (run 38285365927). Which answer a phone gives without a SIM or without service is not known; every such answer is treated as "try again" (ADR 0027). |
 | A9 | Dual-SIM phone with the wrong default SIM | The alert leaves from the SIM the phone has set as default for SMS. The app offers no SIM choice of its own: listing the SIMs would need a permission the app does not ask for (ADR 0027). | P014b1 (the phone's default SIM is used) | None | [M15](manual-test-scripts.md#m15-dual-sim) | Manual pending | None | No automated test. What happens when the phone is set to "ask every time", or the default SIM has no balance, is not known (Known gaps). |
 | A10 | Contact list changed mid-SOS | Who is alerted is decided once, at the trigger. A later change of the list does not add anyone to this SOS; a contact who opts out before their message left is skipped. The follow-up goes only to those whose alert was sent. | P014b1, P014b2 | `SosAlertsTest`, `RoomSosActionStoreTest`, `SosDispatchTest` ([names](#row-a10-contact-list-changed-mid-sos)) | [M23](manual-test-scripts.md#m23-the-contact-list-changes-during-an-sos) | Automated pass · Manual pending | 2026-10-12 (automated); manual: none | The plan has no row for this; the expected behaviour is the design of ADR 0027. A contact removed (not opted out) before their message left: see Known gaps. |
@@ -114,7 +115,7 @@ What the plan or the design requires and no test covers, or what nobody knows ye
    phone, contacts that never arrived, the SMS app instead of automatic sending, location,
    notifications, and guidance about battery limits (rows A6, A7, 4, 7). It is reached from
    Emergency contacts only: offering it after the first contact and on Home while not
-   ready is P014c2b. Until then a user who never opens it is not warned.
+   ready is P014c2c. Until then a user who never opens it is not warned.
 
 ### Built, but no test can show it
 
@@ -261,7 +262,7 @@ from the test sources, not typed.
   - "without consent to the alerts notice no SOS can be started from the screen"
 - `SosAlertsDeviceTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosAlertsDeviceTest.kt`):
   - "the gate opens only for consent to the notice the app shows today"
-  - "the notice version is the third one, and differs from the first two" (renamed in P014c1a)
+  - "the notice version is the fourth one, and differs from the first three" (renamed in P014c1a and in P014c2b; on `main` after that merge)
 - `ApiContactsRepositoryTest` (`android/app/src/test/java/com/saferoute/app/feature/contacts/ApiContactsRepositoryTest.kt`):
   - "consent counts only when it is granted for the notice the app shows today"
   - "the phone's note of the consent follows the server, and a failed check changes nothing"
@@ -269,6 +270,16 @@ from the test sources, not typed.
   - "withdrawing and signing out take the note of the consent away"
 - `SosFlowTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosScreensTest.kt`):
   - "without consent to the alerts notice the SOS control offers Call 112 and the way to the setup"
+
+Added in P014c2b for row 1, what the alert says (on `main` after that merge):
+
+- `SosAlertsDeviceTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosAlertsDeviceTest.kt`):
+  - "the messages carry the name the user set and the language the user chose"
+  - "without a choice the messages use the app's language and have no name"
+- `RoomSosSettingsStoreTest` (`android/app/src/test/java/com/saferoute/app/core/data/SosSettingsDatabaseTest.kt`): all 7 tests.
+- `SosSettingsMigrationTest` (the same file): all 2 tests.
+- `ApiContactsRepositoryTest` (`android/app/src/test/java/com/saferoute/app/feature/contacts/ApiContactsRepositoryTest.kt`):
+  - "emptying the copy also erases the name for alerts and the two choices"
 
 ### Row 2: No signal at all
 
@@ -337,7 +348,7 @@ No automated test: nothing of this row is built, or nothing of it can be tested 
 - `SosScreensTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosScreensTest.kt`):
   - "an SOS found after a restart says so and offers continue or I am safe"
 
-Added in P014c2a for row 4, the guidance beforehand (on `main` after that merge):
+Added in P014c2a for row 4, the guidance beforehand (on `main` since `aff95a5`):
 
 - `SosSetupScreenTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosSetupTest.kt`):
   - "the battery row names the phone makers, says it is unchecked, and opens the app settings"
@@ -416,7 +427,7 @@ Added in P014c1a for row 6 (on `main` since `5e57495`):
   - "in composer mode the screen offers the SMS app again"
 - `SmsPermissionCardTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SmsPermissionCardTest.kt`): all 10 tests.
 
-Added in P014c2a for row 7, the checklist (on `main` after that merge):
+Added in P014c2a for row 7, the checklist (on `main` since `aff95a5`):
 
 - `SosReadinessTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosReadinessTest.kt`):
   - "the SMS app is to fix only in a build that could send by itself"
@@ -491,6 +502,16 @@ No automated test: nothing of this row is built, or nothing of it can be tested 
   - "cancel during the countdown sends nothing, also with the gate open"
 - `SosAlertLinesTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosAlertsDeviceTest.kt`):
   - "the confirmation offers tell my contacts, ticked, only when someone was told"
+
+Added in P014c2b for row 11, the countdown's sound (on `main` after that merge):
+
+- `SosRunnerTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosRunnerTest.kt`):
+  - "the countdown makes no sound unless the user switched the sound on"
+  - "a new process that continues a countdown keeps the sound setting"
+- `SosViewModelTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosViewModelTest.kt`):
+  - "a practice run sounds like the real one when the sound is on, and is silent otherwise"
+- `SosAlertsDeviceTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosAlertsDeviceTest.kt`):
+  - "the countdown tone needs no permission and never stops a countdown"
 
 ### Row A1: SOS started from the tile while the phone is locked
 
@@ -615,7 +636,7 @@ Added in P014c1a for row A2 (on `main` since `5e57495`):
 - `ContactsDatabaseTest` (`android/app/src/test/java/com/saferoute/app/core/data/ContactsDatabaseTest.kt`):
   - "sos contacts are empty when there are none or all opted out"
 
-Added in P014c2a for row A6, the checklist (on `main` after that merge):
+Added in P014c2a for row A6, the checklist (on `main` since `aff95a5`):
 
 - `SosReadinessTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosReadinessTest.kt`):
   - "no contact on the phone is to fix, and a list that was never fetched cannot be known"
@@ -638,11 +659,11 @@ Added in P014c2a for row A6, the checklist (on `main` after that merge):
   - "the alert never waits for the server - a slow or absent answer changes nothing"
   - "with no contact the screen says so and nothing is sent"
 
-Added in P014c2a for row A7, the checklist (on `main` after that merge):
+Added in P014c2a for row A7, the checklist (on `main` since `aff95a5`):
 
 - `SosReadinessTest` (`android/app/src/test/java/com/saferoute/app/core/emergency/SosReadinessTest.kt`): all 9 tests.
-- `SosSetupViewModelTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosSetupTest.kt`): all 7 tests.
-- `SosSetupScreenTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosSetupTest.kt`): all 11 tests.
+- `SosSetupViewModelTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosSetupTest.kt`): all 8 tests (7 of P014c2a, 1 of P014c2b).
+- `SosSetupScreenTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosSetupTest.kt`): all 17 tests (11 of P014c2a, one of them rewritten in P014c2b, and 6 of P014c2b).
 - `SosSetupRulesTest` (`android/app/src/test/java/com/saferoute/app/feature/emergency/SosSetupTest.kt`): all 3 tests.
 - `ApiContactsRepositoryTest` (`android/app/src/test/java/com/saferoute/app/feature/contacts/ApiContactsRepositoryTest.kt`):
   - "a fetched list notes the time, and a failed fetch leaves the time as it was"
@@ -821,3 +842,8 @@ Added in P014b6; on `main` since commit `0298557`.
   rewritten; script M30 new, M21 updated). The widget's tests (P014c1b) count now: they are
   on `main` and the run was green. Device results gained a row: what Rahul reported about
   adding the widget on the S21 FE. The tests of the checklist count after this merge.
+- **P014c2b** (2026-10-13): a name for the alert, its language and a countdown sound,
+  set under "SOS setup"; notice version 4 (rows 1 and 11 gained tests; script M30, part 6
+  new). No row's expected behaviour changed. The tests of the checklist (P014c2a) count
+  now: they are on `main` and the run was green. The two offers of the checklist are
+  P014c2c.

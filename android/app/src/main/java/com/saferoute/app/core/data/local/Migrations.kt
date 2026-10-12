@@ -46,3 +46,17 @@ internal val MIGRATION_1_2 = object : Migration(1, 2) {
         )
     }
 }
+
+/**
+ * Version 2 → 3 (P014c2b): adds the one-row table with what the user chose for their alerts
+ * (a name, the language, the countdown sound). Nothing existing changes; the table starts
+ * empty, which reads as "no name, the app's language, no sound".
+ */
+internal val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL(
+            "CREATE TABLE IF NOT EXISTS `sos_settings` (`id` INTEGER NOT NULL, `alertName` TEXT, " +
+                "`alertLanguage` TEXT NOT NULL, `countdownSound` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        )
+    }
+}

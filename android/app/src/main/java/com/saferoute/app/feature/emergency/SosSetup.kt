@@ -9,12 +9,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.saferoute.app.BuildConfig
 import com.saferoute.app.core.data.ActiveSosContacts
+import com.saferoute.app.core.emergency.AlertLanguageChoice
 import com.saferoute.app.core.emergency.ReadinessFacts
 import com.saferoute.app.core.emergency.ReadinessLocation
 import com.saferoute.app.core.emergency.SmsMode
 import com.saferoute.app.core.emergency.SmsModeSource
 import com.saferoute.app.core.emergency.SosAlertPolicy
 import com.saferoute.app.core.emergency.SosReadiness
+import com.saferoute.app.core.emergency.SosSettings
+import com.saferoute.app.core.emergency.SosSettingsStore
 import com.saferoute.app.core.emergency.sosReadiness
 import com.saferoute.app.core.location.GrantedLocation
 import com.saferoute.app.core.location.LocationEnvironment
@@ -37,7 +40,9 @@ import kotlinx.coroutines.launch
  * What the "SOS setup" screen shows. Counts and yes-or-no answers only: no contact's name
  * or number and no position is in it.
  *
- * @property bengali the language the alert would be written in (the app's language).
+ * @property bengali the language SafeRoute is shown in (what "Same as SafeRoute" means).
+ * @property settings the name, the language and the countdown sound the user chose. The name
+ *   is the user's own, shown to them on their own screen; the type hides it when printed.
  * @property refreshFailed the last "Refresh" could not reach the server; the copy is unchanged.
  */
 data class SosSetupUiState(
@@ -45,6 +50,7 @@ data class SosSetupUiState(
     val activeContacts: Int,
     val location: ReadinessLocation,
     val bengali: Boolean,
+    val settings: SosSettings = SosSettings(),
     val refreshing: Boolean = false,
     val refreshFailed: Boolean = false,
 )
@@ -70,6 +76,7 @@ class SosSetupViewModel @Inject constructor(
     private val notifications: NotificationGate,
     private val locale: AppLocale,
     private val clock: Clock,
+    private val settings: SosSettingsStore,
 ) : ViewModel() {
 
     /** Whether this build could send SMS by itself. A release build cannot today (ADR 0027). */
@@ -96,6 +103,20 @@ class SosSetupViewModel @Inject constructor(
         }
     }
 
+    /** Saves the name for alerts; null or blank removes it. Kept on this phone only. */
+    fun onNameSave(name: String?) = change { settings.setName(name) }
+
+    fun onLanguageChange(language: AlertLanguageChoice) = change { settings.setLanguage(language) }
+
+    fun onCountdownSoundChange(on: Boolean) = change { settings.setCountdownSound(on) }
+
+    private fun change(write: suspend () -> Unit) {
+        viewModelScope.launch {
+            write()
+            read()
+        }
+    }
+
     private suspend fun read(refreshFailed: Boolean = false) {
         val active = contacts.current().size
         val location = location()
@@ -116,6 +137,7 @@ class SosSetupViewModel @Inject constructor(
             activeContacts = active,
             location = location,
             bengali = locale.current() == LOCALE_BENGALI,
+            settings = settings.current(),
             refreshFailed = refreshFailed,
         )
     }
