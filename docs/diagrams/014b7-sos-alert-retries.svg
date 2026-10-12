@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1838" height="952" viewBox="0 0 1838 952" font-family="Helvetica, Arial, sans-serif">
+<title>An SOS alert that cannot be sent</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#495057"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="40" y="62" font-size="24" font-weight="700" fill="#1e1e1e">An SOS alert that cannot be sent</text>
+<text x="40" y="86" font-size="14" fill="#495057">It is tried again for as long as the SOS is active; the user is told after 2 hours; trying stops after 24 hours (P014b7, ADR 0027)</text>
+<rect x="40" y="114" width="838" height="752" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="54" y="135" font-size="14" font-weight="700" fill="#495057">What starts a try</text>
+<rect x="914" y="114" width="286" height="752" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="928" y="135" font-size="14" font-weight="700" fill="#495057">One try</text>
+<rect x="1236" y="114" width="562" height="752" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="1250" y="135" font-size="14" font-weight="700" fill="#495057">How it ends</text>
+<line x1="183" y1="284.5" x2="1057" y2="341" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="459" y1="295" x2="1057" y2="341" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="735" y1="295" x2="1057" y2="341" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1057" y1="407" x2="1057" y2="453" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1057" y1="407" x2="1379" y2="479" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1057" y1="407" x2="1655" y2="474" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1057" y1="561" x2="1517" y2="607" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1517" y1="715" x2="1517" y2="761" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="58" y="218.5" width="250" height="66" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="183" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="183" y="246.7">The alert leaves at the trigger.</tspan>
+<tspan x="183" y="267.5">Written down first: in progress</tspan>
+</text>
+<rect x="932" y="341" width="250" height="66" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="1057" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1057" y="369.2">The phone's answer: sent,</tspan>
+<tspan x="1057" y="390">may pass, or cannot pass</tspan>
+</text>
+<rect x="932" y="453" width="250" height="108" rx="10" fill="#ffd8a8" stroke="#e8590c" stroke-width="2"/>
+<text x="1057" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1057" y="481.4">Wait, then try again: 30 s for</tspan>
+<tspan x="1057" y="502.2">ten tries, then 1, 2, 4 min, then</tspan>
+<tspan x="1057" y="523">5 min. Due time = stored tries</tspan>
+<tspan x="1057" y="543.8">+ time of the last try</tspan>
+</text>
+<rect x="334" y="208" width="250" height="87" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="459" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="459" y="236.3">Send again now, the screen</tspan>
+<tspan x="459" y="257.1">comes to the front, the app is</tspan>
+<tspan x="459" y="277.9">opened again</tspan>
+</text>
+<rect x="610" y="208" width="250" height="87" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="735" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="735" y="236.3">Airplane mode off, a network</tspan>
+<tspan x="735" y="257.1">becomes available. No new</tspan>
+<tspan x="735" y="277.9">permission</tspan>
+</text>
+<rect x="1254" y="479" width="250" height="56" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="1379" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1379" y="512.6">Sent: never sent again</tspan>
+</text>
+<rect x="1530" y="474" width="250" height="66" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="1655" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1655" y="502.2">Cannot pass: could not be</tspan>
+<tspan x="1655" y="523">sent. Never tried again</tspan>
+</text>
+<rect x="1392" y="607" width="250" height="108" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="1517" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1517" y="635.4">After 2 hours unsent: one</tspan>
+<tspan x="1517" y="656.2">notification and the screen.</tspan>
+<tspan x="1517" y="677">Call 112 or send a text</tspan>
+<tspan x="1517" y="697.8">yourself</tspan>
+</text>
+<rect x="1392" y="761" width="250" height="87" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="1517" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1517" y="789.3">After 24 hours, or when the</tspan>
+<tspan x="1517" y="810.1">SOS ends: trying stops. The</tspan>
+<tspan x="1517" y="830.9">screen says so</tspan>
+</text>
+<rect x="678.6" y="307" width="158.9" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="758" y="322.5" font-size="13" fill="#1e1e1e" text-anchor="middle">not while a try is in flight</text>
+<rect x="835.5" y="307" width="120.9" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="896" y="322.5" font-size="13" fill="#1e1e1e" text-anchor="middle">at most every 10 s</text>
+<rect x="1022.5" y="419" width="68.9" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="1057" y="434.5" font-size="13" fill="#1e1e1e" text-anchor="middle">may pass</text>
+<rect x="1199.5" y="432" width="37" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="1218" y="447.5" font-size="13" fill="#1e1e1e" text-anchor="middle">sent</text>
+<rect x="1314.6" y="429.5" width="82.7" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="1356" y="445" font-size="13" fill="#1e1e1e" text-anchor="middle">cannot pass</text>
+<rect x="1209.6" y="573" width="154.7" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="1287" y="588.5" font-size="13" fill="#1e1e1e" text-anchor="middle">still unsent after 2 hours</text>
+<rect x="1485.5" y="727" width="63" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="1517" y="742.5" font-size="13" fill="#1e1e1e" text-anchor="middle">24 hours</text>
+<rect x="40" y="887" width="16" height="16" rx="3" fill="#a5d8ff" stroke="#1971c2" stroke-width="1.5"/>
+<text x="62" y="900" font-size="13" fill="#495057">App / UI</text>
+<rect x="134.8" y="887" width="16" height="16" rx="3" fill="#b2f2bb" stroke="#2f9e44" stroke-width="1.5"/>
+<text x="156.8" y="900" font-size="13" fill="#495057">Service</text>
+<rect x="228.3" y="887" width="16" height="16" rx="3" fill="#ffd8a8" stroke="#e8590c" stroke-width="1.5"/>
+<text x="250.3" y="900" font-size="13" fill="#495057">Data</text>
+<rect x="303.1" y="887" width="16" height="16" rx="3" fill="#ffc9c9" stroke="#e03131" stroke-width="1.5"/>
+<text x="325.1" y="900" font-size="13" fill="#495057">Security / emergency</text>
+<rect x="476.7" y="887" width="16" height="16" rx="3" fill="#e9ecef" stroke="#495057" stroke-width="1.5"/>
+<text x="498.7" y="900" font-size="13" fill="#495057">External</text>
+</svg>

@@ -9,6 +9,8 @@ and reported by a person.
   what to record, what to do if it fails, rows covered).
 - **M17 to M28** are new in P013c, for rows that had no script.
 - **M29** is new in P014b6, for the list of test numbers of debug builds.
+- **M22** was rewritten in P014b7: an unsent alert is now tried for as long as the SOS is
+  active.
 - A script marked **Draft until the feature exists** describes something that is not built
   yet. Do not run it, and do not record a result for it.
 - Legal wording quoted here (the notice, the SMS texts) is a draft, to be verified by a
@@ -152,7 +154,8 @@ phone" is enough. A screenshot must not show a number, a name or a map position.
 - **Preconditions:** as M3.
 - **Steps:** airplane mode on, start an SOS: the countdown and the active screen work as in
   M3; with contacts, the screen shows the alert as "Still trying" and it is sent when
-  airplane mode is switched off again (within about ten minutes). End it. Then switch the
+  airplane mode is switched off again (the app keeps trying while the SOS is active, and
+  switching airplane mode off asks for a try at once; see M22). End it. Then switch the
   phone's Location off and start an SOS: it triggers on time, the active screen says
   "Location: none. Location is switched off ...", and the SMS says "Location unavailable".
   If SafeRoute has no location permission, the active screen says how to allow it
@@ -381,21 +384,39 @@ phone" is enough. A screenshot must not show a number, a name or a map position.
 
 ### M22. Every message fails
 
-*New in P013c.* **Rows:** A8, 2.
+*New in P013c, rewritten in P014b7.* **Rows:** A8, 2.
 
 - **Preconditions:** as M11 (automatic sending on; contacts only your second phone).
-- **Steps, part 1 (airplane mode kept on):** airplane mode on, start an SOS, let it become
-  active and **leave airplane mode on for twelve minutes**. *Expected:* "Still trying to
-  send: 1." for about ten minutes (a try every 30 seconds, at most 20), then "Could not be
-  sent: 1."; Call 112 stays on the screen throughout; the SOS stays active. End it with
-  "I'm safe".
-- **Steps, part 2 (no SIM):** take the SIM out, or switch it off in the phone's settings,
+- **Steps, part 1 (it keeps trying):** airplane mode on, start an SOS, let it become
+  active and **leave airplane mode on for fifteen minutes**. *Expected, the whole time:*
+  "Still trying to send: 1.", "SafeRoute keeps trying while this SOS is active." and the
+  button "Send again now"; Call 112 stays on the screen; the SOS stays active; the line
+  does **not** change to "Could not be sent". Tap "Send again now" once: nothing visible
+  changes (the phone still cannot send).
+- **Steps, part 2 (the signal returns):** switch airplane mode off and do not touch the
+  phone. *Expected:* the second phone gets the alert, and the screen changes to "Alert
+  sent by SMS: 1 of 1 emergency contacts." without a tap. End with "I'm safe" and check
+  that nothing more arrives.
+- **Steps, part 3 (coming back to the screen):** repeat part 1 for two minutes, press
+  Home, switch airplane mode off in the phone's settings, wait until the phone shows
+  signal, and open SafeRoute again.
+- **Steps, part 4 (no SIM):** take the SIM out, or switch it off in the phone's settings,
   and start an SOS.
-- **Record:** for part 1, the minute at which the line changed. For part 2, exactly what
-  the active screen said: which answer a phone gives without a SIM is not known (the matrix
-  lists it under "Known gaps").
+- **Steps, part 5 (two hours, only if you have the time):** as part 1, but leave the SOS
+  active in airplane mode for two hours and five minutes, the phone on a charger.
+  *Expected:* one notification "Some alerts have not been sent" with "Call 112 or send a
+  text yourself." and a Call 112 button, and the same sentence on the active screen. It
+  appears once. Do not test the 24-hour stop on a phone: it is covered by tests only.
+- **Record:** for part 2, the seconds from airplane mode off to the SMS arriving, and
+  whether the phone was awake or its screen off. For part 3, whether the alert had already
+  left before the app was opened. For part 4, exactly what the active screen said: which
+  answer a phone gives without a SIM is not known (the matrix lists it under "Known
+  gaps"). For part 5, the minute at which the notification came, and the battery level at
+  the start and the end.
 - **If it fails:** an SOS that ends, hangs or shows an error because no message could be
-  sent is a fault. So is an alert that arrives after "I'm safe".
+  sent is a fault. So is "Could not be sent" while the phone merely had no signal, an alert
+  that does not leave within about five minutes of the signal returning, a second alert
+  to the same phone, and an alert that arrives after "I'm safe".
 
 ### M23. The contact list changes during an SOS
 
@@ -514,8 +535,10 @@ Work through these in order; most sessions end at one of the first four.
    A countdown that was cancelled never sends. Only a real SOS whose countdown finished
    does.
 4. **Was it sent at all?** Read the active screen. "Alert sent by SMS: 1 of 1" means the
-   phone handed the message to the network; "Still trying to send" means not yet; "Could
-   not be sent" means it was given up. "Your SMS app has the alert ..." means **nothing is
+   phone handed the message to the network; "Still trying to send" means not yet: the
+   app keeps trying while the SOS is active, and "Send again now" asks for a try at once.
+   "Could not be sent" means it was given up: the network refused it for good, or 24 hours
+   passed. "Your SMS app has the alert ..." means **nothing is
    sent until you press Send** in the SMS app (the mode without the SMS permission).
    "Sent" is all the phone knows: it does not mean delivered.
 5. **The SMS permission.** Settings → Emergency contacts → "Send alerts automatically" must

@@ -647,7 +647,9 @@ and [`android/README.md`](android/README.md):
   passes false and checks the APK). Never add `READ_SMS`, `RECEIVE_SMS` or
   `READ_PHONE_STATE`. Who is alerted is decided once per emergency (`SosAlerts.prepare`); a
   SENT action is never sent again; an action is marked IN_PROGRESS before the phone is asked;
-  retry numbers live in `ALERT_RETRY_MILLIS` and `MAX_ALERT_ATTEMPTS` only. The message
+  retry numbers live in `SosAlerts.kt` only (`ALERT_RETRY_MILLIS`, `ALERT_FAST_TRIES`,
+  `ALERT_RETRY_CAP_MILLIS`, `ALERT_UNSENT_NOTICE_MILLIS`, `ALERT_RETRY_LIMIT_MILLIS`,
+  `MAX_FOLLOW_UP_ATTEMPTS`). The message
   texts live in `core/emergency/SosMessage.kt`, are mirrored in
   `docs/legal/sos-sms-text-v1.md` (`SosSmsTextDocumentTest`), stay within three SMS parts,
   use Latin digits, carry no shortened link, and are drafts until a lawyer and a native
@@ -671,6 +673,15 @@ and [`android/README.md`](android/README.md):
   (`SmsPermissionCardTest`). Changing what an SOS sends, costs or stores means changing the
   notice and its version in the same prompt. Play declarations are drafts in `docs/play/`;
   Claude Code never submits anything to Google Play.
+  Retries (since P014b7): an alert that is not SENT is tried again **for as long as the SOS
+  is active** (`alertRetryRule`), never given up after a number of tries; only an error that
+  cannot pass, or 24 hours, ends it. When a message is due follows from its stored tries
+  and time: never keep a retry schedule only in memory. A try "now" goes through
+  `SosDispatch.retryNow()` and is ignored while one is in flight. The retry timer is a
+  coroutine in the app scope kept alive by `SosForegroundService`: **no wake lock, no
+  alarm, no WorkManager and no second service** for it, and no `READ_PHONE_STATE` for a
+  signal (`SosRetryDeviceTest`). The two-hour notice is shown once, marked by an
+  `UNSENT_NOTICE` row; its notification holds fixed text only. Follow-ups keep their limit.
   Debug builds (since P014b6): a debug build texts **only** the numbers in the Gradle
   property `saferoute.debugSmsAllowlist` (user-level `gradle.properties`; a `BuildConfig`
   field of the debug build type only). Never write a list into a tracked file, never read,
