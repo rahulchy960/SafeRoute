@@ -453,7 +453,7 @@ platform sources of API level 37 (`TileService`, `AppWidgetProviderInfo`).
 2. **One screen calls it.** Every entry point opens `EmergencyActivity` with "start" and
    what was touched (`EmergencyShortcut.startIntent`): the hold in the app (`IN_APP`), the
    tile (`TILE`), the "Start SOS" button of the pinned notification (`NOTIFICATION`) and
-   the home-screen widget (`WIDGET`, built in P014c1b). The screen's ViewModel hands it to
+   the home-screen widget (`WIDGET`, since P014c1b). The screen's ViewModel hands it to
    the use case in the app's scope. So the countdown and the foreground service start while
    that screen is visible, for every entry point, exactly as after the hold.
 3. **The entry point is stored** on the record (`sos_records.entryPoint`, plain text since
@@ -491,7 +491,7 @@ platform sources of API level 37 (`TileService`, `AppWidgetProviderInfo`).
 **Residual risks.**
 
 - **A start nobody meant.** In the app an SOS needs a two-second hold. Outside it one tap
-  is enough: a tile next to the torch, a notification button, later a widget on the home
+  is enough: a tile next to the torch, a notification button, a widget on the home
   screen. A phone in a pocket with the screen on, a child, or a stranger holding a locked
   phone can start the countdown; if nobody cancels within five seconds, the contacts are
   texted. How often that happens is not known. A follow-up measures it in the closed test
@@ -510,6 +510,35 @@ forbids it for notification taps, and the `location` service could not be starte
 it. Starting the runner from the tile service itself and opening the screen afterwards: the
 service would start before any activity is visible. `unlockAndRun` for the tile: see 7.
 A second activity for shortcuts: two screens that could differ.
+
+### Note of 2026-10-13 (P014c1b): the home-screen widget
+
+The fourth entry point of the note above, built as decided there. Nothing was verified on
+a phone.
+
+1. **A plain `AppWidgetProvider` with RemoteViews**, no new library. The widget shows fixed
+   text, the same for everyone: a red button "SOS" and the line "Tap to start SOS".
+2. **A tap starts nothing by itself.** It carries the same immutable activity PendingIntent
+   as the tile, with the entry point `WIDGET`; the emergency screen asks `StartSos`.
+3. **Against a tap nobody meant:** the widget is 2 by 2 cells and cannot be resized, so it
+   cannot be shrunk to one cell; only the button reacts, and the card around it is dead
+   space. There is no confirmation step (decided in the note above); the countdown is the
+   safeguard. A widget on the home screen is touched by passing thumbs more often than a
+   tile in Quick Settings: the follow-up that measures unintended starts counts it apart.
+4. **Never updated, no network, nothing of the account.** `updatePeriodMillis` is 0; there
+   is no configuration screen. The provider is not exported and needs no permission.
+5. **Home screen only.** The widget does not declare the lock-screen category. The Android
+   sources say that some lock-screen features may offer a widget without it; what each
+   phone does is a phone check (script M17, part 7).
+6. **Colours.** A launcher draws the widget and cannot read the app's Compose theme, so
+   four colours repeat the theme in `res/values/colors.xml` (light and night). A test
+   keeps the red equal to the emergency red and fails if anything but the button uses it.
+7. **The notice did not change.** Version 3 says "a SafeRoute shortcut outside the app,
+   such as its Quick Settings tile or its pinned notification"; the widget is such a
+   shortcut. Whether it must be named is a question for the lawyer.
+
+**Not built:** a button in Settings that offers the widget (`requestPinAppWidget`). The
+widget is found in the launcher's widget list; a follow-up.
 
 ## Alternatives considered
 

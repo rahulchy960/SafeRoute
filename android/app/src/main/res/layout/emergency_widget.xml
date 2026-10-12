@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<!--
+    The home-screen widget (P014c1): one button that starts an SOS, and a line that says so.
+    A widget is drawn by the launcher, not by the app, from this layout ("RemoteViews"), so
+    it cannot be Compose and may use only a few simple views.
+    Only the red button reacts to a tap. The card around it is dead space on purpose: a
+    thumb that brushes the edge of the widget starts nothing.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@android:id/background"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/emergency_widget_card"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="12dp">
+
+    <TextView
+        android:id="@+id/emergency_widget_button"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="@drawable/emergency_widget_button"
+        android:contentDescription="@string/sos_widget_description"
+        android:gravity="center"
+        android:minHeight="48dp"
+        android:text="@string/sos_control_label"
+        android:textColor="@color/emergency_widget_on_button"
+        android:textSize="24sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:gravity="center"
+        android:importantForAccessibility="no"
+        android:maxLines="2"
+        android:text="@string/sos_tile_subtitle"
+        android:textColor="@color/emergency_widget_on_surface"
+        android:textSize="12sp" />
+</LinearLayout>

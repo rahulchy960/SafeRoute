@@ -701,6 +701,11 @@ and [`android/README.md`](android/README.md):
   PendingIntent to the emergency screen is immutable and starts the activity directly, with
   its own request code. Only a newly created screen starts an SOS (`fresh`). **No
   confirmation step and no unlock before the countdown**; the countdown is the safeguard.
+  The widget (since P014c1b, `SosWidgetProvider`, RemoteViews) shows fixed text only, is
+  never updated, has no configuration screen and uses no network; only its button reacts;
+  it stays 2 x 2 and not resizable, and is declared for the home screen only. Its colours
+  repeat the theme in `res/values/colors.xml` and the red is for its button alone
+  (`SosWidgetTest`).
   Gate closed means no countdown and no record: Call 112, practice and "Set up SOS alerts"
   (after the unlock). An intent to the emergency screen carries a mode and an entry point,
   nothing about the user. Changing what can start an SOS means changing the notice and its

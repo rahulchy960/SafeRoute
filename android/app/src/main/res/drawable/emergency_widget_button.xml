@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<!-- The widget's button, in the emergency red: it starts an SOS and does nothing else. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/emergency_widget_button" />
+    <corners android:radius="16dp" />
+</shape>

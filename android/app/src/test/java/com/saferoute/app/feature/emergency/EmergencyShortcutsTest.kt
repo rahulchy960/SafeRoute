@@ -338,8 +338,9 @@ class EmergencyShortcutsManifestTest {
 
     @Test
     fun `one receiver, not exported, for a restart and an update of this app only`() {
-        val receiver = elements("receiver").single()
-        assertTrue(receiver.attr("name").endsWith("EmergencyShortcutReceiver"))
+        // Two receivers in all: this one and the widget's provider (SosWidgetTest).
+        assertEquals(2, elements("receiver").size)
+        val receiver = elements("receiver").single { it.attr("name").endsWith("EmergencyShortcutReceiver") }
         assertEquals("false", receiver.attr("exported"))
         val actions = receiver.getElementsByTagName("action")
         assertEquals(

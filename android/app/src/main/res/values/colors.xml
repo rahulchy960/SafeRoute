@@ -7,4 +7,14 @@
     -->
     <color name="splash_background">#FFFAFBFC</color>
     <color name="splash_icon_background">#FF006879</color>
+
+    <!--
+        The home-screen widget is drawn by the launcher and cannot read the Compose theme.
+        These repeat surface, onSurfaceVariant, and the emergency red and its text colour
+        from core/designsystem/theme; a test keeps the red in step (SosWidgetTest).
+    -->
+    <color name="emergency_widget_surface">#FFFAFBFC</color>
+    <color name="emergency_widget_on_surface">#FF40484B</color>
+    <color name="emergency_widget_button">#FFB3261E</color>
+    <color name="emergency_widget_on_button">#FFFFFFFF</color>
 </resources>
