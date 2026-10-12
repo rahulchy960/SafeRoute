@@ -710,6 +710,16 @@ and [`android/README.md`](android/README.md):
   (after the unlock). An intent to the emergency screen carries a mode and an entry point,
   nothing about the user. Changing what can start an SOS means changing the notice and its
   version in the same prompt.
+  Readiness (since P014c2a): the checklist "SOS setup" is `core/emergency/sosReadiness`, a
+  pure function, shown by `SosSetupScreen`. **It informs and gates nothing**: an SOS never
+  asks it. It reads the phone at every resume and has no background work, no storage, no
+  upload and no logging. Its words are "Ready" and "Not ready: N things to fix"; **never
+  "safe", and never a promise that an alert reaches anyone** (`SosSetupRulesTest`). The
+  battery row is always "cannot check" and never counted. **It asks for no permission**:
+  its fix buttons open the phone's own settings (`SosSetup.kt`), the SMS row reuses
+  `SmsPermissionCard`, and it never requests a battery-optimisation exemption. The battery
+  hints per phone maker are drafts until checked on those phones; no link to an outside
+  site without a verified official address.
   Every SOS change updates [`docs/sos/failure-matrix.md`](docs/sos/failure-matrix.md):
   "Automated pass" only for rows with passing tests, with the level it was tested at.
 - `android/app/google-services.json` is never opened, printed or committed by Claude Code. CI and

@@ -16,6 +16,7 @@ import com.saferoute.app.core.network.generated.model.CreateContactRequest
 import com.saferoute.app.core.network.generated.model.RenameContactRequest
 import com.saferoute.app.core.network.generated.model.SetConsentRequest
 import com.saferoute.app.core.session.LOCALE_BENGALI
+import java.time.Clock
 import java.time.Instant
 import java.util.UUID
 import javax.inject.Inject
@@ -185,6 +186,7 @@ class ApiContactsRepository @Inject constructor(
     private val dao: ContactDao,
     private val config: ApiConfig,
     private val preferences: ContactsPreferences,
+    private val clock: Clock,
 ) : ContactsRepository {
 
     /** One writer of the copy at a time. */
@@ -211,7 +213,11 @@ class ApiContactsRepository @Inject constructor(
         val epoch = epoch()
         return when (val result = apiCall { api.listContacts() }) {
             is ApiResult.Success -> {
-                writeIfCurrent(epoch) { dao.replaceAll(result.value.items.map(Contact::toEntity)) }
+                // The time is noted together with the list, and only when it was really written.
+                writeIfCurrent(epoch) {
+                    dao.replaceAll(result.value.items.map(Contact::toEntity))
+                    preferences.setContactsSyncedAt(clock.millis())
+                }
                 ContactsResult.Ok(Unit)
             }
             // The copy stays exactly as it was.
@@ -339,6 +345,7 @@ class ApiContactsRepository @Inject constructor(
         }
         // No contacts on this phone, no alerts from it.
         preferences.setAlertsNoticeVersion(null)
+        preferences.setContactsSyncedAt(0L)
     }
 
     /** The server's answer IS the truth for this row: store it at once, no second request. */

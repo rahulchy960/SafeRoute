@@ -272,13 +272,14 @@ class ContactsBoundaryTest {
     }
 
     @Test
-    fun `the settings file gets two flags from the contacts feature and nothing about a person`() {
+    fun `the settings file gets three flags from the contacts feature and nothing about a person`() {
         val keys = Regex("""PreferencesKey\("([^"]+)"\)""")
             .findAll(File("src/main/java/com/saferoute/app/feature/contacts/ContactsPreferences.kt").readText())
             .map { it.groupValues[1] }.toList()
 
         // A point in time for the Home card, and the version of the alerts notice the user
-        // agreed to (P014b3): what lets an SOS check consent without the network.
-        assertEquals(listOf("contacts_card_snoozed_until", "alerts_notice_version_agreed"), keys)
+        // agreed to (P014b3): what lets an SOS check consent without the network. And the
+        // time the list was last fetched (P014c2a), for the "SOS setup" screen.
+        assertEquals(listOf("contacts_card_snoozed_until", "alerts_notice_version_agreed", "contacts_synced_at"), keys)
     }
 }

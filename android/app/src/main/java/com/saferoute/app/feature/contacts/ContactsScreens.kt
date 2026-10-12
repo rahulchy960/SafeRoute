@@ -156,6 +156,7 @@ fun ContactsRoute(
     onAdd: () -> Unit,
     onOpenContact: (String) -> Unit,
     modifier: Modifier = Modifier,
+    onOpenSetup: () -> Unit = {},
     viewModel: ContactsViewModel = hiltViewModel(),
     armViewModel: SosArmViewModel = hiltViewModel(),
 ) {
@@ -169,6 +170,7 @@ fun ContactsRoute(
         onRefresh = viewModel::onRefresh,
         onStopConfirmed = viewModel::onStopConfirmed,
         modifier = modifier,
+        onOpenSetup = onOpenSetup,
         // How alerts leave this phone, once the user has agreed to them; before that, the
         // way to the notice. ("Add contact" shows the notice first when it is still owed.)
         alertsCard = {
@@ -200,6 +202,7 @@ fun ContactsScreen(
     onRefresh: () -> Unit,
     onStopConfirmed: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenSetup: () -> Unit = {},
     alertsCard: @Composable () -> Unit = {},
 ) {
     var confirmingStop by remember { mutableStateOf(false) }
@@ -225,6 +228,10 @@ fun ContactsScreen(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         alertsCard()
+        // The checklist: what an SOS from this phone would and would not do.
+        OutlinedButton(onClick = onOpenSetup, modifier = Modifier.fillMaxWidth()) {
+            Text(text = stringResource(R.string.contacts_open_setup))
+        }
         if (state.offline) ContactsMessage(stringResource(R.string.contacts_offline), isError = false)
         state.error?.let {
             // A failed refresh by hand: say what is on screen. Anything else: the error itself.

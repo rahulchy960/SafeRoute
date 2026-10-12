@@ -540,6 +540,67 @@ a phone.
 **Not built:** a button in Settings that offers the widget (`requestPinAppWidget`). The
 widget is found in the launcher's widget list; a follow-up.
 
+### Note of 2026-10-13 (P014c2a): the readiness checklist
+
+**The problem.** An SOS can run and reach nobody: no agreement to the current notice, no
+contact on this phone, a list that never arrived, a phone maker's battery manager. Until
+now the user learned of it during the emergency (failure matrix, rows A6 and A7, and its
+known gap "no warning").
+
+**Decided.**
+
+1. **A checklist, "SOS setup"**, under Settings → Emergency contacts. Each row has a status
+   in a word and, where the user can change something, a button that leads there. The sum
+   is "Ready" or "Not ready: N things to fix". It never says "safe", and under the sum
+   stands that "Ready" does not promise that an alert reaches anyone, with 112.
+2. **The rules are one pure function** (`core/emergency/sosReadiness`). An SOS never asks
+   it: the checklist informs, it gates nothing. The gate stays the consent alone.
+3. **What counts as "to fix":** no agreement to the current notice; no contact on this
+   phone who has not opted out; a list never fetched with no contact on the phone (the app
+   cannot tell "none" from "never arrived", and Refresh settles it); the SMS app instead of
+   automatic sending, **only in a build that could send by itself**; less than precise
+   location, or location switched off; notifications not allowed for the app.
+4. **What never counts:** the battery row. No app can see what a phone maker's battery
+   manager will do, so it is always "SafeRoute cannot check this", with guidance. In a
+   build without the SMS permission the SMS row is "For your information". An old copy of
+   the contact list is said in words ("Updated 12 days ago") and is not by itself a fault:
+   the plan names no age at which a list is too old.
+5. **Read at every resume, nothing in the background.** The screen reads the phone when
+   it comes to the front, also on the way back from the phone's settings. It stores
+   nothing, logs nothing and uploads nothing. The only request it can cause is the fetch
+   of the contact list when the user taps Refresh.
+6. **The time of the last fetch** is a new flag in the app's DataStore
+   (`contacts_synced_at`, a point in time). It is written together with the list, only
+   when the list was really written, set to "never" when the copy is emptied, and cleared
+   at sign-out with the file.
+7. **No new place that asks for a permission.** The project's location policy (ADR 0015)
+   allows Android's location dialog only after the user tapped "my location" on the map
+   and read the disclosure. The checklist therefore opens the app's page in the phone's
+   settings for location and for notifications, and the phone's Location page when
+   location is switched off. The SMS row shows the existing card (`SmsPermissionCard.kt`),
+   the one file that may ask for the SMS permission, after its own disclosure.
+8. **Battery: guidance only.** A button opens the app's page in the phone's settings; an
+   intent to a settings page needs no permission. The app does not request
+   `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` (a non-goal of the prompt; Play restricts it).
+   Four lines name starting points for Samsung; Xiaomi and Redmi; Vivo; Oppo and Realme.
+   **They are written from general knowledge and were not checked on any phone**; the
+   screen says so. No link to a community reference: no official address could be
+   verified, so none is shown.
+9. **Three facts instead of three settings.** The countdown has no sound, the alert is
+   written in the app's language, and the alert carries no name. The checklist says so.
+   The settings for them do not exist; they are P014c2b.
+
+**Split.** Part 2 of P014c asked also for a name for alerts, the alert language and the
+countdown sound as settings, for an offer of the screen after the first contact and for an
+entry on Home while not ready. None of the three settings exists, and a name changes what
+an SOS sends and what the phone stores, which needs its own decision about the notice.
+They are P014c2b.
+
+**Residual risks.** "Ready" can be wrong about things the app cannot see: a SIM without
+balance, no signal, a battery manager, a contact whose phone is off. A user who never
+opens the screen is not warned (until P014c2b offers it). The battery hints can be wrong
+for a given phone and version.
+
 ## Alternatives considered
 
 - **Keep the state in memory or in DataStore.** Simpler, but a killed process loses the

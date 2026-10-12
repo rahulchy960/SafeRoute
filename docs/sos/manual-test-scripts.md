@@ -9,6 +9,7 @@ and reported by a person.
   what to record, what to do if it fails, rows covered).
 - **M17 to M28** are new in P013c, for rows that had no script.
 - **M29** is new in P014b6, for the list of test numbers of debug builds.
+- **M30** is new in P014c2a, for the checklist "SOS setup"; M21 was updated with it.
 - **M22** was rewritten in P014b7: an unsent alert is now tried for as long as the SOS is
   active.
 - **M17** was written in P014c1a (it was a draft): the tile and the pinned notification
@@ -390,9 +391,13 @@ phone" is enough. A screenshot must not show a number, a name or a map position.
   then an active screen that says "You have no emergency contact to alert" (the consent
   arrived, the list did not). Record also what it offered after the list had arrived.
 - **If it fails:** an alert to anyone while the list on the phone was empty is a fault.
-- **Draft until the feature exists (P014c):** a readiness screen that tells the user,
-  before any emergency, that the contacts are not on this phone yet. Today nothing warns
-  beforehand.
+- **Also (since P014c2a):** while the phone is still offline, open Settings → Emergency
+  contacts → "SOS setup". *Expected:* the row "Emergency contacts on this phone" says
+  "SafeRoute cannot check this" and "Never updated" if the list never arrived, and the
+  summary says "Not ready". Tap Refresh while offline: "Couldn't update the list ... The
+  copy on this phone is unchanged." Go online and tap Refresh: the row says how many
+  contacts would be texted and "Updated today". The steps are in
+  [M30](#m30-the-sos-setup-checklist).
 
 ### M22. Every message fails
 
@@ -471,6 +476,57 @@ phone" is enough. A screenshot must not show a number, a name or a map position.
 - **If it fails:** an SMS to the phone that is **not** on the list is a serious fault: stop
   the session and report it. So is a banner that names a different number of contacts than
   were texted.
+
+### M30. The SOS setup checklist
+
+*New in P014c2a.* **Rows:** A6, A7, 4, 7. **Nothing in this script sends an SMS**, unless
+you run a real SOS afterwards.
+
+- **Preconditions:** the build after P014c2a, signed in. For part 1 an account that has
+  agreed to the current notice and has at least one contact (your own second phone).
+- **Part 1, everything in order.** Settings → Emergency contacts → "SOS setup: check that
+  an SOS would work". *Expected:* a summary at the top, "Ready" or "Not ready: N things to
+  fix", and under it the sentence that "Ready" does not promise that an alert reaches
+  anyone, with 112. Then the rows, each with a status in words ("OK", "To fix",
+  "SafeRoute cannot check this", "For your information"): SOS alerts; Emergency contacts
+  on this phone (how many would be texted, and "Updated today" or how many days ago); How
+  alerts are sent; Location; Notifications; Battery and background limits; How an SOS
+  behaves; Practice SOS. Count the rows that say "To fix": the number must be the N of the
+  summary. The battery row always says that SafeRoute cannot check it and is never counted.
+- **Part 2, each row, there and back.** Change one thing at a time in the phone's
+  settings, come back to the screen (do not close it) and read the row again; the screen
+  must show the new state **without being reopened**:
+  - Location: set the permission to "approximate", then to "don't allow", then switch the
+    phone's Location off. *Expected:* "To fix" each time with its own sentence; "Open app
+    settings" opens SafeRoute's page in the phone's settings, "Open location settings" the
+    phone's Location page. The app itself shows no permission dialog on this screen.
+  - Notifications: switch them off for SafeRoute. *Expected:* "To fix" and "Open
+    notification settings".
+  - How alerts are sent: in a debug build without the SMS permission, "To fix" and the
+    card "Send alerts automatically" with "Allow sending SMS" (its own explanation comes
+    before Android's dialog). In a release build: "For your information", not counted.
+  - SOS alerts: with an account that has not agreed to the current notice, "To fix" and
+    "Read how SOS alerts work", which leads to the notice.
+- **Part 3, the contact list.** Switch airplane mode on and tap Refresh. *Expected:*
+  "Couldn't update the list. Check your connection and try again. The copy on this phone
+  is unchanged.", and the number of contacts stays. Switch it off, tap Refresh: "Updated
+  today". With an account whose contacts all opted out, or with none: "No contact would be
+  texted" and "To fix".
+- **Part 4, the battery guidance.** Read the row. Tap "Open app settings" and look for the
+  battery setting of SafeRoute on this phone. **Record what the setting is really called
+  on this phone and where it is**, and whether the line for this phone's maker on the
+  screen led you there: the lines are drafts and have not been checked on any phone.
+- **Part 5, practice and reading.** Tap "Practice SOS": the practice run of
+  [M8](#m8-practice). Then repeat part 1 in Bengali, in dark mode, with the font at its
+  largest setting (every button must still be reachable by scrolling), and with TalkBack
+  (the summary is read as a heading; each row's status is read as a word).
+- **Record:** the phone and its Android version; the summary line and the status of each
+  row; for part 2, whether each change showed after coming back without reopening the
+  screen; part 4 as described; anything the screen said that was not true for this phone.
+- **If it fails:** the screen saying "Ready" while an SOS would in fact text nobody
+  (no contacts, or no agreement to the notice) is a serious fault: report it first. A row
+  that does not change after coming back is a fault; note which. A wrong battery hint is
+  not a fault of the script: record it, it is what part 4 is for.
 
 ### M17. SOS from the tile or the widget while the phone is locked
 

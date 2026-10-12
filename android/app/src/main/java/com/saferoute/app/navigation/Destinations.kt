@@ -28,6 +28,10 @@ data object SettingsDestination
 @Serializable
 data object ContactsDestination
 
+/** "SOS setup": what an SOS from this phone would and would not do (P014c2a). */
+@Serializable
+data object SosSetupDestination
+
 /** Add one contact (with the consent notice before the first one). */
 @Serializable
 data object AddContactDestination
