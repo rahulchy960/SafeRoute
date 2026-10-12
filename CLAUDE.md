@@ -595,7 +595,7 @@ and [`android/README.md`](android/README.md):
   the system contact picker (`pickPhoneNumberIntent`), and an invite leaves the app only
   through `openInviteSms` (`ACTION_SENDTO`); both live in `feature/contacts/ContactIntents.kt`.
   The `sos_alerts` notice is the `contacts_notice_*` strings, mirrored in
-  `docs/legal/sos-alerts-notice-v3.md` (`ContactsNoticeDocumentTest`; versions 1 and 2 stay as
+  `docs/legal/sos-alerts-notice-v4.md` (`ContactsNoticeDocumentTest`; versions 1 to 3 stay as
   the record of what earlier users saw); changing it means changing `SOS_ALERTS_NOTICE_VERSION`,
   and it is asked for only when "Add a contact" or "Read how SOS alerts work" opens. Consent
   counts only for the version the app shows today (`hasConsent`); that version is noted on
@@ -720,6 +720,16 @@ and [`android/README.md`](android/README.md):
   `SmsPermissionCard`, and it never requests a battery-optimisation exemption. The battery
   hints per phone maker are drafts until checked on those phones; no link to an outside
   site without a verified official address.
+  Alert settings (since P014c2b): the name for alerts, the alert language and the
+  countdown sound are `SosSettings`, kept by `SosSettingsStore` in the one-row Room table
+  `sos_settings`; **never in DataStore, never sent to the server, never logged**, and the
+  types that hold the name hide it in `toString()`. They are erased with the contacts
+  (`ContactsRepository.clearLocal`). A name is normalised with `messageName` before it is
+  stored. **The countdown sound stays off by default**; it is one built-in tone on the
+  alarm volume (`AndroidCountdownTone`), needs no permission and never overrides silent
+  mode or Do Not Disturb. None of the three is a row of the checklist. What a person types
+  into the name field stays in memory until "Save". Changing what the alert says about
+  the sender means changing the notice and its version in the same prompt.
   Every SOS change updates [`docs/sos/failure-matrix.md`](docs/sos/failure-matrix.md):
   "Automated pass" only for rows with passing tests, with the level it was tested at.
 - `android/app/google-services.json` is never opened, printed or committed by Claude Code. CI and

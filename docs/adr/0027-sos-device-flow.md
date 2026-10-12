@@ -601,6 +601,55 @@ balance, no signal, a battery manager, a contact whose phone is off. A user who 
 opens the screen is not warned (until P014c2b offers it). The battery hints can be wrong
 for a given phone and version.
 
+### Note of 2026-10-13 (P014c2b): the name, the language and the sound
+
+Decision 10 of this ADR said "vibration only by default; sound is a setting", the note of
+P014b2 said "the name is not asked for yet", and the note of P014c2a showed all three as
+facts. They are settings now. Nothing was verified on a phone, and no sound was heard.
+
+1. **Where they are kept.** A table with one row, `sos_settings`, in the app's private
+   Room database (version 3; a migration that only adds the table). The name is a piece
+   of personal data, and the app's settings file holds flags only (ADR 0012). The language
+   and the sound are flags and could have gone into that file; one place for the three was
+   chosen so that they are read, written and erased together.
+2. **The name** is what the user types for this purpose, at most 30 characters, one line
+   (the rule the message engine has had since P014b1). The app has no other name for the
+   user and asks for no proof of one. It is optional: without it the alert says, as
+   before, that someone who listed the contact needs help.
+3. **Never to the server.** The name leaves the phone only inside the SMS the phone sends
+   to the user's own contacts. It is read from the database at the moment an alert is
+   written, so a name removed during an SOS is gone from the next message.
+4. **Erased with the contacts**: when the user stops SOS alerts, signs out, or the account
+   is blocked (`ContactsRepository.clearLocal`). The two choices go back to their defaults
+   with it. Not backed up (`allowBackup=false`).
+5. **The language of the alert** is the app's language (the default), English or Bengali:
+   a contact may read only one of them, whatever language the user's own screen is in.
+6. **The countdown sound is off by default** and stays a deliberate choice, with the
+   sentence that a phone that makes a noise can put its owner at risk. When on, a short
+   built-in tone is played each second of the countdown, besides the vibration, on the
+   alarm volume (`ToneGenerator`, `STREAM_ALARM`). It needs no permission. The user's
+   alarm volume, silent mode and Do Not Disturb still decide; the app cannot and does not
+   override them. A phone that refuses to make a tone gets none, and the countdown goes
+   on. A practice run sounds the same, so that the setting can be tried.
+7. **The runner reads the sound setting once**, when a countdown begins or is continued in
+   a new process, from the phone's own database. A setting that cannot be read means "no
+   sound".
+8. **Notice version 4.** A name is new in what an SOS sends and in what the phone stores,
+   so one clause was added to the third paragraph
+   ([`docs/legal/sos-alerts-notice-v4.md`](../legal/sos-alerts-notice-v4.md)) and the
+   version changed: a consent for version 3 no longer opens the gate. The language and the
+   sound change nothing the notice describes.
+9. **None of the three is a row of the checklist.** They change what an alert says and
+   how a countdown is felt, never whether an SOS can start.
+10. **The field is inside the card, not in a dialog.** A text field in a dialog never came
+    to rest under the test framework; the editor follows the one that renames a contact.
+
+**Residual risks.** The fourth notice version in five days: every tester is asked again
+(there are no released users). A user can type any name, also someone else's; the alert
+still comes from their own phone number. A sound in an emergency can give a person away;
+the default and the warning are the mitigation. Whether the tone is audible, and how it
+behaves in silent mode and Do Not Disturb, is known for no phone.
+
 ## Alternatives considered
 
 - **Keep the state in memory or in DataStore.** Simpler, but a killed process loses the

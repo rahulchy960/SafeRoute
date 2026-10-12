@@ -51,7 +51,7 @@ No secret, account id or tester's detail belongs in this file.
 - The dialog that starts an SOS says that an SOS texts the user's emergency contacts where
   the phone is and records its positions on the phone for up to 30 days.
 - The notice the user agrees to before SOS can be used
-  (`docs/legal/sos-alerts-notice-v3.md`) says the same, that an SOS can also be started from
+  (`docs/legal/sos-alerts-notice-v4.md`) says the same, that an SOS can also be started from
   a shortcut outside the app, and that the app's server receives
   neither the alerts nor the position.
 
