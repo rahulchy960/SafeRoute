@@ -444,8 +444,42 @@ Gradle property `saferoute.sendSmsEnabled` decides whether a build carries it:
 
 A build without it cannot send an SMS by itself. `BuildConfig.SEND_SMS_DECLARED` tells the
 code which kind of build it is. CI builds the release with `false` and checks the APK with
-`aapt2 dump permissions`. Nothing sends an SMS yet: the engine is connected to a running
-SOS in P014b2.
+`aapt2 dump permissions`. Since P014b3 a user who agreed to the SOS alerts notice and allowed
+SMS gets real SMS sent to their emergency contacts when an SOS countdown finishes.
+
+### Debug builds text only your test numbers (since P014b6)
+
+A debug build carries `SEND_SMS`, and the account you test with may hold the numbers of real
+people. So a **debug build sends an SMS by itself only to numbers you named when you built
+it**. Put them in your **user-level** `gradle.properties` (`<home>/.gradle/gradle.properties`),
+never in a file of this repository: phone numbers are personal data.
+
+```properties
+# The phones you own and test with, in international form, separated by commas.
+saferoute.debugSmsAllowlist=<your second phone>,<another test phone>
+```
+
+| The list | What a debug build does when an SOS countdown finishes |
+| --- | --- |
+| not set, or empty | Sends nothing by itself. Your SMS app opens with the alert for every contact, and nothing is sent until you press Send there ("composer mode") |
+| set, and some contacts are on it | Texts those contacts by itself. Every other contact is **not texted**; their message is recorded as skipped (`debug_not_allowlisted`) and the active screen counts them |
+| set, and no contact is on it | As with an empty list: composer mode |
+
+- A number is read like a contact's number: spaces, brackets and hyphens do not matter,
+  a number written with or without `+91` is the same, a number named twice counts once, and
+  an entry that is not a usable number is ignored. Other characters fail the build, with a
+  message that names the property and not its value.
+- **Debug builds say so on screen**: a banner on the SOS dialog, the countdown and the active
+  screen reads "DEBUG build: SMS is sent for real to N allowlisted contacts", or says that
+  it is in composer mode and why. It shows a count, never a number.
+- The follow-up after "I'm safe" and the location update go only to contacts whose alert
+  was sent, so they stay inside the list too.
+- **A release build ignores the property**: it has no such field, no banner, and texts every
+  emergency contact. CI checks the release APK for all three.
+- A debug APK built with a list **contains those numbers**. Do not share such an APK or
+  attach it anywhere public. CI builds without a list.
+- Rebuild after changing the list. Claude Code never reads your user-level
+  `gradle.properties`.
 
 ### How the code is organised
 
