@@ -650,6 +650,39 @@ still comes from their own phone number. A sound in an emergency can give a pers
 the default and the warning are the mitigation. Whether the tone is audible, and how it
 behaves in silent mode and Do Not Disturb, is known for no phone.
 
+### Note of 2026-10-13 (P014c2c): the checklist is offered
+
+The note of P014c2a ended with "a user who never opens the screen is not warned". Two
+places lead there now. Nothing was verified on a phone.
+
+1. **Once, after the first contact.** When the phone knows of at least one contact, the
+   Emergency contacts screen shows a card "Check that an SOS would work", once. "Open SOS
+   setup", "Not now" and opening the checklist by its own button all end it for good. A
+   user who had contacts before this change sees it once too.
+2. **On Home, while something is to fix.** The bottom sheet shows "Not ready: N things to
+   fix" with the way to the checklist. N is the checklist's own number: one class,
+   `SosReadinessReader`, reads the phone for both, so they cannot disagree.
+3. **Only once SOS is being set up**: the user agreed to the notice, or a contact is on
+   the phone. Before that the card "Add emergency contacts" (P013b2) is the right one,
+   and two cards would say the same thing twice. A user whose consent was for an older
+   notice version has contacts and a closed gate: they are told here, which the notes of
+   P014c1a and P014c2b asked for.
+4. **No background work.** Home looks at the phone when it comes to the front, as it
+   already does for the location permission. Nothing is watched while Home is not shown,
+   no location updates are started for it, nothing is fetched and nothing is logged.
+5. **"Not now" hides the Home card for three days**, the period the contacts card uses.
+   It comes back while something is still to fix. It is not a dialog and never covers the
+   SOS control: it is a card in the sheet's content.
+6. **Two flags** in the app's settings file: the offer was answered, and until when the
+   Home card is put off. Both are cleared at sign-out with the file.
+
+**Residual risks.** The Home card is inside the sheet, below what the sheet shows at its
+lowest position: a user who never pulls the sheet up does not see it. A user who chose
+approximate location on purpose is reminded every three days; the alternative, a "never
+show again", would also silence the case that matters most (no contact, no consent). The
+count on the card is as fallible as the checklist: it sees no SIM balance, signal or
+battery manager.
+
 ## Alternatives considered
 
 - **Keep the state in memory or in DataStore.** Simpler, but a killed process loses the
