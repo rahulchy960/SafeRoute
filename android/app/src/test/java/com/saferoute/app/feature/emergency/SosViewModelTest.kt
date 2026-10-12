@@ -12,6 +12,7 @@ import com.saferoute.app.core.emergency.SosRecord
 import com.saferoute.app.core.emergency.SosRig
 import com.saferoute.app.core.emergency.SosRunState
 import com.saferoute.app.core.emergency.SosState
+import com.saferoute.app.core.emergency.StartSos
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -45,13 +46,104 @@ class SosViewModelTest {
         block(SosRig(this).also { it.policy.open = true })
     }
 
-    private fun SosRig.viewModel() = SosViewModel(runner, trail, gate, haptics, dispatch, policy, notices, appScope)
+    private fun SosRig.viewModel() = SosViewModel(runner, trail, gate, haptics, dispatch, StartSos(policy, runner), notices, appScope)
 
-    private fun SosRig.open(mode: SosOpenMode, fresh: Boolean = true): SosViewModel =
-        viewModel().also {
-            it.onShown(mode, fresh)
-            advance(0)
+    private fun SosRig.open(
+        mode: SosOpenMode,
+        fresh: Boolean = true,
+        entryPoint: SosEntryPoint = SosEntryPoint.IN_APP,
+    ): SosViewModel = viewModel().also {
+        it.onShown(mode, fresh, entryPoint)
+        advance(0)
+    }
+
+    // --- entry points (P014c1) ----------------------------------------------------------
+
+    @Test
+    fun `the tile, the widget and the notification start the same countdown as the hold`() = test { rig ->
+        for (entryPoint in SosEntryPoint.entries) {
+            val viewModel = rig.open(SosOpenMode.START, entryPoint = entryPoint)
+
+            assertEquals("$entryPoint", SosUi.Countdown(secondsLeft = 5), viewModel.ui.value)
+            assertEquals(entryPoint, rig.store.all.last().entryPoint)
+            rig.advance(5_000)
+            assertTrue("$entryPoint", viewModel.ui.value is SosUi.Active)
+
+            viewModel.onSafeClick()
+            viewModel.onSafeConfirm()
+            rig.advance(0)
+            assertEquals(SosUi.Closed, viewModel.ui.value)
         }
+        assertEquals(SosEntryPoint.entries, rig.store.all.map { it.entryPoint })
+    }
+
+    @Test
+    fun `with alerts not set up every entry shows the options and the way to the setup, and no countdown`() = test { rig ->
+        rig.policy.open = false
+        rig.contacts.list = listOf(SosContact("id-1", "Test Contact 1", "+919000010001"))
+
+        for (entryPoint in SosEntryPoint.entries) {
+            val viewModel = rig.open(SosOpenMode.START, entryPoint = entryPoint)
+            rig.advance(10_000)
+
+            assertEquals("$entryPoint", SosUi.NotSetUp, viewModel.ui.value)
+        }
+        assertEquals(emptyList<SosRecord>(), rig.store.all)
+        assertEquals(0, rig.gateway.attempts.size)
+        assertEquals(emptyList<String>(), rig.host.events.toList())
+        assertEquals("no vibration either", emptyList<String>(), rig.haptics.events.toList())
+    }
+
+    @Test
+    fun `a start from a second entry while an SOS runs shows the one that is running`() = test { rig ->
+        val fromTile = rig.open(SosOpenMode.START, entryPoint = SosEntryPoint.TILE)
+        rig.advance(2_000)
+
+        // The widget is tapped: Android replaces the screen, so a new ViewModel asks.
+        val fromWidget = rig.open(SosOpenMode.START, entryPoint = SosEntryPoint.WIDGET)
+
+        assertEquals("the same countdown, not a new five seconds", SosUi.Countdown(secondsLeft = 3), fromWidget.ui.value)
+        assertEquals(fromTile.ui.value, fromWidget.ui.value)
+
+        rig.advance(3_000)
+        val fromNotification = rig.open(SosOpenMode.START, entryPoint = SosEntryPoint.NOTIFICATION)
+        rig.advance(10_000)
+
+        assertTrue(fromNotification.ui.value is SosUi.Active)
+        assertEquals(1, rig.store.all.size)
+        assertEquals(SosEntryPoint.TILE, rig.store.all.single().entryPoint)
+        assertEquals(1, rig.haptics.events.count { it == "triggered" })
+    }
+
+    @Test
+    fun `practice from the not-set-up dialog runs a practice and touches nothing real`() = test { rig ->
+        rig.policy.open = false
+        val viewModel = rig.open(SosOpenMode.START, entryPoint = SosEntryPoint.WIDGET)
+
+        viewModel.onPractice()
+        rig.advance(0)
+        assertEquals(SosUi.Countdown(secondsLeft = 5, practice = true), viewModel.ui.value)
+        rig.advance(5_000)
+        assertTrue((viewModel.ui.value as SosUi.Active).practice)
+
+        assertEquals(emptyList<SosRecord>(), rig.store.all)
+        assertEquals(emptyList<String>(), rig.host.events.toList())
+        assertEquals(SosRunState.Idle, rig.runner.state.value)
+    }
+
+    @Test
+    fun `a re-created screen never starts an SOS from a shortcut's intent a second time`() = test { rig ->
+        val viewModel = rig.open(SosOpenMode.START, entryPoint = SosEntryPoint.NOTIFICATION)
+        viewModel.onCancel()
+        rig.advance(0)
+
+        // Android re-creates the screen from its saved state, with the same intent.
+        val recreated = rig.open(SosOpenMode.START, fresh = false, entryPoint = SosEntryPoint.NOTIFICATION)
+        rig.advance(10_000)
+
+        assertEquals(SosUi.Options, recreated.ui.value)
+        assertEquals(emptyList<SosRecord>(), rig.store.all)
+    }
 
     @Test
     fun `opened with nothing running it shows the options and starts nothing`() = test { rig ->
@@ -295,7 +387,8 @@ class SosViewModelTest {
         val viewModel = rig.open(SosOpenMode.START)
         rig.advance(10_000)
 
-        assertEquals(SosUi.Options, viewModel.ui.value)
+        // The dialog that says so, with Call 112 and the way to the setup; no countdown.
+        assertEquals(SosUi.NotSetUp, viewModel.ui.value)
         assertEquals(emptyList<SosRecord>(), rig.store.all)
         assertEquals(0, rig.gateway.attempts.size)
         assertEquals(emptyList<String>(), rig.host.events.toList())

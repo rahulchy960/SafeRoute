@@ -80,11 +80,11 @@
     <string name="settings_language_title">Language</string>
     <string name="settings_language_supporting">English / বাংলা · Coming soon</string>
     <string name="sos_tile_label">SafeRoute SOS</string>
-    <string name="sos_tile_subtitle">Emergency options</string>
+    <string name="sos_tile_subtitle">Tap to start SOS</string>
     <string name="settings_shortcuts_title">Emergency shortcuts</string>
     <string name="settings_tile_add_title">Add the SOS tile</string>
-    <string name="settings_tile_add_supporting">Puts “SafeRoute SOS” in Quick Settings, the panel you pull down from the top of the screen. Tapping it opens the emergency options, also when the phone is locked.</string>
-    <string name="settings_tile_help">The tile opens the same options as the SOS control in the app: it offers to open your phone app with 112 entered. It does not call by itself. SafeRoute is not an emergency service.</string>
+    <string name="settings_tile_add_supporting">Puts “SafeRoute SOS” in Quick Settings, the panel you pull down from the top of the screen. Tapping it starts the SOS countdown, also when the phone is locked.</string>
+    <string name="settings_tile_help">One tap on the tile starts the same 5-second countdown as the SOS control in the app, without the 2-second hold. You can cancel it; after it your emergency contacts are alerted by SMS. Until SOS alerts are set up, the tile only offers to open your phone app with 112 entered. SafeRoute is not an emergency service.</string>
     <string name="settings_tile_added_title">Tile added</string>
     <string name="settings_tile_added_body">“SafeRoute SOS” is now in Quick Settings. Pull down from the top of the screen to find it.</string>
     <string name="settings_tile_already_title">The tile is already there</string>
@@ -101,15 +101,15 @@
     <string name="emergency_notification_title">SafeRoute emergency shortcut</string>
     <string name="emergency_notification_text">Tap for the emergency options.</string>
     <string name="emergency_notification_call">Call 112</string>
-    <string name="emergency_notification_open">Open SOS</string>
+    <string name="emergency_notification_start">Start SOS</string>
     <string name="settings_notification_title">Emergency shortcut in notifications</string>
-    <string name="settings_notification_off">A pinned notification with “Call 112” and “Open SOS”. Off.</string>
+    <string name="settings_notification_off">A pinned notification with “Call 112” and “Start SOS”. Off.</string>
     <string name="settings_notification_on">On. If you swipe it away, it comes back the next time you open SafeRoute.</string>
     <string name="settings_notification_on_blocked">On, but your phone is not showing it: notifications are blocked for SafeRoute or for this category.</string>
     <string name="settings_notification_limits">Good to know: this notification can be swiped away, and your phone or a battery manager can remove it. SafeRoute puts it back when you open the app, after a restart of the phone and after an update. The Quick Settings tile is the dependable shortcut.</string>
     <string name="settings_notification_open_settings">Open system settings</string>
     <string name="settings_notification_explain_title">Emergency shortcut in notifications</string>
-    <string name="settings_notification_explain_what">SafeRoute will keep one silent notification in your notification list, also on the lock screen. It has two buttons: “Call 112” opens your phone app with 112 entered, and “Open SOS” opens the emergency options. Nothing is dialled by itself.</string>
+    <string name="settings_notification_explain_what">SafeRoute will keep one silent notification in your notification list, also on the lock screen. It has two buttons: “Call 112” opens your phone app with 112 entered, and “Start SOS” starts the 5-second SOS countdown, which you can cancel. Nothing is dialled by itself.</string>
     <string name="settings_notification_explain_permission">Your phone may now ask whether SafeRoute may send notifications. SafeRoute uses this for the shortcut only. The notification shows nothing about you and uses no location.</string>
     <string name="settings_notification_continue">Continue</string>
     <string name="settings_notification_not_now">Not now</string>
@@ -120,7 +120,7 @@
     <string name="settings_notification_notice_title">The shortcut is off</string>
     <string name="settings_notification_close">Close</string>
     <string name="shortcut_offer_title">Add an emergency shortcut?</string>
-    <string name="shortcut_offer_body">SafeRoute can keep a silent notification with “Call 112” and “Open SOS”, so the emergency options are one tap away without opening the app. You can set it up in Settings, and add a Quick Settings tile there too.</string>
+    <string name="shortcut_offer_body">SafeRoute can keep a silent notification with “Call 112” and “Start SOS”, so both are one tap away without opening the app. You can set it up in Settings, and add a Quick Settings tile there too.</string>
     <string name="shortcut_offer_set_up">Open Settings</string>
     <string name="shortcut_offer_not_now">Not now</string>
     <string name="settings_about_title">About</string>
@@ -429,12 +429,12 @@
     <string name="contacts_error_invalid">Check the name and the number.</string>
     <string name="contacts_error_not_found">This contact no longer exists.</string>
 
-    <!-- The sos_alerts notice. Mirrored in docs/legal/sos-alerts-notice-v1.md (ContactsNoticeDocumentTest). Changing it means changing SOS_ALERTS_NOTICE_VERSION. DRAFT until a lawyer has reviewed it. -->
+    <!-- The sos_alerts notice. Mirrored in docs/legal/sos-alerts-notice-v3.md (ContactsNoticeDocumentTest). Changing it means changing SOS_ALERTS_NOTICE_VERSION. DRAFT until a lawyer has reviewed it. -->
     <string name="contacts_notice_title">How SOS alerts work</string>
     <string name="contacts_notice_p1">You are about to save other people\'s phone numbers in SafeRoute. Add only people who know you and whom you have a good reason to add.</string>
     <string name="contacts_notice_p2">You send each one an invite from your own phone. It has a link with which they can opt out. Someone who opted out is never alerted.</string>
     <string name="contacts_notice_p3">When you start an SOS, your phone sends each of them an SMS from your own SIM. It says that you need help and gives a map link to where your phone is, how exact and how old that position is, and your battery level. One more SMS may follow with a better position, and one if you say you are safe.</string>
-    <string name="contacts_notice_p4">Your mobile plan may charge you for these SMS. Nothing is sent unless you start an SOS. If the app is not allowed to send SMS, it opens your SMS app with the message and you press Send.</string>
+    <string name="contacts_notice_p4">Your mobile plan may charge you for these SMS. Nothing is sent unless you start an SOS. You can start one in the app, or with a single tap on a SafeRoute shortcut outside the app, such as its Quick Settings tile or its pinned notification, also when the phone is locked; a 5-second countdown that you can cancel always comes first. If the app is not allowed to send SMS, it opens your SMS app with the message and you press Send.</string>
     <string name="contacts_notice_p5">During an SOS the app also records where your phone is. That record stays on this phone for up to 30 days. SafeRoute\'s server receives neither your alerts nor your position.</string>
     <string name="contacts_notice_p6">SafeRoute is not an emergency service. A message can arrive late or not at all. In an emergency, call 112.</string>
     <string name="contacts_notice_p7">You can stop at any time: open Emergency contacts and choose \"Stop SOS alerts and remove all contacts\". That deletes them all.</string>

@@ -26,8 +26,11 @@ No secret, account id or tester's detail belongs in this file.
 > emergency contacts carries a current position, and so that one corrected position can
 > follow.
 >
-> The service is started only by the user starting an SOS, from a visible screen of the
-> app, after a 5-second countdown that can be cancelled. It shows a notification the whole
+> The service is started only by the user starting an SOS: by holding the SOS button in the
+> app, or by tapping the app's Quick Settings tile or the "Start SOS" button of its pinned
+> notification (a home-screen widget is planned). Each of them opens the app's emergency
+> screen, and the service starts while that screen is visible, together with a 5-second
+> countdown that can be cancelled. It shows a notification the whole
 > time ("SOS countdown" / "SOS active") with a button to call 112. It ends when the user
 > cancels the countdown or taps "I'm safe". The app never starts it at boot, on a schedule
 > or without the user.
@@ -48,7 +51,8 @@ No secret, account id or tester's detail belongs in this file.
 - The dialog that starts an SOS says that an SOS texts the user's emergency contacts where
   the phone is and records its positions on the phone for up to 30 days.
 - The notice the user agrees to before SOS can be used
-  (`docs/legal/sos-alerts-notice-v2.md`) says the same, and that the app's server receives
+  (`docs/legal/sos-alerts-notice-v3.md`) says the same, that an SOS can also be started from
+  a shortcut outside the app, and that the app's server receives
   neither the alerts nor the position.
 
 ## User flow to show (for a video, if one is asked for)
@@ -60,6 +64,18 @@ No secret, account id or tester's detail belongs in this file.
 4. Press the home button, then lock the phone; unlock: the notification is still there.
 5. Open the SOS screen from the notification; "I'm safe" → confirm.
 6. The notification is gone; nothing is running.
+
+The same flow from outside the app (since P014c1a; update this list when the widget
+exists):
+
+1. Pull down Quick Settings → tap the tile "SafeRoute SOS": the countdown screen opens.
+   Cancel.
+2. Lock the phone → pull down Quick Settings → tap the tile: the countdown is shown over the
+   lock screen with Cancel and Call 112. Cancel.
+3. With the pinned notification switched on: tap its "Start SOS" button: the same
+   countdown. Let it finish, then "I'm safe" (the phone asks for the unlock first).
+4. Without agreement to the notice: any of them shows "Call 112" and "Set up SOS alerts",
+   and no countdown starts.
 
 ## Data handling to state
 
@@ -73,6 +89,8 @@ No secret, account id or tester's detail belongs in this file.
 ## Before submitting
 
 - [ ] The form's own questions have been read and each is answered above or added here.
+- [ ] The phone script M17 (the tile and the notification, also from the lock screen) has
+      been run, and whether the service started in each case is recorded.
 - [ ] The phone scripts M3 to M6 in `docs/sos/manual-test-scripts.md` have been run, and what
       happens to the service on the test phones is recorded.
 - [ ] The privacy policy, when it exists, says the same about location.

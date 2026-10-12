@@ -93,6 +93,7 @@ import com.saferoute.app.feature.directions.FollowBanner
 import com.saferoute.app.feature.directions.KeepScreenOn
 import com.saferoute.app.feature.directions.RouteIntroDialog
 import com.saferoute.app.feature.contacts.ContactsHomeCard
+import com.saferoute.app.core.emergency.SosEntryPoint
 import com.saferoute.app.feature.emergency.EmergencyShortcut
 import com.saferoute.app.feature.emergency.ShortcutOfferDialog
 import com.saferoute.app.feature.emergency.ShortcutOfferViewModel
@@ -293,7 +294,7 @@ fun HomeRoute(
         emergencyArm = EmergencyArm(
             onArmed = {
                 viewModel.onEmergencyDialogDismiss()
-                context.startActivity(EmergencyShortcut.modeIntent(context, SosOpenMode.START))
+                context.startActivity(EmergencyShortcut.startIntent(context, SosEntryPoint.IN_APP))
             }.takeIf { alertsEnabled },
             onSetUp = {
                 viewModel.onEmergencyDialogDismiss()

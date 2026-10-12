@@ -73,6 +73,10 @@ class SosAlertsDeviceTest {
         runBlocking { preferences.setAlertsNoticeVersion("2026-10-alerts-draft1") }
         assertFalse("the older notice did not describe the alerts", runBlocking { policy.alertsAllowed() })
 
+        // Version 2 did not say that an SOS can be started from outside the app (P014c1).
+        runBlocking { preferences.setAlertsNoticeVersion("2026-10-alerts-draft2") }
+        assertFalse("version 2 is asked again", runBlocking { policy.alertsAllowed() })
+
         runBlocking { preferences.setAlertsNoticeVersion(SOS_ALERTS_NOTICE_VERSION) }
         assertTrue(runBlocking { policy.alertsAllowed() })
 
@@ -82,8 +86,8 @@ class SosAlertsDeviceTest {
     }
 
     @Test
-    fun `the notice version is the second one, and differs from the first`() {
-        assertEquals("2026-10-alerts-draft2", SOS_ALERTS_NOTICE_VERSION)
+    fun `the notice version is the third one, and differs from the first two`() {
+        assertEquals("2026-10-alerts-draft3", SOS_ALERTS_NOTICE_VERSION)
     }
 
     @Test

@@ -2,7 +2,10 @@
 package com.saferoute.app.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -32,6 +35,14 @@ fun SafeRouteNavHost(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
 ) {
+    // "Set up SOS alerts" on the emergency screen asked for Emergency contacts.
+    val contactsRequested by OpenRequests.contacts.collectAsStateWithLifecycle()
+    LaunchedEffect(contactsRequested) {
+        if (contactsRequested) {
+            navController.navigate(ContactsDestination) { launchSingleTop = true }
+            OpenRequests.done()
+        }
+    }
     NavHost(
         navController = navController,
         startDestination = HomeDestination,
