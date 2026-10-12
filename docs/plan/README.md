@@ -28,6 +28,12 @@ is Proposed, builds nothing and changes no MVP scope.
 monetization hypotheses (no prices), a Safe Date journey type, two rejected ideas and a
 validation plan without code. It is Proposed, builds nothing and changes no MVP scope.
 
+The failure matrix of Plan v7 §7.5 is kept as a living document, with the rows added since,
+the tests behind each row and the results reported from phones, in
+[`../sos/failure-matrix.md`](../sos/failure-matrix.md); the scripts a person runs on a phone
+are in [`../sos/manual-test-scripts.md`](../sos/manual-test-scripts.md). They change with every
+prompt that touches SOS, contacts, live sharing or reminders; the plan's own table does not.
+
 **Reading order: PDF → v7.1 → v7.2 → v7.3 → v7.4 → v7.5 → v7.6 → v7.7.** Where they differ, the later document wins. A full v8 will
 be written after the MVP and company registration.
 

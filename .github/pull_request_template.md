@@ -30,6 +30,8 @@
 
 <!-- Commands + results (pass/fail counts). SOS/live location: failure-matrix rows (Plan v7 §7.5). -->
 
+**SOS failure matrix rows touched (link):** <!-- Row IDs and what changed (tests, status, scripts), with a link to docs/sos/failure-matrix.md on this branch; "none" if the PR does not touch SOS, contacts, live sharing or reminders. -->
+
 **Android screenshots:** <!-- UI changes only, otherwise "n/a". Rahul adds screenshots from the phone: light, dark and Bengali. Claude Code has no device and can't take them. -->
 
 ## Diagrams
