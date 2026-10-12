@@ -683,6 +683,83 @@ show again", would also silence the case that matters most (no contact, no conse
 count on the card is as fallible as the checklist: it sees no SIM balance, signal or
 battery manager.
 
+### Note of 2026-10-13 (P014c3): after a restart, and when the account goes away
+
+Two sentences of this ADR are superseded by this note (the text above stays as it was
+written). "Consequences" said that what the user sees after
+a restart is "P014c (boot notice)", and that "a sign-out during an active emergency
+deletes it. Accepted for now". Nothing was verified on a phone.
+
+**What was verified for the restart** (the Android guide "Support Direct Boot mode", read
+on 2026-10-13, and the platform sources of API 37):
+
+| Topic | Finding | Certainty |
+| --- | --- | --- |
+| When the app's data can be read | The default storage of an app is "credential encrypted storage ... only available after the user has unlocked the device". The app's database and settings file are there | Certain (guide) |
+| Which broadcast | `ACTION_LOCKED_BOOT_COMPLETED` is for components that declared themselves aware of direct boot; "by default, apps don't run during Direct Boot mode". An app that can wait listens for `ACTION_BOOT_COMPLETED` | Certain (guide). The guide does not state the moment of delivery in one sentence; that it follows the first unlock is what the two statements together mean |
+| Starting the location service from that broadcast | Not allowed for a type that needs a while-in-use permission (the spike of P014a1) | Certain (guide) |
+| A phone maker withholding the broadcast | Not documented | Unknown; a phone check (script M27) |
+
+**Decided: after a restart.**
+
+1. **The receiver that already runs after a restart also looks at the record.** It is the
+   one receiver of P012f2 and still answers only to a restart of the phone and to an update
+   of this app. The app does not take part in direct boot, so it runs after the first
+   unlock, when the database can be read.
+2. **Only an emergency whose alert went out is announced** (triggered or active). A
+   countdown that did not finish sent nothing; the app asks about it when it is opened
+   (decision 7), and a notification about "an SOS that was starting" would alarm for
+   nothing.
+3. **One notification, high importance**, with fixed text: "SOS was active when the phone
+   restarted" (or "... when SafeRoute was updated": an update ends the process in the same
+   way), and that it is not running now. Three buttons, each an immutable activity
+   PendingIntent: Continue, I'm safe, Call 112. It is shown on the lock screen; it holds
+   no name, number or place.
+4. **It continues nothing.** The receiver holds no way to reach the runner, the service or
+   the location trail (a test reads its sources). Between the restart and "Continue" no
+   location is recorded and no unsent alert is retried, and the notification says so. This
+   keeps the rule of the note of P014a2: nothing resumes an emergency in the background.
+5. **The notice goes when the SOS is run again or ends** (the host removes it).
+6. **"I'm safe" from a notification goes through the unlock.** Until this note the
+   emergency screen, opened by that button, showed the confirmation at once. The screen
+   may be drawn over the lock screen, so a person holding a locked phone could have
+   reached "Yes, I'm safe" without unlocking it, which decision 11 and the note of P014a3
+   forbid. The button now only asks the screen, and the screen does what its own "I'm
+   safe" does: the unlock first, then the confirmation. This also applies to the
+   notification of a running SOS (P014a3). Whether Android would in fact have shown that
+   screen over the lock screen from a notification button was not tested on a phone; the
+   rule no longer depends on it.
+
+**Decided: when the account goes away.**
+
+1. **Signing out is refused while an emergency is going on** (a countdown counts). Settings
+   says "An SOS is active. End it first", with the way to the SOS. It is asked again at
+   the moment of signing out, because an SOS can start after the screen was opened.
+2. **A block, a deletion or a sign-out forced by the server does not stop a running SOS.**
+   The two clean-ups that follow the session (the emergency records; the contacts, the
+   note of the consent and the name for alerts) wait until no emergency is going on
+   (`SosEngine.awaitNoEmergency`), and then wipe as before. So the alerts, their retries and
+   the message "I am safe" go out as the user was told they would.
+3. **It holds across a process death**: a new process finds the same session state and the
+   same record, and waits again.
+4. **Signed in again before the SOS ended**, the waiting wipe is dropped; the finished SOS
+   is then kept like every other, for 30 days.
+5. **A new SOS cannot be started by a blocked or signed-out account**: the consent gate
+   reads a flag that the deferred clean-up removes once the running SOS has ended, and
+   Settings and Home are replaced by the onboarding screens at once.
+
+**Residual risks.** A phone that withholds the restart broadcast shows nothing until the
+app is opened. A user who never ends an SOS keeps its data on a phone whose account is
+gone, until they end it or the 30-day purge takes it. Between a block and the end of the
+SOS the phone still holds the contacts of an account that no longer exists; they are used
+for that SOS only. A stranger with the unlocked phone can still end an SOS; that was
+always so.
+
+**Rejected.** Continuing the SOS from the receiver: Android forbids the location service
+there, and an emergency that restarts itself unseen is what decision 7 excludes. Announcing
+a countdown too: see 2. Signing out and keeping the SOS: two accounts' data on one phone.
+Ending the SOS at a block: the person may be in danger whatever the account's state.
+
 ## Alternatives considered
 
 - **Keep the state in memory or in DataStore.** Simpler, but a killed process loses the

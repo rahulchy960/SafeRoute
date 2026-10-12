@@ -12,6 +12,7 @@ and reported by a person.
 - **M30** is new in P014c2a, for the checklist "SOS setup"; M21 was updated with it. Its
   part 6 (the alert settings) is new in P014c2b, its part 7 (the two ways to the
   checklist) in P014c2c.
+- **M27** was written in P014c3 (it was a draft); **M31** and **M32** are new in P014c3.
 - **M22** was rewritten in P014b7: an unsent alert is now tried for as long as the SOS is
   active.
 - **M17** was written in P014c1a (it was a draft): the tile and the pinned notification
@@ -633,6 +634,87 @@ notification, and since P014c1b the home-screen widget (part 7).
   and whether it works after the unlock: the SOS control in the app is the fallback. If a
   countdown started although the consent was missing, stop and report it first.
 
+### M27. The notice after a restart
+
+*Written in P014c3; it was a draft before.* **Rows:** 5, A11.
+
+- **Preconditions:** the build after P014c3; notifications allowed for SafeRoute; a screen
+  lock set. **Part 1 lets a countdown finish and so sends an SMS** in automatic mode: an
+  account with no contacts, or only your second phone, and the banner of a debug build
+  read first.
+- **Part 1, restart during an active SOS.** Start an SOS, let the countdown finish ("SOS
+  active"). Restart the phone. Unlock it and **do not open SafeRoute**. *Expected, within a
+  minute or so of the unlock:* a notification "SOS was active when the phone restarted",
+  with the text that it is not running now, and three buttons: Continue, I'm safe, Call 112.
+  Before the unlock nothing is expected. Note that no "SOS active" notification is there:
+  nothing is running.
+- **Part 2, Continue.** Tap Continue (or the notification). *Expected:* "SOS is still
+  active", with Continue and I'm safe; the restart notification goes and the silent "SOS
+  active" one is back; the location line appears again. An alert that had not been sent is
+  tried again now.
+- **Part 3, I'm safe from the notification.** Repeat part 1, then **lock the phone** and
+  tap "I'm safe" on the notification from the lock screen. *Expected:* the phone asks for
+  the unlock first; only then "End the SOS?" with "Yes, I'm safe". Without the unlock the
+  SOS cannot be ended.
+- **Part 4, a countdown.** Start an SOS and restart the phone **during the countdown**
+  (hold the power button at once). After the unlock: *expected:* **no** notification (nothing
+  was sent). Open SafeRoute: "SOS was starting when the app closed" with Send now and
+  Cancel. Tap Cancel.
+- **Part 5, notifications off.** Switch notifications off for SafeRoute and repeat part 1.
+  *Expected:* nothing appears; opening SafeRoute shows "SOS is still active" as before.
+- **Record:** the phone and its Android version; whether the notification appeared and how
+  long after the unlock; whether it appeared at all when the phone's battery settings
+  restrict SafeRoute (say what the setting was); what the lock screen showed of it; in
+  part 3, whether the unlock was asked for.
+- **If it fails:** open SafeRoute: an SOS that is on the phone is always shown there. A
+  notification that never comes on this phone is a finding for the phone, not a reason to
+  repeat: record it. An SOS that could be ended from the lock screen without the unlock is
+  a serious fault: report it first.
+
+### M31. Sign-out, or a blocked account, during an SOS
+
+*New in P014c3.* **Rows:** A14.
+
+- **Preconditions:** as M27. **Part 1 sends an SMS** in automatic mode.
+- **Part 1, sign-out.** Start an SOS and let it become active. Go to the map (the SOS
+  keeps running), open Settings and tap "Sign out". *Expected:* "An SOS is active. End it
+  first ...", with "Open the SOS" and "Close"; **no** "Sign out?" question. "Open the SOS"
+  shows the active SOS. End it with "I'm safe", go back to Settings and tap "Sign out":
+  now the usual question appears.
+- **Part 2, during the countdown.** Start an SOS and, within the five seconds, there is no
+  time to reach Settings by hand; instead start a **practice** run and check that "Sign
+  out" works as usual during and after it (a practice run is not an emergency).
+- **Part 3, a blocked account (staging only).** *This part needs a test account on staging
+  and the admin job that blocks or deletes an account; do not try it on an account you
+  need.* With an SOS active, block the account from the server and bring the app to the
+  front. *Expected:* the app's main screens are replaced by the "blocked" screen, the SOS
+  keeps running (its notification and its screen stay), and "I'm safe" still tells the
+  contacts. After "I'm safe": opening Emergency contacts with another account on this
+  phone shows nothing of the old one.
+- **Record:** the words of the refusal; whether the SOS was still running after it; for
+  part 3, what happened to the SOS and whether the follow-up SMS arrived.
+- **If it fails:** an SOS that ended or vanished because of a sign-out or a block is a
+  serious fault: report it first, with the phone and what was tapped.
+
+### M32. A shortcut while SOS alerts are not set up
+
+*New in P014c3.* **Rows:** A15. No SMS is sent.
+
+- **Preconditions:** the tile, the widget and the pinned notification set up (M17). An
+  account that has **not** agreed to the notice the app shows today: a fresh account, or
+  one that agreed before the last change of the notice (the notice had a new version in
+  P014c1a and again in P014c2b; "SOS setup" says "To fix" under "SOS alerts").
+- **Steps:** tap the tile; then the widget's red button; then "Start SOS" on the pinned
+  notification; then each of the three from the lock screen where the phone allows it.
+  *Expected, each time:* no countdown, no vibration and no "SOS countdown" notification;
+  a dialog with Call 112, "SOS alerts are not set up yet ...", "Set up SOS alerts" and
+  "Practice SOS". "Set up SOS alerts" asks for the unlock on a locked phone and opens
+  SafeRoute at Emergency contacts. Agree to the notice there, then tap the tile again: the
+  countdown starts now; cancel it.
+- **Record:** for each of the three, whether anything started; what the lock screen showed.
+- **If it fails:** a countdown without the agreement is a serious fault: cancel it, stop
+  the session and report it first.
+
 ## Drafts for what is not built yet
 
 Do not run these. Each is rewritten with real steps in the prompt that builds the feature.
@@ -661,15 +743,6 @@ Do not run these. Each is rewritten with real steps in the prompt that builds th
 - This is a check on the staging server, not on a phone; its steps belong to a runbook
   written with P015. **To check then:** a job that is interrupted is delivered again and no
   contact gets a second push for the same action.
-
-### M27. The notice after a restart
-
-**Draft until the feature exists (P014c).** **Rows:** 5.
-
-- **What exists today:** after a restart, an SOS that was active is shown when SafeRoute is
-  opened (M6). Nothing appears before that.
-- **To check then:** after a restart with an SOS active, a notice appears without opening
-  the app, and it leads to "SOS is still active" (Continue / I'm safe).
 
 ### M28. The live-location link by SMS
 
