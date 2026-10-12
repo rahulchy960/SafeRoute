@@ -2,7 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-10-09
-- **Prompt:** P014a1 (records, state machine, recovery, retention); notes of P014a2 (runner, service, trail), P014a3 (screens), P014b1 (SMS engine), P014b2 (sending, behind a gate) and P014b3 (consent and the switch-on) below. P014c adds notes here.
+- **Prompt:** P014a1 (records, state machine, recovery, retention); notes of P014a2 (runner, service, trail), P014a3 (screens), P014b1 (SMS engine), P014b2 (sending, behind a gate) and P014b3 (consent and the switch-on), P014b6, P014b7 and P014c1a (entry points) below. The rest of P014c adds notes here.
 - **Plan refs:** Plan v7 §3.2 F-08, §5.3, §7.1–7.5, §12.2, §12.3; [addendum v7.1](../plan/addendum-v7.1.md), section B; [ADR 0008](0008-android-foundation.md), [ADR 0010](0010-adults-only-and-consent-records.md), [ADR 0015](0015-map-stack-and-location-policy.md), [ADR 0024](0024-emergency-contacts-and-opt-out.md)
 
 Legal statements here are drafts, **to be verified by a lawyer**.
@@ -423,6 +423,94 @@ try, with the newest position and the clock time at which that position was take
 wait before the next regular one can grow sooner. The two numbers (2 hours, 24 hours) are
 choices of this prompt, not plan text.
 
+### Note of 2026-10-12 (P014c1a): entry points
+
+Decision 9 said "hold to arm in the app; countdown only from the shortcuts". Until this
+note the shortcuts opened the emergency options and started nothing. Nothing was verified
+on a phone.
+
+**What the spike found (read on 2026-10-12).** Sources: the Android guide "Restrictions on
+starting activities from the background", the AndroidX release page of Glance, and the
+platform sources of API level 37 (`TileService`, `AppWidgetProviderInfo`).
+
+| Topic | Finding | Certainty |
+| --- | --- | --- |
+| A tile starting an activity | `startActivityAndCollapse(PendingIntent)` from Android 14; the `Intent` form throws there and is the only form before. The app already chose by version (P012f1) | Certain (sources) |
+| A tile on a locked phone | `isLocked()` says so in its own documentation: an action that is safe while locked starts an activity on top of the lock screen; anything else uses `unlockAndRun`. `isSecure()` tells whether a PIN, pattern or password is set | Certain (sources). What each phone maker's lock screen shows of Quick Settings is not recorded |
+| The emergency activity over the lock screen | `showWhenLocked` in the manifest and `setShowWhenLocked`, `setTurnScreenOn` in code (P014a3). Unchanged | Certain (sources) |
+| Starting the `location` service | It must be started while an activity of the app is visible (the spike of P014a1). The emergency screen is that activity for every entry point, locked or not: the runner starts the host from the screen's start | Certain (guide) for a visible activity. That an activity shown over the lock screen counts as visible on every phone: a phone check |
+| A notification action starting an activity | Allowed: "the activity is started from a PendingIntent that was sent by the system (for example, from a notification tap)". It must be an activity PendingIntent: since Android 12 an app may not start an activity from a receiver or service in answer to a tap | Certain (guide) |
+| A widget starting an activity | Allowed: "the launch is initiated by the device's launcher app, such as when a user ... interacts with a widget" | Certain (guide) |
+| PendingIntent rules of Android 14 and 15 | A launch needs the creator or the sender to lend its right to start activities; since the app targets 15+, the app as creator lends none by default. The tile, the notification and the widget are sent by the system or the launcher, which have that right themselves | Certain (guide) for notifications and widgets. The guide does not mention tiles; the tile was reported to open the screen on one Android 17 phone (P012f1) |
+| RemoteViews or Glance | Glance is stable (1.2.0). It would bring a library and its own Compose runtime for one button that never changes | Certain (release page). RemoteViews chosen: no dependency |
+| A widget on the lock screen | A widget is offered for the home screen unless it declares the keyguard category; the sources say that some lock-screen features may ignore that | Uncertain per phone; the widget declares the home screen only |
+
+**Decided.**
+
+1. **One use case.** `core/emergency/StartSos(entryPoint)` is the only way an SOS starts.
+   It asks the consent gate (`SosAlertPolicy`) and then `SosRunner.start`. Its answers:
+   not set up, started, already running.
+2. **One screen calls it.** Every entry point opens `EmergencyActivity` with "start" and
+   what was touched (`EmergencyShortcut.startIntent`): the hold in the app (`IN_APP`), the
+   tile (`TILE`), the "Start SOS" button of the pinned notification (`NOTIFICATION`) and
+   the home-screen widget (`WIDGET`, built in P014c1b). The screen's ViewModel hands it to
+   the use case in the app's scope. So the countdown and the foreground service start while
+   that screen is visible, for every entry point, exactly as after the hold.
+3. **The entry point is stored** on the record (`sos_records.entryPoint`, plain text since
+   P014a1; all four values existed, so the database did not change).
+4. **Gate closed: no countdown.** The screen shows the emergency dialog with Call 112, the
+   sentence that SOS alerts are not set up, "Practice SOS" and "Set up SOS alerts". Nothing
+   is written down. "Set up SOS alerts" opens the app at Emergency contacts; on a locked
+   phone Android asks for the unlock first, because the main screen is never shown over the
+   lock screen.
+5. **A second start shows the first.** A start while an emergency exists returns it; the
+   record keeps the entry point that started it, and the countdown is not started again.
+   Android replaces the emergency screen when a shortcut is used again; the new one shows
+   what the runner is running.
+6. **Only a newly created screen starts.** A screen that Android re-creates from its saved
+   state (rotation, a process restart) carries the same intent and starts nothing.
+7. **The tile never waits for the unlock.** On a locked phone the countdown appears on top
+   of the lock screen with Cancel and Call 112. `unlockAndRun` is not used: an emergency
+   must not wait for a PIN. What the screen shows there is fixed text, a number and counts;
+   "I'm safe" still asks for the unlock (P014a3).
+8. **The pinned notification**: the button "Open SOS" became "Start SOS". A tap on the
+   notification's body still only opens the emergency screen, as its text says. Title,
+   text, channel and importance did not change, nor when it is posted (P012f2).
+9. **No confirmation step outside the app.** The five-second countdown, with a vibration
+   each second and a Cancel button of at least 72 dp, is the safeguard against a start that
+   nobody meant. A question before the countdown would cost the seconds that matter and
+   would be tapped through.
+10. **Notice version 3.** Version 2 did not say that an SOS can be started from outside the
+    app, with one tap and on a locked phone. One sentence was added
+    ([`docs/legal/sos-alerts-notice-v3.md`](../legal/sos-alerts-notice-v3.md)), so the
+    version changed and a consent given for version 2 no longer opens the gate: such a user
+    is asked again before any SOS can start. The sentence names "a SafeRoute shortcut
+    outside the app" and gives the tile and the notification as examples, so that the
+    widget needs no further version.
+
+**Residual risks.**
+
+- **A start nobody meant.** In the app an SOS needs a two-second hold. Outside it one tap
+  is enough: a tile next to the torch, a notification button, later a widget on the home
+  screen. A phone in a pocket with the screen on, a child, or a stranger holding a locked
+  phone can start the countdown; if nobody cancels within five seconds, the contacts are
+  texted. How often that happens is not known. A follow-up measures it in the closed test
+  (alerts followed by "I'm safe" within a minute, by entry point, counted on the phone and
+  reported by the testers, not uploaded).
+- **Anyone holding the locked phone can start an SOS and cannot end it.** That is the
+  design: starting must not need the unlock, ending must.
+- **The not-set-up dialog can be seen on a locked phone.** It says that SOS alerts are not
+  set up: a status, with no name, number or place.
+- **A user who agreed to version 2 loses the SOS until they agree again**, and learns it
+  only when they open the dialog or use a shortcut. The readiness screen (P014c2) shows it
+  beforehand.
+
+**Rejected.** A broadcast receiver or a service between the tap and the screen: Android
+forbids it for notification taps, and the `location` service could not be started from
+it. Starting the runner from the tile service itself and opening the screen afterwards: the
+service would start before any activity is visible. `unlockAndRun` for the tile: see 7.
+A second activity for shortcuts: two screens that could differ.
+
 ## Alternatives considered
 
 - **Keep the state in memory or in DataStore.** Simpler, but a killed process loses the
@@ -472,6 +560,7 @@ choices of this prompt, not plan text.
 - Plan v7 §7; [addendum v7.1](../plan/addendum-v7.1.md), section B
 - Prompt log: [`014a1-sos-data-and-state-machine.md`](../prompt-logs/014a1-sos-data-and-state-machine.md)
 - Failure matrix: [`docs/sos/failure-matrix.md`](../sos/failure-matrix.md)
+- Entry points: [`014c-sos-entry-points.svg`](../diagrams/014c-sos-entry-points.svg), prompt log [`014c1a-sos-entry-points.md`](../prompt-logs/014c1a-sos-entry-points.md)
 - Diagram: [`014a-sos-device-state-machine.svg`](../diagrams/014a-sos-device-state-machine.svg)
 - Android guides: "Foreground service types", "Restrictions on starting a foreground service
   from the background", "Notification runtime permission"; RFC 9562

@@ -64,7 +64,7 @@ alternative.
 
 ## What the user sees before the permission
 
-1. **The notice** (`docs/legal/sos-alerts-notice-v2.md`): shown before the first contact can
+1. **The notice** (`docs/legal/sos-alerts-notice-v3.md`): shown before the first contact can
    be added. It says that an SOS sends SMS from the user's SIM, what the SMS contains, that
    it may cost, and that nothing is sent unless an SOS is started. The user taps "I agree".
 2. **The prominent disclosure**: under Settings → Emergency contacts → "Send alerts

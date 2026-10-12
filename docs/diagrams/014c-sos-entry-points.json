@@ -1,0 +1,152 @@
+{
+  "$schema": "../../tools/diagrams/diagram.schema.json",
+  "title": "Every way to start an SOS",
+  "subtitle": "One use case, one consent gate, one five-second countdown (P014c1a and P014c1b, ADR 0027)",
+  "direction": "TB",
+  "layout": {
+    "nodeWidth": 240,
+    "rankGap": 46
+  },
+  "groups": [
+    {
+      "id": "entries",
+      "label": "What the user touches"
+    },
+    {
+      "id": "screen",
+      "label": "The emergency screen"
+    },
+    {
+      "id": "result",
+      "label": "What follows"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "hold",
+      "label": "In the app: hold for 2 seconds (IN_APP)",
+      "role": "app",
+      "group": "entries",
+      "rank": 1
+    },
+    {
+      "id": "tile",
+      "label": "Quick Settings tile: one tap (TILE)",
+      "role": "external",
+      "group": "entries",
+      "rank": 1
+    },
+    {
+      "id": "notification",
+      "label": "Pinned notification, Start SOS: one tap (NOTIFICATION)",
+      "role": "external",
+      "group": "entries",
+      "rank": 1
+    },
+    {
+      "id": "widget",
+      "label": "Home-screen widget: one tap (WIDGET). Built in P014c1b",
+      "role": "external",
+      "group": "entries",
+      "rank": 1
+    },
+    {
+      "id": "activity",
+      "label": "EmergencyActivity opens with 'start' and the entry point. Immutable activity PendingIntent, nothing in between",
+      "role": "app",
+      "group": "screen",
+      "rank": 2
+    },
+    {
+      "id": "usecase",
+      "label": "StartSos(entryPoint): the one use case",
+      "role": "service",
+      "group": "screen",
+      "rank": 3
+    },
+    {
+      "id": "gate",
+      "label": "Consent gate: agreed to the alerts notice shown today (version 3)? Read on the phone",
+      "role": "security",
+      "group": "screen",
+      "rank": 4
+    },
+    {
+      "id": "closed",
+      "label": "No: no countdown, nothing stored. Call 112, Practice, Set up SOS alerts (after the unlock)",
+      "role": "security",
+      "group": "result",
+      "rank": 5
+    },
+    {
+      "id": "countdown",
+      "label": "Yes: record written with the entry point, then the 5-second countdown with Cancel and Call 112. The service starts while the screen is visible",
+      "role": "data",
+      "group": "result",
+      "rank": 5
+    },
+    {
+      "id": "existing",
+      "label": "An SOS is already running: it is shown. No second record, no new countdown",
+      "role": "data",
+      "group": "result",
+      "rank": 5
+    },
+    {
+      "id": "active",
+      "label": "Not cancelled: SOS active, alerts by SMS. Only 'I'm safe' ends it, after the unlock",
+      "role": "service",
+      "group": "result",
+      "rank": 6
+    }
+  ],
+  "edges": [
+    {
+      "from": "hold",
+      "to": "activity"
+    },
+    {
+      "from": "tile",
+      "to": "activity",
+      "label": "also when locked"
+    },
+    {
+      "from": "notification",
+      "to": "activity",
+      "label": "also when locked"
+    },
+    {
+      "from": "widget",
+      "to": "activity"
+    },
+    {
+      "from": "activity",
+      "to": "usecase",
+      "label": "only a newly created screen"
+    },
+    {
+      "from": "usecase",
+      "to": "gate"
+    },
+    {
+      "from": "gate",
+      "to": "closed",
+      "label": "not agreed"
+    },
+    {
+      "from": "gate",
+      "to": "countdown",
+      "label": "agreed, nothing running"
+    },
+    {
+      "from": "gate",
+      "to": "existing",
+      "label": "agreed, one running"
+    },
+    {
+      "from": "countdown",
+      "to": "active",
+      "label": "5 seconds"
+    }
+  ]
+}

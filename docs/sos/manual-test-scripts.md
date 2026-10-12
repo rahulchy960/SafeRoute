@@ -11,6 +11,8 @@ and reported by a person.
 - **M29** is new in P014b6, for the list of test numbers of debug builds.
 - **M22** was rewritten in P014b7: an unsent alert is now tried for as long as the SOS is
   active.
+- **M17** was written in P014c1a (it was a draft): the tile and the pinned notification
+  start an SOS. Its widget part stays a draft until P014c1b. M18 and M19 were updated.
 - A script marked **Draft until the feature exists** describes something that is not built
   yet. Do not run it, and do not record a result for it.
 - Legal wording quoted here (the notice, the SMS texts) is a draft, to be verified by a
@@ -20,6 +22,12 @@ and reported by a person.
 
 **From P014b3 an SOS sends real SMS.** A countdown that finishes messages every emergency
 contact of the signed-in account.
+
+**From P014c1a one tap outside the app starts that countdown**: the tile "SafeRoute SOS"
+in Quick Settings and the button "Start SOS" of the pinned notification, also on a locked
+phone. A tester who added the tile can start an SOS without meaning to. Know where Cancel
+is before you add it, and remove the tile and switch the notification off when the session
+is over if other people handle the phone.
 
 1. **Only send to numbers you control and have warned.** The emergency contacts of the test
    account are phones you own (a second phone on the table), and nobody else's.
@@ -332,8 +340,10 @@ phone" is enough. A screenshot must not show a number, a name or a map position.
   whether it was back before the app was opened, and how long after the unlock.
 - **If it fails:** the SOS control in the app must work in every case; if it does not,
   report that first.
-- **Draft until the feature exists (P014c):** starting an SOS from the notification. Today
-  its actions open the dialer with 112 and the emergency options.
+- **Starting an SOS from the notification** (since P014c1a) is in
+  [M17](#m17-sos-from-the-tile-or-the-widget-while-the-phone-is-locked). Here, check only
+  that the notification that came back has both buttons, "Call 112" and "Start SOS", and
+  **do not tap "Start SOS"** unless you mean to run M17.
 
 ### M19. A phone without the tile
 
@@ -344,7 +354,9 @@ phone" is enough. A screenshot must not show a number, a name or a map position.
 - **Steps:** Settings → "Add the SOS tile". *Expected:* if Android does not add it, the
   steps "Add the tile by hand" are shown, with the note that some phones have no Quick
   Settings tiles from apps and that the SOS control in the app always works. Close it and
-  use the SOS control on Home: it opens the emergency options.
+  use the SOS control on Home: it opens the dialog with "Hold to send SOS" (or, without the
+  consent, "Set up SOS alerts") and Call 112. The text under "Add the SOS tile" says that
+  one tap on the tile starts the countdown.
 - **Record:** the phone's make and model; what the screen offered.
 - **If it fails:** note whether the app said nothing at all, or said that the tile was
   added although it was not.
@@ -460,22 +472,61 @@ phone" is enough. A screenshot must not show a number, a name or a map position.
   the session and report it. So is a banner that names a different number of contacts than
   were texted.
 
+### M17. SOS from the tile or the widget while the phone is locked
+
+*Written in P014c1a; it was a draft before.* **Rows:** A1, A2, 6, 11. The heading keeps its
+old words so that links to it still work; the script covers the tile and the pinned
+notification. **Its widget part is a draft until the feature exists (P014c1b).**
+
+- **Preconditions:** as [M0](#m0-set-up). The build after P014c1a. The tile added (Settings
+  → "Add the SOS tile") and the pinned notification switched on. A screen lock (PIN,
+  pattern or password) set on the phone. **Every part that lets the countdown finish sends
+  an SMS** to the contacts of the account in automatic mode: use an account with no
+  contacts, or only your second phone, and read the banner of a debug build first.
+- **Part 1, the tile, unlocked.** Pull down Quick Settings and tap "SafeRoute SOS".
+  *Expected:* the panel closes and the countdown appears at once (5, 4, 3 ... with a
+  vibration each second), with a large Cancel, Call 112 and "SafeRoute is not an emergency
+  service. Call 112." There is no hold and no question first. Tap Cancel: the screen
+  closes; nothing was sent; no notification stays.
+- **Part 2, the tile, locked.** Lock the phone. Wake it, pull down Quick Settings on the
+  lock screen and tap the tile. *Expected:* the countdown appears **on top of the lock
+  screen**, without asking for the PIN. Look at the whole screen: it shows no name, no
+  phone number, no place and nothing of the account. Tap Cancel.
+- **Part 3, the tile, locked, to the end.** As part 2, but let the countdown finish.
+  *Expected:* "SOS active" over the lock screen, the notification "SOS active", and (with a
+  location permission) the location line on the screen. Tap "I'm safe (unlock first)": the
+  phone asks for the unlock, then for the confirmation. A stranger cannot end it.
+- **Part 4, the notification.** Pull down the notifications and tap **the button "Start
+  SOS"** of "SafeRoute emergency shortcut". *Expected:* the same countdown. Cancel. Then
+  tap **the body** of the notification, not a button: *expected:* the dialog with Call 112
+  only, and no countdown. Repeat the button from the lock screen if the phone shows
+  notification buttons there.
+- **Part 5, twice.** Start from the tile; while the countdown runs, pull down the
+  notifications and tap "Start SOS". *Expected:* the same countdown goes on with the time
+  that was left; not a new five seconds, and not two emergencies. Let it finish and tap the
+  tile again: "SOS active" is shown, nothing new starts. End with "I'm safe".
+- **Part 6, without the consent.** With an account that has not agreed to the current
+  notice (a fresh account, or one that agreed before P014c1a: the notice has a new
+  version), tap the tile, then the notification's "Start SOS". *Expected:* no countdown and
+  no vibration; a dialog with Call 112, "SOS alerts are not set up yet ...", "Set up SOS
+  alerts" and "Practice SOS". Tap "Set up SOS alerts": on a locked phone the unlock is
+  asked for first, then SafeRoute opens at Emergency contacts.
+- **Part 7, the widget.** *Draft until the feature exists (P014c1b).* Do not run.
+- **Record:** the phone and its Android version; for parts 1 to 4, the time from the tap to
+  the first number of the countdown (count "one, two"; under a second is expected);
+  whether the tile was reachable on the lock screen at all (some phones hide Quick
+  Settings there, or ask for the unlock themselves); what the lock screen showed; in part
+  3, whether the location line appeared (it tells whether the location service started
+  from the lock screen); whether the notification's buttons are shown on the lock screen;
+  any start you did not mean during the session, and from where.
+- **If it fails:** if a countdown runs that you cannot cancel, let it finish and end it
+  with "I'm safe" inside the app. If the tile does nothing on the lock screen, note that
+  and whether it works after the unlock: the SOS control in the app is the fallback. If a
+  countdown started although the consent was missing, stop and report it first.
+
 ## Drafts for what is not built yet
 
 Do not run these. Each is rewritten with real steps in the prompt that builds the feature.
-
-### M17. SOS from the tile or the widget while the phone is locked
-
-**Draft until the feature exists (P014c).** **Rows:** A1.
-
-- **What exists today (can be checked):** the tile "SafeRoute SOS" opens the emergency
-  options, also from the lock screen, with Call 112. It starts no countdown.
-- **What P014c adds:** the tile, the home-screen widget and the pinned notification start
-  the same five-second countdown, through the same consent check as the app.
-- **To check then:** from the lock screen, the countdown appears over the lock screen with
-  a large Cancel and Call 112; nothing of the account (no name, number or place) is shown;
-  the alert goes out at the end as in M11; "I'm safe" asks for the unlock first.
-- **Record then:** what the lock screen showed; the time from the tap to the countdown.
 
 ### M24. The SafeRoute API is down
 

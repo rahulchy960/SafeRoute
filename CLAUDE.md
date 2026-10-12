@@ -595,8 +595,8 @@ and [`android/README.md`](android/README.md):
   the system contact picker (`pickPhoneNumberIntent`), and an invite leaves the app only
   through `openInviteSms` (`ACTION_SENDTO`); both live in `feature/contacts/ContactIntents.kt`.
   The `sos_alerts` notice is the `contacts_notice_*` strings, mirrored in
-  `docs/legal/sos-alerts-notice-v2.md` (`ContactsNoticeDocumentTest`; version 1 stays as the
-  record of what earlier users saw); changing it means changing `SOS_ALERTS_NOTICE_VERSION`,
+  `docs/legal/sos-alerts-notice-v3.md` (`ContactsNoticeDocumentTest`; versions 1 and 2 stay as
+  the record of what earlier users saw); changing it means changing `SOS_ALERTS_NOTICE_VERSION`,
   and it is asked for only when "Add a contact" or "Read how SOS alerts work" opens. Consent
   counts only for the version the app shows today (`hasConsent`); that version is noted on
   the phone (`ContactsPreferences.alertsNoticeVersion`, a flag) only after the server recorded
@@ -693,6 +693,18 @@ and [`android/README.md`](android/README.md):
   in `src/debug` with stand-ins in `src/release`; nothing in `src/main` names them, and a
   release build must stay unchanged (`DebugSmsAllowlistLayoutTest`, and `android-ci` scans
   the release APK). A Hilt test gets `FakeSmsRecipientLimit` (no limit by default).
+  Entry points (since P014c1a): **an SOS starts only through `core/emergency/StartSos`**,
+  which asks the consent gate first; nothing else calls `SosRunner.start`. The hold, the
+  tile, the pinned notification's "Start SOS" and the widget only open `EmergencyActivity`
+  through `EmergencyShortcut.startIntent` with their `SosEntryPoint`; never start the
+  runner or the service from a tile service, a receiver or a widget provider. Every
+  PendingIntent to the emergency screen is immutable and starts the activity directly, with
+  its own request code. Only a newly created screen starts an SOS (`fresh`). **No
+  confirmation step and no unlock before the countdown**; the countdown is the safeguard.
+  Gate closed means no countdown and no record: Call 112, practice and "Set up SOS alerts"
+  (after the unlock). An intent to the emergency screen carries a mode and an entry point,
+  nothing about the user. Changing what can start an SOS means changing the notice and its
+  version in the same prompt.
   Every SOS change updates [`docs/sos/failure-matrix.md`](docs/sos/failure-matrix.md):
   "Automated pass" only for rows with passing tests, with the level it was tested at.
 - `android/app/google-services.json` is never opened, printed or committed by Claude Code. CI and
