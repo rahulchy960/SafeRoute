@@ -32,7 +32,7 @@ const val PURPOSE_SOS_ALERTS = "sos_alerts"
  * Version of the `sos_alerts` notice the app shows before the first contact is added. Change it
  * when the notice text changes. The notice is a DRAFT until a lawyer has reviewed it.
  */
-const val SOS_ALERTS_NOTICE_VERSION = "2026-10-alerts-draft2"
+const val SOS_ALERTS_NOTICE_VERSION = "2026-10-alerts-draft3"
 
 /** Where a contact stands. Decided from the two times, opt-out first. */
 enum class ContactStatus {

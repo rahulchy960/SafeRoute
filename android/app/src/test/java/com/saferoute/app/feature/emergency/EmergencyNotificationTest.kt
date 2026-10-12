@@ -15,6 +15,7 @@ import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.saferoute.app.R
+import com.saferoute.app.core.emergency.SosEntryPoint
 import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -88,14 +89,16 @@ class EmergencyNotificationTest {
     }
 
     @Test
-    fun `call 112 opens the dialer and open SOS opens the emergency screen, both immutable`() {
+    fun `call 112 opens the dialer and start SOS asks the emergency screen to start, both immutable`() {
         val notification = buildEmergencyNotification(context)
 
         assertEquals(
-            listOf(string(R.string.emergency_notification_call), string(R.string.emergency_notification_open)),
+            listOf(string(R.string.emergency_notification_call), string(R.string.emergency_notification_start)),
             notification.actions.map { it.title.toString() },
         )
-        val (call, open) = notification.actions.map { shadowOf(it.actionIntent) }
+        assertEquals("Start SOS", string(R.string.emergency_notification_start))
+        val (call, start) = notification.actions.map { shadowOf(it.actionIntent) }
+        val body = shadowOf(notification.contentIntent)
 
         // Straight to an activity: no receiver or service in between (no "trampoline").
         assertTrue(call.isActivityIntent)
@@ -104,17 +107,22 @@ class EmergencyNotificationTest {
         assertEquals("tel:112", call.savedIntent.dataString)
 
         val emergency = ComponentName(context, EmergencyActivity::class.java)
-        assertTrue(open.isActivityIntent)
-        assertEquals(emergency, open.savedIntent.component)
-        // A tap on the notification itself goes to the same place.
-        assertEquals(emergency, shadowOf(notification.contentIntent).savedIntent.component)
+        assertTrue(start.isActivityIntent)
+        assertFalse(start.isBroadcastIntent)
+        assertFalse(start.isServiceIntent)
+        assertEquals(emergency, start.savedIntent.component)
+        assertEquals(SosOpenMode.START.name, start.savedIntent.getStringExtra(EmergencyShortcut.EXTRA_MODE))
+        assertEquals(SosEntryPoint.NOTIFICATION, EmergencyShortcut.entryPointOf(start.savedIntent))
+        // A tap on the notification's body only opens the emergency screen: it starts nothing,
+        // as its text says.
+        assertEquals(emergency, body.savedIntent.component)
+        assertEquals(SosOpenMode.OPEN.name, body.savedIntent.getStringExtra(EmergencyShortcut.EXTRA_MODE))
 
-        for (pending in listOf(call, open, shadowOf(notification.contentIntent))) {
+        for (pending in listOf(call, start, body)) {
             assertTrue(pending.flags and PendingIntent.FLAG_IMMUTABLE != 0)
             assertEquals(0, pending.flags and PendingIntent.FLAG_MUTABLE)
         }
-        // The dialer's PendingIntent is not the tile's or the notification's "open" one.
-        assertNotEquals(call.requestCode, open.requestCode)
+        assertEquals(3, setOf(call.requestCode, start.requestCode, body.requestCode).size)
     }
 
     @Test

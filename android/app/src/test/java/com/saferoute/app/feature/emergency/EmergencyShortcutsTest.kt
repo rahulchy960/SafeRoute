@@ -2,6 +2,7 @@
 package com.saferoute.app.feature.emergency
 
 import android.app.Application
+import android.app.KeyguardManager
 import android.app.PendingIntent
 import android.content.ComponentName
 import android.content.Context
@@ -18,6 +19,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.saferoute.app.MainActivity
 import com.saferoute.app.R
+import com.saferoute.app.core.emergency.SosEntryPoint
 import java.io.File
 import javax.xml.parsers.DocumentBuilderFactory
 import org.junit.Assert.assertEquals
@@ -36,9 +38,9 @@ import org.robolectric.shadows.ShadowLog
 import org.w3c.dom.Element
 
 /**
- * The emergency shortcuts outside the app (P012f1): every one of them leads to the same
- * destination, the destination offers 112 through the dialer and never calls, and the manifest
- * declares exactly what is needed.
+ * The emergency shortcuts outside the app (P012f1, P014c1): every one of them leads to the
+ * same destination and asks it to start an SOS, the destination offers 112 through the dialer
+ * and never calls, and the manifest declares exactly what is needed.
  */
 @RunWith(AndroidJUnit4::class)
 class EmergencyShortcutTest {
@@ -48,31 +50,51 @@ class EmergencyShortcutTest {
 
     @Test
     fun `every entry leads to the one emergency destination, as a new task`() {
-        for (entry in EmergencyEntry.entries) {
-            val intent = EmergencyShortcut.intent(context, entry)
+        for (entryPoint in SosEntryPoint.entries) {
+            val intent = EmergencyShortcut.startIntent(context, entryPoint)
             assertEquals(destination, intent.component)
             // Explicit: no other app can be the target, and no action or data is carried.
             assertNull(intent.action)
             assertNull(intent.data)
             assertTrue(intent.flags and Intent.FLAG_ACTIVITY_NEW_TASK != 0)
-            // The only extra says which shortcut it was; nothing about the user.
-            assertEquals(setOf(EmergencyShortcut.EXTRA_ENTRY), intent.extras?.keySet())
+            // Two extras: "start", and which shortcut it was. Nothing about the user.
+            assertEquals(setOf(EmergencyShortcut.EXTRA_MODE, EmergencyShortcut.EXTRA_ENTRY), intent.extras?.keySet())
+            assertEquals(SosOpenMode.START.name, intent.getStringExtra(EmergencyShortcut.EXTRA_MODE))
+            assertEquals(entryPoint, EmergencyShortcut.entryPointOf(intent))
         }
     }
 
     @Test
-    fun `the pending intent starts an activity, is immutable, and differs per entry`() {
-        val tile = EmergencyShortcut.pendingIntent(context, EmergencyEntry.QuickSettingsTile)
-        val notification = EmergencyShortcut.pendingIntent(context, EmergencyEntry.Notification)
+    fun `an intent that names no entry, or one that does not exist, counts as the app`() {
+        assertEquals(SosEntryPoint.IN_APP, EmergencyShortcut.entryPointOf(null))
+        assertEquals(SosEntryPoint.IN_APP, EmergencyShortcut.entryPointOf(EmergencyShortcut.modeIntent(context, SosOpenMode.OPEN)))
+        val unknown = EmergencyShortcut.modeIntent(context, SosOpenMode.START).putExtra(EmergencyShortcut.EXTRA_ENTRY, "VOICE")
+        assertEquals(SosEntryPoint.IN_APP, EmergencyShortcut.entryPointOf(unknown))
+    }
 
-        for (pendingIntent in listOf(tile, notification)) {
+    @Test
+    fun `the pending intent starts an activity, is immutable, and differs per entry`() {
+        val starts = SosEntryPoint.entries.map { EmergencyShortcut.startPendingIntent(context, it) }
+        val all = starts + EmergencyShortcut.openPendingIntent(context) + EmergencyShortcut.safePendingIntent(context)
+
+        for (pendingIntent in all) {
             val shadow = shadowOf(pendingIntent)
+            // An activity, started directly: no receiver or service in between ("trampoline").
             assertTrue(shadow.isActivityIntent)
+            assertFalse(shadow.isBroadcastIntent)
+            assertFalse(shadow.isServiceIntent)
             assertTrue("immutable", shadow.flags and PendingIntent.FLAG_IMMUTABLE != 0)
             assertEquals(0, shadow.flags and PendingIntent.FLAG_MUTABLE)
             assertEquals(destination, shadow.savedIntent.component)
         }
-        assertNotEquals(shadowOf(tile).requestCode, shadowOf(notification).requestCode)
+        // Android tells them apart by the request code, not by the extras.
+        assertEquals(all.size, all.map { shadowOf(it).requestCode }.toSet().size)
+        // Each start says where it came from; "open" and "I'm safe" start nothing.
+        assertEquals(SosEntryPoint.entries, starts.map { EmergencyShortcut.entryPointOf(shadowOf(it).savedIntent) })
+        assertEquals(
+            SosOpenMode.OPEN.name,
+            shadowOf(EmergencyShortcut.openPendingIntent(context)).savedIntent.getStringExtra(EmergencyShortcut.EXTRA_MODE),
+        )
     }
 
     @Test
@@ -84,9 +106,12 @@ class EmergencyShortcutTest {
         val oldest = EmergencyShortcut.tileLaunch(context, sdkInt = Build.VERSION_CODES.O)
 
         assertTrue(newer is TileLaunch.WithPendingIntent)
-        assertTrue(newest is TileLaunch.WithPendingIntent)
+        val pending = shadowOf((newest as TileLaunch.WithPendingIntent).pendingIntent)
+        assertEquals(SosEntryPoint.TILE, EmergencyShortcut.entryPointOf(pending.savedIntent))
+        assertTrue(pending.flags and PendingIntent.FLAG_IMMUTABLE != 0)
         assertEquals(destination, (older as TileLaunch.WithIntent).intent.component)
         assertEquals(destination, (oldest as TileLaunch.WithIntent).intent.component)
+        assertEquals(SosEntryPoint.TILE, EmergencyShortcut.entryPointOf(oldest.intent))
     }
 
     @Test
@@ -109,7 +134,7 @@ class SosTileServiceTest {
     private val application: Application = ApplicationProvider.getApplicationContext()
 
     @Test
-    fun `a tap opens the emergency destination and nothing else`() {
+    fun `a tap asks the emergency destination to start an SOS from the tile, and nothing else`() {
         ShadowLog.clear()
         val service = Robolectric.setupService(SosTileService::class.java)
 
@@ -117,11 +142,35 @@ class SosTileServiceTest {
 
         val started = shadowOf(application).nextStartedActivity
         assertEquals(ComponentName(application, EmergencyActivity::class.java), started.component)
+        assertEquals(SosOpenMode.START.name, started.getStringExtra(EmergencyShortcut.EXTRA_MODE))
+        assertEquals(SosEntryPoint.TILE, EmergencyShortcut.entryPointOf(started))
         assertNull(shadowOf(application).nextStartedActivity)
+        // The tile starts no service itself: the emergency screen does, once it is visible.
+        assertNull(shadowOf(application).nextStartedService)
         // The tile says nothing to Logcat.
         assertTrue(ShadowLog.getLogs().none { it.tag.contains("Sos", ignoreCase = true) })
         Log.d("SosTileServiceTest", "log capture works")
         assertTrue(ShadowLog.getLogs().any { it.msg == "log capture works" })
+    }
+
+    @Test
+    fun `on a locked phone the tap does the same, and never waits for the unlock`() {
+        val keyguard = application.getSystemService(KeyguardManager::class.java)
+        shadowOf(keyguard).setKeyguardLocked(true)
+        shadowOf(keyguard).setIsDeviceSecure(true)
+        val service = Robolectric.setupService(SosTileService::class.java)
+
+        service.onClick()
+
+        // The same start as on an unlocked phone: the emergency screen may show over the
+        // lock screen, and it is the screen, not the tile, that asks for an unlock later.
+        val started = shadowOf(application).nextStartedActivity
+        assertEquals(ComponentName(application, EmergencyActivity::class.java), started.component)
+        assertEquals(SosEntryPoint.TILE, EmergencyShortcut.entryPointOf(started))
+        assertTrue("the phone is still locked", keyguard.isKeyguardLocked)
+        val source = File("src/main/java/com/saferoute/app/feature/emergency/SosTileService.kt").readLines()
+            .filterNot { it.trim().startsWith("*") || it.trim().startsWith("//") }
+        assertTrue("the tile never asks for the unlock", source.none { it.contains("unlockAndRun") })
     }
 
     @Test

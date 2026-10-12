@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 package com.saferoute.app
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -14,6 +15,7 @@ import com.saferoute.app.core.emergency.SosRunner
 import com.saferoute.app.feature.emergency.EmergencyNotificationController
 import com.saferoute.app.feature.emergency.EmergencyShortcut
 import com.saferoute.app.feature.emergency.SosOpenMode
+import com.saferoute.app.navigation.OpenRequests
 import kotlinx.coroutines.launch
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -58,6 +60,12 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /** The app was already open and is asked for a screen (see [OpenRequests]). */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        OpenRequests.accept(intent)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         // Both calls must come before super.onCreate(): the first swaps the starting (splash)
         // theme for the real one, the second lets the app draw behind the status and
@@ -65,6 +73,8 @@ class MainActivity : ComponentActivity() {
         installSplashScreen()
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        // Only a first creation follows its intent; a re-created screen must not jump again.
+        OpenRequests.accept(intent.takeIf { savedInstanceState == null })
 
         setContent {
             SafeRouteTheme {

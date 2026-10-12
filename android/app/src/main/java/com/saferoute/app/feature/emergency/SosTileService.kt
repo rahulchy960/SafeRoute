@@ -15,8 +15,16 @@ import com.saferoute.app.R
  * tile is added, shown or tapped, and lets it go again. It is declared as an "active" tile in
  * the manifest: Android then does not wake it every time the panel opens, only for a tap.
  *
- * A tap opens [EmergencyActivity] through [EmergencyShortcut], also from the lock screen (that
- * activity is safe there; see its notes). Nothing is logged and nothing is stored.
+ * A tap starts an SOS the same way the hold in the app does: it opens [EmergencyActivity]
+ * with "start, from the tile" ([EmergencyShortcut]), and that screen asks the `StartSos` use
+ * case. With SOS alerts set up, the five-second countdown appears, with Cancel and Call 112;
+ * without, the emergency options. The tile itself decides nothing and reads nothing.
+ *
+ * On a locked phone the screen is shown on top of the lock screen, which is what Android's
+ * own notes on tiles ask for when the action is safe while locked ([isLocked]): it shows
+ * fixed text and a countdown, nothing of the account, and ending an SOS still needs the
+ * unlock. `unlockAndRun` is not used: an emergency must not wait for a PIN.
+ * Nothing is logged and nothing is stored here.
  */
 class SosTileService : TileService() {
 

@@ -13,6 +13,7 @@ import android.graphics.drawable.Icon
 import android.net.Uri
 import android.os.Build
 import com.saferoute.app.R
+import com.saferoute.app.core.emergency.SosEntryPoint
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 
@@ -34,7 +35,7 @@ internal const val EMERGENCY_CHANNEL_ID = "emergency_shortcut"
 /** One notification, one id: posting again replaces it instead of adding a second one. */
 internal const val EMERGENCY_NOTIFICATION_ID = 1120
 
-/** Request codes of the notification's own PendingIntents (the tile uses the entry's ordinal). */
+/** The dialer's request code. The ways to the emergency screen have theirs in [EmergencyShortcut]. */
 private const val REQUEST_DIAL = 100
 
 /** Why the notification can not be shown right now, if anything stops it. */
@@ -103,11 +104,15 @@ internal fun ensureEmergencyChannel(context: Context) {
  *
  * - ongoing: asks Android to keep it; the user can still swipe it away on Android 14+.
  * - public: shown in full on the lock screen; there is nothing private in it.
- * - a tap, and "Open SOS": the same emergency screen as the tile ([EmergencyShortcut]).
+ * - a tap on its body: the emergency screen with the emergency options, or the SOS that is
+ *   running ([EmergencyShortcut.openPendingIntent]).
+ * - "Start SOS": the same start as the tile and the widget, said to come from the
+ *   notification. With SOS alerts set up the five-second countdown follows; without, the
+ *   emergency options. The button is an activity PendingIntent: nothing runs in between.
  * - "Call 112": the dialer with 112 entered. Nothing is dialled automatically.
  */
 internal fun buildEmergencyNotification(context: Context): Notification {
-    val open = EmergencyShortcut.pendingIntent(context, EmergencyEntry.Notification)
+    val open = EmergencyShortcut.openPendingIntent(context)
     val icon = Icon.createWithResource(context, R.drawable.ic_sos_tile)
     return Notification.Builder(context, EMERGENCY_CHANNEL_ID)
         .setSmallIcon(R.drawable.ic_sos_tile)
@@ -129,8 +134,8 @@ internal fun buildEmergencyNotification(context: Context): Notification {
         .addAction(
             Notification.Action.Builder(
                 icon,
-                context.getString(R.string.emergency_notification_open),
-                open,
+                context.getString(R.string.emergency_notification_start),
+                EmergencyShortcut.startPendingIntent(context, SosEntryPoint.NOTIFICATION),
             ).build(),
         )
         .build()

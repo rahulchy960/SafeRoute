@@ -24,9 +24,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.saferoute.app.core.designsystem.theme.SafeRouteTheme
+import com.saferoute.app.feature.home.EmergencyArm
 import com.saferoute.app.feature.home.EmergencyDialog
 import com.saferoute.app.feature.home.EmergencyDialogState
 import com.saferoute.app.feature.home.openEmergencyDialer
+import com.saferoute.app.navigation.openContactsIntent
 import dagger.hilt.android.AndroidEntryPoint
 
 /**
@@ -44,8 +46,11 @@ import dagger.hilt.android.AndroidEntryPoint
  * - **It owns nothing.** The emergency belongs to `SosRunner`; this screen shows its state
  *   and passes taps on. Closing it, rotating it or killing it changes nothing about the SOS.
  *
- * When nothing is running it shows the same dialog as the in-app SOS control, as before.
- * It is not exported: only this app's own tile, notifications and screens start it.
+ * When nothing is running it shows the same dialog as the in-app SOS control. Opened with
+ * "start" (the hold in the app, the tile, the widget, the notification's button) it hands
+ * the start to the `StartSos` use case through its ViewModel: the countdown follows, or, when
+ * SOS alerts are not set up, the dialog with Call 112 and the way to the setup.
+ * It is not exported: only this app's own tile, widget, notifications and screens start it.
  */
 @AndroidEntryPoint
 class EmergencyActivity : ComponentActivity() {
@@ -87,6 +92,15 @@ class EmergencyActivity : ComponentActivity() {
                         onCallEmergency = { if (openEmergencyDialer(this)) finish() else dialerMissing = true },
                         // Cancel, Close, back or a tap outside: nothing else is on this screen.
                         onDismiss = ::finish,
+                    )
+
+                    SosUi.NotSetUp -> EmergencyDialog(
+                        state = if (dialerMissing) EmergencyDialogState.DialerUnavailable else EmergencyDialogState.OfferDialer,
+                        onCallEmergency = { if (openEmergencyDialer(this)) finish() else dialerMissing = true },
+                        onDismiss = ::finish,
+                        // No hold here: the consent gate said no. What is left is Call 112,
+                        // a practice run and the way to the setup.
+                        arm = EmergencyArm(onArmed = null, onPractice = viewModel::onPractice, onSetUp = ::openSetUp),
                     )
 
                     is SosUi.Countdown -> {
@@ -143,7 +157,7 @@ class EmergencyActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         locked = getSystemService(KeyguardManager::class.java)?.isKeyguardLocked == true
-        viewModel.onShown(mode, fresh)
+        viewModel.onShown(mode, fresh, EmergencyShortcut.entryPointOf(intent))
     }
 
     /**
@@ -164,6 +178,29 @@ class EmergencyActivity : ComponentActivity() {
                     locked = false
                     viewModel.onSafeClick()
                 }
+            },
+        )
+    }
+
+    /**
+     * "Set up SOS alerts": the app's Emergency contacts screen, where the notice is. That
+     * screen belongs to the main activity, which is never shown over the lock screen, so on
+     * a locked phone Android asks for the unlock first; a cancelled unlock changes nothing.
+     */
+    private fun openSetUp() {
+        val open = {
+            startActivity(openContactsIntent(this))
+            finish()
+        }
+        val keyguard = getSystemService(KeyguardManager::class.java)
+        if (keyguard?.isKeyguardLocked != true) {
+            open()
+            return
+        }
+        keyguard.requestDismissKeyguard(
+            this,
+            object : KeyguardManager.KeyguardDismissCallback() {
+                override fun onDismissSucceeded() = open()
             },
         )
     }

@@ -7,7 +7,6 @@ import com.saferoute.app.core.di.ApplicationScope
 import com.saferoute.app.core.emergency.SOS_COUNTDOWN
 import com.saferoute.app.core.emergency.SmsLimitNotice
 import com.saferoute.app.core.emergency.SmsLimitNotices
-import com.saferoute.app.core.emergency.SosAlertPolicy
 import com.saferoute.app.core.emergency.SosAlertStatus
 import com.saferoute.app.core.emergency.SosDispatch
 import com.saferoute.app.core.emergency.SosEntryPoint
@@ -17,6 +16,8 @@ import com.saferoute.app.core.emergency.SosRecovery
 import com.saferoute.app.core.emergency.SosRunState
 import com.saferoute.app.core.emergency.SosRunner
 import com.saferoute.app.core.emergency.SosTrail
+import com.saferoute.app.core.emergency.StartSos
+import com.saferoute.app.core.emergency.StartSosResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
@@ -35,7 +36,10 @@ enum class SosOpenMode {
     /** A shortcut or a notification: show what is going on, or the emergency options. */
     OPEN,
 
-    /** The hold in the app was completed: start the countdown. */
+    /**
+     * Start an SOS: the hold in the app was completed, or the tile, the widget or the
+     * notification's "Start SOS" was tapped. The intent says which.
+     */
     START,
 
     /** "I'm safe" on the notification: show the emergency and ask to confirm. */
@@ -49,6 +53,12 @@ enum class SosOpenMode {
 sealed interface SosUi {
     /** Nothing is running: the dialog with Call 112. */
     data object Options : SosUi
+
+    /**
+     * A start was asked for and SOS alerts are not set up: the same dialog, saying so, with
+     * the way to the setup and a practice run. No countdown.
+     */
+    data object NotSetUp : SosUi
 
     data class Countdown(val secondsLeft: Int, val practice: Boolean = false) : SosUi
 
@@ -95,6 +105,8 @@ private data class Local(
     val recovered: Boolean = false,
     val confirmingSafe: Boolean = false,
     val closed: Boolean = false,
+    /** A start was refused by the consent gate. */
+    val notSetUp: Boolean = false,
     val practice: Practice = Practice.NONE,
     val practiceSeconds: Int = 0,
     val practiceConfirming: Boolean = false,
@@ -122,7 +134,7 @@ class SosViewModel @Inject constructor(
     private val gate: NotificationGate,
     private val haptics: SosHaptics,
     private val dispatch: SosDispatch,
-    private val policy: SosAlertPolicy,
+    private val startSos: StartSos,
     private val notices: SmsLimitNotices,
     @param:ApplicationScope private val appScope: CoroutineScope,
 ) : ViewModel() {
@@ -161,6 +173,7 @@ class SosViewModel @Inject constructor(
                 practice = true,
             )
             here.practice == Practice.FINISHED -> SosUi.PracticeFinished
+            here.notSetUp -> SosUi.NotSetUp
             else -> SosUi.Options
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, SosUi.Options)
@@ -169,8 +182,10 @@ class SosViewModel @Inject constructor(
      * Called once when the screen is created for a new reason ([fresh]) and again each time it
      * comes back to the front. A recreated screen (rotation, process restart) never starts a
      * new emergency: it only looks at what is there.
+     *
+     * @param entryPoint what the user touched, for [SosOpenMode.START]; stored with the record.
      */
-    fun onShown(mode: SosOpenMode, fresh: Boolean) {
+    fun onShown(mode: SosOpenMode, fresh: Boolean, entryPoint: SosEntryPoint = SosEntryPoint.IN_APP) {
         local.value = local.value.copy(refresh = local.value.refresh + 1)
         val first = !opened
         opened = true
@@ -179,10 +194,12 @@ class SosViewModel @Inject constructor(
             return
         }
         appScope.launch {
-            // The dialog offers the hold only when alerts are set up; asked again here, so
-            // that no other way in can start an SOS the user has not agreed to.
-            if (first && fresh && mode == SosOpenMode.START && policy.alertsAllowed()) {
-                runner.start(SosEntryPoint.IN_APP)
+            // Every way in ends here, in the one use case, which asks the consent gate
+            // first: the hold, the tile, the widget and the notification cannot differ, and
+            // none of them can start an SOS the user has not agreed to.
+            if (first && fresh && mode == SosOpenMode.START) {
+                val refused = startSos(entryPoint) == StartSosResult.NotSetUp
+                if (refused) local.value = local.value.copy(notSetUp = true)
             }
             when (runner.resume()) {
                 is SosRecovery.AskSendOrCancel -> local.value = local.value.copy(asking = true)
@@ -263,6 +280,9 @@ class SosViewModel @Inject constructor(
             local.value = local.value.copy(confirmingSafe = false, closed = true)
         }
     }
+
+    /** "Practice SOS" on the dialog that says alerts are not set up. */
+    fun onPractice() = startPractice()
 
     /** Close on the options dialog or on "Practice finished". */
     fun onClose() {

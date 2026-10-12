@@ -27,6 +27,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.saferoute.app.MainActivity
 import com.saferoute.app.R
+import com.saferoute.app.core.emergency.SosEntryPoint
 import com.saferoute.app.core.designsystem.theme.SafeRouteTheme
 import com.saferoute.app.core.emergency.FakeSosHaptics
 import com.saferoute.app.core.emergency.FakeSosAlertPolicy
@@ -452,6 +453,7 @@ class SosFlowTest {
         val started = nextStarted()
         assertEquals(ComponentName(compose.activity, EmergencyActivity::class.java), started?.component)
         assertEquals(SosOpenMode.START.name, started?.getStringExtra(EmergencyShortcut.EXTRA_MODE))
+        assertEquals(SosEntryPoint.IN_APP, EmergencyShortcut.entryPointOf(started))
         // The dialog is gone; the countdown belongs to the emergency screen.
         compose.onNodeWithTag(HoldToArmTag).assertDoesNotExist()
     }
@@ -554,6 +556,117 @@ class SosEmergencyScreenTest {
             scenario.onActivity { finishing = it.isFinishing }
             finishing
         }
+        scenario.close()
+    }
+
+    // --- entry points outside the app (P014c1) ------------------------------------------
+
+    private fun launchStart(entryPoint: SosEntryPoint) =
+        androidx.test.core.app.ActivityScenario.launch<EmergencyActivity>(EmergencyShortcut.startIntent(context, entryPoint))
+
+    private fun started(): android.content.Intent? =
+        shadowOf(ApplicationProvider.getApplicationContext<android.app.Application>()).nextStartedActivity
+
+    @Test
+    fun `the tile, the widget and the notification each open the countdown, and the record says which`() {
+        for (entryPoint in listOf(SosEntryPoint.TILE, SosEntryPoint.WIDGET, SosEntryPoint.NOTIFICATION)) {
+            val scenario = launchStart(entryPoint)
+
+            compose.waitUntil(5_000) { runner.state.value is SosRunState.Countdown }
+            compose.onNodeWithTag(SosCountdownNumberTag).assertIsDisplayed()
+            // The same screen as after the hold: Cancel, Call 112, and what SafeRoute is not.
+            compose.onNodeWithTag(SosCancelTag).assertIsDisplayed()
+            compose.onNodeWithText(string(R.string.emergency_dialog_call)).assertExists()
+            compose.onNodeWithText(string(R.string.sos_not_emergency_service_call)).assertExists()
+            assertEquals(entryPoint, runBlocking { engine.current() }?.entryPoint)
+            assertEquals("the host starts while the screen is visible", "begin", host.events.last())
+
+            compose.onNodeWithTag(SosCancelTag).performClick()
+            compose.waitUntil(5_000) { runner.state.value == SosRunState.Idle }
+            assertNull(runBlocking { engine.current() })
+            scenario.close()
+        }
+    }
+
+    @Test
+    fun `with alerts not set up a shortcut shows Call 112 and the way to the setup, and no countdown`() {
+        policy.open = false
+
+        for (entryPoint in listOf(SosEntryPoint.TILE, SosEntryPoint.WIDGET, SosEntryPoint.NOTIFICATION)) {
+            val scenario = launchStart(entryPoint)
+
+            compose.waitUntil(5_000) {
+                compose.onAllNodesWithText(string(R.string.sos_arm_not_set_up)).fetchSemanticsNodes().isNotEmpty()
+            }
+            compose.onNodeWithTag(SosCountdownNumberTag).assertDoesNotExist()
+            compose.onNodeWithTag(HoldToArmTag).assertDoesNotExist()
+            compose.onNodeWithText(string(R.string.emergency_dialog_call)).assertIsDisplayed()
+            compose.onNodeWithText(string(R.string.not_emergency_service), substring = true).assertExists()
+            assertEquals(SosRunState.Idle, runner.state.value)
+            assertNull(runBlocking { engine.current() })
+            assertEquals(emptyList<String>(), host.events.toList())
+            scenario.close()
+        }
+    }
+
+    @Test
+    fun `set up SOS alerts opens the app at emergency contacts and closes the emergency screen`() {
+        policy.open = false
+        val scenario = launchStart(SosEntryPoint.WIDGET)
+        compose.waitUntil(5_000) {
+            compose.onAllNodesWithText(string(R.string.sos_arm_set_up)).fetchSemanticsNodes().isNotEmpty()
+        }
+
+        compose.onNodeWithText(string(R.string.sos_arm_set_up)).performScrollTo().performClick()
+        compose.waitForIdle()
+
+        val opened = started()
+        assertEquals(ComponentName(context, com.saferoute.app.MainActivity::class.java), opened?.component)
+        // One fixed word for the navigation host; nothing about the user.
+        assertEquals(1, opened?.extras?.size())
+        com.saferoute.app.navigation.OpenRequests.accept(opened)
+        assertTrue(com.saferoute.app.navigation.OpenRequests.contacts.value)
+        com.saferoute.app.navigation.OpenRequests.done()
+        var finishing = false
+        scenario.onActivity { finishing = it.isFinishing }
+        assertTrue(finishing)
+        scenario.close()
+    }
+
+    @Test
+    fun `on a locked phone set up SOS alerts asks for the unlock first`() {
+        policy.open = false
+        val keyguard = context.getSystemService(android.app.KeyguardManager::class.java)
+        shadowOf(keyguard).setKeyguardLocked(true)
+        val scenario = launchStart(SosEntryPoint.TILE)
+        compose.waitUntil(5_000) {
+            compose.onAllNodesWithText(string(R.string.sos_arm_set_up)).fetchSemanticsNodes().isNotEmpty()
+        }
+
+        compose.onNodeWithText(string(R.string.sos_arm_set_up)).performScrollTo().performClick()
+        compose.waitForIdle()
+        // Still locked: nothing of the app is opened over the lock screen.
+        assertNull(started())
+
+        shadowOf(keyguard).setKeyguardLocked(false)
+        compose.waitForIdle()
+        assertEquals(ComponentName(context, com.saferoute.app.MainActivity::class.java), started()?.component)
+        scenario.close()
+    }
+
+    @Test
+    @Config(application = HiltTestApplication::class, qualifiers = "bn-w360dp-h640dp", fontScale = 2f)
+    fun `in Bengali at double font size the not-set-up dialog still reaches Call 112 and the setup`() {
+        policy.open = false
+        val scenario = launchStart(SosEntryPoint.NOTIFICATION)
+        compose.waitUntil(5_000) {
+            compose.onAllNodesWithText(string(R.string.sos_arm_set_up)).fetchSemanticsNodes().isNotEmpty()
+        }
+
+        compose.onNodeWithText(string(R.string.sos_arm_set_up)).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(string(R.string.sos_arm_practice)).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(string(R.string.emergency_dialog_call)).assertIsDisplayed()
+        assertTrue("the emergency number stays in Latin digits", string(R.string.emergency_dialog_call).contains("112"))
         scenario.close()
     }
 

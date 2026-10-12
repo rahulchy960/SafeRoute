@@ -79,7 +79,7 @@ internal fun buildSosRunningNotification(context: Context, active: Boolean): Not
             context.getString(if (active) R.string.sos_running_title_active else R.string.sos_running_title_countdown),
         )
         .setContentText(context.getString(R.string.sos_running_text))
-        .setContentIntent(EmergencyShortcut.pendingIntent(context, EmergencyEntry.Notification))
+        .setContentIntent(EmergencyShortcut.openPendingIntent(context))
         .setOngoing(true)
         .setOnlyAlertOnce(true)
         .setLocalOnly(true)
