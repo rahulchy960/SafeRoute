@@ -105,7 +105,9 @@ android/
       core/designsystem/preview/   @SafeRoutePreviews (light, dark, Bengali, 200% font)
       core/di/                     Hilt module: Clock and coroutine dispatchers
       core/network/                HTTP client, token seam, retries, error mapping (ADR 0009)
-      core/auth/                   phone sign-in behind PhoneAuthGateway; the only Firebase code
+      core/auth/                   phone sign-in behind PhoneAuthGateway; the only Firebase sign-in code
+      core/diagnostics/            opt-in crash reports behind DiagnosticsReporter; CrashlyticsBackend.kt
+                                   is the only file that uses the Crashlytics library (ADR 0028)
       core/location/               LocationRepository; FusedLocation.kt is the only file that
                                    uses Google's location library (ADR 0015)
       core/map/                    the map behind MapEngine/MapController; MapLibreEngine.kt is
@@ -160,6 +162,8 @@ Chosen on 2026-10-02 from Google Maven and Maven Central metadata; all are stabl
 | OpenAPI Generator (Gradle plugin `org.openapi.generator`) | 7.25.0 | build time only; writes the API client |
 | Firebase BoM | 34.19.0 | picks firebase-auth 24.2.0 (chosen 2026-10-06) |
 | Google Services Gradle plugin | 4.5.0 | build time only; reads `google-services.json` |
+| Firebase Crashlytics (`firebase-crashlytics`) | 20.1.1, from the BoM | opt-in crash reports (P014d1a, ADR 0028); only `core/diagnostics` uses it; brings `firebase-sessions`, `firebase-installations` and the transport libraries, no analytics |
+| Crashlytics Gradle plugin | 3.0.8 | build time only; writes the build id the library needs; mapping upload is off |
 | DataStore Preferences | 1.2.1 | the stored onboarding flags |
 | Room (runtime, compiler, testing) | 2.8.5 | the local database: the offline copy of the emergency contacts (P013b1) |
 | WorkManager (runtime, testing) | 2.12.0 | the daily clean-up of old SOS records (P014a2); brings `WAKE_LOCK` into the merged manifest |
@@ -305,6 +309,21 @@ Without either, Gradle stops with an error from the Google Services plugin.
 **Release builds** refuse the dummy file and a missing file (`checkReleaseFirebaseConfig`). CI
 passes `-Psaferoute.allowDummyFirebase=true` for the one release build it makes to check that
 a release still assembles; never use that flag for a build that goes to a phone.
+
+### Crash reports
+
+Crash reports are **opt-in** ([ADR 0028](../docs/adr/0028-diagnostics-and-crash-reporting.md)):
+a setting on the phone, off by default. Until a person switches it on, nothing is collected.
+
+- Only `core/diagnostics` uses the Crashlytics library; the rest of the app calls
+  `DiagnosticsReporter`. A report holds a stack trace, a fixed category and a few allowlisted
+  facts about the phone. An error's message is never sent.
+- **A debug build sends nothing**, whatever the setting says. To try crash reporting from a
+  debug build, add `saferoute.debugCrashReports=true` to your user-level `gradle.properties`
+  (or pass it with `-P`) and switch the setting on in the app.
+- A build never uploads anything: mapping upload is off for both build types. It comes with
+  the release pipeline.
+- With the dummy Firebase file the app builds and runs; reports cannot arrive anywhere.
 
 ### Firebase console settings sign-in depends on
 

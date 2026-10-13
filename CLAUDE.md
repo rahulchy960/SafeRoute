@@ -497,7 +497,25 @@ and [`android/README.md`](android/README.md):
   Never log, store or put in a test a real phone number, ID token, SMS code, verification id or
   Firebase uid; tests use `FakePhoneAuthGateway` and its `FAKE_...` values and never start
   Firebase (a Hilt test that reaches sign-in replaces `AuthModule`). DataStore holds flags only.
-  No other Firebase product (Analytics, Crashlytics, App Check) without a prompt that asks for it.
+  No other Firebase product (Analytics, App Check, Messaging) without a prompt that asks for it;
+  Crashlytics is allowed only as the next rule says.
+- Diagnostics follow [ADR 0028](docs/adr/0028-diagnostics-and-crash-reporting.md) (since
+  P014d1a): crash reports are **opt-in**, off in the manifest and off by default
+  (`DiagnosticsPreferences`, flags on the phone only); a debug build collects nothing without
+  the Gradle property `saferoute.debugCrashReports`. Only
+  `core/diagnostics/CrashlyticsBackend.kt` uses the Crashlytics library
+  (`DiagnosticsBoundaryTest`); the rest of the app uses `DiagnosticsReporter`, and tests use
+  `FakeDiagnosticsReporter` (`FakeDiagnosticsModule` replaces the real one in every Hilt
+  test). **Never report free text**: a non-fatal is a typed `DiagnosticEvent`, a key is a
+  `DiagnosticKey` with its list of accepted values, and an error's message is always
+  replaced (`RedactedError`). Never call `setUserId`, `log` or `sendUnsentReports`, and never
+  add an event for an SOS start or success, a contact, a search, a route or a position.
+  Unsent reports are deleted before collection is switched on: keep that order. No
+  Analytics, Performance Monitoring or Remote Config, and no breadcrumbs. `DiagnosticsLog`
+  holds categories and times in memory only. `core/diagnostics` never logs, stores a file
+  or opens a connection itself. Mapping upload stays off until the release pipeline (P022).
+  A new merged manifest entry from a library fails `DiagnosticsDeviceTest`: read what it is
+  before changing the list. SOS reliability is never measured through crash reports.
 - Onboarding (since P009c): the session state decides the screen (`navigation/OnboardingNavHost`);
   Home is shown only for `SessionState.Ready`. "I am under 18" has no in-app undo and needs the
   confirmation dialog first (ADR 0010, addendum). The consent notice text lives in the `notice_*`

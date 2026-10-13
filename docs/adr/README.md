@@ -33,6 +33,7 @@ Copy [`template.md`](template.md) to `NNNN-short-title.md`, and add a row to the
 | [0025](0025-credits-and-place-contributions.md) | Credits and verified place contributions (concept): never for safety reports, in-app photo as evidence, independent confirmation, gates before any build | Proposed |
 | [0026](0026-daily-use-loop-and-plus-hypothesis.md) | Daily-use loop (passive arrival and late notices), SafeCircle Plus and Teams as hypotheses, Safe Date as a journey type; a paid confession tab and a dating app rejected | Proposed |
 | [0027](0027-sos-device-flow.md) | SOS device flow: the record in Room is the emergency, write first and act second, timers as stored timestamps, recovery always asks, 30-day retention on the phone | Accepted |
+| [0028](0028-diagnostics-and-crash-reporting.md) | Diagnostics and crash reporting: opt-in Crashlytics behind one reporter, messages replaced, typed events and allowlisted keys only, no analytics | Accepted |
 
 A breaking API change, new infrastructure, a new data store or the Android package name each need
 an ADR.
