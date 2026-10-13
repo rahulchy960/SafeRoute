@@ -67,3 +67,4 @@ Not certain:
 
 - P014d1a step 1 (spike and build set-up): done. Next: `core/diagnostics`.
 - P014d1a step 2 (`core/diagnostics`: reporter, redaction, events, setting, tests): done. Next: ADR 0028, README, prompt log, gate, ship.
+- P014d1a step 3 (ADR 0028, diagram, README, CLAUDE.md rule): done. Next: gate three times, release build, prompt log, ship.

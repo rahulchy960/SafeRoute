@@ -119,3 +119,10 @@ its `ERROR_...` codes were read from the compiled library with `javap`.
   `.github/workflows/android-ci.yml`, `android/app/src/main/java/com/saferoute/app/core/auth/`.
 - Diagram: [`docs/diagrams/009b-onboarding-and-session.svg`](../diagrams/009b-onboarding-and-session.svg).
 - Prompt log: [`docs/prompt-logs/009b-signin-onboarding.md`](../prompt-logs/009b-signin-onboarding.md).
+
+## Note of 2026-10-13 (P014d1a)
+
+Decision 4 ("Firebase Auth only. No Analytics, Crashlytics, App Check") is changed for
+Crashlytics by [ADR 0028](0028-diagnostics-and-crash-reporting.md): crash reports are opt-in
+and go through `core/diagnostics` only. The rest of the sentence stands: no Analytics, no App
+Check and no other sign-in method.

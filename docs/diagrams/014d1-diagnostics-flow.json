@@ -1,0 +1,39 @@
+{
+  "$schema": "../../tools/diagrams/diagram.schema.json",
+  "title": "Diagnostics: what may leave the phone",
+  "subtitle": "Opt-in crash reports behind one reporter and a redaction layer (P014d1a, ADR 0028). The screens arrive with P014d1b and P014d1c",
+  "direction": "TB",
+  "layout": {
+    "nodeWidth": 250,
+    "rankGap": 46
+  },
+  "groups": [
+    { "id": "sources", "label": "What happens in the app" },
+    { "id": "core", "label": "core/diagnostics" },
+    { "id": "out", "label": "Where it goes" }
+  ],
+  "nodes": [
+    { "id": "event", "label": "A typed event: SMS_SEND_FAILED, SERVICE_KILLED, RECOVERY_SHOWN, LOCATION_UNAVAILABLE, API_ERROR, ALERTS_GIVEN_UP", "role": "app", "group": "sources", "rank": 1 },
+    { "id": "error", "label": "A caught error, or a crash nobody caught", "role": "app", "group": "sources", "rank": 1 },
+    { "id": "never", "label": "Never reported: an SOS start or success, contacts, searches, routes, positions, texts, a user id", "role": "security", "group": "sources", "rank": 1 },
+    { "id": "reporter", "label": "DiagnosticsReporter: the one door", "role": "service", "group": "core", "rank": 2 },
+    { "id": "redact", "label": "Redaction: the message is replaced by class name + category; keys only from an allowlist", "role": "security", "group": "core", "rank": 3 },
+    { "id": "choice", "label": "Send crash reports? A setting on the phone, off by default. A debug build also needs its flag", "role": "security", "group": "core", "rank": 4 },
+    { "id": "log", "label": "DiagnosticsLog: the last 20 categories with a time, in memory only", "role": "data", "group": "core", "rank": 3 },
+    { "id": "backend", "label": "CrashlyticsBackend: the only file that uses the library. Unsent reports are deleted before collection starts", "role": "service", "group": "out", "rank": 5 },
+    { "id": "google", "label": "Firebase Crashlytics (Google): stack trace, phone model, Android and app version, an install id", "role": "external", "group": "out", "rank": 6 },
+    { "id": "dropped", "label": "Choice off: nothing is collected or sent", "role": "app", "group": "out", "rank": 5 },
+    { "id": "report", "label": "Report a problem (P014d1c): the person reads the text and sends it themselves", "role": "external", "group": "out", "rank": 5 }
+  ],
+  "edges": [
+    { "from": "event", "to": "reporter" },
+    { "from": "error", "to": "reporter" },
+    { "from": "reporter", "to": "redact" },
+    { "from": "reporter", "to": "log", "label": "category only" },
+    { "from": "redact", "to": "choice" },
+    { "from": "choice", "to": "backend", "label": "on" },
+    { "from": "choice", "to": "dropped", "label": "off" },
+    { "from": "backend", "to": "google" },
+    { "from": "log", "to": "report" }
+  ]
+}

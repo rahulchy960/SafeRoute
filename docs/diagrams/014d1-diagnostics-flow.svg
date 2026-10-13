@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2390" height="1189" viewBox="0 0 2390 1189" font-family="Helvetica, Arial, sans-serif">
+<title>Diagnostics: what may leave the phone</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#495057"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="40" y="62" font-size="24" font-weight="700" fill="#1e1e1e">Diagnostics: what may leave the phone</text>
+<text x="40" y="86" font-size="14" fill="#495057">Opt-in crash reports behind one reporter and a redaction layer (P014d1a, ADR 0028). The screens arrive with P014d1b and P014d1c</text>
+<rect x="40" y="114" width="838" height="989" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="54" y="135" font-size="14" font-weight="700" fill="#495057">What happens in the app</text>
+<rect x="914" y="114" width="562" height="989" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="928" y="135" font-size="14" font-weight="700" fill="#495057">core/diagnostics</text>
+<rect x="1512" y="114" width="838" height="989" rx="12" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5" stroke-dasharray="8 6"/>
+<text x="1526" y="135" font-size="14" font-weight="700" fill="#495057">Where it goes</text>
+<line x1="183" y1="378" x2="1195" y2="424" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="459" y1="326" x2="1195" y2="424" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1195" y1="490" x2="1057" y2="536" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1195" y1="490" x2="1333" y2="546.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1057" y1="644" x2="1057" y2="690" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1057" y1="777" x2="1655" y2="823" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1057" y1="777" x2="1931" y2="844" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1655" y1="931" x2="1655" y2="977" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="1333" y1="633.5" x2="2207" y2="833.5" stroke="#495057" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="58" y="208" width="250" height="170" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="183" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="183" y="236.2">A typed event:</tspan>
+<tspan x="183" y="257">SMS_SEND_FAILED,</tspan>
+<tspan x="183" y="277.8">SERVICE_KILLED,</tspan>
+<tspan x="183" y="298.6">RECOVERY_SHOWN,</tspan>
+<tspan x="183" y="319.4">LOCATION_UNAVAILABLE,</tspan>
+<tspan x="183" y="340.2">API_ERROR,</tspan>
+<tspan x="183" y="361">ALERTS_GIVEN_UP</tspan>
+</text>
+<rect x="334" y="260" width="250" height="66" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="459" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="459" y="288.2">A caught error, or a crash</tspan>
+<tspan x="459" y="309">nobody caught</tspan>
+</text>
+<rect x="610" y="239" width="250" height="108" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="735" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="735" y="267.4">Never reported: an SOS start</tspan>
+<tspan x="735" y="288.2">or success, contacts,</tspan>
+<tspan x="735" y="309">searches, routes, positions,</tspan>
+<tspan x="735" y="329.8">texts, a user id</tspan>
+</text>
+<rect x="1070" y="424" width="250" height="66" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="1195" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1195" y="452.2">DiagnosticsReporter: the one</tspan>
+<tspan x="1195" y="473">door</tspan>
+</text>
+<rect x="932" y="536" width="250" height="108" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="1057" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1057" y="564.4">Redaction: the message is</tspan>
+<tspan x="1057" y="585.2">replaced by class name +</tspan>
+<tspan x="1057" y="606">category; keys only from an</tspan>
+<tspan x="1057" y="626.8">allowlist</tspan>
+</text>
+<rect x="932" y="690" width="250" height="87" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="1057" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1057" y="718.3">Send crash reports? A setting</tspan>
+<tspan x="1057" y="739.1">on the phone, off by default. A</tspan>
+<tspan x="1057" y="759.9">debug build also needs its flag</tspan>
+</text>
+<rect x="1208" y="546.5" width="250" height="87" rx="10" fill="#ffd8a8" stroke="#e8590c" stroke-width="2"/>
+<text x="1333" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1333" y="574.8">DiagnosticsLog: the last 20</tspan>
+<tspan x="1333" y="595.6">categories with a time, in</tspan>
+<tspan x="1333" y="616.4">memory only</tspan>
+</text>
+<rect x="1530" y="823" width="250" height="108" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="1655" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1655" y="851.4">CrashlyticsBackend: the only</tspan>
+<tspan x="1655" y="872.2">file that uses the library.</tspan>
+<tspan x="1655" y="893">Unsent reports are deleted</tspan>
+<tspan x="1655" y="913.8">before collection starts</tspan>
+</text>
+<rect x="1530" y="977" width="250" height="108" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="1655" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1655" y="1005.4">Firebase Crashlytics (Google):</tspan>
+<tspan x="1655" y="1026.2">stack trace, phone model,</tspan>
+<tspan x="1655" y="1047">Android and app version, an</tspan>
+<tspan x="1655" y="1067.8">install id</tspan>
+</text>
+<rect x="1806" y="844" width="250" height="66" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="1931" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="1931" y="872.2">Choice off: nothing is</tspan>
+<tspan x="1931" y="893">collected or sent</tspan>
+</text>
+<rect x="2082" y="833.5" width="250" height="87" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="2207" font-size="16" fill="#1e1e1e" text-anchor="middle">
+<tspan x="2207" y="861.8">Report a problem (P014d1c):</tspan>
+<tspan x="2207" y="882.6">the person reads the text and</tspan>
+<tspan x="2207" y="903.4">sends it themselves</tspan>
+</text>
+<rect x="1218.4" y="507.3" width="91.3" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="1264" y="522.8" font-size="13" fill="#1e1e1e" text-anchor="middle">category only</text>
+<rect x="1343" y="789" width="26" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="1356" y="804.5" font-size="13" fill="#1e1e1e" text-anchor="middle">on</text>
+<rect x="1480.6" y="799.5" width="26.8" height="22" rx="4" fill="#ffffff" fill-opacity="0.95" stroke="#ced4da" stroke-width="1"/>
+<text x="1494" y="815" font-size="13" fill="#1e1e1e" text-anchor="middle">off</text>
+<rect x="40" y="1124" width="16" height="16" rx="3" fill="#a5d8ff" stroke="#1971c2" stroke-width="1.5"/>
+<text x="62" y="1137" font-size="13" fill="#495057">App / UI</text>
+<rect x="134.8" y="1124" width="16" height="16" rx="3" fill="#b2f2bb" stroke="#2f9e44" stroke-width="1.5"/>
+<text x="156.8" y="1137" font-size="13" fill="#495057">Service</text>
+<rect x="228.3" y="1124" width="16" height="16" rx="3" fill="#ffd8a8" stroke="#e8590c" stroke-width="1.5"/>
+<text x="250.3" y="1137" font-size="13" fill="#495057">Data</text>
+<rect x="303.1" y="1124" width="16" height="16" rx="3" fill="#ffc9c9" stroke="#e03131" stroke-width="1.5"/>
+<text x="325.1" y="1137" font-size="13" fill="#495057">Security / emergency</text>
+<rect x="476.7" y="1124" width="16" height="16" rx="3" fill="#e9ecef" stroke="#495057" stroke-width="1.5"/>
+<text x="498.7" y="1137" font-size="13" fill="#495057">External</text>
+</svg>
