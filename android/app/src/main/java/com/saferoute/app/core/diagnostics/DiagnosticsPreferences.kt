@@ -14,6 +14,9 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
+/** The version of the text in `docs/legal/diagnostics-notice-v1.md` (the `diagnostics_*` strings). */
+const val DIAGNOSTICS_NOTICE_VERSION = "2026-10-diagnostics-draft1"
+
 /**
  * @property crashReports the person's choice "Send crash reports". Off until they switch it on.
  * @property asked whether the choice has been put to them once.

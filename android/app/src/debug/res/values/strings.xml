@@ -43,4 +43,11 @@
     <string name="debug_sms_banner_sending">DEBUG build: SMS is sent for real to %1$d allowlisted contacts.</string>
     <string name="debug_sms_banner_none">DEBUG build: no allowlisted contacts: composer mode. Your SMS app opens, and nothing is sent until you press Send there.</string>
     <string name="debug_sms_banner_no_permission">DEBUG build: the app may not send SMS by itself (the SMS permission is off): composer mode. Your SMS app opens, and nothing is sent until you press Send there.</string>
+    <!-- Crash reporting test buttons (P014d1b) -->
+    <string name="developer_crash_reports">Crash reports</string>
+    <string name="developer_crash_reports_on">Collecting: the choice is on and this build allows it.</string>
+    <string name="developer_crash_reports_choice_off">Not collecting: \"Send crash reports\" is off in Settings.</string>
+    <string name="developer_crash_reports_build_off">Not collecting: this debug build was made without saferoute.debugCrashReports=true.</string>
+    <string name="developer_test_non_fatal">Test non-fatal</string>
+    <string name="developer_test_crash">Test crash (closes the app)</string>
 </resources>

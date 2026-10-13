@@ -167,6 +167,11 @@ show it", items 7 and 8.
    be shown. In each case the SOS is shown when the app is next opened, as before. Not
    seen on any phone.
 
+9. **Failures in the field are visible only for testers who opt in** (P014d1b, ADR 0028).
+   Crash reports are off by default, and a report never says that an SOS started or went
+   well. A crash or a failed alert on the phone of someone who left the choice off reaches
+   nobody unless that person writes. No row's status may be taken from crash reports.
+
 ### Accepted risks in the design (ADR 0027)
 
 1. **An opt-out made shortly before the trigger** and not yet on the phone is missed when a
@@ -955,3 +960,5 @@ The row is new in P014c3; these tests are from P014c1a and on `main` since `5e57
   (new row A15, tests of P014c1a). "I'm safe" from a notification goes through the unlock.
   Scripts: M27 written (it was a draft), M31 and M32 new. The tests of P014c2c count now.
   "State of the build" says that the device side is complete and what remains.
+- **P014d1b** (2026-10-13): no row changed. Known gap 9 added: crash reports are opt-in,
+  so field failures are visible only for testers who opt in.

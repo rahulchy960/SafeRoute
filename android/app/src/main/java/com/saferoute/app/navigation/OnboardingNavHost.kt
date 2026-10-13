@@ -14,6 +14,7 @@ import androidx.navigation.compose.rememberNavController
 import com.saferoute.app.BuildConfig
 import com.saferoute.app.core.session.BlockReason
 import com.saferoute.app.core.session.SessionState
+import com.saferoute.app.feature.diagnostics.CrashReportsChoiceScreen
 import com.saferoute.app.feature.onboarding.AgeGateScreen
 import com.saferoute.app.feature.onboarding.BlockedScreen
 import com.saferoute.app.feature.onboarding.ConsentNoticeScreen
@@ -44,6 +45,9 @@ data object OnboardingNoticeDestination
 
 /** Phone number and SMS code. */
 @Serializable
+data object OnboardingCrashReportsDestination
+
+@Serializable
 data object OnboardingSignInDestination
 
 /** The app cannot be used (under 18, or the account was deleted). */
@@ -61,7 +65,11 @@ data object OnboardingProblemDestination
  * @param welcomeSeen null while the stored flags are still being read.
  * @return null for [SessionState.Ready]: onboarding is over and Home is shown.
  */
-fun onboardingDestinationFor(state: SessionState, welcomeSeen: Boolean?): Any? = when (state) {
+fun onboardingDestinationFor(
+    state: SessionState,
+    welcomeSeen: Boolean?,
+    crashReportsAsked: Boolean? = true,
+): Any? = when (state) {
     SessionState.Loading, SessionState.NeedsBootstrap -> OnboardingWorkingDestination
     SessionState.NeedsAge -> when (welcomeSeen) {
         null -> OnboardingWorkingDestination
@@ -69,7 +77,13 @@ fun onboardingDestinationFor(state: SessionState, welcomeSeen: Boolean?): Any? =
         true -> OnboardingAgeDestination
     }
     SessionState.NeedsConsent -> OnboardingNoticeDestination
-    SessionState.SignedOut -> OnboardingSignInDestination
+    // After the account notice and before the phone number: the optional choice about
+    // crash reports, once (ADR 0028).
+    SessionState.SignedOut -> when (crashReportsAsked) {
+        null -> OnboardingWorkingDestination
+        false -> OnboardingCrashReportsDestination
+        true -> OnboardingSignInDestination
+    }
     is SessionState.Blocked -> OnboardingBlockedDestination
     is SessionState.Error -> OnboardingProblemDestination
     SessionState.Ready -> null
@@ -90,9 +104,10 @@ fun OnboardingNavHost(
     welcomeSeen: Boolean?,
     viewModel: OnboardingViewModel,
     modifier: Modifier = Modifier,
+    crashReportsAsked: Boolean? = true,
     navController: NavHostController = rememberNavController(),
 ) {
-    val target = onboardingDestinationFor(state, welcomeSeen) ?: return
+    val target = onboardingDestinationFor(state, welcomeSeen, crashReportsAsked) ?: return
     // Start on the right screen straight away, so nothing else flashes first.
     val start = remember { target }
 
@@ -114,6 +129,9 @@ fun OnboardingNavHost(
                 showDraftMarker = BuildConfig.DEBUG,
                 onAgree = viewModel::onNoticeAccepted,
             )
+        }
+        composable<OnboardingCrashReportsDestination> {
+            CrashReportsChoiceScreen(onContinue = viewModel::onCrashReportsChoice)
         }
         composable<OnboardingSignInDestination> {
             SignInRoute()

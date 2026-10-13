@@ -64,6 +64,7 @@ fun DeveloperCheckRoute(onBack: () -> Unit, viewModel: DeveloperCheckViewModel =
         onBack = onBack,
         onCheckAgain = viewModel::checkNow,
         onWhoAmI = viewModel::whoAmI,
+        diagnostics = { DiagnosticsDeveloperSection() },
     )
 }
 
@@ -82,6 +83,7 @@ fun DeveloperCheckScreen(
     onCheckAgain: () -> Unit,
     modifier: Modifier = Modifier,
     onWhoAmI: () -> Unit = {},
+    diagnostics: @Composable () -> Unit = {},
 ) {
     Scaffold(
         modifier = modifier,
@@ -175,6 +177,7 @@ fun DeveloperCheckScreen(
             ) {
                 Text(text = stringResource(R.string.developer_check_who_am_i_ask))
             }
+            diagnostics()
             Text(
                 text = stringResource(R.string.developer_check_footer),
                 modifier = Modifier.padding(horizontal = SafeRouteTheme.spacing.md),

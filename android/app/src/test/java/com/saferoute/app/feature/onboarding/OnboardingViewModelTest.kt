@@ -13,6 +13,7 @@ import java.util.Random
 import org.junit.Assert.assertFalse
 import com.saferoute.app.core.session.AccountResult
 import com.saferoute.app.core.session.AccountSummary
+import com.saferoute.app.core.diagnostics.FakeDiagnosticsPreferences
 import com.saferoute.app.core.session.BlockReason
 import com.saferoute.app.core.session.FakeSession
 import com.saferoute.app.core.session.SessionFlags
@@ -53,7 +54,7 @@ class OnboardingViewModelTest {
     @Test
     fun `it checks the session once when it is created`() = runTest {
         val session = FakeSession().apply { afterRefresh = SessionState.NeedsAge }
-        val viewModel = OnboardingViewModel(session)
+        val viewModel = OnboardingViewModel(session, FakeDiagnosticsPreferences())
 
         assertEquals(listOf("refresh"), session.calls)
         assertEquals(SessionState.NeedsAge, viewModel.state.value)
@@ -63,7 +64,7 @@ class OnboardingViewModelTest {
     @Test
     fun `each onboarding action reaches the session, in order`() = runTest {
         val session = FakeSession(SessionState.NeedsAge)
-        val viewModel = OnboardingViewModel(session)
+        val viewModel = OnboardingViewModel(session, FakeDiagnosticsPreferences())
 
         viewModel.onWelcomeContinue()
         assertEquals(true, viewModel.welcomeSeen.value)
@@ -83,7 +84,7 @@ class OnboardingViewModelTest {
     @Test
     fun `under 18 blocks the app`() = runTest {
         val session = FakeSession(SessionState.NeedsAge)
-        val viewModel = OnboardingViewModel(session)
+        val viewModel = OnboardingViewModel(session, FakeDiagnosticsPreferences())
 
         viewModel.onUnder18Confirmed()
 
@@ -94,7 +95,7 @@ class OnboardingViewModelTest {
     @Test
     fun `try again runs the check again`() = runTest {
         val session = FakeSession(SessionState.Error(retryable = true))
-        val viewModel = OnboardingViewModel(session)
+        val viewModel = OnboardingViewModel(session, FakeDiagnosticsPreferences())
         session.afterRefresh = SessionState.Ready
 
         viewModel.refresh()

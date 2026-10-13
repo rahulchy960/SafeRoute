@@ -649,4 +649,21 @@
     <string name="settings_sign_out_sos_title">একটি SOS সক্রিয় আছে</string>
     <string name="settings_sign_out_sos_body">আগে সেটি শেষ করুন। সাইন আউট করলে এই ফোন থেকে আপনার জরুরি যোগাযোগ এবং এই SOS-এর রেকর্ড মুছে যায়, আর আপনার পরিচিতিদের আর জানানো যাবে না যে আপনি ঠিক আছেন।</string>
     <string name="settings_sign_out_sos_open">SOS খুলুন</string>
+    <!-- Crash reports, opt-in (P014d1b, ADR 0028). Draft: needs a native speaker and a lawyer. -->
+    <string name="diagnostics_title">ক্র্যাশ ঠিক করতে সাহায্য করুন</string>
+    <string name="diagnostics_intro">SafeRoute হঠাৎ বন্ধ হয়ে গেলে অ্যাপটি ডেভেলপারকে একটি ক্র্যাশ রিপোর্ট পাঠাতে পারে। এটি আপনার ইচ্ছা; যেটাই বেছে নিন, অ্যাপ একইভাবে কাজ করবে।</string>
+    <string name="diagnostics_sent_title">যা পাঠানো হয়</string>
+    <string name="diagnostics_sent_body">ক্র্যাশের বিবরণ (অ্যাপের কোডের কোথায় থেমেছে), আপনার ফোনের মডেল, আপনার Android সংস্করণ, অ্যাপের সংস্করণ এবং এই ইনস্টলেশনের জন্য একটি এলোমেলো আইডি।</string>
+    <string name="diagnostics_not_sent_title">যা কখনও পাঠানো হয় না</string>
+    <string name="diagnostics_not_sent_body">আপনার অবস্থান, আপনার পরিচিতি, আপনার বার্তা এবং আপনার অনুসন্ধান। ক্র্যাশ রিপোর্টে আপনার নাম, ফোন নম্বর বা অ্যাকাউন্ট থাকে না।</string>
+    <string name="diagnostics_where_title">কোথায় যায়</string>
+    <string name="diagnostics_where_body">রিপোর্টগুলি Google-এর পরিষেবা Firebase Crashlytics-এ যায়, যা ডেভেলপারের জন্য সেগুলি সংরক্ষণ করে। Google জানিয়েছে যে তারা এগুলি 90 দিন রাখে।</string>
+    <string name="diagnostics_off_title">বন্ধ করা</string>
+    <string name="diagnostics_off_body">আপনি যেকোনো সময় সেটিংসে এটি বন্ধ করতে পারেন। নতুন রিপোর্ট পাঠানো বন্ধ হবে। আগে পাঠানো রিপোর্টগুলি প্রদানকারী মুছে না ফেলা পর্যন্ত থেকে যায়।</string>
+    <string name="diagnostics_switch">ক্র্যাশ রিপোর্ট পাঠান</string>
+    <string name="diagnostics_home_title">ক্র্যাশ রিপোর্ট পাঠাবেন?</string>
+    <string name="diagnostics_home_body">অ্যাপ হঠাৎ বন্ধ হয়ে গেলে এটি ডেভেলপারকে ক্র্যাশের বিবরণ, আপনার ফোনের মডেল, Android ও অ্যাপের সংস্করণ এবং একটি এলোমেলো ইনস্টল আইডি পাঠাতে পারে। আপনার অবস্থান, পরিচিতি, বার্তা বা অনুসন্ধান কখনও নয়। আপনি সেটিংসে এটি বদলাতে পারেন।</string>
+    <string name="diagnostics_home_no">না, ধন্যবাদ</string>
+    <string name="diagnostics_debug_off">এই ডিবাগ বিল্ড কোনো ক্র্যাশ রিপোর্ট পাঠায় না।</string>
+    <string name="settings_diagnostics_title">ডায়াগনস্টিকস</string>
 </resources>
