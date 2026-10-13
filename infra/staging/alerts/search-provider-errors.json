@@ -1,0 +1,32 @@
+{
+  "displayName": "SafeRoute staging: search provider is failing",
+  "documentation": {
+    "content": "More than 5 failed calls to the geocoding provider within 10 minutes, counted from the API's own log lines (the logs-based metric search_provider_errors). Users see \"search unavailable\" (503).\n\nWhat to do: docs/runbooks/alerts-staging.md, section \"When an alert arrives\". Do not paste project ids, URLs or tokens when asking for help.",
+    "mimeType": "text/markdown"
+  },
+  "combiner": "OR",
+  "conditions": [
+    {
+      "displayName": "failed geocoder calls in 10 minutes",
+      "conditionThreshold": {
+        "filter": "resource.type = \"cloud_run_revision\" AND metric.type = \"logging.googleapis.com/user/search_provider_errors\"",
+        "aggregations": [
+          {
+            "alignmentPeriod": "600s",
+            "perSeriesAligner": "ALIGN_DELTA",
+            "crossSeriesReducer": "REDUCE_SUM"
+          }
+        ],
+        "comparison": "COMPARISON_GT",
+        "thresholdValue": 5,
+        "duration": "0s",
+        "trigger": {
+          "count": 1
+        }
+      }
+    }
+  ],
+  "alertStrategy": {
+    "autoClose": "86400s"
+  }
+}

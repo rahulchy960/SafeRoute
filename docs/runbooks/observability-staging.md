@@ -27,6 +27,8 @@ keeps every other field under `jsonPayload`.
 | `user_id` | `jsonPayload.user_id` | Internal UUID of the signed-in user, when there is one |
 | `auth_failure` | `jsonPayload.auth_failure` | Why a token was refused: `missing`, `malformed`, `expired`, `invalid`, `wrong_provider`, `no_phone` or `unavailable` |
 | `db_error` | `jsonPayload.db_error` | Error name and PostgreSQL code only |
+| `err` | `jsonPayload.err` | Since P014d2: the class of an error (`type`) and, when it has one, a short machine `code`. Never the error's message |
+| `stack_trace`, `serviceContext` | `jsonPayload.…` | Since P014d2: the stack frames under a first line of class and code, and the service and version. Cloud Error Reporting groups by these ([alerts runbook](alerts-staging.md), step 1) |
 
 Severity follows the outcome: a request that ends in 4xx is logged at `WARNING`, 5xx at `ERROR`.
 Tokens, the `Authorization` header, phone numbers, Firebase uids, request bodies, query strings,
@@ -236,8 +238,8 @@ Do this after the first deploy, then record the result on the Notion P006b page.
 
 ## Metrics to watch: the first capacity dashboard
 
-No dashboard is built yet (follow-up: Cloud Monitoring dashboard and alert policies, Plan v7
-§14.3, §14.5). Until then the same charts are in the console: **Cloud Run → saferoute-api →
+No dashboard is built yet (follow-up: Cloud Monitoring dashboard, Plan v7 §14.3, §14.5). Alert
+policies for seven of the rows below are in the [alerts runbook](alerts-staging.md) (P014d2). Until then the same charts are in the console: **Cloud Run → saferoute-api →
 Metrics**, and **SQL → saferoute-db → System insights**. In **Monitoring → Metrics
 explorer** the metric names below can be searched directly.
 

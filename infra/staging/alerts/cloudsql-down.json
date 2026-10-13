@@ -1,0 +1,32 @@
+{
+  "displayName": "SafeRoute staging: database is not up",
+  "documentation": {
+    "content": "The Cloud SQL instance reported that it is not up for 5 minutes. If you stopped it on purpose to save money, disable this policy first (runbook, section \"Stopping the database on purpose\").\n\nWhat to do: docs/runbooks/alerts-staging.md, section \"When an alert arrives\". Do not paste project ids, URLs or tokens when asking for help.",
+    "mimeType": "text/markdown"
+  },
+  "combiner": "OR",
+  "conditions": [
+    {
+      "displayName": "Cloud SQL instance not up",
+      "conditionThreshold": {
+        "filter": "resource.type = \"cloudsql_database\" AND metric.type = \"cloudsql.googleapis.com/database/up\"",
+        "aggregations": [
+          {
+            "alignmentPeriod": "300s",
+            "perSeriesAligner": "ALIGN_MEAN",
+            "crossSeriesReducer": "REDUCE_MIN"
+          }
+        ],
+        "comparison": "COMPARISON_LT",
+        "thresholdValue": 1,
+        "duration": "300s",
+        "trigger": {
+          "count": 1
+        }
+      }
+    }
+  ],
+  "alertStrategy": {
+    "autoClose": "86400s"
+  }
+}

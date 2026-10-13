@@ -1,0 +1,32 @@
+{
+  "displayName": "SafeRoute staging: database CPU is high",
+  "documentation": {
+    "content": "CPU utilisation of the Cloud SQL instance stayed above 80% for 15 minutes. The shared-core tier is slow under sustained load.\n\nWhat to do: docs/runbooks/alerts-staging.md, section \"When an alert arrives\". Do not paste project ids, URLs or tokens when asking for help.",
+    "mimeType": "text/markdown"
+  },
+  "combiner": "OR",
+  "conditions": [
+    {
+      "displayName": "Cloud SQL CPU above 80%",
+      "conditionThreshold": {
+        "filter": "resource.type = \"cloudsql_database\" AND metric.type = \"cloudsql.googleapis.com/database/cpu/utilization\"",
+        "aggregations": [
+          {
+            "alignmentPeriod": "300s",
+            "perSeriesAligner": "ALIGN_MEAN",
+            "crossSeriesReducer": "REDUCE_MAX"
+          }
+        ],
+        "comparison": "COMPARISON_GT",
+        "thresholdValue": 0.8,
+        "duration": "900s",
+        "trigger": {
+          "count": 1
+        }
+      }
+    }
+  ],
+  "alertStrategy": {
+    "autoClose": "86400s"
+  }
+}

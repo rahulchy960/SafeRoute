@@ -1,0 +1,32 @@
+{
+  "displayName": "SafeRoute staging: API is slow (p95)",
+  "documentation": {
+    "content": "The 95th percentile of request latency of saferoute-api stayed above 3 seconds for 10 minutes. One slow request after idle is a cold start and does not trigger this.\n\nWhat to do: docs/runbooks/alerts-staging.md, section \"When an alert arrives\". Do not paste project ids, URLs or tokens when asking for help.",
+    "mimeType": "text/markdown"
+  },
+  "combiner": "OR",
+  "conditions": [
+    {
+      "displayName": "p95 request latency above 3 s",
+      "conditionThreshold": {
+        "filter": "resource.type = \"cloud_run_revision\" AND resource.labels.service_name = \"saferoute-api\" AND metric.type = \"run.googleapis.com/request_latencies\"",
+        "aggregations": [
+          {
+            "alignmentPeriod": "300s",
+            "perSeriesAligner": "ALIGN_PERCENTILE_95",
+            "crossSeriesReducer": "REDUCE_MAX"
+          }
+        ],
+        "comparison": "COMPARISON_GT",
+        "thresholdValue": 3000,
+        "duration": "600s",
+        "trigger": {
+          "count": 1
+        }
+      }
+    }
+  ],
+  "alertStrategy": {
+    "autoClose": "86400s"
+  }
+}

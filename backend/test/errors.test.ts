@@ -54,12 +54,19 @@ describe('problem+json errors', () => {
       requestId: 'req-500-abcdef',
     });
 
-    // The full error is logged server-side, tied to the request.
+    // The error is logged server-side, tied to the request: its class and stack, in the shape
+    // Cloud Error Reporting groups, and never its message (P014d2).
     const errorLine = logs().find((line) => line.message === 'unhandled error');
-    expect(errorLine).toMatchObject({ severity: 'ERROR', request_id: 'req-500-abcdef' });
-    const err = errorLine?.err as Record<string, unknown> | undefined;
-    expect(err?.message).toBe('db password is hunter2');
-    expect(err?.stack).toEqual(expect.stringContaining('Error: db password is hunter2'));
+    expect(errorLine).toMatchObject({
+      severity: 'ERROR',
+      request_id: 'req-500-abcdef',
+      err: { type: 'Error' },
+      serviceContext: { service: 'saferoute-api' },
+    });
+    const stack = String(errorLine?.stack_trace);
+    expect(stack.split('\n')[0]).toBe('Error: message not logged');
+    expect(stack).toMatch(/\n\s+at .+:\d+:\d+/);
+    expect(JSON.stringify(errorLine)).not.toContain('hunter2');
     expect(accessLines(logs())).toHaveLength(1);
   });
 
