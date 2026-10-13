@@ -88,7 +88,8 @@ updated: the report node and the event sources.
 | --- | --- |
 | `./gradlew lint testDebugUnitTest assembleDebug --rerun-tasks` | Pass, three times in a row |
 | The same, once more after a one-line lint fix (`toUri`) | Pass |
-| Unit tests | 1,327 tests, 0 failures; 16 new |
+| Unit tests | 1,328 tests, 0 failures; 17 new |
+| First `android-ci` run on the pull request | **Failed**: one test, a race this change introduced (below). Fixed; the gate then passed three more times with `--rerun-tasks` |
 | Lint | 0 errors, 34 warnings (as before) |
 | `./gradlew assembleRelease -Psaferoute.apiBaseUrl=https://example.invalid/` | Pass |
 | Tracked-secrets check | Prints nothing |
@@ -110,6 +111,14 @@ New tests:
 - `SosViewModelTest` (one test extended): a start and a sent alert note nothing; a found
   emergency notes `RECOVERY_SHOWN` once.
 - `NetworkModuleTest` (existing, updated): the interceptor order now includes the new one.
+
+**The CI failure and its fix.** `DefaultLocationRepositoryTest` failed in CI with
+"uncaught exceptions before the test started". The cause was new code, not that test:
+`CrashReporting.start()` read the facts about the phone on a background thread at app
+start, and tests that run the real application class can take the test environment away
+while that read is in flight. It passed four times locally and failed once in CI. The read
+now cannot throw (a failure contributes no facts), and a test covers it. In production the
+same guard means a phone that cannot answer one of the questions breaks nothing.
 
 **Failure matrix:** no row changed and no SOS behaviour changed; a history line records
 the wrapper around the SMS gateway.
@@ -155,6 +164,8 @@ Recorded as a note in [ADR 0028](../adr/0028-diagnostics-and-crash-reporting.md)
 ## 9. Known issues & risks
 
 - **Unverified on a phone.**
+- The race found by CI was timing-dependent; three local passes after the fix do not
+  prove its absence. Watch `android-ci` on `main` after the merge.
 - The report is in English also for a person who uses the app in Bengali.
 - `SERVICE_KILLED` is never reported.
 - A server failure during sign-in is noted even before a person was asked about crash

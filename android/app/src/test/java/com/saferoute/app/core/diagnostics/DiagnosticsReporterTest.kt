@@ -253,6 +253,17 @@ class DiagnosticsReporterTest {
     }
 
     @Test
+    fun `facts that cannot be read break nothing and leave the other keys in place`() = runTest(UnconfinedTestDispatcher()) {
+        val preferences = FakeDiagnosticsPreferences(DiagnosticsSettings(crashReports = true, asked = true))
+        val failing = DiagnosticsFactsSource { throw IllegalStateException("no answer") }
+
+        CrashReporting(preferences, reporter, TEST_BUILD, failing, backgroundScope).start()
+
+        assertTrue(reporter.collecting)
+        assertEquals(mapOf("appVersion" to "1.0", "buildType" to "debug", "androidApi" to "36"), backend.keys)
+    }
+
+    @Test
     fun `a build that does not allow reports ignores the choice`() = runTest(UnconfinedTestDispatcher()) {
         val preferences = FakeDiagnosticsPreferences(DiagnosticsSettings(crashReports = true, asked = true))
         CrashReporting(preferences, reporter, TEST_BUILD.copy(reportsAllowed = false), facts, backgroundScope).start()
