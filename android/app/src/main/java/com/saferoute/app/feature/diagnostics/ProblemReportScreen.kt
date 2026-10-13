@@ -5,7 +5,6 @@ package com.saferoute.app.feature.diagnostics
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.os.Build
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -26,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -98,7 +98,7 @@ class ProblemReportViewModel @Inject constructor(
 
 /** The e-mail app, addressed and filled in. The person still has to press send there. */
 fun emailReportIntent(address: String, subject: String, text: String): Intent =
-    Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:$address"))
+    Intent(Intent.ACTION_SENDTO, "mailto:$address".toUri())
         .putExtra(Intent.EXTRA_SUBJECT, subject)
         .putExtra(Intent.EXTRA_TEXT, text)
 

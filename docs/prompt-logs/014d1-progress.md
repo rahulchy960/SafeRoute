@@ -72,3 +72,4 @@ Not certain:
 - P014d1b step 1 (choice in onboarding, Settings, Home; developer buttons; notice document; tests): done. Next: ADR note, matrix line, phone script, log, gate, ship.
 - P014d1b step 2 (ADR note, matrix gap 9, gate three times, release build, prompt log): done. Next: push, PR, Notion. Then P014d1c.
 - P014d1c step 1 (Report a problem, event wiring, facts, tests): done. Next: Play data-safety draft, ADR note, docs, gate, ship.
+- P014d1c step 2 (Play draft, ADR note, gate three times plus once, release build, prompt log): done. Next: push, PR, Notion. Part 1 complete; then P014d2.
