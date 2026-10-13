@@ -12,6 +12,7 @@ import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.os.BatteryManager
 import androidx.test.core.app.ApplicationProvider
+import androidx.test.espresso.Espresso
 import androidx.concurrent.futures.CallbackToFutureAdapter
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.work.Configuration
@@ -26,7 +27,6 @@ import androidx.work.testing.TestListenableWorkerBuilder
 import androidx.work.testing.WorkManagerTestInitHelper
 import com.google.common.util.concurrent.ListenableFuture
 import com.saferoute.app.R
-import com.saferoute.app.SafeRouteApplication
 import com.saferoute.app.core.data.HiltTestCleanup
 import com.saferoute.app.core.emergency.FakeSosHaptics
 import com.saferoute.app.core.emergency.FakeSosHost
@@ -244,19 +244,6 @@ class SosDeviceTest {
         assertEquals(1, cleanUps.started.size)
     }
 
-    // The job finds its work through the application's Hilt graph, so this test asks for the
-    // real application (the default for a test is a plain one, robolectric.properties). It
-    // is also the test in which the real start-up work runs. Its database stays open: no
-    // test can reach the real application's database to close it.
-    @Test
-    @Config(application = SafeRouteApplication::class)
-    fun `the clean-up job itself runs and reports success`() {
-        // Called directly: it works on this thread, and the test waits for its answer.
-        val result = runBlocking { TestListenableWorkerBuilder<SosPurgeWorker>(context).build().doWork() }
-
-        assertEquals(ListenableWorker.Result.success(), result)
-    }
-
     @Test
     fun `the device code of a running SOS never logs and holds no means to send a message`() {
         val forbidden = listOf("android.util.Log", "println(", "SmsManager", "SEND_SMS", "okhttp3", "retrofit2")
@@ -363,12 +350,14 @@ class SosForegroundServiceTest {
     @Before
     fun setUp() = hilt.inject()
 
-    private fun waitUntil(what: String, condition: () -> Boolean) {
-        val deadline = System.currentTimeMillis() + 5_000
-        while (!condition()) {
-            assertTrue("timed out waiting until $what", System.currentTimeMillis() < deadline)
-            Thread.sleep(20)
-        }
+    // Here since P014e: the job finds its work through the application's Hilt graph, and in
+    // this class that is the test's graph, whose database is closed when the test ends.
+    @Test
+    fun `the clean-up job itself runs and reports success`() {
+        // Called directly: it works on this thread, and the test waits for its answer.
+        val result = runBlocking { TestListenableWorkerBuilder<SosPurgeWorker>(application).build().doWork() }
+
+        assertEquals(ListenableWorker.Result.success(), result)
     }
 
     @Test
@@ -378,7 +367,9 @@ class SosForegroundServiceTest {
         val mode = controller.get().onStartCommand(null, 0, 1)
 
         assertEquals("never restarted by the system", android.app.Service.START_NOT_STICKY, mode)
-        waitUntil("the service stopped itself") { shadowOf(controller.get()).isStoppedBySelf }
+        // The service follows the runner on the app's own threads; this returns when they are done.
+        Espresso.onIdle()
+        assertTrue("the service stopped itself", shadowOf(controller.get()).isStoppedBySelf)
     }
 
     @Test
@@ -399,7 +390,8 @@ class SosForegroundServiceTest {
 
         assertTrue(runBlocking { runner.cancel() })
 
-        waitUntil("the service stopped itself") { service.isStoppedBySelf }
+        Espresso.onIdle()
+        assertTrue("the service stopped itself", service.isStoppedBySelf)
         assertTrue(service.isForegroundStopped)
         assertEquals("end", host.events.last())
         assertFalse("triggered" in haptics.events)

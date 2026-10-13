@@ -36,6 +36,7 @@ import com.saferoute.app.feature.contacts.CARD_SNOOZE_DAYS
 import com.saferoute.app.feature.contacts.FakeContactsPreferences
 import com.saferoute.app.feature.contacts.FakeContactsRepository
 import com.saferoute.app.feature.contacts.fakeContact
+import com.saferoute.app.settled
 import dagger.hilt.android.testing.BindValue
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
@@ -332,11 +333,11 @@ class SosSetupOffersFlowTest {
 
     private fun string(id: Int, vararg args: Any): String = compose.activity.getString(id, *args)
 
-    private fun waitForTag(tag: String) = compose.waitUntil(5_000) {
+    private fun waitForTag(tag: String) = compose.settled {
         compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty()
     }
 
-    private fun waitForText(text: String) = compose.waitUntil(5_000) {
+    private fun waitForText(text: String) = compose.settled {
         compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty()
     }
 

@@ -20,6 +20,7 @@ import androidx.core.view.children
 import androidx.lifecycle.Lifecycle
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.saferoute.app.core.data.HiltTestCleanup
+import com.saferoute.app.core.di.TestClock
 import com.saferoute.app.core.location.FakeLocationEnvironment
 import com.saferoute.app.core.location.FakeLocationRepository
 import com.saferoute.app.core.location.GrantedLocation
@@ -89,8 +90,14 @@ class FollowFlowTest {
 
     private val here = LatLng(10.0, 20.0)
 
+    @Inject lateinit var clock: TestClock
+
     @Before
-    fun inject() = hilt.inject()
+    fun inject() {
+        hilt.inject()
+        // Times in this test are compared with the app's clock, which stands still from here.
+        clock.stop()
+    }
 
     private fun string(id: Int): String = compose.activity.getString(id)
 
@@ -105,7 +112,7 @@ class FollowFlowTest {
         view.keepScreenOn || (view as? ViewGroup)?.children?.any { screenKeptOn(it) } == true
 
     private fun fixNow() {
-        location.state.value = LocationState.Fix(fakeFix(position = here, timeMillis = System.currentTimeMillis()))
+        location.state.value = LocationState.Fix(fakeFix(position = here, timeMillis = clock.millis()))
         compose.waitForIdle()
     }
 
@@ -117,11 +124,11 @@ class FollowFlowTest {
         compose.onNodeWithText(string(R.string.search_hint)).performClick()
         compose.onNodeWithTag("search-field").performTextInput("station")
         compose.onNodeWithTag("search-field").performImeAction()
-        compose.waitUntil(5_000) { compose.onAllNodesWithText(FAKE_STATION.name).fetchSemanticsNodes().isNotEmpty() }
+        compose.settled { compose.onAllNodesWithText(FAKE_STATION.name).fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText(FAKE_STATION.name).performClick()
         compose.waitForIdle()
         compose.onNodeWithText(string(R.string.place_card_directions)).performClick()
-        compose.waitUntil(5_000) { compose.onAllNodesWithText("26 min").fetchSemanticsNodes().isNotEmpty() }
+        compose.settled { compose.onAllNodesWithText("26 min").fetchSemanticsNodes().isNotEmpty() }
     }
 
     private fun start() {
@@ -197,7 +204,7 @@ class FollowFlowTest {
     fun `with approximate location Start explains and offers precise location instead of following`() {
         routesToStation()
         location.state.value =
-            LocationState.Fix(fakeFix(position = here, timeMillis = System.currentTimeMillis(), isApproximate = true))
+            LocationState.Fix(fakeFix(position = here, timeMillis = clock.millis(), isApproximate = true))
         compose.waitForIdle()
         compose.onNodeWithText(string(R.string.route_start)).performScrollTo().performClick()
         compose.waitForIdle()

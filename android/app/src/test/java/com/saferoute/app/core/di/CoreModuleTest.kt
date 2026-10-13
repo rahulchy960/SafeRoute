@@ -9,10 +9,13 @@ import dagger.hilt.android.testing.HiltTestApplication
 import java.time.Clock
 import java.time.ZoneOffset
 import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -22,6 +25,11 @@ import org.robolectric.annotation.Config
 /**
  * Proves the Hilt graph builds and hands out what [CoreModule] promises. `@HiltAndroidTest`
  * with [HiltTestApplication] gives the test its own dependency container.
+ *
+ * Since P014e the graph of a test gets its dispatchers from `TestCoreModule`, which wraps the
+ * real ones to count their work. So what [CoreModule] itself hands out is checked on the
+ * module, and the graph is checked for what a test can see of it: one clock, and a
+ * different dispatcher for each qualifier.
  */
 @HiltAndroidTest
 @RunWith(AndroidJUnit4::class)
@@ -57,7 +65,14 @@ class CoreModuleTest {
 
     @Test
     fun `qualifiers select the matching dispatcher`() {
-        assertSame(Dispatchers.IO, ioDispatcher)
-        assertSame(Dispatchers.Default, defaultDispatcher)
+        assertSame(Dispatchers.IO, CoreModule.provideIoDispatcher())
+        assertSame(Dispatchers.Default, CoreModule.provideDefaultDispatcher())
+        assertNotSame(ioDispatcher, defaultDispatcher)
+    }
+
+    @Test
+    fun `the real module promises one clock for the whole app`() {
+        assertEquals(ZoneOffset.UTC, CoreModule.provideClock().zone)
+        assertTrue(CoreModule::class.java.getMethod("provideClock").isAnnotationPresent(Singleton::class.java))
     }
 }

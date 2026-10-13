@@ -97,7 +97,7 @@ class DirectionsFlowTest {
     }
 
     private fun waitForText(text: String) {
-        compose.waitUntil(timeoutMillis = 5_000) {
+        compose.settled {
             compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty()
         }
     }

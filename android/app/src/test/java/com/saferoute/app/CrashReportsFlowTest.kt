@@ -78,11 +78,11 @@ class CrashReportsFlowTest {
 
     private fun string(id: Int): String = compose.activity.getString(id)
 
-    private fun waitForText(id: Int) = compose.waitUntil(5_000) {
+    private fun waitForText(id: Int) = compose.settled {
         compose.onAllNodesWithText(string(id)).fetchSemanticsNodes().isNotEmpty()
     }
 
-    private fun waitForTag(tag: String) = compose.waitUntil(5_000) {
+    private fun waitForTag(tag: String) = compose.settled {
         compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty()
     }
 
@@ -130,7 +130,7 @@ class CrashReportsFlowTest {
         compose.onNodeWithContentDescription(string(R.string.sos_control_description)).assertIsDisplayed()
         compose.onNodeWithText(string(R.string.diagnostics_home_no)).performClick()
 
-        compose.waitUntil(5_000) { preferences.settings.value.asked }
+        compose.settled { preferences.settings.value.asked }
         compose.onNodeWithTag(CrashReportsHomeCardTag).assertDoesNotExist()
         assertEquals(DiagnosticsSettings(crashReports = false, asked = true), preferences.settings.value)
         // Answering starts nothing else.

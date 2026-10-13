@@ -2,6 +2,7 @@
 package com.saferoute.app
 
 import com.saferoute.app.core.data.HiltTestCleanup
+import com.saferoute.app.core.di.TestClock
 import com.saferoute.app.core.location.FakeLocationEnvironment
 import com.saferoute.app.core.location.FakeLocationRepository
 import com.saferoute.app.core.location.GrantedLocation
@@ -85,8 +86,14 @@ class SearchFlowTest {
     @Inject
     lateinit var locationEnvironment: FakeLocationEnvironment
 
+    @Inject lateinit var clock: TestClock
+
     @Before
-    fun inject() = hilt.inject()
+    fun inject() {
+        hilt.inject()
+        // Times in this test are compared with the app's clock, which stands still from here.
+        clock.stop()
+    }
 
     private fun string(id: Int): String = compose.activity.getString(id)
 
@@ -96,7 +103,7 @@ class SearchFlowTest {
     }
 
     private fun waitForText(text: String) {
-        compose.waitUntil(timeoutMillis = 5_000) {
+        compose.settled {
             compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty()
         }
     }
@@ -163,7 +170,7 @@ class SearchFlowTest {
         val here = LatLng(10.0, 20.0)
         compose.runOnUiThread { mapEngine.controller.userMoves(town) }
         locationEnvironment.granted = GrantedLocation.Precise
-        location.state.value = LocationState.Fix(fakeFix(position = here, timeMillis = System.currentTimeMillis()))
+        location.state.value = LocationState.Fix(fakeFix(position = here, timeMillis = clock.millis()))
 
         searchFor("bank")
         waitForText(FAKE_STATION.name)
@@ -176,10 +183,10 @@ class SearchFlowTest {
 
         // The position is older than five minutes: the map centre again.
         location.state.value =
-            LocationState.Fix(fakeFix(position = here, timeMillis = System.currentTimeMillis() - 6 * 60_000L))
+            LocationState.Fix(fakeFix(position = here, timeMillis = clock.millis() - 6 * 60_000L))
         compose.onNodeWithTag("search-field").performTextInput(" two")
         compose.onNodeWithTag("search-field").performImeAction()
-        compose.waitUntil(timeoutMillis = 5_000) { search.calls.size == 2 }
+        compose.settled { search.calls.size == 2 }
         assertEquals(town.target, search.calls.last().near)
     }
 

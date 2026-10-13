@@ -35,6 +35,7 @@ import com.saferoute.app.navigation.OnboardingNoticeDestination
 import com.saferoute.app.navigation.OnboardingSignInDestination
 import com.saferoute.app.navigation.OnboardingWorkingDestination
 import com.saferoute.app.navigation.onboardingDestinationFor
+import com.saferoute.app.settled
 import java.io.File
 import javax.xml.parsers.DocumentBuilderFactory
 import org.junit.Assert.assertEquals
@@ -145,11 +146,11 @@ class CrashReportsChoiceTest {
         assertEquals(DiagnosticsSettings(crashReports = false, asked = false), preferences.settings.value)
 
         viewModel.onCrashReportsChoice(false)
-        compose.waitUntil(5_000) { viewModel.crashReportsAsked.value == true }
+        compose.settled { viewModel.crashReportsAsked.value == true }
         assertEquals(DiagnosticsSettings(crashReports = false, asked = true), preferences.settings.value)
 
         viewModel.onCrashReportsChoice(true)
-        compose.waitUntil(5_000) { preferences.settings.value.crashReports }
+        compose.settled { preferences.settings.value.crashReports }
     }
 
     // --- Settings ---
@@ -185,9 +186,9 @@ class CrashReportsChoiceTest {
         compose.setContent { Themed { CrashReportsSettingsSection(viewModel = viewModel) } }
 
         compose.onNodeWithTag(CrashReportsSwitchTag).assertIsOff().performClick()
-        compose.waitUntil(5_000) { preferences.settings.value.crashReports }
+        compose.settled { preferences.settings.value.crashReports }
         compose.onNodeWithTag(CrashReportsSwitchTag).assertIsOn().performClick()
-        compose.waitUntil(5_000) { !preferences.settings.value.crashReports }
+        compose.settled { !preferences.settings.value.crashReports }
     }
 
     // --- The card on Home ---
@@ -201,7 +202,7 @@ class CrashReportsChoiceTest {
         compose.onNodeWithText(string(R.string.diagnostics_home_body)).assertIsDisplayed()
         compose.onNodeWithText(string(R.string.diagnostics_home_no)).performClick()
 
-        compose.waitUntil(5_000) { preferences.settings.value.asked }
+        compose.settled { preferences.settings.value.asked }
         compose.onNodeWithTag(CrashReportsHomeCardTag).assertDoesNotExist()
         assertEquals(DiagnosticsSettings(crashReports = false, asked = true), preferences.settings.value)
     }
@@ -213,7 +214,7 @@ class CrashReportsChoiceTest {
 
         compose.onNodeWithText(string(R.string.diagnostics_switch)).performClick()
 
-        compose.waitUntil(5_000) { preferences.settings.value.asked }
+        compose.settled { preferences.settings.value.asked }
         compose.onNodeWithTag(CrashReportsHomeCardTag).assertDoesNotExist()
         assertEquals(DiagnosticsSettings(crashReports = true, asked = true), preferences.settings.value)
     }

@@ -424,6 +424,9 @@ dependencies {
     testImplementation(libs.androidx.compose.ui.test.junit4)
     testImplementation(libs.androidx.room.testing)
     testImplementation(libs.androidx.test.core)
+    // Already on the test classpath through the Compose test library, in this version. Named
+    // so that the tests can register an idling resource (BackgroundWork).
+    testImplementation(libs.androidx.test.espresso.core)
     testImplementation(libs.androidx.work.testing)
     testImplementation(libs.androidx.test.ext.junit)
     testImplementation(libs.hilt.android.testing)

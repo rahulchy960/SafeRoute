@@ -2,6 +2,7 @@
 package com.saferoute.app.core.data
 
 import com.saferoute.app.core.data.local.SafeRouteDatabase
+import com.saferoute.app.core.di.BackgroundWork
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.job
@@ -46,6 +47,7 @@ object TestResources {
         scopes.clear()
         databases.forEach { it.close() }
         databases.clear()
+        BackgroundWork.end()
     }
 
     private const val STOP_LIMIT_MILLIS = 10_000L

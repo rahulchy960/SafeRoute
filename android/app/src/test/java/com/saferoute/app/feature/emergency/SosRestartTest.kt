@@ -31,6 +31,7 @@ import com.saferoute.app.core.location.GrantedLocation
 import com.saferoute.app.core.session.BlockReason
 import com.saferoute.app.core.session.FakeSession
 import com.saferoute.app.core.session.SessionState
+import com.saferoute.app.settled
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import dagger.hilt.android.testing.HiltTestApplication
@@ -405,14 +406,14 @@ class SosSafeFromNotificationTest {
         shadowOf(keyguard).setKeyguardLocked(true)
 
         val scenario = ActivityScenario.launch<EmergencyActivity>(EmergencyShortcut.modeIntent(context, SosOpenMode.SAFE))
-        compose.waitUntil(5_000) { runner.state.value is SosRunState.Active }
+        compose.settled { runner.state.value is SosRunState.Active }
         compose.waitForIdle()
 
         assertFalse("locked: no way to end the SOS yet", confirmationShown())
         assertEquals(SosState.ACTIVE, runBlocking { engine.current() }?.state)
 
         shadowOf(keyguard).setKeyguardLocked(false)
-        compose.waitUntil(5_000) { confirmationShown() }
+        compose.settled { confirmationShown() }
         // And still nothing ended by itself: the user has to confirm.
         assertEquals(SosState.ACTIVE, runBlocking { engine.current() }?.state)
         runBlocking { runner.markSafe() }
@@ -429,7 +430,7 @@ class SosSafeFromNotificationTest {
 
         val scenario = ActivityScenario.launch<EmergencyActivity>(EmergencyShortcut.modeIntent(context, SosOpenMode.SAFE))
 
-        compose.waitUntil(5_000) { confirmationShown() }
+        compose.settled { confirmationShown() }
         assertEquals(SosState.ACTIVE, runBlocking { engine.current() }?.state)
         runBlocking { runner.markSafe() }
         scenario.close()

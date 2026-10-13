@@ -77,4 +77,18 @@ class HiltTestCleanupTest {
 
         assertEquals("a Hilt rule without the clean-up rule next to it", emptyList<String>(), missing)
     }
+
+    @Test
+    fun `no test sleeps, and only the real sign-in test polls with a time limit`() {
+        // Written in two parts so that this file does not find itself.
+        val sleep = "Thread." + "sleep("
+        val poll = ".wait" + "Until("
+        val sources = listOf("src/test", "src/testDebug")
+            .flatMap { root -> File(root).walkTopDown().filter { it.isFile && it.extension == "kt" }.toList() }
+
+        assertEquals(emptyList<String>(), sources.filter { sleep in it.readText() }.map { it.name })
+        // SignInToHomeTest talks real HTTP to a local server with the real session code:
+        // those threads are not counted by BackgroundWork, so it keeps its limit.
+        assertEquals(listOf("SignInToHomeTest.kt"), sources.filter { poll in it.readText() }.map { it.name })
+    }
 }
