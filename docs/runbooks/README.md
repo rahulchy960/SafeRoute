@@ -7,6 +7,7 @@ Operational runbooks: step-by-step procedures a person follows under pressure.
 | [One-time Google Cloud staging setup](gcp-staging-setup.md): the setup script (audit → apply → set GitHub secrets → verify), then the manual steps as reference (Artifact Registry, Cloud SQL, Secret Manager, IAM, Workload Identity Federation, GitHub environment) | P006a, script since P006c |
 | [Rollback on staging](rollback-staging.md) (shift traffic to a previous revision, roll forward, rerun the migration job, the `saferoute-admin` job for `set-role`, rehearsal checklist) | P006b |
 | [Observability on staging](observability-staging.md) (six Cloud Logging queries, how JSON log fields map, the metrics for the first capacity dashboard) | P006b |
+| [Alerts on staging](alerts-staging.md) (errors grouped in Error Reporting, one e-mail channel, seven alert policies from `infra/staging/alerts/`, deploy failures by GitHub e-mail, the budget and the credits, what not to paste, the 10-minute weekly check) | P014d2; not yet run against a project |
 | [Routing capacity on staging](routing-capacity-staging.md) (measurements, rebuilding the graphs, the budget, the deploy commands in order with their cost, the log-privacy check, warm-up and rollback) | P012a, deploy since P012a2 |
 | Cloud SQL backup export and quarterly restore drill (Plan v7 §15.3) | Planned: P020 |
 | Load test execution and capacity review (Plan v7 §14.4) | Planned: P021 |

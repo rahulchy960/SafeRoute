@@ -7,3 +7,4 @@ can continue from `git log` and this file alone. The record is
 ## Steps
 
 - Step 1 (backend: errors logged in the shape Cloud Error Reporting groups, message removed; tests; backend gate): done. Next: `docs/runbooks/alerts-staging.md`.
+- Step 2 (runbook `docs/runbooks/alerts-staging.md`, seven policy files in `infra/staging/alerts/`, diagram, CLAUDE.md, the other runbooks): done. Next: prompt log with the P015 inputs, Notion follow-ups, ship.

@@ -1,0 +1,168 @@
+{
+  "$schema": "../../tools/diagrams/diagram.schema.json",
+  "title": "Staging alerts: how a failure reaches the developer",
+  "subtitle": "Error reporting, alert policies, the budget and deploy failures (P014d2). Set up by hand from docs/runbooks/alerts-staging.md; nothing here has been run yet",
+  "direction": "LR",
+  "layout": {
+    "nodeWidth": 240,
+    "rankGap": 60
+  },
+  "groups": [
+    {
+      "id": "sources",
+      "label": "Where it fails"
+    },
+    {
+      "id": "gcp",
+      "label": "Google Cloud"
+    },
+    {
+      "id": "out",
+      "label": "What the developer gets"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "api",
+      "label": "saferoute-api: an error is logged as class, code and stack frames. Never its message",
+      "role": "service",
+      "group": "sources",
+      "rank": 1
+    },
+    {
+      "id": "run",
+      "label": "Cloud Run metrics: 5xx count, p95 latency (API and routing services)",
+      "role": "infra",
+      "group": "sources",
+      "rank": 1
+    },
+    {
+      "id": "job",
+      "label": "saferoute-migrate: a failed execution",
+      "role": "infra",
+      "group": "sources",
+      "rank": 1
+    },
+    {
+      "id": "sql",
+      "label": "Cloud SQL: CPU high, or not up",
+      "role": "data",
+      "group": "sources",
+      "rank": 1
+    },
+    {
+      "id": "deploy",
+      "label": "GitHub Actions: deploy-staging fails",
+      "role": "external",
+      "group": "sources",
+      "rank": 1
+    },
+    {
+      "id": "logging",
+      "label": "Cloud Logging: JSON lines",
+      "role": "infra",
+      "group": "gcp",
+      "rank": 2
+    },
+    {
+      "id": "er",
+      "label": "Error Reporting: groups by stack_trace",
+      "role": "infra",
+      "group": "gcp",
+      "rank": 3
+    },
+    {
+      "id": "metric",
+      "label": "Logs-based metric: search_provider_errors",
+      "role": "infra",
+      "group": "gcp",
+      "rank": 3
+    },
+    {
+      "id": "policies",
+      "label": "Seven alert policies (infra/staging/alerts)",
+      "role": "security",
+      "group": "gcp",
+      "rank": 4
+    },
+    {
+      "id": "budget",
+      "label": "Billing budget: 50, 90, 100% before credits",
+      "role": "security",
+      "group": "gcp",
+      "rank": 4
+    },
+    {
+      "id": "email",
+      "label": "E-mail to the developer",
+      "role": "app",
+      "group": "out",
+      "rank": 5
+    },
+    {
+      "id": "weekly",
+      "label": "The 10-minute weekly check: Error Reporting, incidents, metrics, billing, Crashlytics",
+      "role": "app",
+      "group": "out",
+      "rank": 5
+    },
+    {
+      "id": "request",
+      "label": "request_id leads to every log line of one request, not to its content",
+      "role": "security",
+      "group": "out",
+      "rank": 5
+    }
+  ],
+  "edges": [
+    {
+      "from": "api",
+      "to": "logging"
+    },
+    {
+      "from": "logging",
+      "to": "er"
+    },
+    {
+      "from": "logging",
+      "to": "metric"
+    },
+    {
+      "from": "metric",
+      "to": "policies"
+    },
+    {
+      "from": "run",
+      "to": "policies"
+    },
+    {
+      "from": "job",
+      "to": "policies"
+    },
+    {
+      "from": "sql",
+      "to": "policies"
+    },
+    {
+      "from": "policies",
+      "to": "email"
+    },
+    {
+      "from": "budget",
+      "to": "email"
+    },
+    {
+      "from": "deploy",
+      "to": "email",
+      "label": "GitHub notification"
+    },
+    {
+      "from": "er",
+      "to": "weekly"
+    },
+    {
+      "from": "er",
+      "to": "request"
+    }
+  ]
+}

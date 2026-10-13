@@ -1,0 +1,32 @@
+{
+  "displayName": "SafeRoute staging: migration job failed",
+  "documentation": {
+    "content": "An execution of the Cloud Run job saferoute-migrate ended as failed. The deploy run that started it has failed as well.\n\nWhat to do: docs/runbooks/alerts-staging.md, section \"When an alert arrives\". Do not paste project ids, URLs or tokens when asking for help.",
+    "mimeType": "text/markdown"
+  },
+  "combiner": "OR",
+  "conditions": [
+    {
+      "displayName": "failed executions of saferoute-migrate",
+      "conditionThreshold": {
+        "filter": "resource.type = \"cloud_run_job\" AND resource.labels.job_name = \"saferoute-migrate\" AND metric.type = \"run.googleapis.com/job/completed_execution_count\" AND metric.labels.result = \"failed\"",
+        "aggregations": [
+          {
+            "alignmentPeriod": "300s",
+            "perSeriesAligner": "ALIGN_DELTA",
+            "crossSeriesReducer": "REDUCE_SUM"
+          }
+        ],
+        "comparison": "COMPARISON_GT",
+        "thresholdValue": 0,
+        "duration": "0s",
+        "trigger": {
+          "count": 1
+        }
+      }
+    }
+  ],
+  "alertStrategy": {
+    "autoClose": "86400s"
+  }
+}

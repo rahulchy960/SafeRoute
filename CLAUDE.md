@@ -260,6 +260,18 @@ Follow [ADR 0007](docs/adr/0007-gcp-staging-topology.md):
   [`docs/runbooks/rollback-staging.md`](docs/runbooks/rollback-staging.md). Log queries and
   metrics: [`docs/runbooks/observability-staging.md`](docs/runbooks/observability-staging.md).
   The database is never rolled back; migrations are fixed forward (ADR 0003).
+- Errors in the server log (since P014d2): **an error's own message is never logged.** The
+  logger turns every `err` field into its class, a short machine code and the stack frames
+  (`safeError` in `backend/src/lib/logger.ts`) and adds `stack_trace` and `serviceContext`,
+  which Cloud Error Reporting groups by. Log an error only as `{ err }` (or `db_error` with
+  `safeDbError`); never interpolate `err.message` or `String(err)` into a log line, and never
+  add a field that carries it. `backend/test/error-reporting.test.ts` captures every line
+  of a request and must still pass.
+- Alerts on staging: [`docs/runbooks/alerts-staging.md`](docs/runbooks/alerts-staging.md) and
+  the policy files in `infra/staging/alerts/` (since P014d2). Rahul creates the channel, the
+  policies and the budget; Claude Code changes the files and the runbook only, and says in
+  the runbook which commands were checked with `--help` and which were not. A threshold is
+  changed in the file, with the measurement that justifies it in the prompt log.
 
 ## Naming rules (since P003c, ADR 0005)
 
