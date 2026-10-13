@@ -6,6 +6,10 @@ import java.time.Duration
 import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -75,6 +79,23 @@ class SosEngine @Inject constructor(
     // One step at a time inside this process; the store's "if" functions guard the rest.
     private val steps = Mutex()
 
+    // A tick after every change of an emergency's state. The last one is kept, so that a
+    // waiter who subscribes a moment after a change still hears of it.
+    private val changes = MutableSharedFlow<Unit>(replay = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+
+    private fun changed() {
+        changes.tryEmit(Unit)
+    }
+
+    /**
+     * Returns when no emergency is going on: at once if there is none, otherwise after the
+     * user cancelled the countdown or said "I'm safe". Used by the clean-ups that follow a
+     * sign-out or a blocked account, which must let a running SOS finish first (P014c3).
+     */
+    suspend fun awaitNoEmergency() {
+        changes.onStart { emit(Unit) }.first { store.unresolved() == null }
+    }
+
     /** The emergency that is going on, or null. */
     suspend fun current(): SosRecord? = store.unresolved()
 
@@ -95,6 +116,7 @@ class SosEngine @Inject constructor(
             countdownEndsAt = now.plus(SOS_COUNTDOWN),
         )
         val stored = store.insertIfNoneUnresolved(candidate)
+        changed()
         if (stored.clientSosId == candidate.clientSosId) SosStart.Started(stored) else SosStart.AlreadyActive(stored)
     }
 
@@ -105,7 +127,7 @@ class SosEngine @Inject constructor(
     suspend fun cancel(): Boolean = steps.withLock {
         val record = store.unresolved() ?: return@withLock false
         nextSosState(record.state, SosEvent.CANCELLED) ?: return@withLock false
-        store.deleteIf(record.clientSosId, record.state)
+        store.deleteIf(record.clientSosId, record.state).also { if (it) changed() }
     }
 
     /**
@@ -119,6 +141,7 @@ class SosEngine @Inject constructor(
         val now = clock.instant()
         if (!force && now.isBefore(record.countdownEndsAt)) return@withLock null
         if (!store.advanceIf(record.clientSosId, record.state, to, now)) return@withLock null
+        changed()
         record.copy(state = to, triggeredAt = now)
     }
 
@@ -131,6 +154,6 @@ class SosEngine @Inject constructor(
     private suspend fun advance(event: SosEvent): Boolean = steps.withLock {
         val record = store.unresolved() ?: return@withLock false
         val to = nextSosState(record.state, event) ?: return@withLock false
-        store.advanceIf(record.clientSosId, record.state, to, clock.instant())
+        store.advanceIf(record.clientSosId, record.state, to, clock.instant()).also { if (it) changed() }
     }
 }

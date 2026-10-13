@@ -164,6 +164,33 @@ class ScreensTest {
     }
 
     @Test
+    fun `while an SOS is active sign out says so, offers the SOS, and never asks to confirm`() {
+        val events = mutableListOf<String>()
+        compose.setContent {
+            Themed(1f) {
+                SettingsScreen(
+                    versionName = "1.0",
+                    versionCode = 1,
+                    account = loadedAccount,
+                    onBack = {},
+                    onSignOut = { events += "signOut" },
+                    signOutBlocked = true,
+                    onOpenSos = { events += "openSos" },
+                )
+            }
+        }
+
+        compose.onNodeWithText(string(R.string.settings_sign_out)).performScrollTo().performClick()
+
+        compose.onNodeWithText(string(R.string.settings_sign_out_sos_title)).assertIsDisplayed()
+        compose.onNodeWithText(string(R.string.settings_sign_out_sos_body)).assertIsDisplayed()
+        compose.onNodeWithText(string(R.string.settings_sign_out_dialog_title)).assertDoesNotExist()
+        compose.onNodeWithText(string(R.string.settings_sign_out_sos_open)).performClick()
+        assertEquals(listOf("openSos"), events)
+        compose.onNodeWithText(string(R.string.settings_sign_out_sos_title)).assertDoesNotExist()
+    }
+
+    @Test
     fun `sign out asks first, and cancel does nothing`() {
         val events = mutableListOf<String>()
         compose.setContent { SettingsWithAccount(loadedAccount, events) }

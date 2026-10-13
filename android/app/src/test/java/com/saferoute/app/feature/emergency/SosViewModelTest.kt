@@ -303,14 +303,28 @@ class SosViewModelTest {
     }
 
     @Test
-    fun `I am safe on the notification opens the confirmation, and does not end anything by itself`() = test { rig ->
+    fun `I am safe on a notification only asks the screen, which takes it through the unlock`() = test { rig ->
         rig.open(SosOpenMode.START)
         rig.advance(5_000)
 
         val viewModel = rig.open(SosOpenMode.SAFE)
 
-        assertTrue((viewModel.ui.value as SosUi.Active).confirmingSafe)
+        // Not the confirmation yet: the screen may be showing over the lock screen. It is
+        // asked to do what its own button does (unlock first, then the confirmation).
+        assertTrue(viewModel.safeRequested.value)
+        assertFalse((viewModel.ui.value as SosUi.Active).confirmingSafe)
         assertEquals(SosState.ACTIVE, rig.stored())
+
+        viewModel.onSafeRequestHandled()
+        assertFalse(viewModel.safeRequested.value)
+        // After the unlock the screen reports the tap, and only then is the user asked.
+        viewModel.onSafeClick()
+        rig.advance(0)
+        assertTrue((viewModel.ui.value as SosUi.Active).confirmingSafe)
+        assertEquals("and nothing ended by itself", SosState.ACTIVE, rig.stored())
+
+        // Opening the screen any other way asks for nothing.
+        assertFalse(rig.open(SosOpenMode.OPEN).safeRequested.value)
     }
 
     @Test

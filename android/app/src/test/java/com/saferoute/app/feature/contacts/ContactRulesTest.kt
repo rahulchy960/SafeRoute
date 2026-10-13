@@ -1,6 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 package com.saferoute.app.feature.contacts
 
+import com.saferoute.app.core.emergency.InMemorySosStore
+import com.saferoute.app.core.emergency.SosEngine
+import com.saferoute.app.core.emergency.SosEntryPoint
+import com.saferoute.app.core.emergency.UuidV7Generator
+import java.time.Clock
+import java.time.Instant
+import java.time.ZoneOffset
+import java.util.Random
+import org.junit.Assert.assertFalse
 import com.saferoute.app.core.session.BlockReason
 import com.saferoute.app.core.session.FakeSession
 import com.saferoute.app.core.session.SessionState
@@ -122,9 +131,50 @@ class ContactsSessionSyncTest {
     private val repository = FakeContactsRepository().apply { set(fakeContact(1)) }
 
     /** The sync's "app scope" is the test's background scope, running at once. */
+    private val sosStore = InMemorySosStore()
+    private val sosClock: Clock = Clock.fixed(Instant.parse("2026-10-13T12:00:00Z"), ZoneOffset.UTC)
+    private val engine = SosEngine(sosStore, sosClock, UuidV7Generator(sosClock, Random(1)))
+
+    @Test
+    fun `a block or a forced sign-out during an SOS waits for the SOS to end before it empties the copy`() = runTest {
+        for (state in listOf(SessionState.Blocked(BlockReason.ACCOUNT_DELETED), SessionState.SignedOut)) {
+            repository.set(fakeContact(1))
+            repository.calls.clear()
+            val session = FakeSession(SessionState.Ready)
+            syncFor(session).start()
+            engine.startCountdown(SosEntryPoint.TILE)
+            engine.trigger(force = true)
+
+            session.setState(state)
+            assertFalse("$state: the SOS still needs the consent note and the name", "clearLocal" in repository.calls)
+            assertEquals(1, repository.current.size)
+
+            // "I'm safe": the SOS is over, and now the copy goes.
+            assertTrue(engine.resolve())
+            assertTrue("$state", "clearLocal" in repository.calls)
+            assertEquals(emptyList<EmergencyContact>(), repository.current)
+            sosStore.wipe()
+        }
+    }
+
+    @Test
+    fun `a countdown that is cancelled also lets the waiting clean-up through`() = runTest {
+        val session = FakeSession(SessionState.Ready)
+        syncFor(session).start()
+        repository.calls.clear()
+        engine.startCountdown(SosEntryPoint.IN_APP)
+
+        session.setState(SessionState.Blocked(BlockReason.UNDER_18))
+        assertFalse("clearLocal" in repository.calls)
+
+        assertTrue(engine.cancel())
+        assertTrue("clearLocal" in repository.calls)
+    }
+
     private fun TestScope.syncFor(session: FakeSession) = ContactsSessionSync(
         session,
         repository,
+        engine,
         CoroutineScope(backgroundScope.coroutineContext + UnconfinedTestDispatcher(testScheduler)),
     )
 

@@ -3,6 +3,7 @@ package com.saferoute.app.feature.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.saferoute.app.core.emergency.SosEngine
 import com.saferoute.app.core.session.AccountResult
 import com.saferoute.app.core.session.AccountSummary
 import com.saferoute.app.core.session.Session
@@ -24,7 +25,7 @@ sealed interface AccountUiState {
 }
 
 /**
- * Loads the account for Settings and signs out.
+ * Loads the account for Settings and signs out, unless an SOS is going on (P014c3).
  *
  * The phone number arrives already masked ([AccountSummary]); this class never sees the full
  * number.
@@ -32,7 +33,22 @@ sealed interface AccountUiState {
 @HiltViewModel
 class AccountViewModel @Inject constructor(
     private val session: Session,
+    private val engine: SosEngine,
 ) : ViewModel() {
+
+    private val _sosActive = MutableStateFlow(false)
+
+    /**
+     * True while the phone remembers an emergency that has not ended (a countdown, or an
+     * SOS whose alert went out). "Sign out" is then refused: signing out deletes what an
+     * SOS needs, and an SOS must not be ended by accident from Settings.
+     */
+    val sosActive: StateFlow<Boolean> = _sosActive.asStateFlow()
+
+    /** The screen came to the front: look again. */
+    fun onResume() {
+        viewModelScope.launch { _sosActive.value = engine.current() != null }
+    }
 
     private val _account = MutableStateFlow<AccountUiState>(AccountUiState.Loading)
     val account: StateFlow<AccountUiState> = _account.asStateFlow()
@@ -57,6 +73,13 @@ class AccountViewModel @Inject constructor(
      * replaces Settings with the onboarding screens.
      */
     fun signOut() {
-        viewModelScope.launch { session.signOut() }
+        viewModelScope.launch {
+            // Asked again at the last moment: an SOS may have started since the screen opened.
+            if (engine.current() != null) {
+                _sosActive.value = true
+                return@launch
+            }
+            session.signOut()
+        }
     }
 }

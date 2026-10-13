@@ -2,12 +2,14 @@
 package com.saferoute.app.feature.contacts
 
 import com.saferoute.app.core.di.ApplicationScope
+import com.saferoute.app.core.emergency.SosEngine
 import com.saferoute.app.core.session.Session
 import com.saferoute.app.core.session.SessionState
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 /**
@@ -29,6 +31,7 @@ import kotlinx.coroutines.launch
 class ContactsSessionSync @Inject constructor(
     private val session: Session,
     private val repository: ContactsRepository,
+    private val engine: SosEngine,
     @param:ApplicationScope private val appScope: CoroutineScope,
 ) {
     private val started = AtomicBoolean(false)
@@ -39,7 +42,9 @@ class ContactsSessionSync @Inject constructor(
         appScope.launch {
             // A StateFlow emits only when the value changes, so each arrival here is a real
             // change of state (plus the value at the moment of starting).
-            session.state.collect { state ->
+            // collectLatest: a clean-up that is still waiting for an SOS to end is dropped
+            // when the session changes again.
+            session.state.collectLatest { state ->
                 when (state) {
                     // Its own coroutine: a slow fetch must not delay the reaction to a sign-out.
                     SessionState.Ready -> launch {
@@ -52,7 +57,13 @@ class ContactsSessionSync @Inject constructor(
                     SessionState.SignedOut,
                     SessionState.NeedsAge,
                     is SessionState.Blocked,
-                    -> repository.clearLocal()
+                    -> {
+                        // An SOS that is running needs what this would delete: the note of
+                        // the consent (without it the follow-up "I am safe" is not sent)
+                        // and the name for alerts. It is allowed to finish first (P014c3).
+                        engine.awaitNoEmergency()
+                        repository.clearLocal()
+                    }
 
                     // Loading, an error, or a signed-in user who is asked to accept a newer
                     // notice: nothing is known for sure, so the copy stays.

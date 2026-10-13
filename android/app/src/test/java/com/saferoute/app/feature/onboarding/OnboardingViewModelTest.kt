@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 package com.saferoute.app.feature.onboarding
 
+import com.saferoute.app.core.emergency.InMemorySosStore
+import com.saferoute.app.core.emergency.SosEngine
+import com.saferoute.app.core.emergency.SosEntryPoint
+import com.saferoute.app.core.emergency.SosState
+import com.saferoute.app.core.emergency.UuidV7Generator
+import java.time.Clock
+import java.time.Instant
+import java.time.ZoneOffset
+import java.util.Random
+import org.junit.Assert.assertFalse
 import com.saferoute.app.core.session.AccountResult
 import com.saferoute.app.core.session.AccountSummary
 import com.saferoute.app.core.session.BlockReason
@@ -131,10 +141,55 @@ class OnboardingViewModelTest {
 
     // --- Settings: account -----------------------------------------------------------------
 
+    private val sosStore = InMemorySosStore()
+    private val sosClock: Clock = Clock.fixed(Instant.parse("2026-10-13T12:00:00Z"), ZoneOffset.UTC)
+    private val sosEngine = SosEngine(sosStore, sosClock, UuidV7Generator(sosClock, Random(1)))
+
+    @Test
+    fun `while an SOS is going on sign out is refused, and nothing is signed out or deleted`() = runTest {
+        val session = FakeSession(SessionState.Ready)
+        val viewModel = AccountViewModel(session, sosEngine)
+        viewModel.onResume()
+        assertFalse("no SOS, nothing in the way", viewModel.sosActive.value)
+
+        // A countdown already counts: signing out would delete it.
+        sosEngine.startCountdown(SosEntryPoint.WIDGET)
+        viewModel.onResume()
+        assertTrue(viewModel.sosActive.value)
+        viewModel.signOut()
+        assertEquals("the session was not asked to sign out", listOf("account"), session.calls)
+        assertEquals(SessionState.Ready, session.state.value)
+
+        sosEngine.trigger(force = true)
+        viewModel.signOut()
+        assertEquals(listOf("account"), session.calls)
+        assertEquals("the record is untouched", SosState.TRIGGERED_LOCAL, sosStore.all.single().state)
+
+        // "I'm safe": now signing out works.
+        assertTrue(sosEngine.resolve())
+        viewModel.onResume()
+        assertFalse(viewModel.sosActive.value)
+        viewModel.signOut()
+        assertEquals(listOf("account", "signOut"), session.calls)
+    }
+
+    @Test
+    fun `an SOS that starts after Settings was opened is still seen at the moment of signing out`() = runTest {
+        val session = FakeSession(SessionState.Ready)
+        val viewModel = AccountViewModel(session, sosEngine)
+        viewModel.onResume()
+        sosEngine.startCountdown(SosEntryPoint.TILE)
+
+        viewModel.signOut()
+
+        assertEquals(listOf("account"), session.calls)
+        assertTrue("and the screen is told why", viewModel.sosActive.value)
+    }
+
     @Test
     fun `settings loads the account when it opens`() = runTest {
         val session = FakeSession(SessionState.Ready)
-        val viewModel = AccountViewModel(session)
+        val viewModel = AccountViewModel(session, sosEngine)
 
         val loaded = viewModel.account.value as AccountUiState.Loaded
         assertEquals("+91 ••••• ••123", loaded.account.maskedPhone)
@@ -147,7 +202,7 @@ class OnboardingViewModelTest {
         val session = FakeSession(SessionState.Ready).apply {
             accountResult = AccountResult.Unavailable(retryable = true)
         }
-        val viewModel = AccountViewModel(session)
+        val viewModel = AccountViewModel(session, sosEngine)
         assertEquals(AccountUiState.Unavailable, viewModel.account.value)
 
         session.accountResult = AccountResult.Loaded(AccountSummary(null, "moderator", "bn", emptyList()))
@@ -161,7 +216,7 @@ class OnboardingViewModelTest {
     @Test
     fun `sign out goes through the session`() = runTest {
         val session = FakeSession(SessionState.Ready)
-        val viewModel = AccountViewModel(session)
+        val viewModel = AccountViewModel(session, sosEngine)
 
         viewModel.signOut()
 

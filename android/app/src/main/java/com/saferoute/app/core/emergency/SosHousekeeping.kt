@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 /**
@@ -17,7 +18,10 @@ import kotlinx.coroutines.launch
  * - **Every app start, and once a day**: records and points older than [SOS_RETENTION] are
  *   deleted.
  * - **Signed out, back at the start, or blocked**: everything is deleted. The records belong
- *   to the account that was signed in.
+ *   to the account that was signed in. **Not while an SOS is going on**: an emergency that
+ *   is running when the account is blocked, deleted or signed out by the server is allowed
+ *   to finish on the phone, and the wipe follows when the user cancelled it or said "I'm
+ *   safe" (P014c3). If the process dies in between, the next start waits the same way.
  *
  * Like `ContactsSessionSync` it follows the session's state, so it also catches a sign-out
  * the server forced, and a wipe the process did not live to finish happens at the next start.
@@ -32,6 +36,7 @@ fun interface PurgeScheduler {
 class SosHousekeeping @Inject constructor(
     private val session: Session,
     private val store: SosStore,
+    private val engine: SosEngine,
     private val clock: Clock,
     private val scheduler: PurgeScheduler,
     @param:ApplicationScope private val appScope: CoroutineScope,
@@ -44,12 +49,17 @@ class SosHousekeeping @Inject constructor(
         appScope.launch { purgeExpired() }
         scheduler.scheduleDaily()
         appScope.launch {
-            session.state.collect { state ->
+            // collectLatest: a wipe that is still waiting for an SOS to end is dropped when
+            // the session changes again (the same person signed in again, for example).
+            session.state.collectLatest { state ->
                 when (state) {
                     SessionState.SignedOut,
                     SessionState.NeedsAge,
                     is SessionState.Blocked,
-                    -> store.wipe()
+                    -> {
+                        engine.awaitNoEmergency()
+                        store.wipe()
+                    }
 
                     SessionState.Loading,
                     SessionState.NeedsConsent,

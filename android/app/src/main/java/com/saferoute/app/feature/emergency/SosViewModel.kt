@@ -28,6 +28,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
@@ -151,6 +152,15 @@ class SosViewModel @Inject constructor(
         flow { emit(notices.current()) }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     private val local = MutableStateFlow(Local())
+
+    private val _safeRequested = MutableStateFlow(false)
+
+    /** A notification's "I'm safe" was used; the screen answers with its unlock-then-ask. */
+    val safeRequested: StateFlow<Boolean> = _safeRequested.asStateFlow()
+
+    fun onSafeRequestHandled() {
+        _safeRequested.value = false
+    }
     private var practiceTimer: Job? = null
     private var opened = false
 
@@ -210,7 +220,10 @@ class SosViewModel @Inject constructor(
                 is SosRecovery.StillActive -> local.value = local.value.copy(recovered = true)
                 is SosRecovery.ResumeCountdown, SosRecovery.Nothing -> Unit
             }
-            if (first && fresh && mode == SosOpenMode.SAFE) onSafeClick()
+            // "I'm safe" on a notification only ASKS: the screen takes it through the unlock
+            // first, exactly like a tap on its own button (it may be showing over the lock
+            // screen, and a stranger holding the phone must not be able to end an SOS).
+            if (first && fresh && mode == SosOpenMode.SAFE) _safeRequested.value = true
             // The screen came to the front again while an SOS is sending: the user is looking,
             // so an unsent alert gets a try now. Not at the first showing: the alert is only
             // just leaving then, and a try that is in flight is never doubled anyway.

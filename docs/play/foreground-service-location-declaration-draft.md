@@ -33,7 +33,8 @@ No secret, account id or tester's detail belongs in this file.
 > countdown that can be cancelled. It shows a notification the whole
 > time ("SOS countdown" / "SOS active") with a button to call 112. It ends when the user
 > cancels the countdown or taps "I'm safe". The app never starts it at boot, on a schedule
-> or without the user.
+> or without the user. After a restart of the phone the app only shows a notification
+> that an SOS was active; the service starts again when the user opens that SOS.
 
 ## Why a foreground service, and why this type
 

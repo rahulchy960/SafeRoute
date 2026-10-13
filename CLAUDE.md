@@ -720,6 +720,17 @@ and [`android/README.md`](android/README.md):
   `SmsPermissionCard`, and it never requests a battery-optimisation exemption. The battery
   hints per phone maker are drafts until checked on those phones; no link to an outside
   site without a verified official address.
+  After a restart, and the account (since P014c3): the one boot receiver
+  (`EmergencyShortcutReceiver`, a restart and an update of this app only, **never direct
+  boot**) may post the notice `SosRestartNotice` and nothing more: **it never continues an
+  SOS, starts a service or an activity, or reads a contact or a position**
+  (`SosRestartNoticeTest`). Only a triggered or active SOS is announced, never a
+  countdown. **"I'm safe" from any notification goes through the screen's unlock-then-
+  confirm** (`safeRequested`); never open the confirmation directly from an intent.
+  **Signing out is refused while an emergency exists**, and every clean-up that follows the
+  session (`SosHousekeeping`, `ContactsSessionSync`) calls `SosEngine.awaitNoEmergency()`
+  before it deletes anything: a block or a forced sign-out never stops a running SOS. A
+  new clean-up of account data must wait the same way.
   The ways to the checklist (since P014c2c): one card on the contacts screen, once, after
   the first contact (`SosSetupOfferCard`), and one in the Home sheet while something is to
   fix (`SosSetupHomeCard`). Both read the phone through `SosReadinessReader`, the same

@@ -124,6 +124,9 @@ class AndroidSosHost @Inject constructor(
     private val serviceIntent get() = Intent(context, SosForegroundService::class.java)
 
     override fun begin() {
+        // The SOS is being run again: the notice "was active when the phone restarted" has
+        // done its job, and the running-SOS notification takes over.
+        context.getSystemService(NotificationManager::class.java)?.cancel(SOS_RESTART_NOTIFICATION_ID)
         if (environment.granted() != GrantedLocation.None) {
             try {
                 context.startForegroundService(serviceIntent)
@@ -140,6 +143,7 @@ class AndroidSosHost @Inject constructor(
     override fun end() {
         context.stopService(serviceIntent)
         context.getSystemService(NotificationManager::class.java)?.cancel(SOS_RUNNING_NOTIFICATION_ID)
+        context.getSystemService(NotificationManager::class.java)?.cancel(SOS_RESTART_NOTIFICATION_ID)
     }
 }
 

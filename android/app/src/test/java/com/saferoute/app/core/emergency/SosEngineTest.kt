@@ -377,6 +377,7 @@ class SosHousekeepingTest {
         val housekeeping = SosHousekeeping(
             session,
             store,
+            SosEngine(store, clock, UuidV7Generator(clock, Random(1))),
             clock,
             { scheduled++ },
             CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
@@ -392,7 +393,14 @@ class SosHousekeepingTest {
     @Test
     fun `sign-out, the start screen and a blocked account wipe everything`() = runTest {
         val session = FakeSession(SessionState.Ready)
-        SosHousekeeping(session, store, clock, {}, CoroutineScope(UnconfinedTestDispatcher(testScheduler))).start()
+        SosHousekeeping(
+            session,
+            store,
+            SosEngine(store, clock, UuidV7Generator(clock, Random(1))),
+            clock,
+            {},
+            CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
+        ).start()
         store.calls.clear()
 
         for (state in listOf(
