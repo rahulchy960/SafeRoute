@@ -96,6 +96,7 @@ import com.saferoute.app.feature.contacts.ContactsHomeCard
 import com.saferoute.app.core.emergency.SosEntryPoint
 import com.saferoute.app.feature.emergency.EmergencyShortcut
 import com.saferoute.app.feature.emergency.ShortcutOfferDialog
+import com.saferoute.app.feature.diagnostics.CrashReportsHomeCard
 import com.saferoute.app.feature.emergency.ShortcutOfferViewModel
 import com.saferoute.app.feature.emergency.SosArmViewModel
 import com.saferoute.app.feature.emergency.SosOpenMode
@@ -314,6 +315,8 @@ fun HomeRoute(
         sheetCard = {
             ContactsHomeCard(onAdd = onOpenContacts)
             SosSetupHomeCard(onOpen = onOpenSetup)
+            // Once, for a person who finished onboarding before the choice existed.
+            CrashReportsHomeCard()
         },
     )
 

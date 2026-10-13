@@ -3,6 +3,7 @@ package com.saferoute.app.feature.onboarding
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.saferoute.app.core.diagnostics.DiagnosticsPreferences
 import com.saferoute.app.core.session.Session
 import com.saferoute.app.core.session.SessionState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -22,6 +23,7 @@ import kotlinx.coroutines.launch
 @HiltViewModel
 class OnboardingViewModel @Inject constructor(
     private val session: Session,
+    private val diagnostics: DiagnosticsPreferences,
 ) : ViewModel() {
 
     val state: StateFlow<SessionState> = session.state
@@ -34,6 +36,14 @@ class OnboardingViewModel @Inject constructor(
      */
     val welcomeSeen: StateFlow<Boolean?> = session.flags
         .map<_, Boolean?> { it.welcomeSeen }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    /**
+     * Whether the choice about crash reports has been put to this person. Null until the
+     * stored flags have been read.
+     */
+    val crashReportsAsked: StateFlow<Boolean?> = diagnostics.settings
+        .map<_, Boolean?> { it.asked }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     init {
@@ -56,6 +66,11 @@ class OnboardingViewModel @Inject constructor(
     /** Called only after the confirmation dialog: the choice cannot be undone in the app. */
     fun onUnder18Confirmed() {
         viewModelScope.launch { session.declareUnder18() }
+    }
+
+    /** The onboarding step about crash reports: [enabled] is what the box said at "Continue". */
+    fun onCrashReportsChoice(enabled: Boolean) {
+        viewModelScope.launch { diagnostics.setCrashReports(enabled) }
     }
 
     /** [noticeLocale] is the language the notice was shown in when "I agree" was tapped. */

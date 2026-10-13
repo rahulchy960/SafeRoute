@@ -42,4 +42,11 @@
     <string name="debug_sms_banner_sending">DEBUG সংস্করণ: অনুমোদিত তালিকার %1$dটি পরিচিতিকে সত্যিই SMS পাঠানো হবে।</string>
     <string name="debug_sms_banner_none">DEBUG সংস্করণ: অনুমোদিত তালিকায় কোনো পরিচিতি নেই: কম্পোজার মোড। আপনার SMS অ্যাপ খুলবে, আর সেখানে Send না চাপা পর্যন্ত কিছুই পাঠানো হবে না।</string>
     <string name="debug_sms_banner_no_permission">DEBUG সংস্করণ: অ্যাপ নিজে SMS পাঠাতে পারবে না (SMS অনুমতি বন্ধ): কম্পোজার মোড। আপনার SMS অ্যাপ খুলবে, আর সেখানে Send না চাপা পর্যন্ত কিছুই পাঠানো হবে না।</string>
+    <!-- Crash reporting test buttons (P014d1b) -->
+    <string name="developer_crash_reports">ক্র্যাশ রিপোর্ট</string>
+    <string name="developer_crash_reports_on">সংগ্রহ চলছে: পছন্দটি চালু এবং এই বিল্ড তা অনুমোদন করে।</string>
+    <string name="developer_crash_reports_choice_off">সংগ্রহ হচ্ছে না: সেটিংসে \"ক্র্যাশ রিপোর্ট পাঠান\" বন্ধ।</string>
+    <string name="developer_crash_reports_build_off">সংগ্রহ হচ্ছে না: এই ডিবাগ বিল্ড saferoute.debugCrashReports=true ছাড়া তৈরি।</string>
+    <string name="developer_test_non_fatal">নন-ফেটাল পরীক্ষা</string>
+    <string name="developer_test_crash">ক্র্যাশ পরীক্ষা (অ্যাপ বন্ধ হবে)</string>
 </resources>

@@ -658,4 +658,21 @@
     <string name="settings_sign_out_sos_title">An SOS is active</string>
     <string name="settings_sign_out_sos_body">End it first. Signing out deletes your emergency contacts and the record of this SOS from this phone, and your contacts could no longer be told that you are all right.</string>
     <string name="settings_sign_out_sos_open">Open the SOS</string>
+    <!-- Crash reports, opt-in (P014d1b, ADR 0028). Mirrored in docs/legal/diagnostics-notice-v1.md. Draft until a lawyer has reviewed it. -->
+    <string name="diagnostics_title">Help fix crashes</string>
+    <string name="diagnostics_intro">If SafeRoute stops working, it can send a crash report to the developer. This is your choice, and the app works the same either way.</string>
+    <string name="diagnostics_sent_title">What is sent</string>
+    <string name="diagnostics_sent_body">Crash details (where in the app’s code it stopped), your phone’s model, your Android version, the app’s version and a random ID for this installation.</string>
+    <string name="diagnostics_not_sent_title">What is never sent</string>
+    <string name="diagnostics_not_sent_body">Your location, your contacts, your messages and your searches. A crash report does not carry your name, your phone number or your account.</string>
+    <string name="diagnostics_where_title">Where it goes</string>
+    <string name="diagnostics_where_body">Reports go to Firebase Crashlytics, a service of Google, which stores them for the developer. Google states that it keeps them for 90 days.</string>
+    <string name="diagnostics_off_title">Turning it off</string>
+    <string name="diagnostics_off_body">You can turn this off at any time in Settings. New reports stop. Reports that were already sent stay until the provider deletes them.</string>
+    <string name="diagnostics_switch">Send crash reports</string>
+    <string name="diagnostics_home_title">Send crash reports?</string>
+    <string name="diagnostics_home_body">If the app stops working, it can send crash details, your phone’s model, the Android and app versions and a random install ID to the developer. Never your location, contacts, messages or searches. You can change this in Settings.</string>
+    <string name="diagnostics_home_no">No thanks</string>
+    <string name="diagnostics_debug_off">This debug build sends no crash reports.</string>
+    <string name="settings_diagnostics_title">Diagnostics</string>
 </resources>

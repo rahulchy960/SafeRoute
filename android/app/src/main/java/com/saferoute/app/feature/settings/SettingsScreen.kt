@@ -56,6 +56,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.saferoute.app.R
+import com.saferoute.app.feature.diagnostics.CrashReportsSettingsSection
 import com.saferoute.app.core.designsystem.preview.SafeRoutePreviews
 import com.saferoute.app.core.designsystem.theme.SafeRouteTheme
 import com.saferoute.app.core.session.AccountSummary
@@ -76,6 +77,7 @@ fun SettingsRoute(
     modifier: Modifier = Modifier,
     onOpenContacts: () -> Unit = {},
     developerEntry: @Composable () -> Unit = {},
+    diagnosticsSection: @Composable () -> Unit = { CrashReportsSettingsSection() },
     viewModel: AccountViewModel = hiltViewModel(),
     shortcutsViewModel: EmergencyShortcutsViewModel = hiltViewModel(),
 ) {
@@ -119,6 +121,7 @@ fun SettingsRoute(
         modifier = modifier,
         onOpenContacts = onOpenContacts,
         developerEntry = developerEntry,
+        diagnosticsSection = diagnosticsSection,
         account = account,
         onRetryAccount = viewModel::load,
         onSignOut = viewModel::signOut,
@@ -183,6 +186,7 @@ fun SettingsScreen(
     modifier: Modifier = Modifier,
     onOpenContacts: () -> Unit = {},
     developerEntry: @Composable () -> Unit = {},
+    diagnosticsSection: @Composable () -> Unit = {},
     account: AccountUiState? = null,
     onRetryAccount: () -> Unit = {},
     onSignOut: () -> Unit = {},
@@ -275,6 +279,10 @@ fun SettingsScreen(
                 notification = notification,
                 notificationActions = notificationActions,
             )
+
+            SectionTitle(text = stringResource(R.string.settings_diagnostics_title))
+            diagnosticsSection()
+            HorizontalDivider()
 
             SectionTitle(text = stringResource(R.string.settings_about_title))
             ListItem(

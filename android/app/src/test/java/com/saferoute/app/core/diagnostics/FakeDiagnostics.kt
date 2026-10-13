@@ -74,6 +74,11 @@ class FakeDiagnosticsPreferences(initial: DiagnosticsSettings = DiagnosticsSetti
     override suspend fun setAsked() {
         settings.value = settings.value.copy(asked = true)
     }
+
+    /** Back to a person who was never asked: the onboarding step and the Home card are due. */
+    fun clearAsked() {
+        settings.value = DiagnosticsSettings()
+    }
 }
 
 val TEST_BUILD = DiagnosticsBuild(
@@ -86,7 +91,8 @@ val TEST_BUILD = DiagnosticsBuild(
 
 /**
  * Replaces [DiagnosticsModule] in every Hilt test, so no test reaches the crash-reporting
- * library, and the choice starts as it does for a new person: off and not asked.
+ * library. The choice starts off and already asked, so the onboarding step and the Home
+ * card stay out of the way of tests about other things; `clearAsked()` makes them due.
  */
 @Module
 @TestInstallIn(components = [SingletonComponent::class], replaces = [DiagnosticsModule::class])
@@ -100,7 +106,8 @@ object FakeDiagnosticsModule {
 
     @Provides
     @Singleton
-    fun provideFakePreferences(): FakeDiagnosticsPreferences = FakeDiagnosticsPreferences()
+    fun provideFakePreferences(): FakeDiagnosticsPreferences =
+        FakeDiagnosticsPreferences(DiagnosticsSettings(crashReports = false, asked = true))
 
     @Provides
     fun providePreferences(fake: FakeDiagnosticsPreferences): DiagnosticsPreferences = fake

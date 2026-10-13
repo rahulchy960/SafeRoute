@@ -31,12 +31,18 @@ fun SafeRouteApp(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val welcomeSeen by viewModel.welcomeSeen.collectAsStateWithLifecycle()
+    val crashReportsAsked by viewModel.crashReportsAsked.collectAsStateWithLifecycle()
 
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
         if (state == SessionState.Ready) {
             SafeRouteNavHost()
         } else {
-            OnboardingNavHost(state = state, welcomeSeen = welcomeSeen, viewModel = viewModel)
+            OnboardingNavHost(
+                state = state,
+                welcomeSeen = welcomeSeen,
+                viewModel = viewModel,
+                crashReportsAsked = crashReportsAsked,
+            )
         }
     }
 }
