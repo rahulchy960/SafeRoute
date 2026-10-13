@@ -28,6 +28,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.saferoute.app.MainActivity
 import com.saferoute.app.R
+import com.saferoute.app.core.data.HiltTestCleanup
 import com.saferoute.app.core.emergency.SosEntryPoint
 import com.saferoute.app.core.designsystem.theme.SafeRouteTheme
 import com.saferoute.app.core.emergency.FakeSosHaptics
@@ -44,6 +45,7 @@ import com.saferoute.app.core.session.di.SessionBindingModule
 import com.saferoute.app.feature.home.EmergencyArm
 import com.saferoute.app.feature.home.EmergencyDialog
 import com.saferoute.app.feature.home.EmergencyDialogState
+import com.saferoute.app.settled
 import dagger.hilt.android.testing.BindValue
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
@@ -398,6 +400,9 @@ class SosFlowTest {
     @get:Rule(order = 0)
     val hilt = HiltAndroidRule(this)
 
+    @get:Rule(order = 0)
+    val cleanup = HiltTestCleanup()
+
     @get:Rule(order = 1)
     val compose = createAndroidComposeRule<MainActivity>()
 
@@ -424,14 +429,6 @@ class SosFlowTest {
 
     private fun string(id: Int): String = compose.activity.getString(id)
     private fun nextStarted(): Intent? = shadowOf(compose.activity.application).nextStartedActivity
-
-    private fun waitUntil(what: String, condition: () -> Boolean) {
-        val deadline = System.currentTimeMillis() + 5_000
-        while (!condition()) {
-            assertTrue("timed out waiting until $what", System.currentTimeMillis() < deadline)
-            Thread.sleep(20)
-        }
-    }
 
     @Test
     fun `opening the app with nothing going on opens no emergency screen`() {
@@ -486,8 +483,7 @@ class SosFlowTest {
         compose.waitForIdle()
 
         compose.onNodeWithText(string(R.string.sos_setup_title)).assertIsDisplayed()
-        waitUntil("the checklist was read") {
-            compose.waitForIdle()
+        compose.settled("the checklist was read") {
             compose.onAllNodesWithTag(SosSetupSummaryTag).fetchSemanticsNodes().isNotEmpty()
         }
         // Opening the checklist starts nothing and fetches nothing.
@@ -516,8 +512,7 @@ class SosFlowTest {
         compose.activityRule.scenario.moveToState(androidx.lifecycle.Lifecycle.State.CREATED)
         compose.activityRule.scenario.moveToState(androidx.lifecycle.Lifecycle.State.RESUMED)
 
-        waitUntil("the emergency screen was started") {
-            compose.waitForIdle()
+        compose.settled("the emergency screen was started") {
             shadowOf(compose.activity.application).peekNextStartedActivity() != null
         }
         val started = nextStarted()
@@ -536,6 +531,9 @@ class SosEmergencyScreenTest {
 
     @get:Rule(order = 0)
     val hilt = HiltAndroidRule(this)
+
+    @get:Rule(order = 0)
+    val cleanup = HiltTestCleanup()
 
     @get:Rule(order = 1)
     val compose = androidx.compose.ui.test.junit4.v2.createEmptyComposeRule()
@@ -564,16 +562,16 @@ class SosEmergencyScreenTest {
     fun `started after the hold it shows the countdown over the lock screen, and cancel leaves nothing`() {
         val scenario = launch(SosOpenMode.START)
 
-        compose.waitUntil(5_000) { runner.state.value is SosRunState.Countdown }
+        compose.settled { runner.state.value is SosRunState.Countdown }
         compose.onNodeWithTag(SosCountdownNumberTag).assertIsDisplayed()
         assertEquals(listOf("begin"), host.events.toList())
 
         compose.onNodeWithTag(SosCancelTag).performClick()
 
-        compose.waitUntil(5_000) { runner.state.value == SosRunState.Idle }
+        compose.settled { runner.state.value == SosRunState.Idle }
         assertNull(runBlocking { engine.current() })
         assertEquals("end", host.events.last())
-        compose.waitUntil(5_000) {
+        compose.settled {
             var finishing = false
             scenario.onActivity { finishing = it.isFinishing }
             finishing
@@ -594,7 +592,7 @@ class SosEmergencyScreenTest {
         for (entryPoint in listOf(SosEntryPoint.TILE, SosEntryPoint.WIDGET, SosEntryPoint.NOTIFICATION)) {
             val scenario = launchStart(entryPoint)
 
-            compose.waitUntil(5_000) { runner.state.value is SosRunState.Countdown }
+            compose.settled { runner.state.value is SosRunState.Countdown }
             compose.onNodeWithTag(SosCountdownNumberTag).assertIsDisplayed()
             // The same screen as after the hold: Cancel, Call 112, and what SafeRoute is not.
             compose.onNodeWithTag(SosCancelTag).assertIsDisplayed()
@@ -604,7 +602,7 @@ class SosEmergencyScreenTest {
             assertEquals("the host starts while the screen is visible", "begin", host.events.last())
 
             compose.onNodeWithTag(SosCancelTag).performClick()
-            compose.waitUntil(5_000) { runner.state.value == SosRunState.Idle }
+            compose.settled { runner.state.value == SosRunState.Idle }
             assertNull(runBlocking { engine.current() })
             scenario.close()
         }
@@ -617,7 +615,7 @@ class SosEmergencyScreenTest {
         for (entryPoint in listOf(SosEntryPoint.TILE, SosEntryPoint.WIDGET, SosEntryPoint.NOTIFICATION)) {
             val scenario = launchStart(entryPoint)
 
-            compose.waitUntil(5_000) {
+            compose.settled {
                 compose.onAllNodesWithText(string(R.string.sos_arm_not_set_up)).fetchSemanticsNodes().isNotEmpty()
             }
             compose.onNodeWithTag(SosCountdownNumberTag).assertDoesNotExist()
@@ -635,7 +633,7 @@ class SosEmergencyScreenTest {
     fun `set up SOS alerts opens the app at emergency contacts and closes the emergency screen`() {
         policy.open = false
         val scenario = launchStart(SosEntryPoint.WIDGET)
-        compose.waitUntil(5_000) {
+        compose.settled {
             compose.onAllNodesWithText(string(R.string.sos_arm_set_up)).fetchSemanticsNodes().isNotEmpty()
         }
 
@@ -661,7 +659,7 @@ class SosEmergencyScreenTest {
         val keyguard = context.getSystemService(android.app.KeyguardManager::class.java)
         shadowOf(keyguard).setKeyguardLocked(true)
         val scenario = launchStart(SosEntryPoint.TILE)
-        compose.waitUntil(5_000) {
+        compose.settled {
             compose.onAllNodesWithText(string(R.string.sos_arm_set_up)).fetchSemanticsNodes().isNotEmpty()
         }
 
@@ -681,7 +679,7 @@ class SosEmergencyScreenTest {
     fun `in Bengali at double font size the not-set-up dialog still reaches Call 112 and the setup`() {
         policy.open = false
         val scenario = launchStart(SosEntryPoint.NOTIFICATION)
-        compose.waitUntil(5_000) {
+        compose.settled {
             compose.onAllNodesWithText(string(R.string.sos_arm_set_up)).fetchSemanticsNodes().isNotEmpty()
         }
 
@@ -696,7 +694,7 @@ class SosEmergencyScreenTest {
     fun `a practice run shows the banner and starts no service and no record`() {
         val scenario = launch(SosOpenMode.PRACTICE)
 
-        compose.waitUntil(5_000) {
+        compose.settled {
             compose.onAllNodesWithText(string(R.string.sos_practice_banner)).fetchSemanticsNodes().isNotEmpty()
         }
         compose.onNodeWithTag(SosCountdownNumberTag).assertIsDisplayed()

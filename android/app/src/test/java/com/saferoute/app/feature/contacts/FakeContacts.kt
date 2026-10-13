@@ -2,9 +2,13 @@
 package com.saferoute.app.feature.contacts
 
 import android.content.Context
+import androidx.arch.core.executor.ArchTaskExecutor
 import androidx.room.Room
+import com.saferoute.app.core.data.TestResources
 import com.saferoute.app.core.data.di.DatabaseModule
 import com.saferoute.app.core.data.local.SafeRouteDatabase
+import com.saferoute.app.core.di.ApplicationScope
+import com.saferoute.app.core.di.BackgroundWork
 import com.saferoute.app.feature.contacts.di.ContactsModule
 import dagger.Module
 import dagger.Provides
@@ -14,6 +18,7 @@ import dagger.hilt.testing.TestInstallIn
 import java.time.Instant
 import java.util.concurrent.CopyOnWriteArrayList
 import javax.inject.Singleton
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 
@@ -206,8 +211,17 @@ object FakeContactsModule {
 }
 
 /** A database in memory, gone when the test ends. */
-fun inMemoryDatabase(context: Context): SafeRouteDatabase =
-    Room.inMemoryDatabaseBuilder(context, SafeRouteDatabase::class.java).allowMainThreadQueries().build()
+fun inMemoryDatabase(context: Context, work: BackgroundWork? = null): SafeRouteDatabase =
+    Room.inMemoryDatabaseBuilder(context, SafeRouteDatabase::class.java)
+        .allowMainThreadQueries()
+        .apply {
+            // In a Hilt test Room's own threads are counted with the rest of the app's work.
+            if (work != null) {
+                setQueryExecutor(work.executor(ArchTaskExecutor.getIOThreadExecutor()))
+                setTransactionExecutor(work.executor(ArchTaskExecutor.getIOThreadExecutor()))
+            }
+        }
+        .build()
 
 /** Replaces [DatabaseModule] in every Hilt test: no database file is created by a test. */
 @Module
@@ -216,5 +230,9 @@ object TestDatabaseModule {
 
     @Provides
     @Singleton
-    fun provideDatabase(@ApplicationContext context: Context): SafeRouteDatabase = inMemoryDatabase(context)
+    fun provideDatabase(
+        @ApplicationContext context: Context,
+        @ApplicationScope scope: CoroutineScope,
+        work: BackgroundWork,
+    ): SafeRouteDatabase = inMemoryDatabase(context, work).also { TestResources.track(it, scope) }
 }

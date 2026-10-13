@@ -4,6 +4,7 @@ package com.saferoute.app.core.network.di
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.saferoute.app.BuildConfig
 import com.saferoute.app.core.auth.FirebaseIdTokenProvider
+import com.saferoute.app.core.data.HiltTestCleanup
 import com.saferoute.app.core.network.ApiConfig
 import com.saferoute.app.core.network.auth.AuthInterceptor
 import com.saferoute.app.core.network.auth.IdTokenProvider
@@ -40,6 +41,9 @@ class NetworkModuleTest {
 
     @get:Rule
     val hilt = HiltAndroidRule(this)
+
+    @get:Rule
+    val cleanup = HiltTestCleanup()
 
     @Inject lateinit var config: ApiConfig
 

@@ -20,7 +20,6 @@ import com.saferoute.app.core.session.FakeApi
 import com.saferoute.app.core.session.consentJson
 import com.saferoute.app.core.session.consentsJson
 import com.saferoute.app.core.session.ok
-import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -478,17 +477,19 @@ class ApiContactsRepositoryTest {
     @Test
     fun `a list that arrives after the copy was emptied is not written`() = runTest {
         // The fetch is under way when the user signs out: its answer belongs to nobody now.
-        val slow = MockResponse.Builder()
-            .code(200)
-            .addHeader("Content-Type", "application/json")
-            .body(listJson(contactJson()))
-            .headersDelay(300, TimeUnit.MILLISECONDS)
-            .build()
-        api.on(LIST, slow)
+        // The server holds the answer until the copy has been emptied: the order is decided
+        // by the test, not by how fast a thread is. The request itself needs a real thread
+        // (it is real HTTP to a local server).
+        api.on(LIST, ok(listJson(contactJson())))
+        val list = api.hold(LIST)
 
         val fetch = CoroutineScope(Dispatchers.IO).launch { repository.refresh() }
-        while (api.routesCalled().isEmpty()) Thread.sleep(5)
-        repository.clearLocal()
+        try {
+            list.arrived.await()
+            repository.clearLocal()
+        } finally {
+            list.release()
+        }
         fetch.join()
 
         assertEquals(emptyList<EmergencyContact>(), local())

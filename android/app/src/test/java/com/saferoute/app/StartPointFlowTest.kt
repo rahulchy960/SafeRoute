@@ -18,6 +18,8 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.saferoute.app.core.data.HiltTestCleanup
+import com.saferoute.app.core.di.TestClock
 import com.saferoute.app.core.location.FakeLocationRepository
 import com.saferoute.app.core.location.LocationState
 import com.saferoute.app.core.location.fakeFix
@@ -62,6 +64,9 @@ class StartPointFlowTest {
     @get:Rule(order = 0)
     val hilt = HiltAndroidRule(this)
 
+    @get:Rule(order = 0)
+    val cleanup = HiltTestCleanup()
+
     @get:Rule(order = 1)
     val compose = createAndroidComposeRule<MainActivity>()
 
@@ -79,13 +84,19 @@ class StartPointFlowTest {
 
     private val here = LatLng(10.0, 20.0)
 
+    @Inject lateinit var clock: TestClock
+
     @Before
-    fun inject() = hilt.inject()
+    fun inject() {
+        hilt.inject()
+        // Times in this test are compared with the app's clock, which stands still from here.
+        clock.stop()
+    }
 
     private fun string(id: Int, vararg args: Any): String = compose.activity.getString(id, *args)
 
     private fun waitForText(text: String) {
-        compose.waitUntil(5_000) { compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty() }
+        compose.settled { compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty() }
     }
 
     private fun searchAndChoose(name: String) {
@@ -98,7 +109,7 @@ class StartPointFlowTest {
 
     private fun routesToStation() {
         preferences.settings.value = RouteSettings(introSeen = true)
-        location.state.value = LocationState.Fix(fakeFix(position = here, timeMillis = System.currentTimeMillis()))
+        location.state.value = LocationState.Fix(fakeFix(position = here, timeMillis = clock.millis()))
         compose.onNodeWithText(string(R.string.search_hint)).performClick()
         searchAndChoose(FAKE_STATION.name)
         compose.onNodeWithText(string(R.string.place_card_directions)).performClick()

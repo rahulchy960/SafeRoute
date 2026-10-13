@@ -6,6 +6,7 @@ import com.saferoute.app.core.auth.FakePhoneAuthGateway
 import com.saferoute.app.core.auth.FirebaseIdTokenProvider
 import com.saferoute.app.core.auth.PhoneAuthGateway
 import com.saferoute.app.core.auth.di.AuthModule
+import com.saferoute.app.core.data.HiltTestCleanup
 import com.saferoute.app.core.network.auth.IdTokenProvider
 import dagger.hilt.android.testing.BindValue
 import dagger.hilt.android.testing.HiltAndroidRule
@@ -39,6 +40,9 @@ class SessionWiringTest {
 
     @get:Rule
     val hilt = HiltAndroidRule(this)
+
+    @get:Rule
+    val cleanup = HiltTestCleanup()
 
     private val fakeGateway = FakePhoneAuthGateway(signedIn = false)
 

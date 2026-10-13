@@ -9,6 +9,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.saferoute.app.core.data.HiltTestCleanup
 import com.saferoute.app.core.map.FakeMapEngine
 import com.saferoute.app.core.map.MapLoadState
 import com.saferoute.app.core.map.MapStyleVariant
@@ -48,6 +49,9 @@ class MapFailureEmergencyTest {
 
     @get:Rule(order = 0)
     val hilt = HiltAndroidRule(this)
+
+    @get:Rule(order = 0)
+    val cleanup = HiltTestCleanup()
 
     @get:Rule(order = 1)
     val compose = createAndroidComposeRule<MainActivity>()

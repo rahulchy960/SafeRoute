@@ -12,6 +12,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.saferoute.app.core.data.HiltTestCleanup
 import com.saferoute.app.core.diagnostics.DiagnosticsSettings
 import com.saferoute.app.core.diagnostics.FakeDiagnosticsPreferences
 import com.saferoute.app.core.diagnostics.FakeDiagnosticsReporter
@@ -52,6 +53,9 @@ class CrashReportsFlowTest {
     @get:Rule(order = 0)
     val hilt = HiltAndroidRule(this)
 
+    @get:Rule(order = 0)
+    val cleanup = HiltTestCleanup()
+
     @get:Rule(order = 1)
     val compose = createAndroidComposeRule<MainActivity>()
 
@@ -74,11 +78,11 @@ class CrashReportsFlowTest {
 
     private fun string(id: Int): String = compose.activity.getString(id)
 
-    private fun waitForText(id: Int) = compose.waitUntil(5_000) {
+    private fun waitForText(id: Int) = compose.settled {
         compose.onAllNodesWithText(string(id)).fetchSemanticsNodes().isNotEmpty()
     }
 
-    private fun waitForTag(tag: String) = compose.waitUntil(5_000) {
+    private fun waitForTag(tag: String) = compose.settled {
         compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty()
     }
 
@@ -126,7 +130,7 @@ class CrashReportsFlowTest {
         compose.onNodeWithContentDescription(string(R.string.sos_control_description)).assertIsDisplayed()
         compose.onNodeWithText(string(R.string.diagnostics_home_no)).performClick()
 
-        compose.waitUntil(5_000) { preferences.settings.value.asked }
+        compose.settled { preferences.settings.value.asked }
         compose.onNodeWithTag(CrashReportsHomeCardTag).assertDoesNotExist()
         assertEquals(DiagnosticsSettings(crashReports = false, asked = true), preferences.settings.value)
         // Answering starts nothing else.

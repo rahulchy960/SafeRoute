@@ -2,6 +2,7 @@
 package com.saferoute.app.core.auth
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.saferoute.app.core.data.HiltTestCleanup
 import com.saferoute.app.core.network.auth.IdTokenProvider
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
@@ -30,6 +31,9 @@ class AuthWiringTest {
 
     @get:Rule
     val hilt = HiltAndroidRule(this)
+
+    @get:Rule
+    val cleanup = HiltTestCleanup()
 
     @Inject lateinit var gateway: PhoneAuthGateway
 

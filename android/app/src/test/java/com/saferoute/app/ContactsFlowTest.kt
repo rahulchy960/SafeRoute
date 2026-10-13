@@ -12,6 +12,8 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextReplacement
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.saferoute.app.core.data.HiltTestCleanup
+import com.saferoute.app.core.di.TestClock
 import com.saferoute.app.core.session.FakeSession
 import com.saferoute.app.core.session.Session
 import com.saferoute.app.core.session.SessionState
@@ -52,6 +54,9 @@ class ContactsFlowTest {
     @get:Rule(order = 0)
     val hilt = HiltAndroidRule(this)
 
+    @get:Rule(order = 0)
+    val cleanup = HiltTestCleanup()
+
     @get:Rule(order = 1)
     val compose = createAndroidComposeRule<MainActivity>()
 
@@ -65,9 +70,13 @@ class ContactsFlowTest {
     @Inject
     lateinit var preferences: FakeContactsPreferences
 
+    @Inject lateinit var clock: TestClock
+
     @Before
     fun inject() {
         hilt.inject()
+        // Times in this test are compared with the app's clock, which stands still from here.
+        clock.stop()
         // Other tests keep the Home card away; this one is about it.
         preferences.clearSnooze()
         ShadowLog.clear()
@@ -78,7 +87,7 @@ class ContactsFlowTest {
     private fun tap(id: Int) = compose.onNodeWithText(string(id)).performScrollTo().performClick()
 
     private fun waitFor(text: String) {
-        compose.waitUntil(timeoutMillis = 5_000) {
+        compose.settled {
             compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty()
         }
     }
@@ -167,7 +176,7 @@ class ContactsFlowTest {
 
         assertFalse(shown(R.string.contacts_card_title))
         val threeDays = 3L * 24 * 60 * 60 * 1000
-        val remaining = preferences.current - System.currentTimeMillis()
+        val remaining = preferences.current - clock.millis()
         assertTrue("snoozed for $remaining ms", remaining in (threeDays - 60_000)..threeDays)
         assertEquals(emptyList<String>(), contacts.calls.filter { it != "refresh" })
     }

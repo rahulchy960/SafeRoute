@@ -9,6 +9,8 @@ import com.saferoute.app.core.network.jsonResponse
 import com.saferoute.app.core.network.problemResponse
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.CountDownLatch
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -78,6 +80,14 @@ class FakeApi : Dispatcher() {
         served[route] = 0
     }
 
+    private val held = ConcurrentHashMap<String, HeldRoute>()
+
+    /**
+     * Makes [route] wait: its answer leaves only after [HeldRoute.release]. A test that needs
+     * "the request is under way" waits for [HeldRoute.arrived] instead of sleeping.
+     */
+    fun hold(route: String): HeldRoute = HeldRoute().also { held[route] = it }
+
     fun routesCalled(): List<String> = requests.map { it.route }
 
     fun bodyOf(route: String): String = requests.last { it.route == route }.body
@@ -85,9 +95,25 @@ class FakeApi : Dispatcher() {
     override fun dispatch(request: RecordedRequest): MockResponse {
         val route = "${request.method} ${request.url.encodedPath}"
         requests += Recorded(route, request.body?.utf8().orEmpty(), request.headers["Authorization"])
+        held[route]?.pause()
         val responses = routes[route] ?: return problemResponse(404, "not_found")
         val index = served.merge(route, 1, Int::plus)!! - 1
         return responses[index.coerceAtMost(responses.lastIndex)]
+    }
+}
+
+/** A route of [FakeApi] whose answer the test lets go itself. */
+class HeldRoute {
+    /** Completes when a request for the route has reached the server. */
+    val arrived = CompletableDeferred<Unit>()
+    private val gate = CountDownLatch(1)
+
+    fun release() = gate.countDown()
+
+    // Runs on the server's own thread, which is what waits here.
+    internal fun pause() {
+        arrived.complete(Unit)
+        gate.await()
     }
 }
 

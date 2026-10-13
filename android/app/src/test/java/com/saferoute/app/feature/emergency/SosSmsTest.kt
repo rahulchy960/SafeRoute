@@ -13,7 +13,12 @@ import com.saferoute.app.core.emergency.FakeSmsRecipientLimit
 import com.saferoute.app.core.emergency.SKIP_DEBUG_NOT_ALLOWLISTED
 import com.saferoute.app.core.emergency.SmsOutcome
 import java.io.File
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -103,16 +108,19 @@ class SosSmsTest {
     }
 
     @Test
-    fun `it hands one multipart message to the phone and waits for an answer per part`() {
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun `it hands one multipart message to the phone and waits for an answer per part`() = runTest {
         ShadowLog.clear()
         val manager = application.getSystemService(SmsManager::class.java)
         val sms: ShadowSmsManager = shadowOf(manager)
         val parts = arrayListOf("Test message, part one. ", "Test message, part two.")
         var outcome: SmsOutcome? = null
 
-        val sender = Thread { outcome = runBlocking { gateway.sendParts(manager, FAKE_NUMBER, parts) } }.apply { start() }
-        val deadline = System.currentTimeMillis() + 5_000
-        while (sms.lastSentMultipartTextMessageParams == null && System.currentTimeMillis() < deadline) Thread.sleep(10)
+        // Started on this thread, and it runs here until it waits for the phone's answer: no
+        // second thread and no real time. Its time limit counts in the test's virtual time.
+        val sender = launch(UnconfinedTestDispatcher(testScheduler)) {
+            outcome = gateway.sendParts(manager, FAKE_NUMBER, parts)
+        }
 
         val sent = sms.lastSentMultipartTextMessageParams
         assertEquals(FAKE_NUMBER, sent.destinationAddress)
@@ -126,8 +134,7 @@ class SosSmsTest {
         // Until the phone has answered for every part, the sender is still waiting.
         assertNull(outcome)
 
-        sender.interrupt()
-        sender.join(2_000)
+        sender.cancelAndJoin()
         // Nothing about the message was written to the log.
         val logged = ShadowLog.getLogs().joinToString("\n") { "${it.tag} ${it.msg}" }
         assertFalse(logged.contains("9000010001"))
