@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
+import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
 import groovy.json.JsonSlurper
 import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 
@@ -14,6 +15,9 @@ plugins {
     // Firebase needs at start-up. The build fails without the file: see android/README.md
     // "Signing in" for where it goes and how CI gets a dummy one (ADR 0012).
     alias(libs.plugins.google.services)
+    // Gives each build the id the Crashlytics library looks for at start-up (ADR 0028). Its
+    // other job, uploading the R8 mapping file, is switched off for both build types below.
+    alias(libs.plugins.firebase.crashlytics)
 }
 
 // The API client is generated from the contract on every build and is never committed or edited
@@ -197,6 +201,16 @@ if (!Regex("""[0-9+, ().-]*""").matches(debugSmsAllowlist)) {
     )
 }
 
+// Crash reports (ADR 0028) are opt-in for the person, and a DEBUG build sends none at all
+// unless the developer sets the Gradle property `saferoute.debugCrashReports=true` (user-level
+// gradle.properties or -P), for example to try the "Test crash" button. A release build
+// ignores the property: there the person's own choice decides alone.
+val debugCrashReportsProperty = providers.gradleProperty("saferoute.debugCrashReports").orNull?.trim()
+if (debugCrashReportsProperty != null && debugCrashReportsProperty != "true" && debugCrashReportsProperty != "false") {
+    throw GradleException("saferoute.debugCrashReports must be true or false.")
+}
+val crashReportsInDebug = debugCrashReportsProperty?.toBoolean() ?: false
+
 fun sendSmsManifest(enabled: Boolean) = if (enabled) "src/sendSmsOn/AndroidManifest.xml" else "src/sendSmsOff/AndroidManifest.xml"
 
 android {
@@ -233,9 +247,16 @@ android {
             }
             // Read by the SMS gateway: without the permission in the manifest it never tries.
             buildConfigField("boolean", "SEND_SMS_DECLARED", sendSmsInDebug.toString())
+            // Read by core/diagnostics: false means this build never switches collection on.
+            buildConfigField("boolean", "CRASH_REPORTS_ALLOWED", crashReportsInDebug.toString())
             // Read by BuildSmsRecipientLimit in src/debug only. Never shown or logged; the
             // screens may only say how many contacts are on the list.
             buildConfigField("String", "DEBUG_SMS_ALLOWLIST", "\"$debugSmsAllowlist\"")
+            // No upload of a mapping file and so no network step in a build: nothing is
+            // obfuscated yet. The release pipeline switches it on with R8 (P022, ADR 0028).
+            configure<CrashlyticsExtension> {
+                mappingFileUploadEnabled = false
+            }
         }
         // Unsigned on purpose: there is no keystore anywhere in this repository. Release signing
         // and code shrinking (R8) arrive with P022.
@@ -244,6 +265,12 @@ android {
                 enable = false
             }
             buildConfigField("boolean", "SEND_SMS_DECLARED", sendSmsInRelease.toString())
+            buildConfigField("boolean", "CRASH_REPORTS_ALLOWED", "true")
+            // No upload of a mapping file and so no network step in a build: nothing is
+            // obfuscated yet. The release pipeline switches it on with R8 (P022, ADR 0028).
+            configure<CrashlyticsExtension> {
+                mappingFileUploadEnabled = false
+            }
         }
     }
 
@@ -351,10 +378,14 @@ dependencies {
 
     implementation(libs.kotlinx.coroutines.android)
 
-    // Sign-in (ADR 0012). Firebase Auth only: no Analytics, Crashlytics or App Check.
+    // Sign-in (ADR 0012) and opt-in crash reports (ADR 0028). No Analytics, Performance
+    // Monitoring, Remote Config or App Check.
     // Only core/auth uses Firebase; the rest of the app sees PhoneAuthGateway.
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
+    // Only core/diagnostics uses Crashlytics (DiagnosticsBoundaryTest). Collection is off in
+    // the manifest and is switched on only by the person's own choice.
+    implementation(libs.firebase.crashlytics)
     // Lets a coroutine wait for a Play services Task with `.await()`.
     implementation(libs.kotlinx.coroutines.play.services)
     // Small key-value storage for the onboarding and session flags (core/session).

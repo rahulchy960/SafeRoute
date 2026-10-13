@@ -101,6 +101,15 @@
         tools:targetApi="33">
 
         <!--
+            Crash reports are opt-in (P014d1, ADR 0028). "false" here means the Crashlytics
+            library collects and sends nothing by itself. It starts only after the person
+            switched "Send crash reports" on, which core/diagnostics passes on at runtime.
+        -->
+        <meta-data
+            android:name="firebase_crashlytics_collection_enabled"
+            android:value="false" />
+
+        <!--
             The only activity (single-activity app): every screen is a Compose destination
             inside it. `exported` must be true for the launcher to start it.
         -->
