@@ -805,6 +805,17 @@ and [`android/README.md`](android/README.md):
   Before shipping run `git ls-files android | grep -iE "local.properties|\.jks|google-services\.json"`:
   it must print nothing. (The script `android/scripts/write-dummy-google-services` is tracked on
   purpose; it contains fake values only.)
+- How tests wait and clean up (since P014e): **no `Thread.sleep` and no polling with a time
+  limit** in a test. A Hilt test gets its dispatchers, app-lifetime scope and Room threads
+  counted (`BackgroundWork`, `TestCoreModule` replaces `CoreModule`), and waits with
+  `compose.settled { }` or `Espresso.onIdle()`; a test that needs a time compared with
+  "now" stops `TestClock`. A coroutine that sleeps is not counted: move the time yourself.
+  Every `HiltAndroidRule` has `val cleanup = HiltTestCleanup()` next to it, with an order
+  below the Compose rule's (`HiltTestCleanupTest`). A test without a named application
+  gets a plain `Application` (`robolectric.properties`): a test that needs the app's graph
+  is a Hilt test, and nothing boots `SafeRouteApplication` unless it asks for it by name.
+  The one timed wait left is `SignInToHomeTest` (real HTTP); a new one needs its reason
+  in that guard test.
 - Claude Code has no phone or emulator. It verifies with JVM tests (Robolectric) and says so;
   on-device checks are steps for Rahul in "How Rahul can verify".
 - If `gradlew` can't find a JDK, set `JAVA_HOME` to Android Studio's bundled JDK for that

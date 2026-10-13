@@ -220,9 +220,20 @@ show it", items 7 and 8.
 
 ### About the tests themselves
 
-1. Several SOS tests wait on real threads with a real-time limit, and tests leave databases
-   open (follow-ups of P014b5). A red `android-ci` run for such a reason takes "Automated
-   pass" away from every row until it is green again.
+1. How the tests wait, since P014e. A screen test no longer polls with a time limit of its
+   own: in a Hilt test the app's background work (the app-lifetime scope, the dispatchers,
+   Room's threads) is counted (`BackgroundWork` in `TestCoreModule.kt`), and the test goes
+   on when the count is zero (`compose.settled { }`, `Espresso.onIdle()`). No test sleeps
+   (`HiltTestCleanupTest`, "no test sleeps, and only the real sign-in test polls with a
+   time limit"). Every Hilt test stops its app-lifetime scope and closes its database when
+   it ends (`HiltTestCleanup`). What still depends on real time, by design:
+   `SignInToHomeTest` (real HTTP to a local server with the real session code; it polls
+   with a ten-second limit) and one test in `ApiErrorMappingTest` (a real socket timeout).
+   A coroutine that sleeps is not counted as work, so a test that needs time to pass still
+   has to move the time itself. **No test starts the real application any more**: a test
+   without a named application gets a plain one, so a fault in the application's own
+   start-up is not seen by a JVM test. A red `android-ci` run for a reason of this kind
+   takes "Automated pass" away from every row until it is green again.
 2. The texts a contact receives, the notice and the Bengali wording are drafts: no lawyer
    and no native speaker has reviewed them.
 
@@ -966,3 +977,8 @@ The row is new in P014c3; these tests are from P014c1a and on `main` since `5e57
   is wrapped by `ReportingSmsGateway`, which passes every outcome back unchanged, and the
   SOS screen notes `RECOVERY_SHOWN`; `SosViewModelTest` checks that a start and a sent
   alert note nothing.
+- **P014e** (2026-10-13): no row changed and no production code changed. "About the tests
+  themselves" rewritten: screen tests wait for the app's counted background work instead
+  of polling, no test sleeps, every Hilt test closes its database, and no test starts the
+  real application. `EmergencyActivityTest` became a Hilt test; the test of the clean-up
+  job moved from `SosDeviceTest` to `SosForegroundServiceTest`.
