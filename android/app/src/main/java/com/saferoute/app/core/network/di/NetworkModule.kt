@@ -14,6 +14,8 @@ import com.saferoute.app.core.network.generated.api.RoutingApi
 import com.saferoute.app.core.network.generated.api.SearchApi
 import com.saferoute.app.core.network.interceptor.LogcatNetworkLog
 import com.saferoute.app.core.network.interceptor.NetworkLog
+import com.saferoute.app.core.diagnostics.DiagnosticsReporter
+import com.saferoute.app.core.network.interceptor.DiagnosticsInterceptor
 import com.saferoute.app.core.network.interceptor.RequestIdInterceptor
 import com.saferoute.app.core.network.interceptor.SafeLoggingInterceptor
 import com.saferoute.app.core.network.interceptor.UserAgentInterceptor
@@ -47,6 +49,7 @@ internal fun newApiHttpClient(
     clock: Clock,
     sleeper: Sleeper = Sleeper { Thread.sleep(it) },
     log: NetworkLog = LogcatNetworkLog,
+    diagnostics: DiagnosticsReporter? = null,
 ): OkHttpClient = OkHttpClient.Builder()
     .connectTimeout(10, TimeUnit.SECONDS)
     .readTimeout(30, TimeUnit.SECONDS)
@@ -54,6 +57,8 @@ internal fun newApiHttpClient(
     // The whole call, retries included.
     .callTimeout(45, TimeUnit.SECONDS)
     .addInterceptor(RequestIdInterceptor())
+    // Outside the retries: notes the kind of a server failure the app ends up with (ADR 0028).
+    .apply { if (diagnostics != null) addInterceptor(DiagnosticsInterceptor(diagnostics)) }
     .addInterceptor(UserAgentInterceptor(config.versionName))
     .addInterceptor(AuthInterceptor(config, tokens))
     .addInterceptor(RetryInterceptor(clock, sleeper))
@@ -90,8 +95,12 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(config: ApiConfig, tokens: IdTokenProvider, clock: Clock): OkHttpClient =
-        newApiHttpClient(config, tokens, clock)
+    fun provideOkHttpClient(
+        config: ApiConfig,
+        tokens: IdTokenProvider,
+        clock: Clock,
+        diagnostics: DiagnosticsReporter,
+    ): OkHttpClient = newApiHttpClient(config, tokens, clock, diagnostics = diagnostics)
 
     @Provides
     @Singleton

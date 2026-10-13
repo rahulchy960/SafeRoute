@@ -22,6 +22,7 @@ import com.saferoute.app.core.session.SessionState
 import com.saferoute.app.core.session.di.SessionBindingModule
 import com.saferoute.app.feature.diagnostics.CrashReportsHomeCardTag
 import com.saferoute.app.feature.diagnostics.CrashReportsSwitchTag
+import com.saferoute.app.feature.diagnostics.ProblemReportTextTag
 import dagger.hilt.android.testing.BindValue
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
@@ -129,6 +130,24 @@ class CrashReportsFlowTest {
         compose.onNodeWithTag(CrashReportsHomeCardTag).assertDoesNotExist()
         assertEquals(DiagnosticsSettings(crashReports = false, asked = true), preferences.settings.value)
         // Answering starts nothing else.
+        assertNull(runBlocking { engine.current() })
+    }
+
+    @Test
+    fun `Settings leads to Report a problem, which shows the text and notes what was recorded`() {
+        fakeSession.setState(SessionState.Ready)
+        compose.waitForIdle()
+        reporter.events.clear()
+
+        compose.onNodeWithContentDescription(string(R.string.settings_title)).performClick()
+        compose.onNodeWithText(string(R.string.report_title)).performScrollTo().performClick()
+        waitForTag(ProblemReportTextTag)
+
+        compose.onNodeWithText("SafeRoute problem report", substring = true).assertExists()
+        compose.onNodeWithText(string(R.string.report_share)).assertExists()
+        compose.onNodeWithText(string(R.string.report_note_hint)).assertExists()
+        // Opening and reading the report records nothing and starts nothing.
+        assertEquals(emptyList<Any>(), reporter.events)
         assertNull(runBlocking { engine.current() })
     }
 

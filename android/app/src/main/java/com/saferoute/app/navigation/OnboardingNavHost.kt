@@ -15,6 +15,7 @@ import com.saferoute.app.BuildConfig
 import com.saferoute.app.core.session.BlockReason
 import com.saferoute.app.core.session.SessionState
 import com.saferoute.app.feature.diagnostics.CrashReportsChoiceScreen
+import com.saferoute.app.feature.diagnostics.ProblemReportRoute
 import com.saferoute.app.feature.onboarding.AgeGateScreen
 import com.saferoute.app.feature.onboarding.BlockedScreen
 import com.saferoute.app.feature.onboarding.ConsentNoticeScreen
@@ -144,7 +145,12 @@ fun OnboardingNavHost(
             ProblemScreen(
                 retryable = (state as? SessionState.Error)?.retryable ?: true,
                 onRetry = viewModel::refresh,
+                // Stays inside onboarding: the state has not changed, so nothing navigates away.
+                onReport = { navController.navigate(ProblemReportDestination) { launchSingleTop = true } },
             )
+        }
+        composable<ProblemReportDestination> {
+            ProblemReportRoute(onBack = { navController.popBackStack() })
         }
     }
 

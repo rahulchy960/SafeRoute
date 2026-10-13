@@ -675,4 +675,14 @@
     <string name="diagnostics_home_no">No thanks</string>
     <string name="diagnostics_debug_off">This debug build sends no crash reports.</string>
     <string name="settings_diagnostics_title">Diagnostics</string>
+    <!-- Report a problem (P014d1c, ADR 0028). The report itself is technical text in English. -->
+    <string name="report_title">Report a problem</string>
+    <string name="report_intro">This is everything that would be shared. Read it first. SafeRoute sends nothing by itself: you choose the app, and you send it there.</string>
+    <string name="report_note_label">Add a note (optional)</string>
+    <string name="report_note_hint">Do not include names, numbers or places</string>
+    <string name="report_email">Send by email</string>
+    <string name="report_share">Share</string>
+    <string name="report_no_email_app">No email app was found on this phone. Use Share instead.</string>
+    <string name="report_subject">SafeRoute problem report</string>
+    <string name="settings_report_supporting">Shows what would be shared before anything leaves the phone</string>
 </resources>

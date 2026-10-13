@@ -211,6 +211,15 @@ if (debugCrashReportsProperty != null && debugCrashReportsProperty != "true" && 
 }
 val crashReportsInDebug = debugCrashReportsProperty?.toBoolean() ?: false
 
+// Where "Report a problem" addresses an e-mail (ADR 0028). The Gradle property
+// `saferoute.supportEmail` belongs in the user-level gradle.properties or is passed with -P;
+// it is not written in a tracked file. Not set: the "Send by email" button is hidden and only
+// "Share" remains. The value is never printed.
+val supportEmail = providers.gradleProperty("saferoute.supportEmail").orNull?.trim().orEmpty()
+if (supportEmail.isNotEmpty() && !Regex("""[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+.[A-Za-z]{2,}""").matches(supportEmail)) {
+    throw GradleException("saferoute.supportEmail is not an e-mail address. (The value is not shown on purpose.)")
+}
+
 fun sendSmsManifest(enabled: Boolean) = if (enabled) "src/sendSmsOn/AndroidManifest.xml" else "src/sendSmsOff/AndroidManifest.xml"
 
 android {
@@ -238,6 +247,9 @@ android {
         // the map is configured.
         buildConfigField("String", "MAPTILER_KEY", "\"$mapTilerKey\"")
         buildConfigField("boolean", "MAPTILER_KEY_CONFIGURED", mapTilerKeyUsable.toString())
+
+        // Read by "Report a problem" only. Empty means: no e-mail button.
+        buildConfigField("String", "SUPPORT_EMAIL", "\"$supportEmail\"")
     }
 
     buildTypes {

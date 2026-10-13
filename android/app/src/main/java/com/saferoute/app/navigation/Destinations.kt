@@ -34,6 +34,9 @@ data object SosSetupDestination
 
 /** Add one contact (with the consent notice before the first one). */
 @Serializable
+data object ProblemReportDestination
+
+@Serializable
 data object AddContactDestination
 
 /**

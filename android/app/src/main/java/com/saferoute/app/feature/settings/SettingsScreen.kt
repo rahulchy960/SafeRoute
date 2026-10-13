@@ -78,6 +78,7 @@ fun SettingsRoute(
     onOpenContacts: () -> Unit = {},
     developerEntry: @Composable () -> Unit = {},
     diagnosticsSection: @Composable () -> Unit = { CrashReportsSettingsSection() },
+    onReportProblem: () -> Unit = {},
     viewModel: AccountViewModel = hiltViewModel(),
     shortcutsViewModel: EmergencyShortcutsViewModel = hiltViewModel(),
 ) {
@@ -122,6 +123,7 @@ fun SettingsRoute(
         onOpenContacts = onOpenContacts,
         developerEntry = developerEntry,
         diagnosticsSection = diagnosticsSection,
+        onReportProblem = onReportProblem,
         account = account,
         onRetryAccount = viewModel::load,
         onSignOut = viewModel::signOut,
@@ -187,6 +189,7 @@ fun SettingsScreen(
     onOpenContacts: () -> Unit = {},
     developerEntry: @Composable () -> Unit = {},
     diagnosticsSection: @Composable () -> Unit = {},
+    onReportProblem: () -> Unit = {},
     account: AccountUiState? = null,
     onRetryAccount: () -> Unit = {},
     onSignOut: () -> Unit = {},
@@ -282,6 +285,11 @@ fun SettingsScreen(
 
             SectionTitle(text = stringResource(R.string.settings_diagnostics_title))
             diagnosticsSection()
+            ListItem(
+                headlineContent = { Text(text = stringResource(R.string.report_title)) },
+                modifier = Modifier.clickable(role = Role.Button, onClick = onReportProblem),
+                supportingContent = { Text(text = stringResource(R.string.settings_report_supporting)) },
+            )
             HorizontalDivider()
 
             SectionTitle(text = stringResource(R.string.settings_about_title))
