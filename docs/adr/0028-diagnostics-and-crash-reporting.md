@@ -136,3 +136,25 @@ Legal statements here are drafts, **to be verified by a lawyer**.
 - `android/app/src/main/java/com/saferoute/app/core/diagnostics/`,
   `android/app/build.gradle.kts`, `android/app/src/main/AndroidManifest.xml`.
 - Prompt log: [`docs/prompt-logs/014d1a-crash-reporting-core.md`](../prompt-logs/014d1a-crash-reporting-core.md).
+
+## Note of 2026-10-13 (P014d1b): where the choice is put
+
+- **Onboarding.** One step after the account notice and before the phone number: the
+  notice text and an unticked box, "Send crash reports". "Continue" works either way and
+  records what the box says. Nothing is sent from that screen, and the order "age, consent,
+  phone" is unchanged: the step sits between the last two.
+- **Settings.** A section "Diagnostics" with the switch and the same notice, including
+  that reports already sent stay until the provider deletes them.
+- **Home, once.** A person who finished onboarding before this version has never been
+  asked. They see a card in the Home sheet with two buttons of equal weight. It is a card,
+  never a dialog: it blocks nothing, does not cover the SOS control and is not part of any
+  SOS screen. Either button answers it for good.
+- **The answer stays on the phone across sign-out.** It is a setting of the device, not of
+  the account, and the server never learns it. A second person who signs in on the same
+  phone finds the switch as it was left, in Settings. To be looked at by the lawyer.
+- **The text** is the `diagnostics_*` strings, mirrored in
+  [`docs/legal/diagnostics-notice-v1.md`](../legal/diagnostics-notice-v1.md)
+  (`CrashReportsChoiceTest`), version `2026-10-diagnostics-draft1`. Changing what a report
+  holds means changing the text and its version in the same prompt.
+- **The debug Developer screen** has "Test crash" and "Test non-fatal" and says whether
+  this build is collecting. They exist in debug builds only.

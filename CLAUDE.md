@@ -516,6 +516,14 @@ and [`android/README.md`](android/README.md):
   or opens a connection itself. Mapping upload stays off until the release pipeline (P022).
   A new merged manifest entry from a library fails `DiagnosticsDeviceTest`: read what it is
   before changing the list. SOS reliability is never measured through crash reports.
+  The choice (since P014d1b, `feature/diagnostics/CrashReportsChoice.kt`): one optional,
+  **unticked** step after the account notice and before sign-in, a switch in Settings, and
+  one card on Home for a person never asked. Never pre-tick it, never make it a dialog,
+  never show it on an SOS screen, and never ask again after an answer. Its text is the
+  `diagnostics_*` strings, mirrored in `docs/legal/diagnostics-notice-v1.md`
+  (`CrashReportsChoiceTest`); changing what a report holds means changing the text and
+  `DIAGNOSTICS_NOTICE_VERSION` in the same prompt. A Hilt test that needs the step or the
+  card calls `FakeDiagnosticsPreferences.clearAsked()`; they are answered by default in tests.
 - Onboarding (since P009c): the session state decides the screen (`navigation/OnboardingNavHost`);
   Home is shown only for `SessionState.Ready`. "I am under 18" has no in-app undo and needs the
   confirmation dialog first (ADR 0010, addendum). The consent notice text lives in the `notice_*`
