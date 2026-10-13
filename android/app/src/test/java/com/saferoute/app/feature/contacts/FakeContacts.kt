@@ -3,8 +3,10 @@ package com.saferoute.app.feature.contacts
 
 import android.content.Context
 import androidx.room.Room
+import com.saferoute.app.core.data.TestResources
 import com.saferoute.app.core.data.di.DatabaseModule
 import com.saferoute.app.core.data.local.SafeRouteDatabase
+import com.saferoute.app.core.di.ApplicationScope
 import com.saferoute.app.feature.contacts.di.ContactsModule
 import dagger.Module
 import dagger.Provides
@@ -14,6 +16,7 @@ import dagger.hilt.testing.TestInstallIn
 import java.time.Instant
 import java.util.concurrent.CopyOnWriteArrayList
 import javax.inject.Singleton
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 
@@ -216,5 +219,8 @@ object TestDatabaseModule {
 
     @Provides
     @Singleton
-    fun provideDatabase(@ApplicationContext context: Context): SafeRouteDatabase = inMemoryDatabase(context)
+    fun provideDatabase(
+        @ApplicationContext context: Context,
+        @ApplicationScope scope: CoroutineScope,
+    ): SafeRouteDatabase = inMemoryDatabase(context).also { TestResources.track(it, scope) }
 }

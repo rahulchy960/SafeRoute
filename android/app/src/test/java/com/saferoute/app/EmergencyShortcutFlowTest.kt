@@ -11,6 +11,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.saferoute.app.core.data.HiltTestCleanup
 import com.saferoute.app.core.session.FakeSession
 import com.saferoute.app.core.session.Session
 import com.saferoute.app.core.session.SessionState
@@ -48,6 +49,9 @@ class EmergencyShortcutFlowTest {
 
     @get:Rule(order = 0)
     val hilt = HiltAndroidRule(this)
+
+    @get:Rule(order = 0)
+    val cleanup = HiltTestCleanup()
 
     @get:Rule(order = 1)
     val compose = createAndroidComposeRule<MainActivity>()

@@ -10,6 +10,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.saferoute.app.core.data.HiltTestCleanup
 import com.saferoute.app.core.network.ProbeResult
 import com.saferoute.app.core.network.ServerCheck
 import com.saferoute.app.core.network.ServerCheckModule
@@ -41,6 +42,9 @@ class DeveloperNavigationTest {
 
     @get:Rule(order = 0)
     val hilt = HiltAndroidRule(this)
+
+    @get:Rule(order = 0)
+    val cleanup = HiltTestCleanup()
 
     @get:Rule(order = 1)
     val compose = createAndroidComposeRule<MainActivity>()

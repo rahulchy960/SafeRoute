@@ -26,6 +26,8 @@ import androidx.work.testing.TestListenableWorkerBuilder
 import androidx.work.testing.WorkManagerTestInitHelper
 import com.google.common.util.concurrent.ListenableFuture
 import com.saferoute.app.R
+import com.saferoute.app.SafeRouteApplication
+import com.saferoute.app.core.data.HiltTestCleanup
 import com.saferoute.app.core.emergency.FakeSosHaptics
 import com.saferoute.app.core.emergency.FakeSosHost
 import com.saferoute.app.core.emergency.SosEntryPoint
@@ -242,7 +244,12 @@ class SosDeviceTest {
         assertEquals(1, cleanUps.started.size)
     }
 
+    // The job finds its work through the application's Hilt graph, so this test asks for the
+    // real application (the default for a test is a plain one, robolectric.properties). It
+    // is also the test in which the real start-up work runs. Its database stays open: no
+    // test can reach the real application's database to close it.
     @Test
+    @Config(application = SafeRouteApplication::class)
     fun `the clean-up job itself runs and reports success`() {
         // Called directly: it works on this thread, and the test waits for its answer.
         val result = runBlocking { TestListenableWorkerBuilder<SosPurgeWorker>(context).build().doWork() }
@@ -338,6 +345,9 @@ class SosForegroundServiceTest {
 
     @get:Rule
     val hilt = HiltAndroidRule(this)
+
+    @get:Rule
+    val cleanup = HiltTestCleanup()
 
     @Inject lateinit var runner: SosRunner
 

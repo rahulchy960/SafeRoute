@@ -19,6 +19,7 @@ import androidx.compose.ui.test.performTextInput
 import androidx.core.view.children
 import androidx.lifecycle.Lifecycle
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.saferoute.app.core.data.HiltTestCleanup
 import com.saferoute.app.core.location.FakeLocationEnvironment
 import com.saferoute.app.core.location.FakeLocationRepository
 import com.saferoute.app.core.location.GrantedLocation
@@ -65,6 +66,9 @@ class FollowFlowTest {
 
     @get:Rule(order = 0)
     val hilt = HiltAndroidRule(this)
+
+    @get:Rule(order = 0)
+    val cleanup = HiltTestCleanup()
 
     @get:Rule(order = 1)
     val compose = createAndroidComposeRule<MainActivity>()

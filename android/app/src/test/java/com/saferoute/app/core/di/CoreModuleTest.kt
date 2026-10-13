@@ -2,6 +2,7 @@
 package com.saferoute.app.core.di
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.saferoute.app.core.data.HiltTestCleanup
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import dagger.hilt.android.testing.HiltTestApplication
@@ -29,6 +30,9 @@ class CoreModuleTest {
 
     @get:Rule
     val hilt = HiltAndroidRule(this)
+
+    @get:Rule
+    val cleanup = HiltTestCleanup()
 
     @Inject lateinit var clock: Clock
 

@@ -16,6 +16,7 @@ import com.saferoute.app.core.auth.FakePhoneAuthGateway
 import com.saferoute.app.core.auth.FirebaseIdTokenProvider
 import com.saferoute.app.core.auth.PhoneAuthGateway
 import com.saferoute.app.core.auth.di.AuthModule
+import com.saferoute.app.core.data.HiltTestCleanup
 import com.saferoute.app.core.network.auth.IdTokenProvider
 import com.saferoute.app.core.session.FakeMeApi
 import com.saferoute.app.core.session.FakeMeApi.Answer
@@ -61,6 +62,9 @@ class SignInToHomeTest {
 
     @get:Rule(order = 0)
     val hilt = HiltAndroidRule(this)
+
+    @get:Rule(order = 0)
+    val cleanup = HiltTestCleanup()
 
     @get:Rule(order = 1)
     val compose = createAndroidComposeRule<MainActivity>()

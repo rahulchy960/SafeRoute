@@ -12,6 +12,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.saferoute.app.core.data.HiltTestCleanup
 import com.saferoute.app.core.diagnostics.DiagnosticsSettings
 import com.saferoute.app.core.diagnostics.FakeDiagnosticsPreferences
 import com.saferoute.app.core.diagnostics.FakeDiagnosticsReporter
@@ -51,6 +52,9 @@ import org.robolectric.annotation.Config
 class CrashReportsFlowTest {
     @get:Rule(order = 0)
     val hilt = HiltAndroidRule(this)
+
+    @get:Rule(order = 0)
+    val cleanup = HiltTestCleanup()
 
     @get:Rule(order = 1)
     val compose = createAndroidComposeRule<MainActivity>()

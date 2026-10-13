@@ -19,7 +19,11 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.saferoute.app.MainActivity
 import com.saferoute.app.R
+import com.saferoute.app.core.data.HiltTestCleanup
 import com.saferoute.app.core.emergency.SosEntryPoint
+import dagger.hilt.android.testing.HiltAndroidRule
+import dagger.hilt.android.testing.HiltAndroidTest
+import dagger.hilt.android.testing.HiltTestApplication
 import java.io.File
 import javax.xml.parsers.DocumentBuilderFactory
 import org.junit.Assert.assertEquals
@@ -193,10 +197,20 @@ class SosTileServiceTest {
 }
 
 /** The destination: the same dialog as in the app, started the way a shortcut starts it. */
+@HiltAndroidTest
 @RunWith(AndroidJUnit4::class)
+@Config(application = HiltTestApplication::class)
 class EmergencyActivityTest {
 
-    @get:Rule
+    // The screen is a Hilt activity, so it needs a Hilt application; the test one keeps the
+    // real application's start-up work, its database and its services out of these tests.
+    @get:Rule(order = 0)
+    val hilt = HiltAndroidRule(this)
+
+    @get:Rule(order = 0)
+    val cleanup = HiltTestCleanup()
+
+    @get:Rule(order = 1)
     val compose = createAndroidComposeRule<EmergencyActivity>()
 
     private fun string(id: Int): String = compose.activity.getString(id)

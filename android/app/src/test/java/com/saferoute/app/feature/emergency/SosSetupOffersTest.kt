@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.Density
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.saferoute.app.MainActivity
 import com.saferoute.app.R
+import com.saferoute.app.core.data.HiltTestCleanup
 import com.saferoute.app.core.data.SosContact
 import com.saferoute.app.core.designsystem.theme.SafeRouteTheme
 import com.saferoute.app.core.emergency.FakeActiveSosContacts
@@ -305,6 +306,9 @@ class SosSetupOffersFlowTest {
 
     @get:Rule(order = 0)
     val hilt = HiltAndroidRule(this)
+
+    @get:Rule(order = 0)
+    val cleanup = HiltTestCleanup()
 
     @get:Rule(order = 1)
     val compose = createAndroidComposeRule<MainActivity>()

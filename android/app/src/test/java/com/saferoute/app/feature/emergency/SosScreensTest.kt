@@ -28,6 +28,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.saferoute.app.MainActivity
 import com.saferoute.app.R
+import com.saferoute.app.core.data.HiltTestCleanup
 import com.saferoute.app.core.emergency.SosEntryPoint
 import com.saferoute.app.core.designsystem.theme.SafeRouteTheme
 import com.saferoute.app.core.emergency.FakeSosHaptics
@@ -398,6 +399,9 @@ class SosFlowTest {
     @get:Rule(order = 0)
     val hilt = HiltAndroidRule(this)
 
+    @get:Rule(order = 0)
+    val cleanup = HiltTestCleanup()
+
     @get:Rule(order = 1)
     val compose = createAndroidComposeRule<MainActivity>()
 
@@ -536,6 +540,9 @@ class SosEmergencyScreenTest {
 
     @get:Rule(order = 0)
     val hilt = HiltAndroidRule(this)
+
+    @get:Rule(order = 0)
+    val cleanup = HiltTestCleanup()
 
     @get:Rule(order = 1)
     val compose = androidx.compose.ui.test.junit4.v2.createEmptyComposeRule()

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 package com.saferoute.app
 
+import com.saferoute.app.core.data.HiltTestCleanup
 import com.saferoute.app.core.location.FakeLocationEnvironment
 import com.saferoute.app.core.location.FakeLocationRepository
 import com.saferoute.app.core.location.GrantedLocation
@@ -61,6 +62,9 @@ class SearchFlowTest {
 
     @get:Rule(order = 0)
     val hilt = HiltAndroidRule(this)
+
+    @get:Rule(order = 0)
+    val cleanup = HiltTestCleanup()
 
     @get:Rule(order = 1)
     val compose = createAndroidComposeRule<MainActivity>()
