@@ -22,19 +22,19 @@ person asks for reports that were already sent to be deleted.
 
 If SafeRoute stops working, it can send a crash report to the developer. This is your choice, and the app works the same either way.
 
-**What is sent**
+#### What is sent
 
 Crash details (where in the app’s code it stopped), your phone’s model, your Android version, the app’s version and a random ID for this installation.
 
-**What is never sent**
+#### What is never sent
 
 Your location, your contacts, your messages and your searches. A crash report does not carry your name, your phone number or your account.
 
-**Where it goes**
+#### Where it goes
 
 Reports go to Firebase Crashlytics, a service of Google, which stores them for the developer. Google states that it keeps them for 90 days.
 
-**Turning it off**
+#### Turning it off
 
 You can turn this off at any time in Settings. New reports stop. Reports that were already sent stay until the provider deletes them.
 
@@ -46,19 +46,19 @@ The choice on the screen: "Send crash reports", not ticked.
 
 SafeRoute হঠাৎ বন্ধ হয়ে গেলে অ্যাপটি ডেভেলপারকে একটি ক্র্যাশ রিপোর্ট পাঠাতে পারে। এটি আপনার ইচ্ছা; যেটাই বেছে নিন, অ্যাপ একইভাবে কাজ করবে।
 
-**যা পাঠানো হয়**
+#### যা পাঠানো হয়
 
 ক্র্যাশের বিবরণ (অ্যাপের কোডের কোথায় থেমেছে), আপনার ফোনের মডেল, আপনার Android সংস্করণ, অ্যাপের সংস্করণ এবং এই ইনস্টলেশনের জন্য একটি এলোমেলো আইডি।
 
-**যা কখনও পাঠানো হয় না**
+#### যা কখনও পাঠানো হয় না
 
 আপনার অবস্থান, আপনার পরিচিতি, আপনার বার্তা এবং আপনার অনুসন্ধান। ক্র্যাশ রিপোর্টে আপনার নাম, ফোন নম্বর বা অ্যাকাউন্ট থাকে না।
 
-**কোথায় যায়**
+#### কোথায় যায়
 
 রিপোর্টগুলি Google-এর পরিষেবা Firebase Crashlytics-এ যায়, যা ডেভেলপারের জন্য সেগুলি সংরক্ষণ করে। Google জানিয়েছে যে তারা এগুলি 90 দিন রাখে।
 
-**বন্ধ করা**
+#### বন্ধ করা
 
 আপনি যেকোনো সময় সেটিংসে এটি বন্ধ করতে পারেন। নতুন রিপোর্ট পাঠানো বন্ধ হবে। আগে পাঠানো রিপোর্টগুলি প্রদানকারী মুছে না ফেলা পর্যন্ত থেকে যায়।
 
