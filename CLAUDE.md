@@ -524,6 +524,15 @@ and [`android/README.md`](android/README.md):
   (`CrashReportsChoiceTest`); changing what a report holds means changing the text and
   `DIAGNOSTICS_NOTICE_VERSION` in the same prompt. A Hilt test that needs the step or the
   card calls `FakeDiagnosticsPreferences.clearAsked()`; they are answered by default in tests.
+  "Report a problem" (since P014d1c, `feature/diagnostics/ProblemReportScreen.kt`): **the app
+  sends nothing and stores nothing**; the text is `problemReportText`, a pure function whose
+  input has no field for a place, a contact, a search or an account, with relative times
+  only. It leaves through `emailReportIntent` (`ACTION_SENDTO`, the address from the Gradle
+  property `saferoute.supportEmail`, never written in a tracked file or printed) or
+  `shareReportIntent`. The note a person types stays in memory. Events reach the reporter
+  by listening (`ReportingSmsGateway`, `DiagnosticsObservers`, `DiagnosticsInterceptor`):
+  **never make SOS code wait for, or depend on, diagnostics**, and never note a text that
+  was sent. A new event source needs a note in ADR 0028 that says what it gives away.
 - Onboarding (since P009c): the session state decides the screen (`navigation/OnboardingNavHost`);
   Home is shown only for `SessionState.Ready`. "I am under 18" has no in-app undo and needs the
   confirmation dialog first (ADR 0010, addendum). The consent notice text lives in the `notice_*`

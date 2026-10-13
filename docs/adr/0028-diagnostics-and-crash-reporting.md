@@ -158,3 +158,42 @@ Legal statements here are drafts, **to be verified by a lawyer**.
   holds means changing the text and its version in the same prompt.
 - **The debug Developer screen** has "Test crash" and "Test non-fatal" and says whether
   this build is collecting. They exist in debug builds only.
+
+## Note of 2026-10-13 (P014d1c): "Report a problem" and where the events come from
+
+- **The report.** `core/diagnostics/problemReportText` is a pure function. Its input has
+  fields for versions, the phone's make and model, the allowlisted facts, the status words
+  of the SOS setup checklist and the entries of `DiagnosticsLog`; it has none for a place,
+  a contact, a search or an account. Times are relative ("5 min ago"), never a time of day.
+  The text is built when the screen comes to the front and kept nowhere.
+- **Its labels are fixed English words.** It is a list of technical facts for the
+  developer, like the categories in it. The screen around it is translated.
+- **The app sends nothing.** "Send by email" opens the mail app (`ACTION_SENDTO`,
+  `mailto:`) addressed to the Gradle property `saferoute.supportEmail`; without the
+  property the button is hidden. "Share" opens Android's share sheet. In both the person
+  still has to send it.
+- **The note.** A person may add text. It is their own and is added as typed; the field
+  says "Do not include names, numbers or places". It lives in memory only.
+- **Ways in.** A row in Settings and a link on the onboarding problem screen.
+- **Where the events come from.** Nothing in the SOS code calls the reporter except one
+  line in the SOS screen's view model:
+  - `SMS_SEND_FAILED(word)`: `ReportingSmsGateway` wraps the real gateway and notes the
+    reason the phone gave, once per reason. The outcome is passed back unchanged.
+  - `ALERTS_GIVEN_UP`, `LOCATION_UNAVAILABLE`: `DiagnosticsObservers` listens to the
+    states the dispatcher and the trail already publish.
+  - `RECOVERY_SHOWN`: `SosViewModel`, when an unfinished emergency is put on screen.
+  - `API_ERROR(kind)`: `DiagnosticsInterceptor`, for an answer of 429, 503 or another
+    5xx, after the retries. A missing connection and answers such as "not found" are not
+    noted.
+  - `SERVICE_KILLED` is defined and **not reported by anything yet**: the app has no
+    detection for it. A found emergency shows as `RECOVERY_SHOWN`.
+- **What these events give away.** Four of the six can only happen during an SOS. A
+  report that carries one says that this installation had an SOS and that something
+  failed in it. That is the purpose, it is limited to people who switched reports on, and
+  the notice names crash details and not this; **the lawyer should see this sentence.**
+  What stays unreported is every SOS that worked and every start, so reports cannot be
+  used to count emergencies.
+- **Facts about the phone** are read once at start (`AndroidDiagnosticsFacts`): words for
+  permission states, the kind of network, the phone maker's family, the language. No
+  permission is asked for.
+- **The in-memory list is emptied** when the session is signed out or blocked.
