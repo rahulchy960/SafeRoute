@@ -29,9 +29,14 @@ Related: [observability on staging](observability-staging.md) (the log queries),
 | `gcloud services enable` | Local `--help` | Exists. The service name `clouderrorreporting.googleapis.com` is from memory. |
 | How Error Reporting finds an error in a JSON log line | Google's page "Format errors in logs", read on 2026-10-13 | It looks at `stack_trace`, then `exception`, then `message`, and otherwise searches every field for a stack trace. |
 | The price of alerting | Google's page "Manage alerting costs", read on 2026-10-13 | See "What it costs". Whether charging has started was **not confirmed**. |
-| **Every command against a project** | Not possible: Claude Code has no access to Google Cloud | **Not verified.** Nothing here has been run. |
-| The files in `infra/staging/alerts/` | Valid JSON; the field names follow the `projects.alertPolicies` reference from memory, not from a run | **Not verified** against the API. If `policies create` refuses a file, the error names the field. |
-| Metric names and labels (`run.googleapis.com/request_count` with `response_code_class`, `request_latencies`, `job/completed_execution_count` with `result`, `cloudsql.googleapis.com/database/cpu/utilization`, `database/up`) | The first four are in the observability runbook; the label `result="failed"` and the metric `database/up` are from memory | **Not verified.** Check each in **Monitoring → Metrics explorer** before trusting the policy (step 4). |
+| **Every command against a project** | Not possible: Claude Code has no access to Google Cloud | **Not verified.** No result of a run has been reported (state of P014d3). |
+| How Windows PowerShell 5.1 hands each command's arguments to a program | P014d3: every command of steps 2, 3, 4 and 6 run with fake values against a program that prints its arguments, once directly and once through a `.ps1` launcher (PowerShell picks `gcloud.ps1` before `gcloud.cmd`) | All arrive whole, except one: through a `.ps1` launcher the unquoted `--threshold-rule=percent=1.0,basis=forecasted-spend` was split at the comma. **Corrected** in step 6 (the argument is quoted now). This shows what `gcloud` receives, not what it answers. |
+| The fields of the files in `infra/staging/alerts/` | P014d3: Google's reference `projects.alertPolicies` (REST v3), read on 2026-10-13 | Every field name used exists (`displayName`, `documentation.content`, `mimeType`, `combiner`, `conditions[].conditionThreshold` with `filter`, `aggregations`, `comparison`, `thresholdValue`, `duration`, `trigger.count`, `alertStrategy.autoClose`). `OR` is a `combiner` value; durations are multiples of a minute; alignment periods are between 60 s and 25 h. **Still not verified** by a run: if `policies create` refuses a file, the error names the field. |
+| Metric names, kinds and labels | P014d3: Google's metrics list (Cloud Run in "P to Z", Cloud SQL in the Cloud SQL metrics page) and the monitored resource list, read on 2026-10-13 | All five metrics exist with the kinds the aligners need: `request_count` (delta, label `response_code_class`), `request_latencies` (delta distribution, milliseconds), `job/completed_execution_count` (delta, on `cloud_run_job`, label `result`), `database/cpu/utilization` (gauge, 0.0 to 1.0), `database/up` (gauge, whole number). Resource labels `service_name` and `job_name` exist. |
+| The aligners and reducers | P014d3: the `Aligner` and `Reducer` lists of the same reference | `ALIGN_DELTA` is valid for delta metrics, `ALIGN_PERCENTILE_95` for delta distributions, `ALIGN_MEAN` for numeric gauges; `REDUCE_SUM`, `REDUCE_MAX`, `REDUCE_MIN` for numeric values. |
+| The value `failed` of the label `result` | The metrics list describes the label as "Execution result" and lists no values | **Not verified.** Look at the label's values in **Monitoring → Metrics explorer** after a migration has run (step 4). |
+| What `database/up` reports while the instance is stopped | The metrics list says only "Indicates if the server is up or not" | **Not verified.** If a stopped instance reports nothing rather than 0, this policy stays silent: with no data a threshold condition is not evaluated (the reference, `evaluationMissingData`). See step 4. |
+| The filter of `osrm-5xx.json` | P014d3: Google's page "Monitoring filters", read on 2026-10-13 | The page documents `starts_with` for resource labels and shows `monitoring.regex.full_match` only for metric labels and the project. **Corrected:** the file now uses `starts_with("saferoute-osrm-")`, which selects the same services. Whether the earlier form would have been refused is not known. |
 | GitHub's notification settings for Actions | From memory of the settings page | **Not verified** on the day. The words on the page may differ. |
 
 ## Before you start
@@ -164,7 +169,7 @@ gcloud monitoring policies create --policy-from-file=infra/staging/alerts/search
 | File | Fires when | Why this number |
 | --- | --- | --- |
 | `api-5xx.json` | More than 5 responses with 5xx from `saferoute-api` in 5 minutes | A count, not a rate: with a handful of testers a percentage of almost nothing means nothing |
-| `api-latency-p95.json` | p95 latency above 3 s for 10 minutes | Minimum instances is 0, so a single slow first request is a cold start. Ten minutes of it is not |
+| `api-latency-p95.json` | p95 latency above 3 s for 10 minutes | The metric starts when a request reaches the running container, so the start of a new instance is not in it (Google's metrics list). One slow request does not last ten minutes |
 | `migration-job-failed.json` | An execution of `saferoute-migrate` ended as failed | Any failure matters; the deploy run fails too |
 | `cloudsql-cpu.json` | Database CPU above 80% for 15 minutes | The shared-core tier is slow under sustained load |
 | `cloudsql-down.json` | The database reports "not up" for 5 minutes | See "Stopping the database on purpose" |
@@ -185,10 +190,17 @@ Alerting** and look at the chart of its condition:
 
 - A chart with a line (even a flat zero) means the metric and its labels exist.
 - **"No data" for a metric that should have data** (the API's latency after you used the
-  app) means a name or a label in the file is wrong. Note which policy. The two most likely:
-  `migration-job-failed.json` (the label `result`) and `cloudsql-down.json` (the metric
-  `database/up`): both were written from memory.
-- "No data" for the 5xx policies is normal while there are no 5xx.
+  app) means a name or a label in the file is wrong. Note which policy. The names were
+  compared with Google's lists in P014d3; what is left unverified is the value `failed` of
+  the label `result` in `migration-job-failed.json`.
+- "No data" for the 5xx policies and for the migration policy is normal while there are no
+  5xx and no failed migration.
+- The two 5xx policies count what Cloud Run's metric counts: requests that reached a
+  container. A request refused before that (Google's example: when the maximum number of
+  instances is reached) is not in it.
+- `cloudsql-down.json`: its chart should show a flat line at 1 while the database runs.
+  **Not verified:** what it shows while the instance is stopped. If the line ends instead
+  of dropping to 0, the policy cannot report a stopped database; note that as the result.
 
 If `policies create` refuses a file, do not edit the file on your machine: note the error
 text (without the project id) so that the file can be fixed in the repository.
@@ -249,8 +261,11 @@ one):
 ```powershell
 gcloud billing accounts list --format="table(displayName, open)"
 $BILLING = "<billing account id, from the console; do not share it>"
-gcloud billing budgets create --billing-account=$BILLING --display-name="SafeRoute staging" --budget-amount=<amount in the account's currency> --calendar-period=month --filter-projects=projects/$PROJECT --credit-types-treatment=exclude-all-credits --threshold-rule=percent=0.5 --threshold-rule=percent=0.9 --threshold-rule=percent=1.0 --threshold-rule=percent=1.0,basis=forecasted-spend
+gcloud billing budgets create --billing-account=$BILLING --display-name="SafeRoute staging" --budget-amount=<amount in the account's currency> --calendar-period=month --filter-projects=projects/$PROJECT --credit-types-treatment=exclude-all-credits --threshold-rule=percent=0.5 --threshold-rule=percent=0.9 --threshold-rule=percent=1.0 "--threshold-rule=percent=1.0,basis=forecasted-spend"
 ```
+
+The last argument is in quotes on purpose: without them PowerShell splits it at the comma
+when `gcloud` is started through its `.ps1` launcher (found in P014d3).
 
 **The amount is not recorded here**: choose it from the cost section of the
 [routing capacity runbook](routing-capacity-staging.md) and what the billing report shows
@@ -336,3 +351,8 @@ Claude Code wrote it without access to Google Cloud. No command here was execute
 project, no policy was created, and no alert has fired. What was checked, and how, is the
 table at the top. Report which steps printed an error, with the error text and without the
 project id, so that the runbook and the policy files can be corrected.
+
+P014d3 compared the policy files and the commands with Google's documentation and tested
+how PowerShell passes the arguments. **No result of a run had been reported by then**, so
+that prompt corrected what the documentation and the local test contradicted, and nothing
+else. No threshold was changed.
