@@ -17,7 +17,7 @@ enum class DiagnosticKey(val key: String, private val accepts: (String) -> Boole
     OEM_FAMILY("oemFamily", OEM_FAMILIES::contains),
     LOCALE("locale", Regex("""[a-z]{2,3}(-[A-Z]{2})?""")::matches),
     NETWORK_TYPE("networkType", setOf("wifi", "cellular", "other", "none")::contains),
-    SMS_MODE("smsMode", setOf("automatic", "sms_app", "not_set_up")::contains),
+    SMS_MODE("smsMode", setOf("automatic", "composer")::contains),
     LOCATION_PERMISSION("locationPermission", setOf("precise", "approximate", "denied")::contains),
     SMS_PERMISSION("smsPermission", PERMISSION_WORDS::contains),
     NOTIFICATION_PERMISSION("notificationPermission", PERMISSION_WORDS::contains),

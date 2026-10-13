@@ -1,7 +1,7 @@
 {
   "$schema": "../../tools/diagrams/diagram.schema.json",
   "title": "Diagnostics: what may leave the phone",
-  "subtitle": "Opt-in crash reports behind one reporter and a redaction layer (P014d1a and P014d1b, ADR 0028). Report a problem arrives with P014d1c",
+  "subtitle": "Opt-in crash reports behind one reporter and a redaction layer (P014d1a to P014d1c, ADR 0028)",
   "direction": "TB",
   "layout": {
     "nodeWidth": 250,
@@ -13,7 +13,7 @@
     { "id": "out", "label": "Where it goes" }
   ],
   "nodes": [
-    { "id": "event", "label": "A typed event: SMS_SEND_FAILED, SERVICE_KILLED, RECOVERY_SHOWN, LOCATION_UNAVAILABLE, API_ERROR, ALERTS_GIVEN_UP", "role": "app", "group": "sources", "rank": 1 },
+    { "id": "event", "label": "A typed event, noted by listeners: SMS_SEND_FAILED, RECOVERY_SHOWN, LOCATION_UNAVAILABLE, API_ERROR, ALERTS_GIVEN_UP (SERVICE_KILLED: defined, not detected yet)", "role": "app", "group": "sources", "rank": 1 },
     { "id": "error", "label": "A caught error, or a crash nobody caught", "role": "app", "group": "sources", "rank": 1 },
     { "id": "never", "label": "Never reported: an SOS start or success, contacts, searches, routes, positions, texts, a user id", "role": "security", "group": "sources", "rank": 1 },
     { "id": "reporter", "label": "DiagnosticsReporter: the one door", "role": "service", "group": "core", "rank": 2 },
@@ -23,7 +23,7 @@
     { "id": "backend", "label": "CrashlyticsBackend: the only file that uses the library. Unsent reports are deleted before collection starts", "role": "service", "group": "out", "rank": 5 },
     { "id": "google", "label": "Firebase Crashlytics (Google): stack trace, phone model, Android and app version, an install id", "role": "external", "group": "out", "rank": 6 },
     { "id": "dropped", "label": "Choice off: nothing is collected or sent", "role": "app", "group": "out", "rank": 5 },
-    { "id": "report", "label": "Report a problem (P014d1c): the person reads the text and sends it themselves", "role": "external", "group": "out", "rank": 5 }
+    { "id": "report", "label": "Report a problem: the person reads the plain text and sends it themselves, by email or the share sheet. The app sends nothing", "role": "external", "group": "out", "rank": 5 }
   ],
   "edges": [
     { "from": "event", "to": "reporter" },

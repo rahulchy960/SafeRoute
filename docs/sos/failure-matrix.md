@@ -962,3 +962,7 @@ The row is new in P014c3; these tests are from P014c1a and on `main` since `5e57
   "State of the build" says that the device side is complete and what remains.
 - **P014d1b** (2026-10-13): no row changed. Known gap 9 added: crash reports are opt-in,
   so field failures are visible only for testers who opt in.
+- **P014d1c** (2026-10-13): no row changed and no SOS behaviour changed. The SMS gateway
+  is wrapped by `ReportingSmsGateway`, which passes every outcome back unchanged, and the
+  SOS screen notes `RECOVERY_SHOWN`; `SosViewModelTest` checks that a start and a sent
+  alert note nothing.

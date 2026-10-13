@@ -10,6 +10,7 @@ import com.saferoute.app.core.network.auth.IdTokenProvider
 import com.saferoute.app.core.network.auth.TokenAuthenticator
 import com.saferoute.app.core.network.generated.api.MeApi
 import com.saferoute.app.core.network.generated.api.OperationalApi
+import com.saferoute.app.core.network.interceptor.DiagnosticsInterceptor
 import com.saferoute.app.core.network.interceptor.RequestIdInterceptor
 import com.saferoute.app.core.network.interceptor.SafeLoggingInterceptor
 import com.saferoute.app.core.network.interceptor.UserAgentInterceptor
@@ -74,6 +75,8 @@ class NetworkModuleTest {
         assertSame(client, sameClient)
         val expected = listOf(
             RequestIdInterceptor::class,
+            // Notes the kind of a server failure (ADR 0028); outside the retries.
+            DiagnosticsInterceptor::class,
             UserAgentInterceptor::class,
             AuthInterceptor::class,
             RetryInterceptor::class,

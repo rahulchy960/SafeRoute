@@ -666,4 +666,14 @@
     <string name="diagnostics_home_no">না, ধন্যবাদ</string>
     <string name="diagnostics_debug_off">এই ডিবাগ বিল্ড কোনো ক্র্যাশ রিপোর্ট পাঠায় না।</string>
     <string name="settings_diagnostics_title">ডায়াগনস্টিকস</string>
+    <!-- Report a problem (P014d1c, ADR 0028). The report itself is technical text in English. -->
+    <string name="report_title">সমস্যা জানান</string>
+    <string name="report_intro">যা শেয়ার করা হবে তার সবটাই এখানে আছে। আগে পড়ে নিন। SafeRoute নিজে থেকে কিছু পাঠায় না: আপনি অ্যাপ বেছে নেন এবং সেখান থেকে আপনিই পাঠান।</string>
+    <string name="report_note_label">একটি নোট যোগ করুন (ঐচ্ছিক)</string>
+    <string name="report_note_hint">নাম, নম্বর বা জায়গার উল্লেখ করবেন না</string>
+    <string name="report_email">ইমেলে পাঠান</string>
+    <string name="report_share">শেয়ার করুন</string>
+    <string name="report_no_email_app">এই ফোনে কোনো ইমেল অ্যাপ পাওয়া যায়নি। পরিবর্তে শেয়ার ব্যবহার করুন।</string>
+    <string name="report_subject">SafeRoute সমস্যার রিপোর্ট</string>
+    <string name="settings_report_supporting">ফোন থেকে কিছু যাওয়ার আগে দেখায় কী শেয়ার করা হবে</string>
 </resources>

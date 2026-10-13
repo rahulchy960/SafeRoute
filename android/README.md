@@ -321,6 +321,10 @@ a setting on the phone, off by default. Until a person switches it on, nothing i
 - **A debug build sends nothing**, whatever the setting says. To try crash reporting from a
   debug build, add `saferoute.debugCrashReports=true` to your user-level `gradle.properties`
   (or pass it with `-P`) and switch the setting on in the app.
+- **"Report a problem"** shows a short technical text and hands it to the mail app or the
+  share sheet; the app itself sends nothing. For the "Send by email" button, add
+  `saferoute.supportEmail=<address>` to your user-level `gradle.properties`. Without it the
+  button is hidden and "Share" remains. The address is never written in a tracked file.
 - A build never uploads anything: mapping upload is off for both build types. It comes with
   the release pipeline.
 - With the dummy Firebase file the app builds and runs; reports cannot arrive anywhere.

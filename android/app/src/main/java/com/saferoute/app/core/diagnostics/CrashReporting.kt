@@ -26,6 +26,14 @@ data class DiagnosticsBuild(
 )
 
 /**
+ * Reads the allowlisted facts about the phone ([DiagnosticKey]) for crash reports and for
+ * "Report a problem". Implemented in `feature/diagnostics`, which knows where to look.
+ */
+fun interface DiagnosticsFactsSource {
+    suspend fun read(): Map<DiagnosticKey, String>
+}
+
+/**
  * Connects the person's choice to the reporter (ADR 0028). Started once by the application.
  *
  * Collection is on only while BOTH hold: the person switched "Send crash reports" on, and
@@ -37,6 +45,7 @@ class CrashReporting @Inject constructor(
     private val preferences: DiagnosticsPreferences,
     private val reporter: DiagnosticsReporter,
     private val build: DiagnosticsBuild,
+    private val facts: DiagnosticsFactsSource,
     @ApplicationScope private val scope: CoroutineScope,
 ) {
     fun start() {
@@ -44,6 +53,18 @@ class CrashReporting @Inject constructor(
         reporter.setKey(DiagnosticKey.APP_VERSION, build.versionName)
         reporter.setKey(DiagnosticKey.BUILD_TYPE, build.buildType)
         reporter.setKey(DiagnosticKey.ANDROID_API, build.androidApi.toString())
+        // Facts about the phone as they are at this start: permission states as words, the
+        // kind of network, the phone maker's family. Read once; no permission is asked for.
+        scope.launch {
+            // Diagnostics must never be what breaks the app: a phone (or a test) that cannot
+            // answer one of these questions simply contributes no facts.
+            val read = try {
+                facts.read()
+            } catch (_: RuntimeException) {
+                emptyMap()
+            }
+            read.forEach { (key, value) -> reporter.setKey(key, value) }
+        }
         scope.launch {
             preferences.settings
                 .map { it.crashReports && build.reportsAllowed }

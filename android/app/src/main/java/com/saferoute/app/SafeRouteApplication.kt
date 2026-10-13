@@ -5,6 +5,7 @@ import android.app.Application
 import com.saferoute.app.core.diagnostics.CrashReporting
 import com.saferoute.app.core.emergency.SosHousekeeping
 import com.saferoute.app.feature.contacts.ContactsSessionSync
+import com.saferoute.app.feature.diagnostics.DiagnosticsObservers
 import com.saferoute.app.feature.emergency.EmergencyNotificationController
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
@@ -27,6 +28,8 @@ class SafeRouteApplication : Application() {
 
     @Inject lateinit var crashReporting: CrashReporting
 
+    @Inject lateinit var diagnosticsObservers: DiagnosticsObservers
+
     override fun onCreate() {
         super.onCreate()
         // Crash reports are opt-in: this reads the person's choice and keeps the reporter in
@@ -44,5 +47,8 @@ class SafeRouteApplication : Application() {
         // Deletes emergency records older than 30 days now, and all of them when the user signs
         // out or the account is blocked. It starts no service.
         sosHousekeeping.start()
+        // Notes, as fixed words, when alerts were given up or no position could be had, and
+        // empties the in-memory list of such notes at sign-out. It only listens.
+        diagnosticsObservers.start()
     }
 }

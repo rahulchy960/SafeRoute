@@ -2,6 +2,8 @@
 package com.saferoute.app.feature.emergency
 
 import com.saferoute.app.core.data.SosContact
+import com.saferoute.app.core.diagnostics.DiagnosticEvent
+import com.saferoute.app.core.diagnostics.FakeDiagnosticsReporter
 import com.saferoute.app.core.emergency.SmsMode
 import com.saferoute.app.core.emergency.SmsOutcome
 import com.saferoute.app.core.emergency.SosAlertStatus
@@ -46,7 +48,9 @@ class SosViewModelTest {
         block(SosRig(this).also { it.policy.open = true })
     }
 
-    private fun SosRig.viewModel() = SosViewModel(runner, trail, gate, haptics, dispatch, StartSos(policy, runner), notices, alertSettings, tone, appScope)
+    private val diagnostics = FakeDiagnosticsReporter()
+
+    private fun SosRig.viewModel() = SosViewModel(runner, trail, gate, haptics, dispatch, StartSos(policy, runner), notices, alertSettings, tone, diagnostics, appScope)
 
     private fun SosRig.open(
         mode: SosOpenMode,
@@ -288,12 +292,16 @@ class SosViewModelTest {
     fun `an SOS found still active says so, and continue keeps it running`() = test { rig ->
         rig.open(SosOpenMode.START)
         rig.advance(5_000)
+        // Starting an SOS and its alert going out are never noted for diagnostics.
+        assertEquals(emptyList<DiagnosticEvent>(), diagnostics.events)
         rig.restartProcess()
         rig.advance(3_600_000)
 
         val viewModel = rig.open(SosOpenMode.OPEN)
 
         assertTrue((viewModel.ui.value as SosUi.Active).recovered)
+        // Finding it again is noted, as a fixed word and once.
+        assertEquals(listOf<DiagnosticEvent>(DiagnosticEvent.RecoveryShown), diagnostics.events)
         viewModel.onContinue()
         rig.advance(0)
         val active = viewModel.ui.value as SosUi.Active

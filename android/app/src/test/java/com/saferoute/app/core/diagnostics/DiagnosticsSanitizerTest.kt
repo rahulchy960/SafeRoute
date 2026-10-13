@@ -68,7 +68,7 @@ class DiagnosticsSanitizerTest {
 
     @Test
     fun `short technical words pass the filter`() {
-        for (value in listOf("1.0", "36", "debug", "samsung", "bn", "en-IN", "wifi", "sms_app", "not_declared")) {
+        for (value in listOf("1.0", "36", "debug", "samsung", "bn", "en-IN", "wifi", "composer", "not_declared")) {
             assertFalse("should pass: $value", DiagnosticsSanitizer.looksPersonal(value))
         }
     }
@@ -103,7 +103,7 @@ class DiagnosticsSanitizerTest {
             DiagnosticKey.OEM_FAMILY to listOf("samsung", "other"),
             DiagnosticKey.LOCALE to listOf("en", "bn", "en-IN"),
             DiagnosticKey.NETWORK_TYPE to listOf("wifi", "cellular", "other", "none"),
-            DiagnosticKey.SMS_MODE to listOf("automatic", "sms_app", "not_set_up"),
+            DiagnosticKey.SMS_MODE to listOf("automatic", "composer"),
             DiagnosticKey.LOCATION_PERMISSION to listOf("precise", "approximate", "denied"),
             DiagnosticKey.SMS_PERMISSION to listOf("granted", "denied", "not_declared"),
             DiagnosticKey.NOTIFICATION_PERMISSION to listOf("granted", "denied", "not_declared"),

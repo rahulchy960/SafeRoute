@@ -22,6 +22,7 @@ import com.saferoute.app.core.emergency.CountdownTone
 import com.saferoute.app.core.emergency.PurgeScheduler
 import com.saferoute.app.core.emergency.RetrySignals
 import com.saferoute.app.core.emergency.SmsComposer
+import com.saferoute.app.feature.diagnostics.ReportingSmsGateway
 import com.saferoute.app.core.emergency.SmsModeSource
 import com.saferoute.app.core.emergency.SmsRecipientLimit
 import com.saferoute.app.core.emergency.SosAlertPolicy
@@ -189,7 +190,8 @@ interface SosDeviceModule {
     fun bindPurgeScheduler(scheduler: WorkManagerPurgeScheduler): PurgeScheduler
 
     @Binds
-    fun bindSmsGateway(gateway: AndroidSmsGateway): SmsGateway
+    // The real gateway, wrapped so that a failed send is noted as a fixed word (ADR 0028).
+    fun bindSmsGateway(gateway: ReportingSmsGateway): SmsGateway
 
     @Binds
     fun bindSosAlertPolicy(policy: ConsentSosAlertPolicy): SosAlertPolicy

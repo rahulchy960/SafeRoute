@@ -4,6 +4,8 @@ package com.saferoute.app.feature.emergency
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.saferoute.app.core.di.ApplicationScope
+import com.saferoute.app.core.diagnostics.DiagnosticEvent
+import com.saferoute.app.core.diagnostics.DiagnosticsReporter
 import com.saferoute.app.core.emergency.CountdownTone
 import com.saferoute.app.core.emergency.SOS_COUNTDOWN
 import com.saferoute.app.core.emergency.SmsLimitNotice
@@ -141,6 +143,7 @@ class SosViewModel @Inject constructor(
     private val notices: SmsLimitNotices,
     private val settings: SosSettingsStore,
     private val tone: CountdownTone,
+    private val diagnostics: DiagnosticsReporter,
     @param:ApplicationScope private val appScope: CoroutineScope,
 ) : ViewModel() {
 
@@ -216,8 +219,14 @@ class SosViewModel @Inject constructor(
                 if (refused) local.value = local.value.copy(notSetUp = true)
             }
             when (runner.resume()) {
-                is SosRecovery.AskSendOrCancel -> local.value = local.value.copy(asking = true)
-                is SosRecovery.StillActive -> local.value = local.value.copy(recovered = true)
+                is SosRecovery.AskSendOrCancel -> {
+                    noteRecovery(already = local.value.asking)
+                    local.value = local.value.copy(asking = true)
+                }
+                is SosRecovery.StillActive -> {
+                    noteRecovery(already = local.value.recovered)
+                    local.value = local.value.copy(recovered = true)
+                }
                 is SosRecovery.ResumeCountdown, SosRecovery.Nothing -> Unit
             }
             // "I'm safe" on a notification only ASKS: the screen takes it through the unlock
@@ -328,6 +337,14 @@ class SosViewModel @Inject constructor(
         practiceTimer?.cancel()
         practiceTimer = null
         local.value = local.value.copy(practice = Practice.NONE, closed = true)
+    }
+
+    /**
+     * Notes, as a fixed word, that an unfinished emergency was found and put on screen
+     * (ADR 0028). Once per screen, after the state is decided, and never anything about it.
+     */
+    private fun noteRecovery(already: Boolean) {
+        if (!already) diagnostics.report(DiagnosticEvent.RecoveryShown)
     }
 
     private companion object {

@@ -15,6 +15,7 @@ import com.saferoute.app.feature.contacts.AddContactRoute
 import com.saferoute.app.feature.contacts.ContactDetailRoute
 import com.saferoute.app.feature.contacts.ContactsRoute
 import com.saferoute.app.feature.contacts.InviteRoute
+import com.saferoute.app.feature.diagnostics.ProblemReportRoute
 import com.saferoute.app.feature.emergency.SosSetupRoute
 import com.saferoute.app.feature.home.HomeRoute
 import com.saferoute.app.feature.search.SearchRoute
@@ -81,7 +82,13 @@ fun SafeRouteNavHost(
                 },
                 // A row in debug builds, nothing in release builds.
                 developerEntry = { DeveloperSettingsEntry(navController) },
+                onReportProblem = {
+                    navController.navigate(ProblemReportDestination) { launchSingleTop = true }
+                },
             )
+        }
+        composable<ProblemReportDestination> {
+            ProblemReportRoute(onBack = { navController.popBackStack() })
         }
         composable<ContactsDestination> {
             ContactsRoute(

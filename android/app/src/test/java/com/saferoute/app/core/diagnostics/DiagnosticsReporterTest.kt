@@ -32,6 +32,8 @@ class DiagnosticsReporterTest {
     private val log = DiagnosticsLog(clock)
     private val reporter = RedactingDiagnosticsReporter(backend, log)
 
+    private val facts = DiagnosticsFactsSource { mapOf(DiagnosticKey.NETWORK_TYPE to "wifi") }
+
     // Made-up values of the kinds that must never be reported.
     private val number = "+910000100001"
     private val secret = "typed text about a place 22.5, 88.25"
@@ -235,7 +237,7 @@ class DiagnosticsReporterTest {
     @Test
     fun `collection follows the choice and the build, and is off by default`() = runTest(UnconfinedTestDispatcher()) {
         val preferences = FakeDiagnosticsPreferences()
-        CrashReporting(preferences, reporter, TEST_BUILD, backgroundScope).start()
+        CrashReporting(preferences, reporter, TEST_BUILD, facts, backgroundScope).start()
 
         assertFalse(reporter.collecting)
         assertEquals(listOf("enabled=false", "deleteUnsent"), backend.calls)
@@ -243,7 +245,7 @@ class DiagnosticsReporterTest {
 
         preferences.setCrashReports(true)
         assertTrue(reporter.collecting)
-        assertEquals(mapOf("appVersion" to "1.0", "buildType" to "debug", "androidApi" to "36"), backend.keys)
+        assertEquals(mapOf("appVersion" to "1.0", "buildType" to "debug", "androidApi" to "36", "networkType" to "wifi"), backend.keys)
 
         preferences.setCrashReports(false)
         assertFalse(reporter.collecting)
@@ -251,9 +253,20 @@ class DiagnosticsReporterTest {
     }
 
     @Test
+    fun `facts that cannot be read break nothing and leave the other keys in place`() = runTest(UnconfinedTestDispatcher()) {
+        val preferences = FakeDiagnosticsPreferences(DiagnosticsSettings(crashReports = true, asked = true))
+        val failing = DiagnosticsFactsSource { throw IllegalStateException("no answer") }
+
+        CrashReporting(preferences, reporter, TEST_BUILD, failing, backgroundScope).start()
+
+        assertTrue(reporter.collecting)
+        assertEquals(mapOf("appVersion" to "1.0", "buildType" to "debug", "androidApi" to "36"), backend.keys)
+    }
+
+    @Test
     fun `a build that does not allow reports ignores the choice`() = runTest(UnconfinedTestDispatcher()) {
         val preferences = FakeDiagnosticsPreferences(DiagnosticsSettings(crashReports = true, asked = true))
-        CrashReporting(preferences, reporter, TEST_BUILD.copy(reportsAllowed = false), backgroundScope).start()
+        CrashReporting(preferences, reporter, TEST_BUILD.copy(reportsAllowed = false), facts, backgroundScope).start()
 
         reporter.report(DiagnosticEvent.ServiceKilled)
 

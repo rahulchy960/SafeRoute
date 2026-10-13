@@ -180,13 +180,24 @@ fun WorkingScreen(creatingAccount: Boolean, modifier: Modifier = Modifier) {
  * trouble, against anything else); "Try again" is offered either way.
  */
 @Composable
-fun ProblemScreen(retryable: Boolean, onRetry: () -> Unit, modifier: Modifier = Modifier) {
+fun ProblemScreen(
+    retryable: Boolean,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier,
+    onReport: (() -> Unit)? = null,
+) {
     OnboardingLayout(
         title = stringResource(R.string.onboarding_problem_title),
         modifier = modifier,
         actions = {
             Button(onClick = onRetry, modifier = Modifier.fillMaxWidth()) {
                 Text(text = stringResource(R.string.onboarding_try_again))
+            }
+            // The way to tell the developer when trying again does not help.
+            if (onReport != null) {
+                TextButton(onClick = onReport, modifier = Modifier.fillMaxWidth()) {
+                    Text(text = stringResource(R.string.report_title))
+                }
             }
         },
     ) {
